@@ -1,0 +1,58 @@
+/* ============================================
+   App Layout — Teaser Phase
+   ============================================ */
+
+.teaser-app {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.main-content {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.main-scroll {
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto;
+  padding: var(--space-3xl) var(--space-md) var(--space-2xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+/* Footer */
+.teaser-footer {
+  text-align: center;
+  padding: var(--space-xl) 0 var(--space-lg);
+}
+
+.footer-text {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  letter-spacing: 0.05em;
+}
+
+/* Mobile adjustments */
+@media (max-width: 480px) {
+  .main-scroll {
+    padding: var(--space-xl) var(--space-sm) var(--space-lg);
+  }
+}
+
+@media (min-height: 800px) {
+  .main-content {
+    align-items: center;
+  }
+}

@@ -1,0 +1,22 @@
+.starry-background {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.starry-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.nebula-overlay {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 60% 50% at 20% 80%, rgba(124, 92, 191, 0.06) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 80% 20%, rgba(196, 107, 138, 0.05) 0%, transparent 70%),
+        radial-gradient(ellipse 70% 60% at 50% 50%, rgba(212, 168, 83, 0.03) 0%, transparent 70%);
+}
