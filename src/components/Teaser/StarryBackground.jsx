@@ -1,46 +1,62 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import './StarryBackground.css';
+
+// Respect user's motion preferences
+const prefersReducedMotion = () =>
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function StarryBackground() {
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
+  const starsRef = useRef([]);
+  const shootingStarsRef = useRef([]);
+
+  const createStars = useCallback((width, height) => {
+    const count = prefersReducedMotion()
+      ? Math.floor((width * height) / 8000)
+      : Math.floor((width * height) / 3000);
+
+    const stars = [];
+    for (let i = 0; i < count; i++) {
+      stars.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        size: Math.random() * 2 + 0.3,
+        opacity: Math.random() * 0.8 + 0.2,
+        twinkleSpeed: Math.random() * 0.02 + 0.005,
+        twinkleOffset: Math.random() * Math.PI * 2,
+        color: Math.random() > 0.85
+          ? `hsl(${40 + Math.random() * 20}, 80%, 90%)`
+          : Math.random() > 0.7
+            ? `hsl(${280 + Math.random() * 40}, 40%, 85%)`
+            : '#fffbe6',
+      });
+    }
+    return stars;
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    let stars = [];
-    let shootingStars = [];
+    const reducedMotion = prefersReducedMotion();
 
     const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-
-    const createStars = () => {
-      stars = [];
-      const count = Math.floor((canvas.width * canvas.height) / 3000);
-      for (let i = 0; i < count; i++) {
-        stars.push({
-          x: Math.random() * canvas.width,
-          y: Math.random() * canvas.height,
-          size: Math.random() * 2 + 0.3,
-          opacity: Math.random() * 0.8 + 0.2,
-          twinkleSpeed: Math.random() * 0.02 + 0.005,
-          twinkleOffset: Math.random() * Math.PI * 2,
-          color: Math.random() > 0.85
-            ? `hsl(${40 + Math.random() * 20}, 80%, 90%)`
-            : Math.random() > 0.7
-              ? `hsl(${280 + Math.random() * 40}, 40%, 85%)`
-              : '#fffbe6',
-        });
-      }
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      canvas.style.width = `${window.innerWidth}px`;
+      canvas.style.height = `${window.innerHeight}px`;
+      ctx.scale(dpr, dpr);
+      starsRef.current = createStars(window.innerWidth, window.innerHeight);
     };
 
     const maybeCreateShootingStar = () => {
-      if (Math.random() < 0.003 && shootingStars.length < 2) {
-        shootingStars.push({
-          x: Math.random() * canvas.width * 0.8,
-          y: Math.random() * canvas.height * 0.3,
+      if (reducedMotion) return;
+      if (Math.random() < 0.003 && shootingStarsRef.current.length < 2) {
+        shootingStarsRef.current.push({
+          x: Math.random() * window.innerWidth * 0.8,
+          y: Math.random() * window.innerHeight * 0.3,
           length: Math.random() * 80 + 40,
           speed: Math.random() * 6 + 4,
           angle: Math.PI / 4 + (Math.random() - 0.5) * 0.3,
@@ -52,7 +68,9 @@ function StarryBackground() {
     };
 
     const drawStar = (star, time) => {
-      const twinkle = Math.sin(time * star.twinkleSpeed + star.twinkleOffset);
+      const twinkle = reducedMotion
+        ? 1
+        : Math.sin(time * star.twinkleSpeed + star.twinkleOffset);
       const opacity = star.opacity * (0.6 + 0.4 * twinkle);
       const size = star.size * (0.8 + 0.2 * twinkle);
 
@@ -62,13 +80,14 @@ function StarryBackground() {
       ctx.globalAlpha = opacity;
       ctx.fill();
 
-      // Glow
+      // Glow for larger stars
       if (star.size > 1.2) {
+        const glowRadius = size * 3;
         ctx.beginPath();
-        ctx.arc(star.x, star.y, size * 3, 0, Math.PI * 2);
+        ctx.arc(star.x, star.y, glowRadius, 0, Math.PI * 2);
         const gradient = ctx.createRadialGradient(
           star.x, star.y, 0,
-          star.x, star.y, size * 3
+          star.x, star.y, glowRadius
         );
         gradient.addColorStop(0, star.color);
         gradient.addColorStop(1, 'transparent');
@@ -109,44 +128,60 @@ function StarryBackground() {
     };
 
     let time = 0;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+
     const animate = () => {
       time++;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, w, h);
 
       // Draw stars
-      stars.forEach(star => drawStar(star, time));
+      const stars = starsRef.current;
+      for (let i = 0; i < stars.length; i++) {
+        drawStar(stars[i], time);
+      }
 
       // Shooting stars
       maybeCreateShootingStar();
-      shootingStars.forEach(ss => {
+      const shooting = shootingStarsRef.current;
+      for (let i = 0; i < shooting.length; i++) {
+        const ss = shooting[i];
         ss.x += Math.cos(ss.angle) * ss.speed;
         ss.y += Math.sin(ss.angle) * ss.speed;
         ss.life++;
         drawShootingStar(ss);
-      });
-      shootingStars = shootingStars.filter(ss => ss.life < ss.maxLife);
+      }
+      shootingStarsRef.current = shooting.filter(ss => ss.life < ss.maxLife);
 
       ctx.globalAlpha = 1;
       animationRef.current = requestAnimationFrame(animate);
     };
 
     resize();
-    createStars();
-    animate();
 
-    window.addEventListener('resize', () => {
-      resize();
-      createStars();
-    });
+    // Static render for reduced motion — no animation loop
+    if (reducedMotion) {
+      const stars = starsRef.current;
+      for (let i = 0; i < stars.length; i++) {
+        drawStar(stars[i], 0);
+      }
+      ctx.globalAlpha = 1;
+    } else {
+      animate();
+    }
+
+    // Properly reference the same function for cleanup
+    const handleResize = () => resize();
+    window.addEventListener('resize', handleResize);
 
     return () => {
       cancelAnimationFrame(animationRef.current);
-      window.removeEventListener('resize', resize);
+      window.removeEventListener('resize', handleResize);
     };
-  }, []);
+  }, [createStars]);
 
   return (
-    <div className="starry-background">
+    <div className="starry-background" aria-hidden="true">
       <canvas ref={canvasRef} className="starry-canvas" />
       <div className="nebula-overlay" />
     </div>

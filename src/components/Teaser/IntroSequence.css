@@ -77,3 +77,39 @@
     height: 200px;
     transition: opacity 0.8s ease;
 }
+
+/* Skip button */
+.skip-intro-btn {
+    position: fixed;
+    bottom: var(--space-2xl);
+    right: var(--space-xl);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-full);
+    padding: var(--space-sm) var(--space-lg);
+    cursor: pointer;
+    transition: color var(--transition-fast), border-color var(--transition-fast);
+    z-index: 110;
+    letter-spacing: 0.04em;
+}
+
+.skip-intro-btn:hover {
+    color: var(--color-text-secondary);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.skip-intro-btn:focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .star-glow {
+        animation: none;
+    }
+}

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import './IntroSequence.css';
 
 const INTRO_STEPS = [
@@ -11,16 +11,25 @@ const INTRO_STEPS = [
 ];
 
 function ConstellationCanvas({ visible }) {
+    const canvasRef = useRef(null);
+
     useEffect(() => {
         if (!visible) return;
 
-        const canvas = document.getElementById('constellation-canvas');
+        const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
-        canvas.width = 300;
-        canvas.height = 200;
 
-        // Define constellation points for "B & S" (placeholder initials — update these!)
+        const dpr = window.devicePixelRatio || 1;
+        const logicalW = 300;
+        const logicalH = 200;
+        canvas.width = logicalW * dpr;
+        canvas.height = logicalH * dpr;
+        canvas.style.width = `${logicalW}px`;
+        canvas.style.height = `${logicalH}px`;
+        ctx.scale(dpr, dpr);
+
+        // Constellation points for initials (B & S placeholder — customize!)
         const pointsB = [
             [30, 20], [30, 100], [30, 180],
             [70, 10], [80, 55], [70, 100], [80, 145], [70, 180],
@@ -40,7 +49,8 @@ function ConstellationCanvas({ visible }) {
 
         // B connections
         for (let i = 0; i < pointsB.length - 1; i++) lines.push([i, i + 1]);
-        lines.push([0, 3]); lines.push([2, 7]);
+        lines.push([0, 3]);
+        lines.push([2, 7]);
 
         // & connections
         const aOff = pointsB.length;
@@ -52,13 +62,13 @@ function ConstellationCanvas({ visible }) {
         for (let i = 0; i < pointsS.length - 1; i++) lines.push([sOff + i, sOff + i + 1]);
 
         let progress = 0;
-        const totalDuration = 120; // frames
+        const totalDuration = 120;
         let animFrame;
 
         const draw = () => {
             progress++;
             const t = Math.min(progress / totalDuration, 1);
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, logicalW, logicalH);
 
             // Draw lines
             const linesToDraw = Math.floor(t * lines.length);
@@ -91,9 +101,10 @@ function ConstellationCanvas({ visible }) {
                     : 1;
 
                 // Glow
+                const glowR = 8 * pointT;
                 ctx.beginPath();
-                ctx.arc(x, y, 8 * pointT, 0, Math.PI * 2);
-                const glow = ctx.createRadialGradient(x, y, 0, x, y, 8 * pointT);
+                ctx.arc(x, y, glowR, 0, Math.PI * 2);
+                const glow = ctx.createRadialGradient(x, y, 0, x, y, glowR);
                 glow.addColorStop(0, `rgba(255, 251, 230, ${0.3 * pointT})`);
                 glow.addColorStop(1, 'transparent');
                 ctx.fillStyle = glow;
@@ -117,8 +128,9 @@ function ConstellationCanvas({ visible }) {
 
     return (
         <canvas
-            id="constellation-canvas"
+            ref={canvasRef}
             className="constellation-canvas"
+            aria-hidden="true"
             style={{ opacity: visible ? 1 : 0 }}
         />
     );
@@ -127,15 +139,25 @@ function ConstellationCanvas({ visible }) {
 function IntroSequence({ onComplete }) {
     const [currentStep, setCurrentStep] = useState(-1);
     const [started, setStarted] = useState(false);
+    const shouldReduceMotion = useReducedMotion();
+
+    const handleComplete = useCallback(() => {
+        onComplete();
+    }, [onComplete]);
 
     useEffect(() => {
-        // Small initial delay
+        // For reduced motion, skip directly to main content
+        if (shouldReduceMotion) {
+            handleComplete();
+            return;
+        }
+
         const startTimer = setTimeout(() => {
             setStarted(true);
             setCurrentStep(0);
         }, 800);
         return () => clearTimeout(startTimer);
-    }, []);
+    }, [shouldReduceMotion, handleComplete]);
 
     useEffect(() => {
         if (currentStep < 0 || currentStep >= INTRO_STEPS.length) return;
@@ -145,15 +167,19 @@ function IntroSequence({ onComplete }) {
             if (currentStep < INTRO_STEPS.length - 1) {
                 setCurrentStep(prev => prev + 1);
             } else {
-                // Intro complete — trigger transition
-                setTimeout(() => onComplete(), 500);
+                setTimeout(handleComplete, 500);
             }
         }, step.duration);
 
         return () => clearTimeout(timer);
-    }, [currentStep, onComplete]);
+    }, [currentStep, handleComplete]);
 
-    if (!started) return <div className="intro-sequence" />;
+    // Skip button for impatient users
+    const handleSkip = useCallback(() => {
+        handleComplete();
+    }, [handleComplete]);
+
+    if (!started) return <div className="intro-sequence" role="status" aria-label="Cargando..." />;
 
     const step = INTRO_STEPS[currentStep];
 
@@ -162,6 +188,8 @@ function IntroSequence({ onComplete }) {
             className="intro-sequence"
             exit={{ opacity: 0 }}
             transition={{ duration: 1.2 }}
+            role="status"
+            aria-live="polite"
         >
             <AnimatePresence mode="wait">
                 {step?.type === 'star' && (
@@ -185,10 +213,7 @@ function IntroSequence({ onComplete }) {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -15 }}
-                        transition={{
-                            enter: { duration: 0.8, ease: [0.16, 1, 0.3, 1] },
-                            exit: { duration: 0.6 },
-                        }}
+                        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                     >
                         {step.text}
                     </motion.p>
@@ -207,6 +232,14 @@ function IntroSequence({ onComplete }) {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            <button
+                className="skip-intro-btn"
+                onClick={handleSkip}
+                aria-label="Saltar introducción"
+            >
+                Saltar ›
+            </button>
         </motion.div>
     );
 }
