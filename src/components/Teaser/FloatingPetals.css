@@ -1,0 +1,65 @@
+.floating-petals {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.petal {
+    position: absolute;
+    top: -10px;
+    left: var(--x-start);
+    width: var(--size);
+    height: var(--size);
+    border-radius: 50%;
+    opacity: 0;
+    animation: petal-fall var(--duration) var(--delay) ease-in-out infinite;
+}
+
+.petal--1 {
+    background: radial-gradient(circle, var(--color-gold-warm) 0%, transparent 70%);
+    box-shadow: 0 0 6px var(--color-gold-glow);
+}
+
+.petal--2 {
+    background: radial-gradient(circle, var(--color-rose-light) 0%, transparent 70%);
+    box-shadow: 0 0 6px var(--color-rose-glow);
+}
+
+.petal--3 {
+    background: radial-gradient(circle, var(--color-violet-light) 0%, transparent 70%);
+    box-shadow: 0 0 6px var(--color-violet-glow);
+}
+
+@keyframes petal-fall {
+    0% {
+        opacity: 0;
+        transform: translateY(0) translateX(0) scale(0.5);
+    }
+
+    10% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 0.4;
+        transform: translateY(50vh) translateX(var(--drift)) scale(1);
+    }
+
+    90% {
+        opacity: 0.15;
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(105vh) translateX(calc(var(--drift) * 1.5)) scale(0.3);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .petal {
+        animation: none;
+        display: none;
+    }
+}

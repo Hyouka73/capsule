@@ -23,12 +23,12 @@ function StarryBackground() {
         y: Math.random() * height,
         size: Math.random() * 2 + 0.3,
         opacity: Math.random() * 0.8 + 0.2,
-        twinkleSpeed: Math.random() * 0.02 + 0.005,
+        twinkleSpeed: Math.random() * 0.005 + 0.002, // Slower twinkle
         twinkleOffset: Math.random() * Math.PI * 2,
-        color: Math.random() > 0.85
-          ? `hsl(${40 + Math.random() * 20}, 80%, 90%)`
-          : Math.random() > 0.7
-            ? `hsl(${280 + Math.random() * 40}, 40%, 85%)`
+        color: Math.random() > 0.8
+          ? `hsl(${40 + Math.random() * 20}, 70%, 85%)` // Soft warm
+          : Math.random() > 0.6
+            ? `hsl(${320 + Math.random() * 40}, 30%, 80%)` // Soft pink
             : '#fffbe6',
       });
     }
@@ -53,16 +53,17 @@ function StarryBackground() {
 
     const maybeCreateShootingStar = () => {
       if (reducedMotion) return;
-      if (Math.random() < 0.003 && shootingStarsRef.current.length < 2) {
+      // Much rarer shooting stars (0.001 probability)
+      if (Math.random() < 0.001 && shootingStarsRef.current.length < 1) {
         shootingStarsRef.current.push({
           x: Math.random() * window.innerWidth * 0.8,
           y: Math.random() * window.innerHeight * 0.3,
-          length: Math.random() * 80 + 40,
-          speed: Math.random() * 6 + 4,
-          angle: Math.PI / 4 + (Math.random() - 0.5) * 0.3,
-          opacity: 1,
+          length: Math.random() * 60 + 30,
+          speed: Math.random() * 4 + 2, // Slower
+          angle: Math.PI / 4 + (Math.random() - 0.5) * 0.2,
+          opacity: 0.8,
           life: 0,
-          maxLife: 60 + Math.random() * 40,
+          maxLife: 100 + Math.random() * 60, // Last longer
         });
       }
     };

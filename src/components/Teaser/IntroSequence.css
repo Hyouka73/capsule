@@ -5,7 +5,7 @@
     align-items: center;
     justify-content: center;
     z-index: 100;
-    background: var(--color-bg-deep);
+    /* background: var(--color-bg-deep); REMOVED */
 }
 
 /* First Star */
@@ -17,24 +17,25 @@
 }
 
 .star-point {
-    width: 6px;
-    height: 6px;
+    width: 4px;
+    height: 4px;
     background: var(--color-star);
     border-radius: 50%;
     position: relative;
     z-index: 2;
+    box-shadow: 0 0 8px var(--color-star-glow);
 }
 
 .star-glow {
     position: absolute;
-    width: 60px;
-    height: 60px;
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
     background: radial-gradient(circle,
-            rgba(255, 251, 230, 0.3) 0%,
-            rgba(255, 251, 230, 0.05) 40%,
-            transparent 70%);
-    animation: pulse-glow 2s ease-in-out infinite;
+            rgba(255, 251, 230, 0.25) 0%,
+            rgba(255, 251, 230, 0.05) 35%,
+            transparent 65%);
+    animation: pulse-glow 2.5s ease-in-out infinite;
 }
 
 @keyframes pulse-glow {
@@ -42,11 +43,11 @@
     0%,
     100% {
         transform: scale(1);
-        opacity: 0.6;
+        opacity: 0.5;
     }
 
     50% {
-        transform: scale(1.3);
+        transform: scale(1.4);
         opacity: 1;
     }
 }
@@ -54,15 +55,16 @@
 /* Intro Text */
 .intro-text {
     font-family: var(--font-display);
-    font-size: clamp(1.4rem, 5vw, 2.5rem);
-    font-weight: 400;
+    font-size: clamp(1.5rem, 5vw, 2.8rem);
+    font-weight: 300;
     font-style: italic;
     color: var(--color-text-primary);
     text-align: center;
     padding: 0 var(--space-xl);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.03em;
     line-height: 1.5;
     max-width: 600px;
+    text-shadow: 0 0 40px rgba(212, 168, 83, 0.15);
 }
 
 /* Constellation */
@@ -84,22 +86,26 @@
     bottom: var(--space-2xl);
     right: var(--space-xl);
     font-family: var(--font-body);
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 500;
     color: var(--color-text-muted);
-    background: none;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
     border-radius: var(--radius-full);
     padding: var(--space-sm) var(--space-lg);
     cursor: pointer;
-    transition: color var(--transition-fast), border-color var(--transition-fast);
+    transition: all var(--transition-fast);
     z-index: 110;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .skip-intro-btn:hover {
     color: var(--color-text-secondary);
-    border-color: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
 }
 
 .skip-intro-btn:focus-visible {
@@ -107,9 +113,59 @@
     outline-offset: 2px;
 }
 
-/* Reduced motion */
+
+/* Mosaic wrapper */
+.mosaic-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .star-glow {
         animation: none;
     }
+}
+
+/* ========= Odometer ========= */
+.odometer-wrapper {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.6em;
+    /* Spacing around the number */
+}
+
+.odometer {
+    display: inline-flex;
+    overflow: hidden;
+    gap: 0;
+}
+
+.odometer-digit {
+    display: inline-block;
+    height: 1.3em;
+    /* Height of one number */
+    overflow: hidden;
+    line-height: 1.3;
+}
+
+.odometer-digit-inner {
+    display: flex;
+    flex-direction: column;
+    /* transition: none;  <-- Handled by Framer Motion */
+    will-change: transform;
+}
+
+.odometer-num {
+    display: block;
+    height: 1.3em;
+    line-height: 1.3;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    min-width: 0.65em;
+    padding: 0;
+    margin: 0;
 }

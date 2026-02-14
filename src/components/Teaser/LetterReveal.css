@@ -1,146 +1,139 @@
-.letter-reveal {
-    position: relative;
-    z-index: 10;
+/* User-provided "Better" Design */
+/* Fonts are handled globally or via variable, but we'll ensure mapping */
+
+.night-sky {
+    min-height: 100vh;
+    /* Snippet has: background: radial-gradient(ellipse at bottom, #0f001a 0%, #000814 100%); */
+    /* background: radial-gradient(ellipse at bottom, #0f001a 0%, #000814 100%); REMOVED */
+    color: #f8f0ff;
+    font-family: var(--font-body);
+    /* Mapping 'Roboto' to var */
+    overflow: hidden;
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
-    max-width: 560px;
-    margin: 0 auto;
-    padding: var(--space-lg);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    max-height: 75vh;
+    height: 100%;
+    z-index: 10;
+    transition: opacity 1s ease-out, visibility 1s;
 }
 
-/* Header */
-.letter-header {
-    text-align: center;
-    margin-bottom: var(--space-xl);
-    flex-shrink: 0;
+.night-sky.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
 }
 
-.letter-seal {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--color-rose), var(--color-violet));
+/* Stars removed - using global background */
+
+.letter-container {
+    min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto var(--space-md);
-    box-shadow:
-        0 0 20px var(--color-rose-glow),
-        0 0 40px rgba(196, 107, 138, 0.1);
-    animation: seal-pulse 3s ease-in-out infinite;
+    padding: 20px 15px;
 }
 
-@keyframes seal-pulse {
-
-    0%,
-    100% {
-        box-shadow: 0 0 20px var(--color-rose-glow), 0 0 40px rgba(196, 107, 138, 0.1);
-    }
-
-    50% {
-        box-shadow: 0 0 30px var(--color-rose-glow), 0 0 60px rgba(196, 107, 138, 0.15);
-    }
-}
-
-.seal-heart {
-    font-size: 1.5rem;
-    color: white;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
-}
-
-.letter-title {
-    font-family: var(--font-display);
-    font-size: clamp(1.3rem, 4vw, 1.8rem);
-    font-weight: 500;
-    color: var(--color-text-primary);
-    margin-bottom: var(--space-xs);
-}
-
-.letter-date {
-    font-family: var(--font-body);
-    font-size: 0.85rem;
-    color: var(--color-text-muted);
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-}
-
-/* Body */
-.letter-body {
+.letter-wrapper {
+    max-width: 680px;
     width: 100%;
+    background: rgba(18, 12, 45, 0.38);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 28px;
+    border: 1px solid rgba(220, 200, 255, 0.09);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.65),
+        inset 0 0 40px rgba(80, 40, 120, 0.08);
+    padding: 4.5rem 3rem 5rem;
+    position: relative;
+    opacity: 0;
+    transform: translateY(40px);
+    /* Animation handled by Framer Motion in JSX usually, but snippet uses CSS animation */
+    animation: fadeInUp 1.4s ease-out forwards 0.4s;
     overflow-y: auto;
-    flex: 1;
-    mask-image: linear-gradient(to bottom,
-            transparent 0%,
-            black 3%,
-            black 92%,
-            transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom,
-            transparent 0%,
-            black 3%,
-            black 92%,
-            transparent 100%);
-    padding: var(--space-sm) 0;
+    max-height: 85vh;
 }
 
-.letter-body::-webkit-scrollbar {
-    width: 3px;
+/* Custom Scrollbar */
+.letter-wrapper::-webkit-scrollbar {
+    width: 4px;
 }
 
-.letter-body::-webkit-scrollbar-thumb {
-    background: rgba(212, 168, 83, 0.2);
-    border-radius: var(--radius-full);
+.letter-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(220, 200, 255, 0.2);
+    border-radius: 99px;
 }
 
-/* Paper */
-.letter-paper {
-    padding: var(--space-lg) var(--space-md);
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: var(--radius-md);
-    border: 1px solid rgba(255, 255, 255, 0.04);
-    min-height: 200px;
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-/* Lines */
-.letter-line {
+/* Content container */
+
+/* Header styles removed as per request */
+
+.greeting {
+    font-family: var(--font-handwriting);
+    font-size: 3.4rem;
+    color: #ffd1e8;
+    margin: 1.2rem 0 2.2rem;
+}
+
+.content p {
     font-family: var(--font-display);
-    font-size: clamp(1rem, 3vw, 1.15rem);
+    /* 'Playfair Display' */
+    font-size: 1.28rem;
+    line-height: 1.85;
+    margin-bottom: 1.8rem;
+    color: #f5e9ff;
+    letter-spacing: 0.3px;
+}
+
+.highlight {
+    font-family: var(--font-handwriting);
+    font-size: 2.1rem;
+    color: #ffccdd;
+    display: block;
+    margin: 2.5rem 0 2rem;
+    text-align: center;
+}
+
+.closing {
+    margin-top: 3rem;
+    text-align: right;
     font-style: italic;
-    color: var(--color-text-primary);
-    line-height: 1.8;
-    margin-bottom: 0.15em;
-    opacity: 0.92;
+    font-size: 1.25rem;
+    color: #e8d5ff;
 }
 
-.letter-line strong {
-    color: var(--color-gold-light);
-    font-weight: 600;
-}
-
-.letter-line--empty {
-    height: 1em;
-}
-
-.letter-line--typing {
-    opacity: 1;
+.signature {
+    font-family: var(--font-handwriting);
+    font-size: 3.2rem;
+    color: #ffd1e8;
+    text-align: right;
+    margin-top: 0.6rem;
+    transform: rotate(-2deg);
 }
 
 /* Cursor */
 .typing-cursor {
     display: inline-block;
-    color: var(--color-gold);
-    font-style: normal;
-    font-weight: 300;
-    animation: cursor-blink 0.8s ease-in-out infinite;
-    margin-left: 1px;
+    color: #ffd1e8;
+    width: 2px;
+    height: 1em;
+    background-color: currentColor;
+    margin-left: 2px;
+    vertical-align: middle;
+    animation: blink 1s step-end infinite;
 }
 
-@keyframes cursor-blink {
+@keyframes blink {
 
-    0%,
-    100% {
+    from,
+    to {
         opacity: 1;
     }
 
@@ -150,18 +143,78 @@
 }
 
 /* Responsive */
-@media (max-width: 480px) {
-    .letter-reveal {
-        padding: var(--space-md);
-        max-height: 70vh;
+@media (max-width: 580px) {
+    .letter-wrapper {
+        padding: 3.5rem 2rem 4.5rem;
     }
 
-    .letter-paper {
-        padding: var(--space-md) var(--space-sm);
+    .greeting {
+        font-size: 2.8rem;
     }
 
-    .letter-seal {
-        width: 48px;
-        height: 48px;
+    .content p {
+        font-size: 1.14rem;
     }
+
+    .signature {
+        font-size: 2.6rem;
+    }
+}
+
+/* Large screens adjustment */
+@media (min-width: 1024px) {
+    .letter-wrapper {
+        max-width: 900px;
+        padding: 6rem 5rem;
+    }
+
+    .content p {
+        font-size: 1.5rem;
+        line-height: 1.9;
+    }
+
+    .greeting {
+        font-size: 4rem;
+    }
+
+    .signature {
+        font-size: 3.8rem;
+    }
+
+    .highlight {
+        font-size: 2.5rem;
+    }
+}
+
+/* Skip button - Retained */
+.skip-letter-btn {
+    position: fixed;
+    bottom: var(--space-2xl);
+    right: var(--space-xl);
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-full);
+    padding: var(--space-sm) var(--space-lg);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    z-index: 110;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.skip-letter-btn:hover {
+    color: var(--color-text-secondary);
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.skip-letter-btn:focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 2px;
 }

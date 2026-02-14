@@ -1,0 +1,24 @@
+.time-lock-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Transparent background to let star field show */
+    background: transparent;
+}
+
+.lock-content {
+    /* Glassmorphism card for the message */
+    background: rgba(18, 12, 45, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    max-width: 90%;
+    width: auto;
+    text-align: center;
+}

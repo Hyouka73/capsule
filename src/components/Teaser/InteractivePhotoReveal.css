@@ -1,0 +1,725 @@
+/* ============================================
+   Interactive Photo Reveal (Polaroid Carousel)
+   ============================================ */
+
+.interactive-reveal {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    perspective: 1200px;
+    overflow: hidden;
+}
+
+/* --- The Floating Card Wrapper --- */
+.photo-item-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 30;
+}
+
+/* The visual card itself */
+.polaroid-card {
+    position: relative;
+    width: min(70vw, 300px);
+    aspect-ratio: 0.8;
+    background: #fff;
+    padding: 12px 12px 60px 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    border-radius: 3px;
+    backface-visibility: hidden;
+    will-change: transform;
+}
+
+/* Inner image */
+.polaroid-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: sepia(0.2) contrast(1.1) brightness(0.95);
+    background: #f0f0f0;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* ═══════════════════════════════════════════════
+   FINALE: CSS @keyframes deformation
+   Applied to .polaroid-card (CHILD element)
+   FM controls parent wrapper position — no conflict
+   ═══════════════════════════════════════════════ */
+
+.polaroid-card--finale {
+    animation: card-finale 2.2s ease-in forwards;
+}
+
+@keyframes card-finale {
+
+    /* ─── Phase 1: Pressure building — slight swell ─── */
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    /* Internal pressure: card swells outward */
+    6% {
+        transform: scale(1.08);
+        box-shadow: 0 0 10px rgba(255, 182, 193, 0.2);
+        opacity: 1;
+    }
+
+    /* Slight horizontal bulge (contents pushing sideways) */
+    12% {
+        transform: scaleX(1.12) scaleY(0.95);
+        box-shadow: 0 0 15px rgba(255, 182, 193, 0.3);
+        opacity: 1;
+    }
+
+    /* ─── Phase 2: Progressive compression (each step SMALLER) ─── */
+    /* Squeeze begins — pushed inward */
+    20% {
+        transform: scaleX(0.88) scaleY(0.85) rotate(1deg);
+        box-shadow: 0 0 20px rgba(255, 182, 193, 0.35);
+        opacity: 1;
+    }
+
+    /* More compressed, contents shift */
+    28% {
+        transform: scaleX(0.78) scaleY(0.74) rotate(-1.5deg);
+        box-shadow: 0 0 28px rgba(255, 182, 193, 0.45);
+        opacity: 1;
+    }
+
+    /* Getting really squished */
+    36% {
+        transform: scaleX(0.68) scaleY(0.62) rotate(2deg);
+        box-shadow: 0 0 35px rgba(255, 182, 193, 0.55);
+        opacity: 1;
+    }
+
+    /* Heavy pressure, wobbling */
+    44% {
+        transform: scaleX(0.58) scaleY(0.52) rotate(-2.5deg);
+        box-shadow: 0 0 42px rgba(255, 192, 203, 0.6);
+        opacity: 1;
+    }
+
+    /* Almost crushed */
+    52% {
+        transform: scaleX(0.48) scaleY(0.44) rotate(3deg);
+        box-shadow: 0 0 50px rgba(255, 192, 203, 0.7);
+        opacity: 1;
+    }
+
+    /* ─── Phase 3: Trembling under maximum pressure ─── */
+    58% {
+        transform: scaleX(0.40) scaleY(0.36) rotate(-3.5deg);
+        box-shadow: 0 0 55px rgba(255, 240, 245, 0.75);
+        opacity: 1;
+    }
+
+    63% {
+        transform: scaleX(0.34) scaleY(0.30) rotate(3.5deg);
+        box-shadow: 0 0 60px rgba(255, 240, 245, 0.8);
+        opacity: 1;
+    }
+
+    68% {
+        transform: scaleX(0.28) scaleY(0.25) rotate(-4deg);
+        box-shadow: 0 0 65px rgba(255, 240, 245, 0.85);
+        opacity: 1;
+    }
+
+    72% {
+        transform: scaleX(0.24) scaleY(0.22) rotate(3deg);
+        box-shadow: 0 0 68px rgba(255, 240, 245, 0.9);
+        opacity: 1;
+    }
+
+    76% {
+        transform: scaleX(0.21) scaleY(0.20) rotate(-2deg);
+        box-shadow: 0 0 72px rgba(255, 240, 245, 0.95);
+        opacity: 1;
+    }
+
+    /* Maximum compression — tense stillness before POP */
+    80% {
+        transform: scale(0.18) rotate(0deg);
+        box-shadow: 0 0 80px rgba(255, 240, 245, 1);
+        opacity: 1;
+    }
+
+    /* ─── Phase 4: Instant vanish (firework handles the visual POP) ─── */
+    83% {
+        transform: scale(0.15);
+        box-shadow: 0 0 0 transparent;
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(0.15);
+        opacity: 0;
+    }
+}
+
+/* --- Navigation Zones (Invisible) --- */
+.nav-zones {
+    position: absolute;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    flex-direction: row;
+}
+
+.nav-zone {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+}
+
+.nav-zone--prev {
+    justify-content: flex-start;
+    padding-left: 20px;
+    cursor: w-resize;
+}
+
+.nav-zone--next {
+    justify-content: flex-end;
+    padding-right: 20px;
+    cursor: e-resize;
+}
+
+.nav-arrow {
+    font-size: 3rem;
+    color: rgba(255, 255, 255, 0.6);
+    /* Visible by default */
+    background: rgba(0, 0, 0, 0.1);
+    /* Slight backing */
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    /* Center alignment */
+    align-items: center;
+    justify-content: center;
+    opacity: 0.4;
+    /* Visible but dimmed */
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transform: scale(0.9);
+    pointer-events: none;
+}
+
+.nav-zone:hover .nav-arrow {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+    color: #fff;
+}
+
+.nav-zone--prev:hover .nav-arrow {
+    transform: translateX(-5px);
+}
+
+.nav-zone--next:hover .nav-arrow {
+    transform: translateX(5px);
+}
+
+/* --- Progress Bar --- */
+.photo-progress {
+    position: absolute;
+    bottom: 12%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 40;
+}
+
+.progress-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.progress-dot--active {
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+    transform: scale(1.4);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   🌸 Sakura Petals — Firework Burst + Realistic Leaf Fall
+
+   3-layer architecture per petal (GSAP separate-tween technique):
+   ┌─ .sakura-leaf ─────── burst trajectory + gravity ──────────┐
+   │ ┌─ .petal-sway ────── horizontal oscillation (sine ∞) ───┐ │
+   │ │ ┌─ .petal-tumble ── 3D rotation (yoyo ∞) ─────────────┐│ │
+   │ │ │ .petal-visual ─── CSS shape (skew + border-radius)   ││ │
+   │ │ └──────────────────────────────────────────────────────┘│ │
+   │ └────────────────────────────────────────────────────────┘ │
+   └────────────────────────────────────────────────────────────┘
+
+   Each layer handles ONE motion axis independently, creating
+   naturally-composed falling leaf physics without JS libraries.
+   ═══════════════════════════════════════════════════════════════ */
+
+
+.sakura-burst-layer {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    z-index: 310;
+    pointer-events: none;
+    perspective: 800px;
+}
+
+/* Layer 1: BURST — explosive radial trajectory (SHORT ~1.5s) */
+.sakura-leaf {
+    position: absolute;
+    width: calc(18px * var(--size));
+    height: calc(22px * var(--size));
+    opacity: 0;
+    pointer-events: none;
+    will-change: transform, opacity;
+    transform-style: preserve-3d;
+    animation: petal-burst var(--burst-dur) var(--delay) ease-out forwards;
+}
+
+/* Layer 2: FALL — slow linear gravity descent (8-15s) */
+.petal-fall {
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    animation: petal-gravity var(--fall-dur) calc(var(--delay) + var(--burst-dur) * 0.6) linear forwards;
+}
+
+/* Layer 3: SWAY — horizontal oscillation + Z-axis rocking */
+.petal-sway {
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    animation: petal-sway var(--sway-dur) var(--delay) ease-in-out alternate infinite;
+}
+
+/* Layer 4: TUMBLE — 3D leaf flipping */
+.petal-tumble {
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+    animation: petal-tumble var(--tumble-dur) var(--delay) ease-in-out alternate infinite;
+}
+
+/* ── Sakura petal visual — clip-path with characteristic V-notch ── */
+.petal-visual {
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(ellipse at 35% 55%,
+            hsl(calc(338 + var(--hue, 0)), 100%, 94%),
+            hsl(calc(342 + var(--hue, 0)), 85%, 86%) 45%,
+            hsl(calc(346 + var(--hue, 0)), 72%, 78%));
+    clip-path: polygon(50% 6%, 56% 0%, 78% 10%, 95% 35%,
+            100% 58%, 90% 82%, 65% 97%, 50% 100%,
+            35% 97%, 10% 82%, 0% 58%, 5% 35%,
+            22% 10%, 44% 0%);
+    position: relative;
+    filter: drop-shadow(0 1px 2px rgba(200, 80, 120, 0.25));
+}
+
+/* Central vein */
+.petal-visual::after {
+    content: '';
+    position: absolute;
+    height: 55%;
+    width: 1px;
+    background: linear-gradient(to bottom, rgba(180, 60, 100, 0.2), transparent);
+    left: 50%;
+    top: 15%;
+    transform: translateX(-50%);
+}
+
+/* ── Petal shape variations (different silhouettes) ── */
+.sakura-leaf:nth-child(3n) .petal-visual {
+    clip-path: polygon(50% 8%, 58% 0%, 80% 12%, 96% 38%,
+            100% 62%, 88% 85%, 62% 98%, 50% 100%,
+            38% 98%, 12% 85%, 0% 62%, 4% 38%,
+            20% 12%, 42% 0%);
+}
+
+.sakura-leaf:nth-child(5n+2) .petal-visual {
+    clip-path: polygon(50% 5%, 54% 0%, 72% 8%, 90% 32%,
+            96% 55%, 88% 80%, 66% 96%, 50% 100%,
+            34% 96%, 12% 80%, 4% 55%, 10% 32%,
+            28% 8%, 46% 0%);
+}
+
+/* ── Depth opacity ── */
+.sakura-leaf:nth-child(3n+1) .petal-visual {
+    opacity: 0.85;
+}
+
+.sakura-leaf:nth-child(3n+2) .petal-visual {
+    opacity: 0.7;
+}
+
+/* ═════════════════════════════════════════════════════════════
+   BURST — EXPLOSIVE radial launch (ease-out)
+   Fast initial acceleration with dramatic scale overshoot.
+   ═════════════════════════════════════════════════════════════ */
+@keyframes petal-burst {
+    0% {
+        transform: translate(0, 0) scale(0);
+        opacity: 0;
+    }
+
+    8% {
+        transform:
+            translate(calc(var(--tx) * 0.15), calc(var(--ty) * 0.15)) scale(0.6);
+        opacity: 1;
+    }
+
+    25% {
+        transform:
+            translate(calc(var(--tx) * 0.55), calc(var(--ty) * 0.55)) scale(1.3);
+        opacity: 1;
+    }
+
+    50% {
+        transform:
+            translate(calc(var(--tx) * 0.88), calc(var(--ty) * 0.88)) scale(1.15);
+        opacity: 1;
+    }
+
+    75% {
+        transform:
+            translate(calc(var(--tx) * 0.97), calc(var(--ty) * 0.97)) scale(1.02);
+        opacity: 1;
+    }
+
+    100% {
+        transform:
+            translate(var(--tx), var(--ty)) scale(1);
+        opacity: 1;
+    }
+}
+
+/* ═════════════════════════════════════════════════════════════
+   GRAVITY — slow linear descent (8-15s)
+   Like the GSAP example: y: h+100, ease: Linear.easeNone
+   Starts AFTER burst, handles vertical fall + wind drift.
+   Leaf terminal velocity = slow constant speed.
+   ═════════════════════════════════════════════════════════════ */
+@keyframes petal-gravity {
+    0% {
+        transform: translate(0, 0);
+        opacity: 1;
+    }
+
+    80% {
+        transform:
+            translate(calc(var(--drift) * 0.8),
+                calc(var(--gravity) * 0.8));
+        opacity: 0.85;
+    }
+
+    100% {
+        transform:
+            translate(var(--drift), var(--gravity));
+        opacity: 0;
+    }
+}
+
+/* ═════════════════════════════════════════════════════════════
+   SWAY — horizontal oscillation + Z-axis rocking
+   Like GSAP: x: +=100, rotationZ, yoyo, Sine.easeInOut
+   ease-in-out + alternate = smooth sine wave pendulum
+   ═════════════════════════════════════════════════════════════ */
+@keyframes petal-sway {
+    0% {
+        transform: translateX(calc(var(--sway) * -1)) rotateZ(calc(var(--rock) * -1));
+    }
+
+    100% {
+        transform: translateX(var(--sway)) rotateZ(var(--rock));
+    }
+}
+
+/* ═════════════════════════════════════════════════════════════
+   TUMBLE — 3D leaf flip
+   Like GSAP: rotationX/Y, yoyo, Sine.easeInOut
+   Gentle partial rotations, NOT full 360° spins.
+   ═════════════════════════════════════════════════════════════ */
+@keyframes petal-tumble {
+    0% {
+        transform: rotateX(0deg) rotateY(0deg);
+    }
+
+    100% {
+        transform:
+            rotateX(var(--tumble-x)) rotateY(var(--tumble-y));
+    }
+}
+
+/* ═══ Sakura Firework Burst — ENHANCED ═══ */
+.sakura-firework-container {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+
+
+@keyframes firework {
+    0% {
+        transform: translate(var(--x), var(--initialY));
+        width: var(--initialSize);
+        opacity: 1;
+    }
+
+    50% {
+        width: 0.5vmin;
+        opacity: 1;
+    }
+
+    100% {
+        width: var(--finalSize);
+        opacity: 0;
+    }
+}
+
+.sakura-firework,
+.sakura-firework::before,
+.sakura-firework::after {
+    --initialSize: 0.5vmin;
+    --finalSize: 55vmin;
+    --particleSize: 0.5vmin;
+    --color1: #ffb7c5;
+    --color2: #ff8faa;
+    --color3: #ffc0cb;
+    --color4: #f8c8dc;
+    --color5: #fff0f5;
+    --color6: #e8a0bf;
+    --y: -30vmin;
+    --x: -50%;
+    --initialY: 60vmin;
+    content: "";
+    animation: firework 1.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, var(--y));
+    width: var(--initialSize);
+    aspect-ratio: 1;
+    background:
+        radial-gradient(circle, var(--color1) var(--particleSize), #0000 0) 50% 0%,
+        radial-gradient(circle, var(--color2) var(--particleSize), #0000 0) 100% 50%,
+        radial-gradient(circle, var(--color3) var(--particleSize), #0000 0) 50% 100%,
+        radial-gradient(circle, var(--color4) var(--particleSize), #0000 0) 0% 50%,
+        radial-gradient(circle, var(--color5) var(--particleSize), #0000 0) 80% 90%,
+        radial-gradient(circle, var(--color6) var(--particleSize), #0000 0) 95% 90%,
+        radial-gradient(circle, var(--color1) var(--particleSize), #0000 0) 90% 70%,
+        radial-gradient(circle, var(--color2) var(--particleSize), #0000 0) 100% 60%,
+        radial-gradient(circle, var(--color3) var(--particleSize), #0000 0) 55% 80%,
+        radial-gradient(circle, var(--color4) var(--particleSize), #0000 0) 70% 77%,
+        radial-gradient(circle, var(--color5) var(--particleSize), #0000 0) 22% 90%,
+        radial-gradient(circle, var(--color6) var(--particleSize), #0000 0) 45% 90%,
+        radial-gradient(circle, var(--color1) var(--particleSize), #0000 0) 33% 70%,
+        radial-gradient(circle, var(--color2) var(--particleSize), #0000 0) 10% 60%,
+        radial-gradient(circle, var(--color3) var(--particleSize), #0000 0) 31% 80%,
+        radial-gradient(circle, var(--color4) var(--particleSize), #0000 0) 28% 77%,
+        radial-gradient(circle, var(--color5) var(--particleSize), #0000 0) 13% 72%,
+        radial-gradient(circle, var(--color6) var(--particleSize), #0000 0) 80% 10%,
+        radial-gradient(circle, var(--color1) var(--particleSize), #0000 0) 95% 14%,
+        radial-gradient(circle, var(--color2) var(--particleSize), #0000 0) 90% 23%,
+        radial-gradient(circle, var(--color3) var(--particleSize), #0000 0) 100% 43%,
+        radial-gradient(circle, var(--color4) var(--particleSize), #0000 0) 85% 27%,
+        radial-gradient(circle, var(--color5) var(--particleSize), #0000 0) 77% 37%,
+        radial-gradient(circle, var(--color6) var(--particleSize), #0000 0) 60% 7%,
+        radial-gradient(circle, var(--color1) var(--particleSize), #0000 0) 22% 14%,
+        radial-gradient(circle, var(--color2) var(--particleSize), #0000 0) 45% 20%,
+        radial-gradient(circle, var(--color3) var(--particleSize), #0000 0) 33% 34%,
+        radial-gradient(circle, var(--color4) var(--particleSize), #0000 0) 10% 29%,
+        radial-gradient(circle, var(--color5) var(--particleSize), #0000 0) 31% 37%,
+        radial-gradient(circle, var(--color6) var(--particleSize), #0000 0) 28% 7%,
+        radial-gradient(circle, var(--color1) var(--particleSize), #0000 0) 13% 42%;
+    background-size: var(--initialSize) var(--initialSize);
+    background-repeat: no-repeat;
+}
+
+.sakura-firework::before {
+    --x: -50%;
+    --y: -50%;
+    --initialY: -50%;
+    transform: translate(-50%, -50%) rotate(40deg) scale(1.3) rotateY(40deg);
+}
+
+.sakura-firework::after {
+    --x: -50%;
+    --y: -50%;
+    --initialY: -50%;
+    transform: translate(-50%, -50%) rotate(170deg) scale(1.15) rotateY(-30deg);
+}
+
+/* Second burst — offset position, different palette */
+.sakura-firework:nth-child(2) {
+    --x: 30vmin;
+}
+
+.sakura-firework:nth-child(2),
+.sakura-firework:nth-child(2)::before,
+.sakura-firework:nth-child(2)::after {
+    --color1: #ffd1dc;
+    --color2: #ffb6c1;
+    --color3: #ff69b4;
+    --color4: #db7093;
+    --color5: #ffc0cb;
+    --color6: #ffe4e1;
+    --finalSize: 50vmin;
+    left: 30%;
+    top: 60%;
+    animation-delay: -0.25s;
+}
+
+/* Third burst — another offset */
+.sakura-firework:nth-child(3) {
+    --x: -30vmin;
+    --y: -50vmin;
+}
+
+.sakura-firework:nth-child(3),
+.sakura-firework:nth-child(3)::before,
+.sakura-firework:nth-child(3)::after {
+    --color1: #f0c0d0;
+    --color2: #e8a0bf;
+    --color3: #f8d8e8;
+    --color4: #ffc0cb;
+    --color5: #ffd1dc;
+    --color6: #fff0f5;
+    --finalSize: 45vmin;
+    left: 70%;
+    top: 60%;
+    animation-delay: -0.4s;
+}
+
+/* --- Interaction Guide Styles (Water Ripple) --- */
+
+/* Navigation Zones Container */
+.nav-zones {
+    position: absolute;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    flex-direction: row;
+    pointer-events: none;
+    /* Let clicks pass unless checking specific children */
+}
+
+/* Allow clicks on zones */
+.nav-zone {
+    pointer-events: auto;
+    /* Clean interface - no borders or backgrounds */
+}
+
+/* Ripple Container */
+.ripple-container {
+    position: absolute;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    /* Smaller size */
+    height: 40px;
+}
+
+/* Center ripple within its parent zone */
+.nav-zone {
+    position: relative;
+    /* Anchor for ripple */
+}
+
+.ripple-container {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    /* Always centered in zone */
+}
+
+/* The expanding rings */
+.ripple-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    opacity: 0;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
+    animation: ripple-expand 2.5s infinite cubic-bezier(0, 0.2, 0.8, 1);
+}
+
+/* Stagger animations */
+.ripple-ring:nth-child(2) {
+    animation-delay: 0.6s;
+}
+
+.ripple-ring:nth-child(3) {
+    animation-delay: 1.2s;
+}
+
+@keyframes ripple-expand {
+    0% {
+        transform: scale(0);
+        opacity: 0.8;
+        border-width: 4px;
+    }
+
+    100% {
+        transform: scale(3);
+        opacity: 0;
+        border-width: 0px;
+    }
+}
+
+/* Media Queries */
+@media (max-width: 640px) {
+    .nav-zones {
+        flex-direction: column;
+    }
+
+    .nav-zone--prev {
+        cursor: n-resize;
+        align-items: flex-start;
+        /* Top */
+        justify-content: center;
+        padding-top: 40px;
+    }
+
+    .nav-zone--next {
+        cursor: s-resize;
+        align-items: flex-end;
+        /* Bottom */
+        justify-content: center;
+        padding-bottom: 40px;
+    }
+
+    /* Mobile: Ripple at bottom center (Next Zone) */
+    /* Handled by generic centering within nav-zone--next */
+}

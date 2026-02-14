@@ -1,137 +1,271 @@
+/* --- IMPORTAR FUENTE DE LUJO (Bodoni Moda - Alta Contraste) --- */
+@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,700;1,6..96,400&display=swap');
+
+/* Final 3D Flip Countdown Styles (Luxury Edition) */
+
 .countdown-section {
     position: relative;
     z-index: 10;
     text-align: center;
     padding: var(--space-2xl) var(--space-lg);
+    --flip-duration: 0.65s;
+
+    /* Colores locales para el contador */
+    --card-bg-color: #1e1e2e;
+    /* Azul oscuro profundo (casi negro) */
+    --text-gold: #f2d689;
+    /* Dorado Champagne brillante */
+    --text-gold-shadow: #bfa15f;
+    /* Sombra dorada más oscura */
 }
 
 .countdown-teaser {
-    font-family: var(--font-display);
-    font-size: clamp(1rem, 3.5vw, 1.4rem);
+    font-family: 'Bodoni Moda', serif;
+    /* Cambiado a la fuente elegante */
+    font-size: clamp(1.5rem, 4vw, 2.5rem);
+    font-weight: 400;
     font-style: italic;
-    color: var(--color-text-secondary);
+    color: #e0e0e0;
     margin-bottom: var(--space-xl);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.03em;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-/* Grid */
 .countdown-grid {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
-    gap: var(--space-xs);
+    gap: 12px;
+    /* Un poco más de espacio entre bloques */
 }
 
 .countdown-separator {
-    font-family: var(--font-display);
-    font-size: clamp(1.5rem, 5vw, 2.5rem);
-    color: var(--color-gold);
-    opacity: 0.5;
-    padding-top: var(--space-sm);
-    user-select: none;
-    animation: separator-pulse 1s ease-in-out infinite;
+    font-family: 'Bodoni Moda', serif;
+    font-size: clamp(2rem, 6vw, 4rem);
+    color: var(--text-gold);
+    opacity: 0.8;
+    padding-bottom: 15px;
+    font-weight: 700;
 }
 
-@keyframes separator-pulse {
-
-    0%,
-    100% {
-        opacity: 0.5;
-    }
-
-    50% {
-        opacity: 0.2;
-    }
-}
-
-/* Flip Unit */
 .flip-unit {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-xs);
-}
-
-.flip-card {
-    position: relative;
-    width: clamp(52px, 14vw, 80px);
-    height: clamp(56px, 15vw, 85px);
-    background: var(--color-bg-card);
-    border-radius: var(--radius-md);
-    border: 1px solid rgba(212, 168, 83, 0.15);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    box-shadow:
-        0 4px 20px rgba(0, 0, 0, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.flip-card.flipping {
-    animation: flip-tick 0.3s ease-out;
-}
-
-@keyframes flip-tick {
-    0% {
-        transform: scaleY(1);
-    }
-
-    50% {
-        transform: scaleY(0.85);
-    }
-
-    100% {
-        transform: scaleY(1);
-    }
-}
-
-.flip-card::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 50%;
-    height: 1px;
-    background: rgba(0, 0, 0, 0.3);
-}
-
-.flip-value {
-    font-family: var(--font-display);
-    font-size: clamp(1.5rem, 5vw, 2.6rem);
-    font-weight: 600;
-    color: var(--color-gold-light);
-    letter-spacing: 0.05em;
-    text-shadow: 0 0 20px var(--color-gold-glow);
+    gap: 8px;
 }
 
 .flip-label {
-    font-family: var(--font-body);
-    font-size: clamp(0.6rem, 2vw, 0.75rem);
-    font-weight: 500;
-    color: var(--color-text-muted);
+    font-family: 'Bodoni Moda', serif;
+    /* Fuente elegante también en etiquetas */
+    font-size: clamp(0.9rem, 2.5vw, 1.2rem);
+    color: #a0a0b0;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.15em;
+    font-weight: 400;
+    margin-top: 10px;
 }
 
-/* Date */
-.countdown-date {
-    margin-top: var(--space-xl);
-    font-family: var(--font-body);
-    font-size: 0.85rem;
-    color: var(--color-text-muted);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+/* --- 3D Flip Card Container --- */
+.flip-card {
+    position: relative;
+    /* Mayor tamaño en general */
+    width: clamp(70px, 18vw, 130px);
+    height: clamp(80px, 20vw, 140px);
+    perspective: 500px;
+    transform-style: preserve-3d;
 }
 
-/* Responsive */
-@media (max-width: 380px) {
-    .countdown-grid {
-        gap: 2px;
+/* --- Base Card Styles --- */
+.card-face {
+    position: absolute;
+    left: 0;
+    right: 0;
+    overflow: hidden;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+
+    /* FONDO Y COLOR DE LUJO */
+    background: var(--card-bg-color);
+    color: var(--text-gold);
+
+    /* Bordes sutiles para dar volumen */
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+
+    /* TIPOGRAFÍA DE LUJO */
+    font-family: 'Bodoni Moda', serif;
+    font-weight: 700;
+    /* Negrita para que se note el contraste fino/grueso */
+    /* Aumentado tamaño de fuente */
+    font-size: clamp(3.5rem, 10vw, 6.5rem);
+
+    /* Centrado Vertical Matemático (DEBE coincidir con height de flip-card) */
+    line-height: clamp(80px, 20vw, 140px);
+    text-align: center;
+
+    /* Sombra suave al texto para que "brille" un poco */
+    text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.2);
+}
+
+/* --- MITAD SUPERIOR (Top Half) --- */
+.card-top {
+    top: 0;
+    height: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    /* Mostrar parte de arriba del número */
+
+    background-color: var(--card-bg-color);
+    border-radius: 8px 8px 0 0;
+    /* Bordes redondeados más suaves */
+
+    /* Línea divisoria oscura */
+    border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+    z-index: 1;
+}
+
+/* Efecto de brillo en la parte superior (opcional, da efecto cristal) */
+.card-top::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
+    pointer-events: none;
+}
+
+/* --- MITAD INFERIOR (Bottom Half) --- */
+.card-bottom {
+    bottom: 0;
+    height: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    /* Mostrar parte de abajo del número */
+
+    background-color: var(--card-bg-color);
+    border-radius: 0 0 8px 8px;
+
+    /* Línea divisoria clara (para efecto 3D en la ranura) */
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    z-index: 0;
+}
+
+/* --- Animación y Piezas Móviles --- */
+.card-flip {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 50%;
+    z-index: 2;
+    transform-style: preserve-3d;
+    transform-origin: bottom center;
+}
+
+.flip-card.flipping .card-flip {
+    animation: flipDown var(--flip-duration) cubic-bezier(0.15, 0.45, 0.28, 1) forwards;
+}
+
+@keyframes flipDown {
+    0% {
+        transform: rotateX(0deg);
     }
 
-    .countdown-separator {
-        font-size: 1.2rem;
+    100% {
+        transform: rotateX(-180deg);
+    }
+}
+
+/* CARA FRONTAL (Old Number - Top Half) */
+.card-flip .face-front {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    backface-visibility: hidden;
+
+    background: var(--card-bg-color);
+    border-radius: 8px 8px 0 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+/* CARA TRASERA (New Number - Bottom Half) */
+.card-flip .face-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+
+    transform: rotateX(180deg);
+
+    background: var(--card-bg-color);
+    border-radius: 0 0 8px 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+}
+
+/* Ajuste de alineación fina */
+.card-face span {
+    transform: translateY(0px);
+}
+
+/* Sombra dinámica más realista */
+.flip-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.6) 100%);
+    opacity: 0;
+    z-index: 5;
+    transition: opacity 0.1s;
+    border-radius: 8px;
+    /* Debe coincidir con el borde de la tarjeta */
+    pointer-events: none;
+}
+
+.flip-card.flipping::before {
+    animation: flashShadow var(--flip-duration) ease-in forwards;
+}
+
+@keyframes flashShadow {
+    0% {
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+/* Fecha final */
+.countdown-date {
+    margin-top: var(--space-xl);
+    font-family: 'Bodoni Moda', serif;
+    font-size: 0.9rem;
+    color: #888899;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-weight: 400;
+}
+
+@media (max-width: 380px) {
+    .countdown-grid {
+        gap: 6px;
     }
 }

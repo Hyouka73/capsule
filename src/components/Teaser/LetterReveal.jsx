@@ -1,145 +1,182 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import { useReducedMotion } from 'framer-motion';
 import './LetterReveal.css';
 
-const LETTER_CONTENT = [
-    'Mi amor,',
-    '',
-    'Sé que la distancia a veces pesa, que hay días donde un mensaje no alcanza y una llamada se queda corta.',
-    '',
-    'Pero quiero que sepas algo:',
-    'cada momento contigo ha sido un regalo que guardo con todo el corazón.',
-    '',
-    'Por eso construí este lugar.',
-    'Un rincón digital solo para nosotros.',
-    'Donde cada recuerdo tiene su espacio,',
-    'donde cada foto cuenta una historia,',
-    'y donde puedo recordarte — todos los días —',
-    'lo mucho que significas para mí.',
-    '',
-    'Esto es solo el comienzo.',
-    'El 4 de abril, nuestro aniversario,',
-    'se abrirá algo especial.',
-    '',
-    'Mientras tanto... mira las estrellas.',
-    'Cada una es un momento nuestro. ✨',
-    '',
-    'Te amo.',
-    '— Tu persona favorita',
+// Content structure from the "Better" snippet
+// Including "Una carta para ti" etc.
+const LETTER_BODY = [
+    { type: 'greeting', text: 'Mi amor,' },
+
+    { type: 'paragraph', text: 'Sé que la distancia a veces pesa. Hay días en que un mensaje no alcanza, una llamada se queda corta y simplemente extraño tenerte cerca.' },
+
+    { type: 'paragraph', text: 'Llevamos casi 4 años juntos. Y aunque estoy acostumbrado a estar solo, cuando estás conmigo todo cambia. Puedo dormir tranquilo, profundo, sin dar vueltas. Contigo el sueño llega fácil, como si mi cuerpo supiera que está en el lugar correcto.' },
+
+    { type: 'paragraph', text: 'Eso es lo que más extraño: no las cosas grandes o locas, sino lo cotidiano. Dormir a tu lado, despertar y verte ahí, saber que no estoy solo en la cama. Es simple, pero para mí significa mucho.' },
+
+    { type: 'paragraph', text: 'Admiro tu paciencia, cómo me aguantas incluso cuando no soy el más fácil. Y aunque a veces pienso que podrías tener más carácter o ser más "intensa", la verdad es que tu forma tranquila y constante de quererme me ha mantenido aquí todo este tiempo. Me demuestras amor en cosas que nadie más nota, de maneras no convencionales, y eso me llega más hondo que cualquier gesto exagerado.' },
+
+    { type: 'paragraph', text: 'Quiero que sepas que pienso en el día en que esta distancia termine. No sé exactamente cuándo, pero sé que va a pasar. Y cuando llegue, voy a abrazarte fuerte, vamos a dormir juntos todas las noches que queramos, y voy a recordarte cada día lo agradecido que estoy de tenerte.' },
+
+    { type: 'paragraph', text: 'Pronto estos mensajes y llamadas serán solo el comienzo de algo mejor. Vamos a construir más recuerdos, más noches tranquilas, más mañanas sin prisa. Porque aunque ahora estemos lejos, tú sigues siendo mi lugar favorito para descansar.' },
+
+    { type: 'closing', text: 'Te quiero mucho, más de lo que sé decir.\nCon todo mi cariño,' },
+
+    { type: 'signature', text: '-Church' }
 ];
 
-const BOLD_LINES = new Set(['Mi amor,', 'Te amo.', '— Tu persona favorita']);
+const LetterReveal = ({ visible, onComplete }) => {
+    const [isVisible, setIsVisible] = useState(false);
 
-function LetterReveal({ visible }) {
-    const [displayedLines, setDisplayedLines] = useState([]);
-    const [currentLine, setCurrentLine] = useState(0);
-    const [currentChar, setCurrentChar] = useState(0);
+    // Typing state
+    const [currentBlockIndex, setCurrentBlockIndex] = useState(0);
+    const [currentCharIndex, setCurrentCharIndex] = useState(0);
     const [isTyping, setIsTyping] = useState(false);
+    const [isFinished, setIsFinished] = useState(false);
+    const [isSkipped, setIsSkipped] = useState(false); // Track if user skipped
+
     const containerRef = useRef(null);
     const shouldReduceMotion = useReducedMotion();
 
-    // For reduced motion, show everything immediately
+    // Start animation loop
     useEffect(() => {
-        if (!visible) return;
-
-        if (shouldReduceMotion) {
-            setDisplayedLines(LETTER_CONTENT);
-            setCurrentLine(LETTER_CONTENT.length);
-            return;
+        if (visible) {
+            const timer = setTimeout(() => {
+                setIsVisible(true);
+                if (shouldReduceMotion) {
+                    setIsFinished(true);
+                } else {
+                    setIsTyping(true);
+                }
+            }, 300);
+            return () => clearTimeout(timer);
+        } else {
+            setIsVisible(false);
         }
-
-        const startDelay = setTimeout(() => setIsTyping(true), 800);
-        return () => clearTimeout(startDelay);
     }, [visible, shouldReduceMotion]);
 
+    // Typing effect logic
     useEffect(() => {
-        if (!isTyping || currentLine >= LETTER_CONTENT.length) {
-            if (currentLine >= LETTER_CONTENT.length) {
-                setIsTyping(false);
-            }
-            return;
-        }
+        if (!isTyping || isFinished || currentBlockIndex >= LETTER_BODY.length) return;
 
-        const line = LETTER_CONTENT[currentLine];
+        const currentBlock = LETTER_BODY[currentBlockIndex];
 
-        // Empty lines appear instantly
-        if (line === '') {
-            setDisplayedLines(prev => [...prev, '']);
-            setCurrentLine(prev => prev + 1);
-            setCurrentChar(0);
-            return;
-        }
-
-        if (currentChar < line.length) {
-            const char = line[currentChar];
-            const speed = char === ',' || char === '.'
-                ? 80
-                : char === '—'
-                    ? 120
-                    : 30 + Math.random() * 25;
+        if (currentCharIndex < currentBlock.text.length) {
+            const char = currentBlock.text[currentCharIndex];
+            const speed = char === ',' || char === '.' ? 50 : 30 + Math.random() * 20;
 
             const timer = setTimeout(() => {
-                setCurrentChar(prev => prev + 1);
+                setCurrentCharIndex(prev => prev + 1);
             }, speed);
             return () => clearTimeout(timer);
+        } else {
+            // Block finished, move to next
+            const timer = setTimeout(() => {
+                setCurrentBlockIndex(prev => prev + 1);
+                setCurrentCharIndex(0);
+            }, 600);
+            return () => clearTimeout(timer);
         }
+    }, [isTyping, isFinished, currentBlockIndex, currentCharIndex]);
 
-        // Line complete
-        setDisplayedLines(prev => [...prev, line]);
-        setCurrentLine(prev => prev + 1);
-        setCurrentChar(0);
-    }, [isTyping, currentLine, currentChar]);
+    // Check completion
+    useEffect(() => {
+        if (currentBlockIndex >= LETTER_BODY.length && !isFinished) {
+            setIsFinished(true);
+            setIsTyping(false);
+        }
+    }, [currentBlockIndex, isFinished]);
 
-    // Auto-scroll when new lines appear
+    // Auto-scroll logic targeting the .letter-wrapper
     useEffect(() => {
         const el = containerRef.current;
         if (!el) return;
+        // Basic scroll to bottom if content expands
+        // Checking if isTyping to allow user manual scroll override if they want? 
+        // For now, gentle scroll to bottom is good.
         el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-    }, [displayedLines]);
+    }, [currentBlockIndex, currentCharIndex]);
 
-    const typingText = useMemo(() => {
-        if (currentLine >= LETTER_CONTENT.length) return '';
-        return LETTER_CONTENT[currentLine]?.substring(0, currentChar) || '';
-    }, [currentLine, currentChar]);
+    // Auto-advance logic: if finished naturally (not skipped), wait 5s and proceed
+    useEffect(() => {
+        if (isFinished && !isSkipped) {
+            const timer = setTimeout(() => {
+                onComplete();
+            }, 6000); // 6 seconds to read signature
+            return () => clearTimeout(timer);
+        }
+    }, [isFinished, isSkipped, onComplete]);
 
-    if (!visible) return null;
+    const handleSkip = useCallback((e) => {
+        e.stopPropagation();
+        if (!isFinished) {
+            setIsTyping(false);
+            setIsFinished(true);
+            setIsSkipped(true);
+            // Force completion logic
+            setCurrentBlockIndex(LETTER_BODY.length);
+        } else {
+            onComplete();
+        }
+    }, [isFinished, onComplete]);
 
-    const isBoldLine = currentLine < LETTER_CONTENT.length && BOLD_LINES.has(LETTER_CONTENT[currentLine]);
+    // Helper to render text up to current point
+    const renderBlockContent = (block, index) => {
+        if (isFinished) return block.text;
+        if (index > currentBlockIndex) return '';
+        if (index < currentBlockIndex) return block.text;
+
+        return block.text.substring(0, currentCharIndex);
+    };
 
     return (
-        <motion.div
-            className="letter-reveal"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-            role="article"
-            aria-label="Carta de amor"
-        >
-            <div className="letter-header">
-                <div className="letter-seal" aria-hidden="true">
-                    <span className="seal-heart">♥</span>
+        <div className={`night-sky ${!isVisible ? 'hidden' : ''}`}>
+            {/* Stars Layer Removed - Global Background Used */}
+
+
+            <div className={`letter-container ${isVisible ? 'visible' : ''}`}>
+                <div className="letter-wrapper" ref={containerRef}>
+
+
+                    {/* Countdown would go here, but omitted as per user request */}
+
+                    <div className="content">
+                        {LETTER_BODY.map((block, i) => {
+                            if (!isFinished && i > currentBlockIndex) return null;
+
+                            const text = renderBlockContent(block, i);
+                            const isTypingThis = !isFinished && i === currentBlockIndex;
+
+                            const renderedText = text.split('\n').map((line, lineIdx, arr) => (
+                                <span key={lineIdx}>
+                                    {line}
+                                    {lineIdx < arr.length - 1 && <br />}
+                                </span>
+                            ));
+
+                            return (
+                                <p key={i} className={block.type}>
+                                    {renderedText}
+                                    {isTypingThis && <span className="typing-cursor">|</span>}
+                                </p>
+                            );
+                        })}
+                    </div>
                 </div>
-                <h2 className="letter-title">Una carta para ti</h2>
-                <time className="letter-date" dateTime="2026-02-14">14 de febrero, 2026</time>
             </div>
 
-            <div className="letter-body" ref={containerRef}>
-                <div className="letter-paper">
-                    {displayedLines.map((line, i) => (
-                        <p key={i} className={`letter-line ${line === '' ? 'letter-line--empty' : ''}`}>
-                            {BOLD_LINES.has(line) ? <strong>{line}</strong> : line}
-                        </p>
-                    ))}
-                    {isTyping && currentLine < LETTER_CONTENT.length && (
-                        <p className="letter-line letter-line--typing" aria-live="off">
-                            {isBoldLine ? <strong>{typingText}</strong> : typingText}
-                            <span className="typing-cursor" aria-hidden="true">|</span>
-                        </p>
-                    )}
-                </div>
-            </div>
-        </motion.div>
+            {isVisible && createPortal(
+                <button
+                    className="skip-letter-btn"
+                    onClick={handleSkip}
+                    aria-label={isFinished ? "Continuar" : "Omitir animación"}
+                >
+                    {isFinished ? "Continuar ›" : "Omitir ›"}
+                </button>,
+                document.body
+            )}
+        </div>
     );
-}
+};
 
 export default LetterReveal;
