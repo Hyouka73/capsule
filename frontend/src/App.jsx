@@ -3,6 +3,7 @@ import { useAuth } from './hooks/useAuth';
 import Teaser from './components/Teaser/Teaser';
 import AdminLogin from './modules/admin/AdminLogin';
 import AdminDashboard from './modules/admin/AdminDashboard';
+import UserDashboard from './modules/user/UserDashboard';
 import { PastelToastProvider } from './components/ui/PastelToast/PastelToast';
 import './App.css';
 
@@ -12,6 +13,7 @@ import './App.css';
  * Routes:
  *   /admin/login  → AdminLogin (public)
  *   /admin        → AdminDashboard (admin only)
+ *   /app          → UserDashboard (partner view)
  *   /*            → Teaser (partner / unauthenticated)
  *
  * No router library needed — path-based routing with window.location.
@@ -20,6 +22,7 @@ export default function App() {
   const { isAdmin, isLoading } = useAuth();
   const path = window.location.pathname;
   const isAdminRoute = path.startsWith('/admin');
+  const isAppRoute = path.startsWith('/app');
 
   // While resolving Firebase auth, show nothing (prevents flash)
   if (isLoading) return <LoadingScreen />;
@@ -33,7 +36,12 @@ export default function App() {
     );
   }
 
-  // Default: teaser / main app
+  // Partner routes (Dashboard)
+  if (isAppRoute) {
+    return <UserDashboard />;
+  }
+
+  // Default: teaser
   return <Teaser />;
 }
 

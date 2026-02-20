@@ -1,0 +1,276 @@
+.root {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    align-items: center;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    width: 100%;
+}
+
+.title {
+    font-family: var(--font-serif);
+    font-size: 2.2rem;
+    color: var(--accent-primary);
+    margin: 0 0 0.5rem;
+    text-shadow: 0 2px 4px rgba(255, 117, 143, 0.1);
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+/* Progress Bar */
+.progressContainer {
+    width: 100%;
+    max-width: 400px;
+    margin-bottom: 2rem;
+    padding: 0 1rem;
+}
+
+.progressText {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.progressBarBg {
+    height: 12px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 100px;
+    border: 1px solid var(--glass-border);
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.progressBarFill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--pastel-rose), var(--accent-primary));
+    border-radius: 100px;
+    box-shadow: 0 0 10px rgba(255, 117, 143, 0.5);
+}
+
+/* Tablero Cartón */
+.boardCard {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 1rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    max-width: 400px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    gap: 0.5rem;
+    aspect-ratio: 4/5;
+}
+
+.square {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: transform 0.2s;
+}
+
+/* Empty Squares */
+.empty {
+    background: rgba(0, 0, 0, 0.04);
+    border: 1px dashed rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.emptyContent {
+    opacity: 0.3;
+}
+
+.emptyIcon {
+    font-size: 1.5rem;
+    filter: grayscale(1);
+}
+
+/* Completed Squares */
+.completed {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 240, 245, 0.9) 100%);
+    border: 1px solid var(--pastel-rose);
+    box-shadow: 0 4px 10px rgba(255, 117, 143, 0.15);
+    cursor: pointer;
+}
+
+.completed:hover {
+    transform: scale(1.05);
+    z-index: 2;
+    box-shadow: 0 8px 20px rgba(255, 117, 143, 0.3);
+}
+
+.completedContent {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.emoji {
+    font-size: 2rem;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.photoBadge {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    font-size: 0.9rem;
+    background: white;
+    border-radius: 50%;
+    padding: 2px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stampOverlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-15deg);
+    color: var(--accent-secondary);
+    font-weight: 900;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    border: 2px solid var(--accent-secondary);
+    padding: 0.1rem 0.3rem;
+    border-radius: 4px;
+    opacity: 0.8;
+    pointer-events: none;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+}
+
+.footerHint {
+    margin-top: 1.5rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+}
+
+/* Modal Polaroid */
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+}
+
+.polaroid {
+    background: white;
+    padding: 1rem 1rem 2.5rem 1rem;
+    border-radius: 4px;
+    /* Las polaroids son bastante cuadradas */
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    max-width: 340px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.closeBtn {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: var(--text-primary);
+    color: white;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.photoArea {
+    width: 100%;
+    aspect-ratio: 1/1;
+    background: #111;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+    border-radius: 2px;
+    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.memoryImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.noPhotoDefault {
+    background: linear-gradient(135deg, var(--pastel-rose), #ff9a9e);
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bigEmoji {
+    font-size: 5rem;
+    filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.2));
+}
+
+.polaroidText {
+    text-align: center;
+}
+
+.polaroidText h2 {
+    font-family: 'Caveat', cursive, var(--font-serif);
+    font-size: 2rem;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem;
+    line-height: 1.1;
+}
+
+.polaroidText p {
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin: 0 0 1rem;
+    line-height: 1.4;
+}
+
+.dateStamp {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-family: monospace;
+    letter-spacing: 1px;
+    opacity: 0.6;
+}

@@ -1,0 +1,285 @@
+.root {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.title {
+    font-family: var(--font-serif);
+    font-size: 2.2rem;
+    color: var(--accent-primary);
+    margin: 0 0 0.5rem;
+    text-shadow: 0 2px 4px rgba(255, 117, 143, 0.1);
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.tabsMenu {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.tabBtn {
+    background: transparent;
+    border: none;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    position: relative;
+    transition: color 0.3s;
+}
+
+.activeTab {
+    color: var(--text-primary);
+}
+
+.activeTab::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 10%;
+    width: 80%;
+    height: 3px;
+    background: var(--pastel-rose);
+    border-radius: 3px;
+}
+
+.couponList {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding-bottom: 2rem;
+}
+
+/* Coupon Card Design (Ticket Style) */
+.couponCard {
+    position: relative;
+    display: flex;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.7) 100%);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--glass-border);
+    margin: 0 0.5rem;
+}
+
+.couponEdgeLeft,
+.couponEdgeRight {
+    width: 20px;
+    background-image: radial-gradient(circle at 10px 10px, transparent 12px, rgba(255, 117, 143, 0.1) 13px);
+    background-size: 20px 24px;
+    background-position: center;
+    border-right: 1px dashed var(--glass-border);
+}
+
+.couponEdgeRight {
+    border-right: none;
+    border-left: 1px dashed var(--glass-border);
+}
+
+.couponContent {
+    flex: 1;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    position: relative;
+}
+
+.couponEmoji {
+    font-size: 2.5rem;
+    background: rgba(255, 255, 255, 0.6);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.couponText {
+    flex: 1;
+}
+
+.couponText h3 {
+    margin: 0 0 0.4rem;
+    font-family: var(--font-serif);
+    font-size: 1.2rem;
+    color: var(--text-primary);
+}
+
+.couponText p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.redeemBtn {
+    background: var(--pastel-rose);
+    color: white;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--radius-full);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(255, 117, 143, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.redeemBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(255, 117, 143, 0.5);
+}
+
+/* Used State */
+.couponUsed {
+    opacity: 0.7;
+    filter: grayscale(0.8);
+    background: rgba(243, 244, 246, 0.6);
+}
+
+.usedStamp {
+    position: absolute;
+    right: -10px;
+    top: -10px;
+    background: var(--accent-secondary);
+    color: white;
+    padding: 0.5rem;
+    border-radius: 5px;
+    transform: rotate(15deg);
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-align: center;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.usedStamp span {
+    font-weight: 400;
+    font-size: 0.65rem;
+    display: block;
+    margin-top: 2px;
+}
+
+.emptyState {
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 2rem;
+}
+
+/* Modal */
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+}
+
+.modalContent {
+    background: white;
+    width: 100%;
+    max-width: 400px;
+    border-radius: 32px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.modalEmoji {
+    font-size: 4rem;
+    line-height: 1;
+    margin-bottom: 1rem;
+    filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1));
+}
+
+.modalContent h2 {
+    font-family: var(--font-serif);
+    color: var(--accent-primary);
+    margin: 0 0 0.5rem;
+}
+
+.modalContent p {
+    color: var(--text-secondary);
+    margin: 0 0 2rem;
+    line-height: 1.5;
+}
+
+.redeemForm {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.redeemForm label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    text-align: left;
+}
+
+.notesInput {
+    width: 100%;
+    resize: none;
+    height: 80px;
+    padding: 0.75rem;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+    background: var(--bg-input);
+    font-family: inherit;
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+}
+
+.notesInput:focus {
+    outline: none;
+    border-color: var(--pastel-rose);
+    box-shadow: 0 0 0 3px rgba(255, 117, 143, 0.1);
+}
+
+.modalActions {
+    display: flex;
+    gap: 1rem;
+    justify-content: stretch;
+}
+
+.modalActions>* {
+    flex: 1;
+}
+
+@media (max-width: 400px) {
+    .couponContent {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.75rem;
+    }
+}

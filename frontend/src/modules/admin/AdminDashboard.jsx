@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import MemoryManager from './MemoryManager';
-import CapsuleManager from './CapsuleManager';
-import CouponManager from './CouponManager';
-import BingoManager from './BingoManager';
-import ActivityPanel from './ActivityPanel';
-import WrappedManager from './WrappedManager';
-import GlobalSettings from './GlobalSettings';
+import MemoryManager from '../memories/MemoryManager';
+import CapsuleManager from '../capsules/CapsuleManager';
+import CouponManager from '../coupons/CouponManager';
+import BingoManager from '../bingo/BingoManager';
+import ActivityPanel from '../activity/ActivityPanel';
+import WrappedManager from '../wrapped/WrappedManager';
+import GlobalSettings from '../settings/GlobalSettings';
 import Button from '../../components/ui/Button/Button';
 import styles from './AdminDashboard.module.css';
 
