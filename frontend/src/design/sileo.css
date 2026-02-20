@@ -1,18 +1,17 @@
 /* 
   Sileo Custom Theme — Project Capsule
-  Overrides para integrar las notificaciones mórficas con el diseño de lujo.
+  Toast notifications using the Cute Pastel palette.
 */
 
 :root {
     /* Override Sileo Variables */
-    --sileo-width: 360px;
+    --sileo-width: 340px;
     --sileo-height: 54px;
-    /* Default height when only showing title */
-    --sileo-state-success: var(--color-success);
+    --sileo-state-success: var(--pastel-green-btn);
     --sileo-state-error: var(--color-error);
     --sileo-state-warning: var(--color-warning);
-    --sileo-state-info: var(--accent-primary);
-    --sileo-state-loading: var(--text-muted);
+    --sileo-state-info: var(--pastel-sage-dark);
+    --sileo-state-loading: var(--pastel-sage);
 }
 
 /* Ocultar la forma de nube svg nativa de Sileo */
@@ -20,104 +19,136 @@
     display: none !important;
 }
 
-/* Contenedor Principal del Toast (Estilo Dynamic Island / Glass Pill) */
+/* ===== Toast Container (Pastel Glass Card) ===== */
 [data-sileo-toast] {
-    background: rgba(255, 255, 255, 0.85) !important;
+    background: rgba(255, 240, 243, 0.92) !important;
+    /* pastel-bg con opacidad */
     backdrop-filter: blur(16px) !important;
     -webkit-backdrop-filter: blur(16px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.5) !important;
-    border-radius: 24px !important;
-    /* Premium rounded pill */
-    box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.1),
-        0 0 0 1px rgba(0, 0, 0, 0.03) !important;
+    border: 2.5px solid rgba(255, 255, 255, 0.75) !important;
+    border-radius: 20px !important;
+    box-shadow:
+        0 8px 24px -4px rgba(255, 183, 178, 0.3),
+        0 0 0 1px rgba(255, 183, 178, 0.1) !important;
     overflow: hidden !important;
-
-    /* Nota: NUNCA usar display: flex aquí, Sileo usa hijos con position:absolute 
-       y controla su propia altura con var(--_h) escalando dinámicamente. */
 }
 
-/* Dark mode adapter (si Capsule usa dark mode) */
-@media (prefers-color-scheme: dark) {
-    [data-sileo-toast] {
-        background: rgba(20, 20, 20, 0.75) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.5),
-            0 0 0 1px rgba(255, 255, 255, 0.05) !important;
-    }
-}
-
-/* Header (Title & Icon Container) */
+/* ===== Header (icon + title row) ===== */
 [data-sileo-header] {
-    padding: 0 16px !important;
+    padding: 0 14px !important;
 }
 
-/* Título */
+/* ===== Title ===== */
 [data-sileo-title] {
-    color: var(--text-primary) !important;
-    font-family: var(--font-sans);
+    color: var(--pastel-text) !important;
+    font-family: 'Fredoka', 'Varela Round', var(--font-sans), sans-serif !important;
     font-weight: 600 !important;
     font-size: 0.95rem !important;
-    letter-spacing: -0.01em !important;
+    letter-spacing: 0.01em !important;
 }
 
-/* Contenedor del texto estructurado */
+/* Title state colors (override Sileo defaults) */
+[data-sileo-title][data-state="success"] {
+    color: var(--pastel-green-btn) !important;
+    --sileo-tone: var(--pastel-green-btn) !important;
+}
+
+[data-sileo-title][data-state="error"] {
+    color: var(--color-error) !important;
+    --sileo-tone: var(--color-error) !important;
+}
+
+[data-sileo-title][data-state="loading"] {
+    color: var(--pastel-sage-dark) !important;
+    --sileo-tone: var(--pastel-sage-dark) !important;
+}
+
+[data-sileo-title][data-state="warning"] {
+    color: var(--color-warning) !important;
+    --sileo-tone: var(--color-warning) !important;
+}
+
+/* ===== Description (expanded content) ===== */
 [data-sileo-content] {
-    /* Sileo lo posiciona dinámicamente. Mantenemos el padding inferior para asegurar espacio. */
-    padding: 0 16px 18px 52px !important;
+    padding: 0 14px 16px 50px !important;
 }
 
-/* Descripción */
 [data-sileo-description] {
-    color: var(--text-secondary) !important;
-    font-family: var(--font-sans);
-    font-size: 0.9rem !important;
+    color: var(--pastel-text) !important;
+    opacity: 0.75;
+    font-family: 'Varela Round', var(--font-sans), sans-serif !important;
+    font-size: 0.875rem !important;
     line-height: 1.45 !important;
     padding: 0 !important;
     margin: 0 !important;
-    margin-top: -12px !important;
-    /* Pull up closer to title smoothly */
     word-wrap: break-word !important;
 }
 
-/* Animaciones Premium (Sobrescribiendo las por defecto para mayor impacto visuals) */
+/* ===== Badge (icon circle) ===== */
+[data-sileo-badge] {
+    width: 26px !important;
+    height: 26px !important;
+    border-radius: 50% !important;
+}
+
+/* State-specific badge colors */
+[data-sileo-badge][data-state="success"] {
+    background-color: rgba(136, 216, 176, 0.2) !important;
+    /* pastel-green-btn tint */
+    color: var(--pastel-green-btn) !important;
+    --sileo-tone: var(--pastel-green-btn) !important;
+    --sileo-tone-bg: rgba(136, 216, 176, 0.18) !important;
+}
+
+[data-sileo-badge][data-state="error"] {
+    background-color: rgba(255, 117, 143, 0.15) !important;
+    color: var(--color-error) !important;
+    --sileo-tone: var(--color-error) !important;
+    --sileo-tone-bg: rgba(255, 117, 143, 0.15) !important;
+}
+
+[data-sileo-badge][data-state="loading"] {
+    background-color: rgba(183, 228, 199, 0.2) !important;
+    /* pastel-sage tint */
+    color: var(--pastel-sage-dark) !important;
+    --sileo-tone: var(--pastel-sage-dark) !important;
+    --sileo-tone-bg: rgba(183, 228, 199, 0.2) !important;
+}
+
+[data-sileo-badge][data-state="warning"] {
+    background-color: rgba(255, 209, 102, 0.2) !important;
+    color: #e6a800 !important;
+    --sileo-tone: #e6a800 !important;
+    --sileo-tone-bg: rgba(255, 209, 102, 0.2) !important;
+}
+
+[data-sileo-badge][data-state="info"] {
+    background-color: rgba(149, 213, 178, 0.2) !important;
+    color: var(--pastel-sage-dark) !important;
+    --sileo-tone: var(--pastel-sage-dark) !important;
+    --sileo-tone-bg: rgba(149, 213, 178, 0.2) !important;
+}
+
+/* ===== Premium animations ===== */
 [data-sileo-viewport][data-position^="bottom"] [data-sileo-toast]:not([data-ready="true"]) {
-    transform: translateY(24px) scale(0.9) !important;
+    transform: translateY(20px) scale(0.92) !important;
     opacity: 0 !important;
-    filter: blur(8px);
+    filter: blur(6px);
 }
 
 [data-sileo-viewport][data-position^="top"] [data-sileo-toast]:not([data-ready="true"]) {
-    transform: translateY(-24px) scale(0.9) !important;
+    transform: translateY(-20px) scale(0.92) !important;
     opacity: 0 !important;
-    filter: blur(8px);
+    filter: blur(6px);
 }
 
 [data-sileo-toast][data-ready="true"][data-exiting="true"] {
-    transform: scale(0.9) !important;
+    transform: scale(0.92) !important;
     opacity: 0 !important;
     filter: blur(4px);
 }
 
-/* El badge (icon container) centralizado al lado del texto */
-[data-sileo-badge] {
-    width: 28px !important;
-    height: 28px !important;
-    margin-right: 4px !important;
-    border-radius: var(--radius-full) !important;
-}
-
-/* Estilos para los estados */
-[data-sileo-toast][data-state="success"] [data-sileo-badge] {
-    background-color: rgba(109, 224, 160, 0.15) !important;
-    color: var(--color-success) !important;
-}
-
-[data-sileo-toast][data-state="error"] [data-sileo-badge] {
-    background-color: rgba(255, 117, 143, 0.15) !important;
-    color: var(--color-error) !important;
-}
-
-/* Remover filtro de canvas extra */
+/* Remove default canvas filter */
 [data-sileo-canvas] {
     filter: none !important;
 }
