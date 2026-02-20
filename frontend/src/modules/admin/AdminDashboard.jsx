@@ -2,6 +2,11 @@ import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import MemoryManager from './MemoryManager';
 import CapsuleManager from './CapsuleManager';
+import CouponManager from './CouponManager';
+import BingoManager from './BingoManager';
+import ActivityPanel from './ActivityPanel';
+import WrappedManager from './WrappedManager';
+import GlobalSettings from './GlobalSettings';
 import Button from '../../components/ui/Button/Button';
 import styles from './AdminDashboard.module.css';
 
@@ -9,22 +14,42 @@ const SECTIONS = [
     { id: 'memories', label: 'Recuerdos', icon: '📸' },
     { id: 'capsules', label: 'Cápsulas', icon: '⏳' },
     { id: 'coupons', label: 'Cupones', icon: '🎁' },
-    { id: 'activity', label: 'Actividad', icon: '💬' },
+    { id: 'bingo', label: 'Bingo', icon: '🎯' },
+    { id: 'activity', label: 'Actividad', icon: '📊' },
+    { id: 'wrapped', label: 'Wrapped', icon: '🎬' },
     { id: 'settings', label: 'Config', icon: '⚙️' },
 ];
 
 export default function AdminDashboard() {
-    const { signOut } = useAuth();
+    const { signOut, user } = useAuth();
     const [activeSection, setActiveSection] = useState('memories');
+
+    // Mapeo simple de IDs a componentes
+    const renderContent = () => {
+        switch (activeSection) {
+            case 'memories': return <MemoryManager />;
+            case 'capsules': return <CapsuleManager />;
+            case 'coupons': return <CouponManager />;
+            case 'bingo': return <BingoManager />;
+            case 'activity': return <ActivityPanel />;
+            case 'wrapped': return <WrappedManager />;
+            case 'settings': return <GlobalSettings />;
+            default: return <MemoryManager />;
+        }
+    };
 
     return (
         <div className={styles.root}>
-            {/* ── Sidebar ── */}
+            {/* ── Sidebar (Desktop) / Bottom Nav (Mobile) ── */}
             <aside className={styles.sidebar}>
                 <div className={styles.sidebarHeader}>
-                    <span className={styles.sidebarLogo}>✦</span>
-                    <span className={styles.sidebarTitle}>Capsule</span>
-                    <span className={styles.sidebarBadge}>Admin</span>
+                    <div className={styles.logoGroup}>
+                        <span className={styles.sidebarLogo}>✦</span>
+                        <div className={styles.sidebarTitles}>
+                            <span className={styles.sidebarTitle}>Capsule</span>
+                            <span className={styles.sidebarBadge}>Admin Mode</span>
+                        </div>
+                    </div>
                 </div>
 
                 <nav className={styles.nav}>
@@ -33,6 +58,7 @@ export default function AdminDashboard() {
                             key={section.id}
                             className={`${styles.navItem} ${activeSection === section.id ? styles.active : ''}`}
                             onClick={() => setActiveSection(section.id)}
+                            title={section.label}
                         >
                             <span className={styles.navIcon}>{section.icon}</span>
                             <span className={styles.navLabel}>{section.label}</span>
@@ -41,35 +67,40 @@ export default function AdminDashboard() {
                 </nav>
 
                 <div className={styles.footer}>
+                    <div className={styles.userInfo}>
+                        <span className={styles.userEmail}>{user?.email?.split('@')[0]}</span>
+                    </div>
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={signOut}
                         className={styles.signOutBtn}
+                        title="Cerrar sesión"
                     >
-                        Cerrar sesión
+                        <span className={styles.signOutIcon}>👋</span>
+                        <span className={styles.signOutText}>Cerrar sesión</span>
                     </Button>
                 </div>
             </aside>
 
-            {/* ── Main Content ── */}
+            {/* ── Main Content Area ── */}
             <main className={styles.main}>
-                {activeSection === 'memories' && <MemoryManager />}
-                {activeSection === 'capsules' && <CapsuleManager />}
-                {activeSection === 'coupons' && <ComingSoon label="Cupones y Sorpresas" />}
-                {activeSection === 'activity' && <ComingSoon label="Activity Log" />}
-                {activeSection === 'settings' && <ComingSoon label="Configuración" />}
+                <div className={styles.contentWrapper}>
+                    {renderContent()}
+                </div>
             </main>
         </div>
     );
 }
 
-function ComingSoon({ label }) {
+function ComingSoon({ label, icon }) {
     return (
         <div className={styles.comingSoon}>
-            <p className={styles.comingSoonIcon}>🚧</p>
-            <h2>{label}</h2>
-            <p>Próximamente en el siguiente bloque de desarrollo.</p>
+            <div className={styles.comingSoonGlass}>
+                <p className={styles.comingSoonIcon}>{icon}</p>
+                <h2>{label}</h2>
+                <p>Módulo en desarrollo para el Bloque C.</p>
+            </div>
         </div>
     );
 }

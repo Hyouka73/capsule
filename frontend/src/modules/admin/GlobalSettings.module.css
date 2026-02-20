@@ -1,0 +1,239 @@
+.root {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.title {
+    font-family: var(--font-serif);
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.2;
+}
+
+.subtitle {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin: 0.25rem 0 0;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.sectionCard {
+    padding: 1.75rem;
+}
+
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.sectionIcon {
+    font-size: 1.5rem;
+}
+
+.sectionHeader h3 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: 1.3rem;
+    color: var(--accent-primary);
+}
+
+.sectionDesc {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: 0 0 1.5rem 0;
+}
+
+.divider {
+    height: 1px;
+    background: var(--glass-border);
+    margin: 1.5rem 0;
+}
+
+/* Toggles */
+.togglesList {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.toggleRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--glass-border);
+}
+
+.toggleInfo {
+    display: flex;
+    flex-direction: column;
+}
+
+.toggleLabel {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+.toggleDesc {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+    margin-top: 0.2rem;
+}
+
+/* Custom Switch Toggle */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--bg-input);
+    border: 1px solid #d1d5db;
+    transition: .3s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+input:checked+.slider {
+    background-color: var(--pastel-rose);
+    border-color: var(--pastel-rose);
+}
+
+input:focus+.slider {
+    box-shadow: 0 0 1px var(--pastel-rose);
+}
+
+input:checked+.slider:before {
+    transform: translateX(20px);
+}
+
+/* Forms */
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.formGroup label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.inviteWrapper {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.input {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    background: #fff;
+    color: var(--text-primary);
+    font-family: monospace;
+    font-size: 0.9rem;
+}
+
+.coordInputs {
+    display: flex;
+    gap: 1rem;
+}
+
+.helpText {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.revokeBtn {
+    align-self: flex-start;
+    margin-top: 0.5rem;
+    color: var(--color-error);
+}
+
+/* Danger Zone */
+.dangerZone h4 {
+    margin: 0 0 1rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.dangerActions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.dangerBtn {
+    background: transparent;
+    border: 1px solid var(--color-error);
+    color: var(--color-error);
+}
+
+.dangerBtn:hover {
+    background: rgba(255, 117, 143, 0.1);
+}
+
+@media (max-width: 600px) {
+    .header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

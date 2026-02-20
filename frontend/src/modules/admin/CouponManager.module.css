@@ -72,9 +72,9 @@
 
 .formPanelHeader {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    margin-bottom: 2rem;
+    align-items: center;
+    margin-bottom: 1.5rem;
     border-bottom: 1px dashed var(--glass-border);
     padding-bottom: 1rem;
 }
@@ -102,6 +102,93 @@
     background: rgba(255, 0, 0, 0.05);
     color: var(--color-error);
 }
+
+.formRow {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.formGroup label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.input,
+.textarea,
+.emojiInput {
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--glass-border);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.emojiInput {
+    font-size: 1.5rem;
+    text-align: center;
+}
+
+.input:focus,
+.textarea:focus,
+.emojiInput:focus {
+    outline: none;
+    border-color: var(--pastel-rose);
+    box-shadow: 0 0 0 3px rgba(255, 183, 178, 0.2);
+    background: #ffffff;
+}
+
+.textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.toggleGroup {
+    margin: 1.5rem 0;
+}
+
+.checkboxLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+}
+
+.checkboxLabel input {
+    width: 1.2rem;
+    height: 1.2rem;
+    accent-color: var(--pastel-rose);
+    cursor: pointer;
+}
+
+.checkboxText {
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.formActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px dashed var(--glass-border);
+}
+
 
 /* ── Loading & Empty States ── */
 .loading,
@@ -157,7 +244,7 @@
 /* ── Grid & Cards ── */
 .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 1.5rem;
 }
 
@@ -167,15 +254,23 @@
     padding: 1.5rem;
     position: relative;
     border: 1px solid var(--glass-border);
-    background: #ffffff;
+    background: linear-gradient(145deg, #ffffff, #fafafa);
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     overflow: hidden;
+    /* Coupon specific styling */
+    border-left: 5px solid var(--accent-primary);
+}
+
+.cardInactive {
+    opacity: 0.6;
+    background: #fdfdfd;
+    border-left-color: #d1d5db;
+    /* text-muted */
 }
 
 .card:hover {
-    border-color: var(--pastel-rose);
     transform: translateY(-6px);
-    box-shadow: 0 14px 28px rgba(255, 183, 178, 0.15), 0 4px 10px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.08);
 }
 
 .cardHeader {
@@ -183,107 +278,89 @@
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 1rem;
-    gap: 1rem;
+}
+
+.couponIcon {
+    font-size: 2.5rem;
+    line-height: 1;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.cardHeaderActions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.typeBadge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--radius-full);
+    font-weight: 700;
+    text-transform: uppercase;
+    background-color: var(--bg-input);
+    color: var(--text-secondary);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.toggleBtn {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0.25rem;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.toggleBtn:hover {
+    background: var(--bg-input);
 }
 
 .cardTitle {
-    margin: 0;
+    margin: 0 0 0.5rem;
     font-weight: 700;
     font-size: 1.15rem;
     color: var(--text-primary);
     line-height: 1.3;
 }
 
-/* ── Status Badges ── */
-.statusBadge {
-    font-size: 0.7rem;
-    padding: 0.25rem 0.6rem;
-    border-radius: var(--radius-full);
-    font-weight: 700;
-    white-space: nowrap;
-    border: 1px solid transparent;
-}
-
-.statusBadge.locked {
-    background-color: var(--bg-input);
-    color: var(--pastel-text);
-    border-color: rgba(140, 106, 106, 0.2);
-}
-
-.statusBadge.unlocked {
-    background-color: rgba(136, 216, 176, 0.15);
-    /* pastel-green-btn */
-    color: #4CAF50;
-    border-color: rgba(136, 216, 176, 0.4);
-}
-
-.statusBadge.viewed {
-    background-color: rgba(156, 132, 132, 0.1);
+.cardDesc {
+    font-size: 0.9rem;
     color: var(--text-secondary);
-    border-color: rgba(156, 132, 132, 0.2);
+    margin: 0;
+    flex: 1;
 }
 
-.statusBadge.destructed {
-    background-color: rgba(255, 117, 143, 0.1);
-    /* color-error */
-    color: var(--color-error);
-    border-color: rgba(255, 117, 143, 0.3);
-}
-
-/* ── Body ── */
-.cardDate {
-    margin: 0 0 1rem;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
+.cardFooter {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px dashed #e5e7eb;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-weight: 500;
 }
 
-.dateIcon {
-    font-size: 1.1em;
+.expiryLabel {
+    font-size: 0.8rem;
+    color: var(--text-muted);
 }
 
-.cardBody {
-    flex: 1;
-    font-size: 0.95rem;
+.expiryLabel strong {
     color: var(--text-primary);
-    background: rgba(255, 240, 243, 0.5);
-    /* Ultra light pastel bg */
-    padding: 1rem;
-    border-radius: var(--radius-md);
-    font-style: italic;
-    border-left: 3px solid var(--pastel-rose-light);
-    line-height: 1.5;
 }
 
-.mutedText {
-    color: var(--text-muted);
-}
-
-/* ── Footer Tags ── */
-.cardFooter {
-    margin-top: 1.25rem;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.footerTag {
-    background: var(--bg-main);
-    color: var(--pastel-text);
-    font-size: 0.7rem;
-    padding: 0.25rem 0.5rem;
-    border-radius: var(--radius-sm);
-    font-weight: 600;
-    border: 1px solid var(--glass-border);
-}
-
-.footerTagMuted {
-    color: var(--text-muted);
-    font-size: 0.75rem;
-    font-style: italic;
+/* Coupon tear line detail */
+.tearLine {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 10px;
+    background-image: radial-gradient(circle, transparent 4px, #fafafa 5px);
+    background-size: 12px 12px;
+    background-position: -2px 0;
+    opacity: 0.8;
 }
 
 /* ── Hover Actions ── */
@@ -294,7 +371,6 @@
     right: 0;
     bottom: 0;
     background: rgba(255, 255, 255, 0.85);
-    /* Slightly more opaque here because card body has text */
     backdrop-filter: blur(3px);
     display: flex;
     align-items: center;
@@ -321,17 +397,80 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s ease;
 }
 
 .actionBtn:hover {
     transform: scale(1.15);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
 .deleteBtn:hover {
     background: var(--color-error);
     color: white;
+}
+
+/* ── History Section ── */
+.historySection {
+    margin-top: 1rem;
+    padding: 1.5rem;
+    background: var(--glass-bg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-border);
+}
+
+.historyTitle {
+    margin: 0 0 1rem;
+    font-size: 1.2rem;
+    font-family: var(--font-serif);
+    color: var(--text-primary);
+}
+
+.historyList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.historyItem {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background: #ffffff;
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--glass-border);
+    gap: 1rem;
+}
+
+.historyItemIcon {
+    font-size: 1.5rem;
+    opacity: 0.6;
+    filter: grayscale(1);
+}
+
+.historyItemContent {
+    flex: 1;
+}
+
+.historyItemContent h4 {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--text-secondary);
+    text-decoration: line-through;
+}
+
+.historyItemContent p {
+    margin: 0.2rem 0 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.reactivateBtn {
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.historyItem:hover .reactivateBtn {
+    opacity: 1;
 }
 
 @media (max-width: 600px) {
@@ -342,6 +481,11 @@
 
     .newBtn {
         justify-content: center;
+    }
+
+    .formRow {
+        flex-direction: column;
+        gap: 0;
     }
 
     .cardActionsOverlay {
@@ -362,5 +506,9 @@
         background: var(--bg-input);
         box-shadow: none;
         border: 1px solid var(--glass-border);
+    }
+
+    .reactivateBtn {
+        opacity: 1;
     }
 }

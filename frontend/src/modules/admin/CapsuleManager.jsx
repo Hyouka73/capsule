@@ -9,6 +9,7 @@ export default function CapsuleManager() {
     const [capsules, setCapsules] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
+    const [editingCapsule, setEditingCapsule] = useState(null);
 
     useEffect(() => {
         loadCapsules();
@@ -18,7 +19,6 @@ export default function CapsuleManager() {
         setIsLoading(true);
         try {
             const result = await getCapsules();
-            // Las cápsulas con isDestructed=true generalmente no se mandan al partner, pero el admin las ve
             setCapsules(result.capsules || []);
         } catch (err) {
             console.error('Error loading capsules:', err);
@@ -29,7 +29,21 @@ export default function CapsuleManager() {
 
     const handleCreated = () => {
         setShowForm(false);
+        setEditingCapsule(null);
         loadCapsules();
+    };
+
+    // Mock Actions
+    const handleDelete = (id) => {
+        if (confirm('¿Seguro que quieres eliminar esta cápsula? (UI mock)')) {
+            setCapsules(prev => prev.filter(c => c.id !== id));
+        }
+    };
+
+    const handleUnlockManual = (id) => {
+        if (confirm('¿Desbloquear esta cápsula ahora mismo?')) {
+            setCapsules(prev => prev.map(c => c.id === id ? { ...c, isUnlocked: true, unlockDate: new Date().toISOString() } : c));
+        }
     };
 
     return (
@@ -37,13 +51,13 @@ export default function CapsuleManager() {
             <div className={styles.header}>
                 <div>
                     <h1 className={styles.title}>Cápsulas del Tiempo</h1>
-                    <p className={styles.subtitle}>{capsules.length} cápsulas programadas</p>
+                    <p className={styles.subtitle}>{capsules.length} cápsulas creadas</p>
                 </div>
                 <Button
-                    onClick={() => setShowForm(true)}
-                    icon="+"
+                    onClick={() => { setEditingCapsule(null); setShowForm(true); }}
+                    className={styles.newBtn}
                 >
-                    Nueva Cápsula
+                    <span className={styles.btnIcon}>✨</span> Nueva Cápsula
                 </Button>
             </div>
 
@@ -51,10 +65,11 @@ export default function CapsuleManager() {
             {showForm && (
                 <Card className={styles.formPanel} glass>
                     <div className={styles.formPanelHeader}>
-                        <h2>Nueva Cápsula Sorpresa</h2>
-                        <Button variant="ghost" size="sm" onClick={() => setShowForm(false)} className={styles.closeBtn}>✕</Button>
+                        <h2>{editingCapsule ? '✍️ Editar Cápsula' : '✨ Nueva Cápsula Sorpresa'}</h2>
+                        <button onClick={() => setShowForm(false)} className={styles.closeBtn} title="Cerrar">✕</button>
                     </div>
                     <CapsuleForm
+                        initialData={editingCapsule}
                         onSuccess={handleCreated}
                         onCancel={() => setShowForm(false)}
                     />
@@ -63,13 +78,17 @@ export default function CapsuleManager() {
 
             {/* Capsule grid */}
             {isLoading ? (
-                <div className={styles.loading}>Cargando...</div>
+                <div className={styles.loading}>
+                    <div className={styles.spinner}></div>
+                    <p>Buscando cápsulas...</p>
+                </div>
             ) : capsules.length === 0 ? (
                 <div className={styles.empty}>
-                    <p className={styles.emptyIcon}>⏳</p>
-                    <p>No has enterrado ninguna cápsula del tiempo.</p>
-                    <Button variant="secondary" size="sm" onClick={() => setShowForm(true)}>
-                        ¡Crea la primera sorpresa!
+                    <div className={styles.emptyIllustration}>⏳</div>
+                    <h3>No has enterrado ninguna cápsula</h3>
+                    <p>Escribe mensajes para el futuro y prográmalos para que se abran en una fecha especial.</p>
+                    <Button onClick={() => setShowForm(true)} className={styles.newBtn}>
+                        ¡Crea la primera!
                     </Button>
                 </div>
             ) : (
@@ -78,6 +97,9 @@ export default function CapsuleManager() {
                         <CapsuleCard
                             key={capsule.id}
                             capsule={capsule}
+                            onEdit={() => { setEditingCapsule(capsule); setShowForm(true); }}
+                            onDelete={() => handleDelete(capsule.id)}
+                            onUnlock={() => handleUnlockManual(capsule.id)}
                         />
                     ))}
                 </div>
@@ -86,18 +108,18 @@ export default function CapsuleManager() {
     );
 }
 
-function CapsuleCard({ capsule }) {
-    let statusLabel = 'Bloqueada';
+function CapsuleCard({ capsule, onEdit, onDelete, onUnlock }) {
+    let statusLabel = '🔒 Bloqueada';
     let statusClass = styles.locked;
 
     if (capsule.isDestructed) {
-        statusLabel = 'Destruida';
-        statusClass = styles.viewed;
+        statusLabel = '💥 Destruida';
+        statusClass = styles.destructed;
     } else if (capsule.isViewed) {
-        statusLabel = 'Leída';
+        statusLabel = '👀 Leída';
         statusClass = styles.viewed;
     } else if (capsule.isUnlocked) {
-        statusLabel = 'Desbloqueada';
+        statusLabel = '✅ Desbloqueada';
         statusClass = styles.unlocked;
     }
 
@@ -117,16 +139,35 @@ function CapsuleCard({ capsule }) {
             </div>
 
             <p className={styles.cardDate}>
-                ⏳ {unlockDate}
+                <span className={styles.dateIcon}>{capsule.unlockDate ? '⏰' : '🕹️'}</span> {unlockDate}
             </p>
 
             <div className={styles.cardBody}>
-                {capsule.teaserMessage}
+                {capsule.teaserMessage || <span className={styles.mutedText}>Sin mensaje de teaser...</span>}
             </div>
 
             <div className={styles.cardFooter}>
-                {capsule.autoDestruct && <span title="Se destruirá tras ser leída">💣 Read-Once</span>}
-                {capsule.notifyOnUnlock && <span title="Enviará Notificación Push">🔔 Notifica</span>}
+                {capsule.autoDestruct && <span className={styles.footerTag} title="Se destruirá tras ser leída">💣 Read-Once</span>}
+                {capsule.notifyOnUnlock && <span className={styles.footerTag} title="Enviará Notificación Push">🔔 Notifica</span>}
+                {!capsule.autoDestruct && !capsule.notifyOnUnlock && <span className={styles.footerTagMuted}>Estándar</span>}
+            </div>
+
+            {/* Hover Actions */}
+            <div className={styles.cardActionsOverlay}>
+                {!capsule.isUnlocked && !capsule.isDestructed && (
+                    <button className={styles.actionBtn} onClick={onUnlock} title="Forzar Desbloqueo">
+                        🔑
+                    </button>
+                )}
+                <button className={styles.actionBtn} onClick={onEdit} title="Editar">
+                    ✏️
+                </button>
+                <button className={styles.actionBtn} onClick={() => alert('Mock: Cápsula clonada')} title="Clonar">
+                    📑
+                </button>
+                <button className={`${styles.actionBtn} ${styles.deleteBtn}`} onClick={onDelete} title="Eliminar">
+                    🗑️
+                </button>
             </div>
         </Card>
     );

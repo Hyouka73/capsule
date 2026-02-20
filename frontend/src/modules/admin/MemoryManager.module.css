@@ -1,32 +1,154 @@
 .root {
     padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
+/* ── Header ── */
 .header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
-    margin-bottom: 2.5rem;
     gap: 1rem;
+    flex-wrap: wrap;
 }
 
 .title {
     font-family: var(--font-serif);
-    font-size: 2rem;
-    font-weight: 600;
+    font-size: 2.25rem;
+    font-weight: 700;
     color: var(--text-primary);
-    margin: 0 0 0.25rem;
+    margin: 0;
+    line-height: 1.2;
 }
 
 .subtitle {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     color: var(--text-muted);
-    margin: 0;
+    margin: 0.25rem 0 0;
 }
 
+.newBtn {
+    background: linear-gradient(135deg, var(--pastel-rose), var(--pastel-rose-light));
+    color: var(--text-primary);
+    border: none;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(255, 183, 178, 0.4);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.btnIcon {
+    font-size: 1.1em;
+}
+
+.newBtn:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 16px rgba(255, 183, 178, 0.5);
+}
+
+/* ── Toolbar ── */
+.toolbar {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-sm);
+    flex-wrap: wrap;
+}
+
+.searchBox {
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    align-items: center;
+    background: var(--bg-input);
+    border-radius: var(--radius-md);
+    padding: 0.5rem 0.75rem;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+}
+
+.searchBox:focus-within {
+    border-color: var(--pastel-rose);
+    box-shadow: 0 0 0 2px rgba(255, 183, 178, 0.2);
+    background: #fff;
+}
+
+.searchIcon {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-right: 0.5rem;
+}
+
+.searchInput {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    outline: none;
+}
+
+.searchInput::placeholder {
+    color: var(--text-muted);
+}
+
+.filters {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.select {
+    appearance: none;
+    -webkit-appearance: none;
+    background: var(--bg-input);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    padding: 0.5rem 2rem 0.5rem 1rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%239c8484'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1.25rem;
+}
+
+.select:hover,
+.select:focus {
+    background-color: #fff;
+    border-color: var(--pastel-rose);
+    color: var(--text-primary);
+}
+
+/* ── Form Panel ── */
 .formPanel {
-    margin-bottom: 2.5rem;
-    padding: 1.5rem;
+    margin-bottom: 1rem;
+    padding: 2rem;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .formPanelHeader {
@@ -34,31 +156,97 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: 2rem;
+    border-bottom: 1px dashed var(--glass-border);
+    padding-bottom: 1rem;
 }
 
 .formPanelHeader h2 {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-family: var(--font-serif);
     color: var(--accent-primary);
 }
 
+.closeBtn {
+    background: transparent;
+    border: none;
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: background 0.2s;
+    line-height: 1;
+}
+
+.closeBtn:hover {
+    background: rgba(255, 0, 0, 0.05);
+    color: var(--color-error);
+}
+
+/* ── Loading & Empty States ── */
 .loading,
-.empty {
+.empty,
+.emptySearch {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     min-height: 40vh;
-    gap: 1rem;
-    color: var(--text-muted);
     text-align: center;
+    background: var(--glass-bg);
+    border-radius: var(--radius-lg);
+    border: 1px dashed var(--glass-border);
+    padding: 3rem;
+    margin-top: 2rem;
 }
 
-.emptyIcon {
+.emptySearch {
+    grid-column: 1 / -1;
+    min-height: 20vh;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(255, 183, 178, 0.3);
+    border-top-color: var(--pastel-rose);
+    border-radius: 50%;
+    animation: spin 1s infinite linear;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.emptyIllustration {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.1));
+}
+
+.empty h3 {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    margin: 0 0 0.5rem;
+    color: var(--text-primary);
+}
+
+.empty p {
+    color: var(--text-secondary);
+    margin: 0 0 1.5rem;
+    font-size: 0.95rem;
+}
+
+.emptySearchIcon {
     font-size: 3rem;
+    margin: 0 0 1rem;
 }
 
+/* ── Grid & Cards ── */
 .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -69,93 +257,239 @@
     padding: 0 !important;
     overflow: hidden;
     position: relative;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--glass-border);
+    background: #ffffff;
+}
+
+.cardHidden {
+    opacity: 0.75;
+    background: #fdfdfd;
 }
 
 .card:hover {
-    border-color: var(--accent-border);
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+    border-color: var(--pastel-rose);
+    transform: translateY(-6px);
+    box-shadow: 0 14px 28px rgba(255, 183, 178, 0.15), 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* ── Card Header (Image + Overlay) ── */
+.cardHeader {
+    position: relative;
+    height: 180px;
+    background: var(--bg-input);
+    border-bottom: 1px solid var(--glass-border);
+    overflow: hidden;
 }
 
 .cardPhoto {
     width: 100%;
-    height: 180px;
+    height: 100%;
     object-fit: cover;
     display: block;
-    border-bottom: 1px solid var(--glass-border);
+    transition: transform 0.5s ease;
+}
+
+.card:hover .cardPhoto {
+    transform: scale(1.05);
+    /* Slight zoom on hover */
 }
 
 .cardPhotoEmpty {
     width: 100%;
-    height: 180px;
-    background: var(--bg-input);
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 2.5rem;
     color: var(--text-muted);
-    border-bottom: 1px solid var(--glass-border);
 }
 
+/* ── Badges ── */
+.badges {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    display: flex;
+    gap: 0.5rem;
+    z-index: 2;
+}
+
+.badgeHidden,
+.badgePhotos {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(4px);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.badgeHidden {
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* ── Hover Actions ── */
+.cardActionsOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 10;
+}
+
+.card:hover .cardActionsOverlay {
+    opacity: 1;
+}
+
+.actionBtn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.actionBtn:hover {
+    transform: scale(1.15);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.deleteBtn:hover {
+    background: var(--color-error);
+    color: white;
+}
+
+/* ── Card Body ── */
 .cardInfo {
     padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
 }
 
 .cardTitle {
-    margin: 0 0 0.4rem;
-    font-size: 1rem;
-    font-weight: 600;
+    margin: 0 0 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 700;
     color: var(--text-primary);
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
+    line-height: 1.3;
 }
 
 .cardMeta {
-    margin: 0 0 0.4rem;
-    font-size: 0.75rem;
+    margin: 0 0 0.75rem;
+    font-size: 0.8rem;
     color: var(--text-muted);
+    font-weight: 500;
 }
 
 .cardPlace {
-    margin: 0 0 0.75rem;
-    font-size: 0.75rem;
+    margin: auto 0 1rem;
+    /* auto top margin pushes it down if title is short */
+    font-size: 0.8rem;
     color: var(--text-secondary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
 }
 
+.placeIcon {
+    font-size: 0.9em;
+}
+
+/* ── Tags ── */
 .tags {
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem;
+    margin-top: auto;
 }
 
-.tag {
-    background: var(--accent-soft);
-    color: var(--accent-primary);
-    font-size: 0.65rem;
-    padding: 0.2rem 0.6rem;
+.tag,
+.tagMore {
+    background: var(--bg-input);
+    color: var(--pastel-text);
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
     border-radius: var(--radius-sm);
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    text-transform: capitalize;
+    border: 1px solid var(--glass-border);
 }
 
-.editBtn {
-    position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-    background: rgba(10, 10, 15, 0.4) !important;
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    color: var(--text-primary) !important;
-    opacity: 0;
-    transition: opacity 0.2s;
+.tagMore {
+    background: transparent;
+    border-style: dashed;
+    color: var(--text-muted);
 }
 
-.card:hover .editBtn {
-    opacity: 1;
+/* ── Mobile ── */
+@media (max-width: 600px) {
+    .header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .newBtn {
+        justify-content: center;
+    }
+
+    .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filters {
+        flex-direction: column;
+    }
+
+    .cardActionsOverlay {
+        /* On mobile, don't rely on hover. Show action buttons as a bottom row */
+        opacity: 1;
+        position: static;
+        background: transparent;
+        backdrop-filter: none;
+        padding: 1rem;
+        border-top: 1px dashed var(--glass-border);
+        justify-content: flex-end;
+    }
+
+    .actionBtn {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+        background: var(--bg-input);
+        box-shadow: none;
+        border: 1px solid var(--glass-border);
+    }
 }
