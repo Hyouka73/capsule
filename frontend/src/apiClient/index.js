@@ -1,7 +1,6 @@
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { app } from '../services/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../services/firebase';
 
-const functions = getFunctions(app, 'us-central1');
 
 /**
  * Llama a una función Serverless del Backend (BFF).
