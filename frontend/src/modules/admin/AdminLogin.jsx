@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { sileo } from 'sileo';
-import 'sileo/styles.css';
+import { toast } from '../../components/ui/PastelToast/PastelToast';
 import { signInAsAdmin } from '../../services/auth';
 import styles from './AdminLogin.module.css';
 
@@ -14,25 +13,14 @@ export default function AdminLogin() {
         e.preventDefault();
         setIsLoading(true);
 
-        const toastOptions = {
-            loading: { title: 'Verificando...', description: 'Dame un momento' },
-            success: {
-                title: '¡Acceso concedido!',
-                description: 'Bienvenido a Capsule Admin.',
-                styles: {
-                    title: 'text-[var(--color-success)]',
-                }
-            },
-            error: {
-                title: 'Acceso denegado',
-                description: 'Credenciales incorrectas.',
-            }
-        };
-
         try {
-            await sileo.promise(signInAsAdmin(email, password), toastOptions);
+            await toast.promise(signInAsAdmin(email, password), {
+                loading: { title: 'Verificando...', description: 'Dame un momento' },
+                success: { title: '¡Acceso concedido!', description: 'Bienvenido a Capsule Admin.' },
+                error: { title: 'Acceso denegado', description: 'Credenciales incorrectas.' },
+            });
         } catch (err) {
-            // Error is already handled by toast.promise
+            // handled by toast.promise
         } finally {
             setIsLoading(false);
         }

@@ -3,6 +3,7 @@ import { useAuth } from './hooks/useAuth';
 import Teaser from './components/Teaser/Teaser';
 import AdminLogin from './modules/admin/AdminLogin';
 import AdminDashboard from './modules/admin/AdminDashboard';
+import { PastelToastProvider } from './components/ui/PastelToast/PastelToast';
 import './App.css';
 
 /**
@@ -25,8 +26,11 @@ export default function App() {
 
   // Admin routes
   if (isAdminRoute) {
-    if (isAdmin) return <AdminDashboard />;
-    return <AdminLogin />;
+    return (
+      <PastelToastProvider>
+        {isAdmin ? <AdminDashboard /> : <AdminLogin />}
+      </PastelToastProvider>
+    );
   }
 
   // Default: teaser / main app
