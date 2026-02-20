@@ -1,5 +1,5 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { initializeFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import firebaseConfig from '../config/firebase';
@@ -8,7 +8,11 @@ import firebaseConfig from '../config/firebase';
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 // Core services — initialized once
-const db = getFirestore(app);
+// experimentalAutoDetectLongPolling: true → Firestore falls back to HTTP long-polling
+// when WebChannel is blocked by an ad blocker (avoids ERR_BLOCKED_BY_CLIENT on Listen channel)
+const db = initializeFirestore(app, {
+    experimentalAutoDetectLongPolling: true,
+});
 const storage = getStorage(app);
 const auth = getAuth(app);
 

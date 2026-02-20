@@ -35,14 +35,21 @@ export function AuthProvider({ children }) {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
-                // Resolve custom claims (role + deviceId)
-                const claims = await getCurrentUserClaims();
+                // Resolve custom claims (role + deviceId) — pure Firebase Auth, no Firestore
+                let claims = { role: null, deviceId: null };
+                try {
+                    claims = await getCurrentUserClaims();
+                } catch {
+                    // If token fetch fails (network, ad blocker partial interference),
+                    // still set the user so the UI can react; role will be null temporarily.
+                    // The user can retry or the next auth state change will resolve it.
+                }
                 setUser(firebaseUser);
                 setRole(claims.role);
                 setDeviceId(claims.deviceId);
 
-                // Update last active timestamp — fire and forget
-                updateLastActiveAt(firebaseUser.uid);
+                // Update last active timestamp — completely fire-and-forget, never throws
+                updateLastActiveAt(firebaseUser.uid).catch(() => { });
             } else {
                 setUser(null);
                 setRole(null);
