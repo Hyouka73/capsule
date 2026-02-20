@@ -76,19 +76,19 @@ export default function AdminLogin() {
                         <div className={styles.mouth}></div>
                     </div>
 
-                    <h1 className={styles.title}>Welcome Back!</h1>
-                    <p className={styles.subtitle}>Your cute memory keeper</p>
+                    <h1 className={styles.title}>¡Bienvenido de vuelta!</h1>
+                    <p className={styles.subtitle}>Tu guardián de recuerdos</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className={styles.form}>
                     <div className={styles.inputGroup}>
-                        <label className={styles.inputLabel}>Access Code</label>
+                        <label className={styles.inputLabel}>Código de Acceso</label>
                         <div className={styles.inputIcon}>
                             <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1", fontSize: '24px' }}>lock</span>
                         </div>
                         <input
                             className={styles.input}
-                            placeholder="Type here..."
+                            placeholder="Escribe aquí..."
                             type="email"
                             name="email"
                             required
@@ -102,13 +102,13 @@ export default function AdminLogin() {
                     </div>
 
                     <div className={styles.inputGroup}>
-                        <label className={styles.inputLabel}>Secret Word</label>
+                        <label className={styles.inputLabel}>Palabra Secreta</label>
                         <div className={styles.inputIcon}>
                             <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1", fontSize: '24px' }}>key</span>
                         </div>
                         <input
                             className={styles.input}
-                            placeholder="Shhh..."
+                            placeholder="Sssshh..."
                             type={showPassword ? "text" : "password"}
                             name="password"
                             required
@@ -127,7 +127,7 @@ export default function AdminLogin() {
                     <button type="submit" className={styles.submitBtn} disabled={isLoading}>
                         <div className={styles.btnHighlight}></div>
                         <span className={styles.submitBtnText}>
-                            {isLoading ? 'Unlocking...' : 'Unlock Memories'}
+                            {isLoading ? 'Verificando...' : 'Abrir Recuerdos'}
                         </span>
                         {!isLoading && (
                             <span className={`material-symbols-outlined ${styles.arrowIcon}`}>arrow_forward_ios</span>
@@ -145,7 +145,7 @@ export default function AdminLogin() {
                     <div className={styles.footerPill}>
                         <p className={styles.footerText}>
                             <span className={`material-symbols-outlined ${styles.footerIcon}`} style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
-                            Every memory is a gift
+                            Cada recuerdo es un regalo
                             <span className={`material-symbols-outlined ${styles.footerIcon}`} style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
                         </p>
                     </div>

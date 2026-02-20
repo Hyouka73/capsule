@@ -10,6 +10,9 @@
     justify-content: center;
     position: relative;
     overflow: hidden;
+    padding: 1rem 1.25rem;
+    /* horizontal padding so card never touches edges on mobile */
+    box-sizing: border-box;
 
     font-family: 'Varela Round', sans-serif;
     color: var(--pastel-text);
@@ -72,86 +75,94 @@
     animation-delay: 500ms;
 }
 
-/* Background Decorations */
+/* Background Decorations — positioned relative to root, outside the card */
 .bgDeco {
     position: absolute;
+    pointer-events: none;
+    z-index: 1;
 }
 
 .star1 {
-    top: 2.5rem;
-    left: 2.5rem;
+    top: 1.5rem;
+    left: 1.5rem;
     color: var(--pastel-sage);
     opacity: 0.6;
 }
 
 .heart1 {
-    top: 5rem;
-    right: 3rem;
+    top: 4rem;
+    right: 2rem;
     color: var(--pastel-rose);
     opacity: 0.6;
 }
 
 .heart2 {
-    bottom: 8rem;
-    left: 2rem;
+    bottom: 5rem;
+    left: 1.5rem;
     color: var(--pastel-rose);
     opacity: 0.5;
 }
 
 .sparkle1 {
-    bottom: 2.5rem;
-    right: 2.5rem;
+    bottom: 1.5rem;
+    right: 1.5rem;
     color: var(--pastel-sage);
     opacity: 0.7;
-    font-size: 3rem;
 }
 
 .star2 {
-    top: 50%;
+    bottom: 30%;
     left: 1rem;
     color: #e5989b;
     opacity: 0.3;
 }
 
-/* pastel-rose-dark */
 .circle1 {
-    top: 33%;
-    right: 25%;
+    top: 25%;
+    left: 3rem;
     color: var(--pastel-sage-dark);
-    opacity: 0.3;
+    opacity: 0.25;
     font-size: 0.875rem;
 }
 
 /* Main Container */
 .mainContainer {
     width: 100%;
-    max-width: 28rem;
-    padding: 2rem;
+    max-width: 26rem;
+    /* On mobile, fill minus the root's horizontal padding */
+    margin: 0 1.25rem;
+    padding: 1.5rem 1.5rem;
     display: flex;
     flex-direction: column;
     align-items: center;
     position: relative;
     z-index: 10;
+    /* The glass card background is attached to this */
 }
 
+/* Glass card is the visual background of mainContainer */
 .glassCard {
     position: absolute;
     inset: 0;
-    background-color: rgba(255, 255, 255, 0.4);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    border-radius: 3rem;
-    border: 4px solid white;
-    box-shadow: 0 8px 30px -4px rgba(255, 183, 178, 0.4);
-    /* soft shadow */
-    z-index: -10;
-    margin: 1.5rem 1rem;
+    background-color: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 2.5rem;
+    border: 3px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 8px 32px -4px rgba(255, 183, 178, 0.35), 0 0 0 1px rgba(255, 183, 178, 0.1);
+    z-index: 0;
+}
+
+/* All children need to be above the glass card background */
+.mainContainer>*:not(.glassCard) {
+    position: relative;
+    z-index: 1;
 }
 
 /* Header Elements */
 .headerGroup {
-    margin-top: 2rem;
-    margin-bottom: 2rem;
+    margin-top: 1.25rem;
+    margin-bottom: 1rem;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -159,84 +170,86 @@
 
 .iconWrapper {
     position: relative;
-    width: 7rem;
-    height: 7rem;
-    margin-bottom: 1rem;
+    width: 6rem;
+    height: 6rem;
+    margin-bottom: 0.75rem;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .mainIcon {
-    width: 6rem;
-    height: 6rem;
+    width: 5rem;
+    height: 5rem;
     color: var(--pastel-rose);
-    filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.07));
+    filter: drop-shadow(0 4px 6px rgba(255, 183, 178, 0.5));
 }
 
 .iconGlow {
     position: absolute;
     inset: 0;
-    background-color: rgba(255, 183, 178, 0.4);
-    filter: blur(24px);
+    background-color: rgba(255, 183, 178, 0.35);
+    filter: blur(18px);
     border-radius: 9999px;
-    z-index: -10;
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    z-index: -1;
+    animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-@keyframes pulse {
+@keyframes pulse-glow {
 
     0%,
     100% {
         opacity: 1;
+        transform: scale(1);
     }
 
     50% {
-        opacity: .5;
+        opacity: 0.5;
+        transform: scale(1.15);
     }
 }
 
 .faceDetails {
     position: absolute;
-    top: 2.5rem;
+    top: 1.9rem;
     display: flex;
-    gap: 1rem;
+    gap: 0.8rem;
 }
 
 .eye {
-    width: 0.5rem;
-    height: 0.75rem;
-    background-color: white;
+    width: 0.375rem;
+    height: 0.55rem;
+    background-color: rgba(255, 255, 255, 0.9);
     border-radius: 9999px;
-    opacity: 0.8;
 }
 
 .mouth {
     position: absolute;
-    top: 3.5rem;
-    width: 0.75rem;
-    height: 0.375rem;
-    background-color: rgba(255, 255, 255, 0.6);
+    top: 2.9rem;
+    width: 0.65rem;
+    height: 0.3rem;
+    background-color: rgba(255, 255, 255, 0.7);
     border-radius: 9999px;
 }
 
 .title {
-    font-family: 'Fredoka', sans-serif;
-    font-size: 2.25rem;
+    font-family: 'Fredoka', sans-serif !important;
+    font-size: 2rem;
     font-weight: 700;
     color: var(--pastel-text);
     letter-spacing: 0.025em;
-    margin-bottom: 0.25rem;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+    margin: 0 0 0.2rem;
     text-align: center;
+    /* Override the global h1 serif rule from tokens.css */
+    font-family: 'Fredoka', sans-serif;
 }
 
 .subtitle {
-    color: rgba(140, 106, 106, 0.7);
-    /* pastel-text/70 */
-    font-size: 1rem;
+    color: rgba(140, 106, 106, 0.65);
+    font-size: 0.875rem;
     font-weight: 500;
-    margin: 0;
+    margin: 0 0 0.5rem;
+    text-align: center;
 }
 
 /* Form Elements */
@@ -244,8 +257,8 @@
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
-    padding: 0 0.5rem;
+    gap: 1rem;
+    padding: 0 0.25rem;
 }
 
 .inputGroup {
@@ -254,22 +267,25 @@
 
 .inputLabel {
     display: block;
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     font-weight: 700;
     color: var(--pastel-sage-dark);
-    margin-left: 1rem;
-    margin-bottom: 0.25rem;
+    margin-left: 0.875rem;
+    margin-bottom: 0.2rem;
 }
 
 .inputIcon {
     position: absolute;
-    left: 1rem;
-    top: 34px;
+    left: 0.875rem;
+    top: 50%;
+    transform: translateY(calc(-50% + 10px));
+    /* shift down to account for label */
     color: var(--pastel-sage);
     transition: color 0.3s;
     z-index: 10;
     display: flex;
     align-items: center;
+    font-size: 20px;
 }
 
 .inputGroup:focus-within .inputIcon {
@@ -278,48 +294,51 @@
 
 .input {
     width: 100%;
-    padding: 1rem 1rem 1rem 3rem;
-    background-color: white;
-    border: 4px solid var(--pastel-sage);
-    border-radius: 1.5rem;
+    padding: 0.875rem 0.875rem 0.875rem 2.75rem;
+    background-color: rgba(255, 255, 255, 0.95);
+    border: 3px solid var(--pastel-sage);
+    border-radius: 1.25rem;
     color: var(--pastel-text);
-    font-family: inherit;
-    font-size: 1rem;
+    font-family: 'Varela Round', sans-serif;
+    font-size: 0.95rem;
     transition: all 0.3s;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     outline: none;
     box-sizing: border-box;
 }
 
 .input::placeholder {
-    color: rgba(183, 228, 199, 0.6);
-    /* pastel-sage/60 */
+    color: rgba(183, 228, 199, 0.7);
 }
 
 .input:focus {
     border-color: var(--pastel-sage-dark);
-    box-shadow: 0 0 0 4px rgba(183, 228, 199, 0.2);
-    /* ring pastel-sage/20 */
+    box-shadow: 0 0 0 3px rgba(183, 228, 199, 0.25);
 }
 
 .inputRightIcon {
     position: absolute;
-    right: 1rem;
-    top: 38px;
-    color: rgba(255, 183, 178, 0.4);
+    right: 0.875rem;
+    top: 50%;
+    transform: translateY(calc(-50% + 10px));
+    /* shift down to account for label */
+    color: rgba(255, 183, 178, 0.45);
     pointer-events: none;
     display: flex;
     align-items: center;
+    font-size: 17px;
 }
 
 .visibilityBtn {
     position: absolute;
-    right: 1rem;
-    top: 34px;
+    right: 0.875rem;
+    top: 50%;
+    transform: translateY(calc(-50% + 10px));
+    /* shift down to account for label */
     color: var(--pastel-sage);
     background: none;
     border: none;
-    padding: 0.25rem;
+    padding: 0.2rem;
     cursor: pointer;
     transition: color 0.3s;
     display: flex;
@@ -333,14 +352,13 @@
 /* Submit Button */
 .submitBtn {
     width: 100%;
-    margin-top: 1.5rem;
-    padding: 1rem 1.5rem;
+    margin-top: 0.75rem;
+    padding: 0.875rem 1.25rem;
     background-color: var(--pastel-green-btn);
     color: white;
     border: none;
-    border-radius: 1.5rem;
-    box-shadow: 0 6px 0px #74c69d;
-    /* shadow-button */
+    border-radius: 1.25rem;
+    box-shadow: 0 5px 0px #6cc590;
     transition: all 0.15s;
     display: flex;
     align-items: center;
@@ -354,17 +372,23 @@
 
 .submitBtn:hover {
     background-color: var(--pastel-sage-dark);
+    box-shadow: 0 5px 0px #74b89a;
 }
 
 .submitBtn:active {
-    box-shadow: 0 2px 0px #74c69d;
-    /* shadow-button-active */
-    transform: translateY(4px);
+    box-shadow: 0 2px 0px #6cc590;
+    transform: translateY(3px);
+}
+
+.submitBtn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .submitBtnText {
     font-weight: 700;
-    font-size: 1.25rem;
+    font-size: 1.15rem;
     letter-spacing: 0.025em;
 }
 
@@ -377,30 +401,32 @@
     background-color: rgba(255, 255, 255, 0.2);
     border-radius: 9999px;
     filter: blur(8px);
+    pointer-events: none;
 }
 
 .arrowIcon {
     transition: transform 0.3s;
+    font-size: 1rem;
 }
 
 .submitBtn:hover .arrowIcon {
-    transform: scale(1.1);
+    transform: translateX(3px);
 }
 
 /* Bottom Extras */
 .avatarBtnContainer {
     display: flex;
     justify-content: center;
-    padding-top: 1rem;
-    padding-bottom: 0.5rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.25rem;
 }
 
 .avatarBtn {
-    padding: 1rem;
-    background-color: white;
+    padding: 0.75rem;
+    background-color: rgba(255, 255, 255, 0.85);
     border-radius: 9999px;
     color: var(--pastel-sage);
-    border: 2px solid rgba(183, 228, 199, 0.3);
+    border: 2px solid rgba(183, 228, 199, 0.35);
     transition: all 0.3s;
     cursor: pointer;
     display: flex;
@@ -410,40 +436,35 @@
 
 .avatarBtn:hover {
     color: var(--pastel-rose);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 12px rgba(255, 183, 178, 0.3);
 }
 
 .footerNote {
-    margin-top: 2rem;
-    margin-bottom: 2rem;
+    margin-top: 0.75rem;
+    margin-bottom: 1.25rem;
     text-align: center;
     padding: 0 1rem;
 }
 
 .footerPill {
     background-color: rgba(255, 255, 255, 0.6);
-    padding: 0.5rem 1rem;
+    padding: 0.4rem 0.875rem;
     border-radius: 9999px;
     display: inline-block;
 }
 
 .footerText {
-    color: rgba(140, 106, 106, 0.8);
+    color: rgba(140, 106, 106, 0.75);
     font-family: 'Fredoka', sans-serif;
-    font-size: 0.875rem;
-    letter-spacing: 0.025em;
+    font-size: 0.85rem;
+    letter-spacing: 0.02em;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
     margin: 0;
 }
 
 .footerIcon {
     color: var(--pastel-rose);
-    font-size: 0.875rem;
-}
-
-/* Helper loading spinner if needed */
-.mainIcon.loading {
-    animation: pulse 1s infinite alternate;
+    font-size: 0.85rem;
 }
