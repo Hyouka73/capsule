@@ -16,8 +16,10 @@
     "@fontsource/playfair-display": "^5.2.8",
     "firebase": "^12.9.0",
     "framer-motion": "^12.34.0",
+    "mapbox-gl": "^3.18.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-map-gl": "^8.1.0",
     "sileo": "^0.1.4"
   },
   "devDependencies": {

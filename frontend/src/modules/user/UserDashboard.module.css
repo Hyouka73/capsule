@@ -28,9 +28,8 @@
 .dotPattern {
     position: absolute;
     inset: 0;
-    background-image: radial-gradient(var(--pastel-rose) 1px, transparent 1px);
-    background-size: 24px 24px;
-    opacity: 0.3;
+    background-image: radial-gradient(#ffe5e5 1px, transparent 1px);
+    background-size: 20px 20px;
 }
 
 .gradientOrb1,
@@ -221,7 +220,7 @@
 /* --- Barra de Navegación Inferior --- */
 .bottomNavContainer {
     position: fixed;
-    bottom: 24px;
+    bottom: 16px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 50;
@@ -235,13 +234,11 @@
 
 .bottomNav {
     display: flex;
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
+    background: #ffffff;
+    border-radius: 9999px;
+    box-shadow: 0 8px 30px -4px rgba(255, 183, 178, 0.4);
+    border: 4px solid rgba(183, 228, 199, 0.4);
     padding: 0.5rem;
-    border-radius: 100px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
     pointer-events: auto;
     /* Nav items are clickable */
     gap: 0.25rem;
@@ -249,43 +246,44 @@
 
 .navItem {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
     border: none;
     background: transparent;
-    border-radius: 100px;
+    border-radius: 9999px;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    color: var(--text-secondary);
+    color: #bcacad;
 }
 
 .navItem:hover {
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(140, 106, 106, 0.1);
 }
 
 .navItemActive {
-    background: var(--pastel-rose);
-    color: #fff;
-    box-shadow: 0 4px 15px rgba(255, 117, 143, 0.3);
+    background: #88d8b0;
+    color: #ffffff;
+    box-shadow: none;
 }
 
 .navItemActive:hover {
-    background: var(--pastel-rose);
+    background: #88d8b0;
 }
 
 .navIcon {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     line-height: 1;
 }
 
 .navLabel {
-    font-weight: 600;
-    font-size: 0.95rem;
-    letter-spacing: -0.01em;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 0.02em;
     white-space: nowrap;
-    overflow: hidden;
 }
 
 /* Responsive constraints */

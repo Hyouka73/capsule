@@ -3,17 +3,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import UserCapsules from '../capsules/UserCapsules';
 import UserCoupons from '../coupons/UserCoupons';
 import UserBingo from '../bingo/UserBingo';
+import UserLugares from '../lugares/UserLugares';
 import styles from './UserDashboard.module.css';
 
 const TABS = [
-    { id: 'home', label: 'Inicio', icon: '✨' },
-    { id: 'capsules', label: 'Cápsulas', icon: '⏳' },
-    { id: 'coupons', label: 'Cupones', icon: '🎁' },
-    { id: 'bingo', label: 'Bingo', icon: '🎯' },
+    { id: 'lugares', label: 'Lugares', icon: 'map' },
+    { id: 'fotos', label: 'Fotos', icon: 'photo_library' },
+    { id: 'sorpresas', label: 'Sorpresas', icon: 'card_giftcard' },
+    { id: 'bingo', label: 'Bingo', icon: 'grid_view' },
+    { id: 'mas', label: 'Más', icon: 'more_horiz' },
 ];
 
 export default function UserDashboard() {
-    const [activeTab, setActiveTab] = useState('home');
+    const [activeTab, setActiveTab] = useState('lugares'); // Make lugares default since it's the home screen
 
     // Efecto sutil de partículas flotantes en el fondo (similar a AdminLogin)
     useEffect(() => {
@@ -46,6 +48,7 @@ export default function UserDashboard() {
 
     const renderContent = () => {
         switch (activeTab) {
+            case 'lugares': return <UserLugares />;
             case 'capsules': return <UserCapsules />;
             case 'coupons': return <UserCoupons />;
             case 'bingo': return <UserBingo />;
@@ -99,18 +102,12 @@ export default function UserDashboard() {
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
                             >
-                                <span className={styles.navIcon}>{tab.icon}</span>
-                                {isActive && (
-                                    <motion.span
-                                        layoutId="navPill"
-                                        className={styles.navLabel}
-                                        initial={{ opacity: 0, width: 0 }}
-                                        animate={{ opacity: 1, width: 'auto' }}
-                                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                                    >
-                                        {tab.label}
-                                    </motion.span>
-                                )}
+                                <span className={`material-symbols-outlined ${styles.navIcon}`}>
+                                    {tab.icon}
+                                </span>
+                                <span className={styles.navLabel}>
+                                    {tab.label}
+                                </span>
                             </button>
                         );
                     })}

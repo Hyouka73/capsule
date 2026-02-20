@@ -1,0 +1,631 @@
+.mapContainer {
+    width: 100vw;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+    z-index: 10;
+}
+
+/* Header */
+.header {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    z-index: 10;
+    background: #ffffff;
+    border-radius: 9999px;
+    border: 4px solid rgba(183, 228, 199, 0.4);
+    box-shadow: 0 8px 30px -4px rgba(255, 183, 178, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+}
+
+.headerLeft {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.headerTitle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    color: #8c6a6a;
+    font-size: 16px;
+    margin: 0;
+}
+
+.headerIcon {
+    color: #ffb7b2;
+    font-size: 20px;
+    font-variation-settings: 'FILL' 1;
+}
+
+.headerSubtitle {
+    font-family: 'Varela Round', sans-serif;
+    font-size: 11px;
+    color: #95d5b2;
+    margin: 0;
+}
+
+.addBtn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #88d8b0;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 0px #74c69d;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.addBtn:active {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0px #74c69d;
+}
+
+.addBtn .material-symbols-outlined {
+    font-size: 20px;
+}
+
+/* Filters */
+.filtersWrapper {
+    position: absolute;
+    top: 80px;
+    z-index: 10;
+    width: 100%;
+    overflow-x: auto;
+    padding: 0 16px;
+    scrollbar-width: none;
+}
+
+.filtersWrapper::-webkit-scrollbar {
+    display: none;
+}
+
+.filtersContainer {
+    display: flex;
+    gap: 8px;
+    padding: 4px 0 12px 0;
+    width: max-content;
+}
+
+.filterChip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 9999px;
+    background: #ffffff;
+    border: 2px solid #b7e4c7;
+    color: #95d5b2;
+    font-family: 'Varela Round', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.filterChipActive {
+    background: #88d8b0;
+    color: white;
+    border-color: #88d8b0;
+}
+
+.filterIcon {
+    font-size: 16px;
+}
+
+/* Markers */
+.markerContainer {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 1;
+}
+
+.markerContainer.selected {
+    transform: scale(1.2);
+    z-index: 10;
+}
+
+.teardropLarge {
+    width: 64px;
+    height: 64px;
+    background: #88d8b0;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 4px 12px rgba(136, 216, 176, 0.6));
+    position: relative;
+}
+
+.selected .teardropLarge {
+    background: #74c69d;
+    filter: drop-shadow(0 6px 16px rgba(136, 216, 176, 0.8));
+}
+
+.markerPhoto {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 3px solid white;
+    object-fit: cover;
+    transform: rotate(45deg);
+}
+
+.pulseRing {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(45deg);
+    width: 64px;
+    height: 64px;
+    border: 2px solid #88d8b0;
+    border-radius: 50%;
+    animation: pulseRingAnim 2s infinite ease-out;
+    pointer-events: none;
+}
+
+@keyframes pulseRingAnim {
+    0% {
+        width: 64px;
+        height: 64px;
+        opacity: 1;
+    }
+
+    100% {
+        width: 90px;
+        height: 90px;
+        opacity: 0;
+    }
+}
+
+.teardropMedium {
+    width: 44px;
+    height: 44px;
+    background: #88d8b0;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 3px 8px rgba(136, 216, 176, 0.4));
+}
+
+.selected .teardropMedium {
+    background: #74c69d;
+    filter: drop-shadow(0 5px 12px rgba(136, 216, 176, 0.6));
+}
+
+.markerIcon {
+    color: white;
+    font-size: 18px;
+    transform: rotate(45deg);
+}
+
+.teardropSmall {
+    width: 30px;
+    height: 30px;
+    background: rgba(136, 216, 176, 0.8);
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.selected .teardropSmall {
+    background: rgba(116, 198, 157, 1);
+    transform: rotate(-45deg) scale(1.2);
+}
+
+.markerDot {
+    width: 8px;
+    height: 8px;
+    background: white;
+    border-radius: 50%;
+}
+
+/* Bottom Drawer */
+.bottomDrawer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #ffffff;
+    border-radius: 2.5rem 2.5rem 0 0;
+    box-shadow: 0 -8px 30px rgba(255, 183, 178, 0.3);
+    transition: height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 20;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.drawerEmpty {
+    height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.drawerEmptyIcon {
+    color: #b7e4c7;
+    font-size: 32px;
+}
+
+.drawerEmptyText {
+    font-family: 'Varela Round', sans-serif;
+    font-style: italic;
+    font-size: 13px;
+    color: #bcacad;
+    margin: 0;
+}
+
+.drawerContentArea {
+    height: 360px;
+    padding: 16px 24px;
+    display: flex;
+    flex-direction: column;
+}
+
+.dragHandle {
+    width: 40px;
+    height: 4px;
+    background: #ffe5e5;
+    border-radius: 2px;
+    margin: 0 auto 16px auto;
+}
+
+.placeHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.placeTitle {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    color: #8c6a6a;
+    margin: 0;
+}
+
+.placeHeartBtn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #fff0f3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+}
+
+.placeHeartBtn .material-symbols-outlined {
+    color: #88d8b0;
+    font-variation-settings: 'FILL' 1;
+}
+
+.placeDate {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #bcacad;
+    font-family: 'Varela Round', sans-serif;
+    font-size: 13px;
+    margin-bottom: 16px;
+}
+
+.dateIcon {
+    font-size: 18px;
+}
+
+.photoStrip {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+}
+
+.photoStrip::-webkit-scrollbar {
+    display: none;
+}
+
+.photoThumbnail {
+    width: 72px;
+    min-width: 72px;
+    height: 72px;
+    border-radius: 1rem;
+    object-fit: cover;
+    position: relative;
+    border: 1px solid rgba(183, 228, 199, 0.4);
+}
+
+.photoOverlayWrapper {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    min-width: 72px;
+}
+
+.photoOverlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    color: white;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+}
+
+.tagsRow {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+
+.tagPill {
+    border: 2px solid #b7e4c7;
+    color: #95d5b2;
+    font-family: 'Varela Round', sans-serif;
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 9999px;
+}
+
+.ctaBtn {
+    width: 100%;
+    background: #88d8b0;
+    color: white;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    padding: 16px;
+    border: none;
+    border-radius: 9999px;
+    box-shadow: 0 6px 0px #74c69d;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s;
+    margin-top: auto;
+}
+
+.ctaBtn:active {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0px #74c69d;
+}
+
+/* FAB Modo Cita */
+.fabCita {
+    position: absolute;
+    bottom: 100px;
+    right: 20px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.fabBtn {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #88d8b0;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    box-shadow: 0 6px 0px #74c69d;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.fabBtn:active {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0px #74c69d;
+}
+
+.fabBtn .material-symbols-outlined {
+    font-size: 28px;
+}
+
+.fabLabel {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 10px;
+    color: #8c6a6a;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 2px 8px;
+    border-radius: 12px;
+    backdrop-filter: blur(4px);
+}
+
+/* Modo Cita Activo - Overlay */
+.citaOverlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 240, 243, 0.88);
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.citaHeader {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    background: #ffffff;
+    border-radius: 9999px;
+    border: 4px solid rgba(183, 228, 199, 0.4);
+    box-shadow: 0 8px 30px -4px rgba(255, 183, 178, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+}
+
+.citaTitleText {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    color: #88d8b0;
+    font-size: 16px;
+    margin: 0;
+}
+
+.citaSubtitle {
+    font-family: 'Varela Round', sans-serif;
+    font-size: 11px;
+    color: #bcacad;
+    margin: 0;
+}
+
+.closeCitaBtn {
+    background: none;
+    border: none;
+    color: #8c6a6a;
+    font-size: 24px;
+    padding: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.centerContent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.hugeCameraBtn {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: #88d8b0;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    box-shadow: 0 6px 0px #74c69d;
+    cursor: pointer;
+    animation: float 4s infinite ease-in-out;
+}
+
+.hugeCameraBtn .material-symbols-outlined {
+    font-size: 48px;
+}
+
+.hugeCameraLabel {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    color: #8c6a6a;
+}
+
+.secondaryActions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.secondaryActionBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #ffffff;
+    border: 2px solid #b7e4c7;
+    border-radius: 9999px;
+    padding: 8px 16px;
+    color: #8c6a6a;
+    font-family: 'Varela Round', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.secondaryActionBtn .material-symbols-outlined {
+    font-size: 18px;
+    color: #88d8b0;
+}
+
+.citaBottomStrip {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background: #ffffff;
+    border-radius: 2.5rem 2.5rem 0 0;
+    height: 100px;
+    padding: 16px 24px;
+    box-shadow: 0 -8px 30px rgba(255, 183, 178, 0.3);
+    display: flex;
+    flex-direction: column;
+}
+
+.stripTitle {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: #8c6a6a;
+    margin: 0 0 12px 0;
+}
+
+.stripPhotos {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.stripPhotos::-webkit-scrollbar {
+    display: none;
+}
+
+.stripImage {
+    width: 64px;
+    height: 64px;
+    min-width: 64px;
+    border-radius: 0.75rem;
+    object-fit: cover;
+}
+
+.stripEmpty {
+    font-family: 'Varela Round', sans-serif;
+    font-style: italic;
+    color: #bcacad;
+    font-size: 13px;
+    margin: 0;
+}
