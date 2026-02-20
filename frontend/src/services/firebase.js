@@ -8,10 +8,10 @@ import firebaseConfig from '../config/firebase';
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 // Core services — initialized once
-// experimentalAutoDetectLongPolling: true → Firestore falls back to HTTP long-polling
-// when WebChannel is blocked by an ad blocker (avoids ERR_BLOCKED_BY_CLIENT on Listen channel)
+// experimentalForceLongPolling: true → Firestore NEVER attempts WebChannel/gRPC
+// and always uses HTTP long-polling. Prevents ERR_BLOCKED_BY_CLIENT from ad blockers.
 const db = initializeFirestore(app, {
-    experimentalAutoDetectLongPolling: true,
+    experimentalForceLongPolling: true,
 });
 const storage = getStorage(app);
 const auth = getAuth(app);
