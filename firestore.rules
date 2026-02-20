@@ -1,0 +1,152 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── HELPERS ─────────────────────────────────────────────────────────────
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+             request.auth.token.role == "admin";
+    }
+
+    function isPartner() {
+      return isAuthenticated() &&
+             request.auth.token.role == "partner";
+    }
+
+    function isNotRevoked() {
+      return isAuthenticated() &&
+             !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isRevoked;
+    }
+
+    function isValidDevice() {
+      return isPartner() &&
+             request.auth.token.deviceId ==
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.deviceId;
+    }
+
+    function canAccess() {
+      return isAdmin() || (isPartner() && isNotRevoked() && isValidDevice());
+    }
+
+    // ── USERS ────────────────────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read: if isAdmin() || request.auth.uid == userId;
+      allow create: if isAdmin();
+      allow update: if isAdmin() ||
+        (request.auth.uid == userId && isPartner() &&
+         request.resource.data.diff(resource.data).affectedKeys()
+           .hasOnly(["preferences", "fcmTokens", "lastActiveAt", "deviceInfo"]));
+      allow delete: if isAdmin();
+    }
+
+    // ── INVITE TOKENS ────────────────────────────────────────────────────────
+    match /inviteTokens/{tokenId} {
+      allow read: if isAdmin() || request.auth == null;
+      allow write: if isAdmin();
+    }
+
+    // ── PLACES ───────────────────────────────────────────────────────────────
+    match /places/{placeId} {
+      allow read: if canAccess();
+      allow create, update: if canAccess();
+      allow delete: if isAdmin();
+    }
+
+    // ── MEMORIES ─────────────────────────────────────────────────────────────
+    match /memories/{memoryId} {
+      allow read: if canAccess();
+      allow create: if canAccess() &&
+        request.resource.data.uploadedBy == request.auth.uid;
+      allow update: if isAdmin() ||
+        (isPartner() && isNotRevoked() && isValidDevice() &&
+         request.resource.data.diff(resource.data).affectedKeys()
+           .hasOnly(["isSpecial", "updatedAt"]));
+      allow delete: if isAdmin();
+
+      // ── PHOTOS SUBCOLLECTION ──────────────────────────────────────────────
+      match /photos/{photoId} {
+        allow read: if canAccess();
+        allow create: if canAccess() &&
+          request.resource.data.uploadedBy == request.auth.uid;
+        allow update: if isAdmin() ||
+          (isPartner() && isNotRevoked() && isValidDevice() &&
+           request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(["isSpecial", "partnerNote", "uploadStatus"]));
+        allow delete: if isAdmin();
+      }
+    }
+
+    // ── ARTIFACTS ────────────────────────────────────────────────────────────
+    match /artifacts/{artifactId} {
+      allow read: if canAccess();
+      allow create: if canAccess() &&
+        request.resource.data.uploadedBy == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ── CAPSULES ─────────────────────────────────────────────────────────────
+    match /capsules/{capsuleId} {
+      allow read: if isAdmin() ||
+        (isPartner() && isNotRevoked() && isValidDevice() &&
+         resource.data.isUnlocked == true &&
+         resource.data.isDestructed == false);
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() ||
+        (isPartner() && isNotRevoked() && isValidDevice() &&
+         resource.data.isUnlocked == true &&
+         request.resource.data.diff(resource.data).affectedKeys()
+           .hasOnly(["openedByPartner", "openedAt"]));
+    }
+
+    // ── COUPONS ──────────────────────────────────────────────────────────────
+    match /coupons/{couponId} {
+      allow read: if canAccess() &&
+        (isAdmin() || resource.data.isActive == true);
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() ||
+        (isPartner() && isNotRevoked() && isValidDevice() &&
+         request.resource.data.diff(resource.data).affectedKeys()
+           .hasOnly(["isUsed", "usedAt", "usedNotes"]));
+    }
+
+    // ── BINGO BOARD ──────────────────────────────────────────────────────────
+    match /bingoBoard/{docId} {
+      allow read: if canAccess();
+      allow create: if isAdmin();
+      allow update: if isAdmin() ||
+        (isPartner() && isNotRevoked() && isValidDevice() &&
+         request.resource.data.categories.size() == resource.data.categories.size());
+    }
+
+    // ── WRAPPED DATA ─────────────────────────────────────────────────────────
+    match /wrappedData/{year} {
+      allow read: if canAccess() &&
+        (isAdmin() ||
+         get(/databases/$(database)/documents/appConfig/main).data.visibility.showWrapped == true);
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ── ACTIVITY LOG ─────────────────────────────────────────────────────────
+    match /activityLog/{logId} {
+      allow read: if isAdmin();
+      allow create: if isPartner() && isNotRevoked() && isValidDevice() &&
+        request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(["isReadByAdmin"]);
+      allow delete: if isAdmin();
+    }
+
+    // ── APP CONFIG ───────────────────────────────────────────────────────────
+    match /appConfig/{docId} {
+      allow read: if canAccess();
+      allow write: if isAdmin();
+    }
+  }
+}

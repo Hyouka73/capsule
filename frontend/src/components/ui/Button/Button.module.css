@@ -1,0 +1,82 @@
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    font-family: var(--font-sans);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid transparent;
+    outline: none;
+    gap: 0.5rem;
+}
+
+.button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Variants */
+.primary {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    color: var(--bg-main);
+}
+
+.primary:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.secondary {
+    background: var(--bg-input);
+    border-color: var(--glass-border);
+    color: var(--text-primary);
+}
+
+.secondary:hover:not(:disabled) {
+    background: var(--bg-card);
+    border-color: var(--accent-border);
+}
+
+.ghost {
+    background: transparent;
+    color: var(--text-muted);
+}
+
+.ghost:hover:not(:disabled) {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Sizes */
+.sm {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.75rem;
+}
+
+.md {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.875rem;
+}
+
+.lg {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+}
+
+/* Loader */
+.loader {
+    animation: spin 1.5s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}

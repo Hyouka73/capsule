@@ -1,0 +1,148 @@
+.root {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    height: 100%;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.title {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+.subtitle {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.formPanel {
+    padding: 1.5rem;
+    border: 1px solid var(--glass-border);
+}
+
+.formPanelHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.formPanelHeader h2 {
+    margin: 0;
+    font-size: 1.3rem;
+}
+
+.closeBtn {
+    font-size: 1.2rem;
+    padding: 0.2rem 0.6rem;
+}
+
+.loading,
+.empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    gap: 1rem;
+    min-height: 200px;
+}
+
+.emptyIcon {
+    font-size: 3rem;
+    margin: 0;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+    padding: 1.25rem;
+    position: relative;
+    border: 1px solid var(--glass-border);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+}
+
+.cardTitle {
+    margin: 0;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+}
+
+.statusBadge {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--radius-full);
+    font-weight: 500;
+}
+
+.statusBadge.locked {
+    background-color: var(--accent-soft);
+    color: var(--accent-secondary);
+}
+
+.statusBadge.unlocked {
+    background-color: rgba(116, 198, 157, 0.15);
+    /* color-success con opacidad */
+    color: var(--color-success);
+}
+
+.statusBadge.viewed {
+    background-color: rgba(161, 161, 170, 0.15);
+    /* text-secondary con opacidad */
+    color: var(--text-secondary);
+}
+
+.cardDate {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.cardBody {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    background: var(--bg-input);
+    padding: 0.75rem;
+    border-radius: var(--radius-sm);
+    font-style: italic;
+}
+
+.cardFooter {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}

@@ -1,0 +1,51 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAdmin() {
+      return request.auth != null && request.auth.token.role == "admin";
+    }
+
+    function isPartner() {
+      return request.auth != null && request.auth.token.role == "partner";
+    }
+
+    function isValidFile() {
+      return request.resource.size < 50 * 1024 * 1024
+        && (request.resource.contentType.matches('image/.*')
+          || request.resource.contentType == 'application/pdf');
+    }
+
+    // Fotos de memories (original + thumb generado por Cloud Function)
+    match /memories/{memoryId}/photos/{photoId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if (isAdmin() || isPartner()) && isValidFile();
+      allow delete: if isAdmin();
+    }
+
+    // Artifacts (boletos, PDFs escaneados)
+    match /artifacts/{artifactId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if (isAdmin() || isPartner()) && isValidFile();
+      allow delete: if isAdmin();
+    }
+
+    // Contenido de cápsulas (solo admin sube)
+    match /capsules/{capsuleId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Wrapped assets generados por Cloud Function
+    match /wrapped/{year}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // Backups (solo admin)
+    match /backups/{allPaths=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

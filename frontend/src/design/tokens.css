@@ -1,0 +1,86 @@
+/* 
+  Project Capsule — Design Tokens
+  Paleta de lujo: Deep Navy, Champagne Gold, Cream, y Glassmorphism.
+*/
+
+:root {
+    /* --- Colors --- */
+    --bg-main: #fff0f3;
+    /* Soft Creamy Pink / Cute Pastel BG */
+    --bg-card: #ffffff;
+    /* Tarjetas blancas limpias */
+    --bg-input: #fff2f5;
+    /* Inputs en rosa super pálido */
+
+    /* Cute Pastel Palette */
+    --pastel-bg: #fff0f3;
+    --pastel-sage: #b7e4c7;
+    --pastel-sage-dark: #95d5b2;
+    --pastel-rose: #ffb7b2;
+    --pastel-rose-light: #ffe5e5;
+    --pastel-green-btn: #88d8b0;
+    --pastel-text: #8c6a6a;
+
+    /* Sweet Pink & Mint Green (Legacy Mappings) */
+    --accent-primary: var(--pastel-rose);
+    /* Rosa Dulce / Principal */
+    --accent-secondary: var(--pastel-sage);
+    /* Verde Menta / Secundario */
+    --accent-soft: rgba(255, 183, 178, 0.15);
+    /* Rosa translúcido basado en pastel-rose */
+    --accent-border: rgba(183, 228, 199, 0.4);
+    /* Opciones bordes verdes pastel-sage */
+
+    /* Text */
+    --text-primary: var(--pastel-text);
+    /* Gris/Marrón oscuro para legibilidad suave */
+    --text-secondary: #9c8484;
+    --text-muted: #bcacad;
+    --text-inverse: #ffffff;
+    /* Para texto sobre botones rosas */
+
+    /* States */
+    --color-success: var(--pastel-green-btn);
+    /* Verde brillante */
+    --color-error: #ff758f;
+    --color-warning: #ffd166;
+    --color-info: #a2d2ff;
+
+    /* --- Glassmorphism --- */
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    /* Vidrio esmerilado claro */
+    --glass-border: rgba(255, 143, 171, 0.25);
+    /* Borde de vidrio rosado */
+    --glass-blur: blur(12px);
+
+    /* --- Typography --- */
+    --font-serif: 'Playfair Display', Georgia, serif;
+    --font-sans: 'DM Sans', 'Inter', system-ui, sans-serif;
+
+    /* --- Spacing --- */
+    --radius-sm: 0.4rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1.25rem;
+    --radius-full: 9999px;
+
+    /* --- Shadows --- */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.5);
+}
+
+/* --- Global Overrides --- */
+body {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+    font-family: var(--font-serif);
+}

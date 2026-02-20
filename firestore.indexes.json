@@ -1,0 +1,167 @@
+{
+    "indexes": [
+        {
+            "collectionGroup": "memories",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "isHidden",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "eventDate",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "memories",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "isHidden",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "memories",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "tags",
+                    "arrayConfig": "CONTAINS"
+                },
+                {
+                    "fieldPath": "eventDate",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "memories",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "placeId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "eventDate",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "memories",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "isSpecial",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "eventDate",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "capsules",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "isUnlocked",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "unlockDate",
+                    "order": "ASCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "capsules",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "isUnlocked",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "openedByPartner",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "unlockedAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "activityLog",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "isReadByAdmin",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "artifacts",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "memoryId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "photos",
+            "queryScope": "COLLECTION_GROUP",
+            "fields": [
+                {
+                    "fieldPath": "isSpecial",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "coupons",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "isActive",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "isUsed",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        }
+    ],
+    "fieldOverrides": []
+}
