@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import PhotoViewer from '../../components/ui/PhotoViewer/PhotoViewer';
 import CitaOverlay from './components/CitaOverlay/CitaOverlay';
+import PendingWarningBtn from './components/PendingDates/PendingWarningBtn';
+import PendingDatesList from './components/PendingDates/PendingDatesList';
+import PendingDateForm from './components/PendingDates/PendingDateForm';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import L from 'leaflet';
@@ -126,12 +129,38 @@ const MOCK_PLACES = [
     }
 ];
 
-const FILTER_OPTIONS = [
+const ALL_POSSIBLE_FILTERS = [
     { id: 'todos', label: 'Todos', icon: 'favorite' },
     { id: 'cine', label: 'Cine', icon: 'movie' },
     { id: 'comida', label: 'Comida', icon: 'restaurant' },
     { id: 'romántico', label: 'Romántico', icon: 'local_florist' },
     { id: 'aventura', label: 'Aventura', icon: 'hiking' },
+    { id: 'relajación', label: 'Relajación', icon: 'spa' },
+    { id: 'fiesta', label: 'Fiesta', icon: 'celebration' },
+    { id: 'misterioso', label: 'Misterioso', icon: 'help_center' }
+];
+
+const MOCK_PENDING_DATES = [
+    {
+        id: 'pnd1',
+        originalDate: 'Hoy, 6:00 PM',
+        coverPhoto: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=200&q=80',
+        photos: [
+            'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4',
+            'https://images.unsplash.com/photo-1585647347384-2593bc35786b'
+        ],
+        isFromBingo: false,
+    },
+    {
+        id: 'pnd2',
+        originalDate: 'Ayer, 8:30 PM',
+        coverPhoto: 'https://images.unsplash.com/photo-1582216669966-22ac585a73e5?auto=format&fit=crop&w=200&q=80',
+        photos: [
+            'https://images.unsplash.com/photo-1582216669966-22ac585a73e5'
+        ],
+        suggestedTags: ['romántico', 'comida'],
+        isFromBingo: true,
+    }
 ];
 
 // Fly to a selected place
@@ -198,6 +227,11 @@ export default function UserLugares({ onPlaceSelected }) {
     const [citaContext, setCitaContext] = useState(null);
     const [toastMessage, setToastMessage] = useState(null);
 
+    // Pending Dates state
+    const [pendingDates, setPendingDates] = useState(MOCK_PENDING_DATES);
+    const [isPendingListOpen, setIsPendingListOpen] = useState(false);
+    const [selectedPendingDate, setSelectedPendingDate] = useState(null);
+
     // Photo viewer state
     const [viewerPhotos, setViewerPhotos] = useState(null);
 
@@ -215,6 +249,16 @@ export default function UserLugares({ onPlaceSelected }) {
         const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
         return matchesFilter && matchesSearch;
     });
+
+    // Calculate dynamic filters based on currently available tags in MOCK_PLACES
+    const availableTags = new Set();
+    MOCK_PLACES.forEach(place => {
+        place.tags?.forEach(tag => availableTags.add(tag));
+    });
+
+    const activeFilters = ALL_POSSIBLE_FILTERS.filter(
+        opt => opt.id === 'todos' || availableTags.has(opt.id)
+    );
 
     return (
         <div className={styles.screen}>
@@ -302,7 +346,7 @@ export default function UserLugares({ onPlaceSelected }) {
                                 exit={{ opacity: 0, scale: 0.95, width: 0 }}
                                 transition={{ duration: 0.2 }}
                             >
-                                {FILTER_OPTIONS.map(opt => (
+                                {activeFilters.map(opt => (
                                     <button
                                         key={opt.id}
                                         className={`${styles.chip} ${activeFilter === opt.id ? styles.chipActive : ''}`}
@@ -324,6 +368,15 @@ export default function UserLugares({ onPlaceSelected }) {
                             </motion.div>
                         )}
                     </AnimatePresence>
+
+                    {/* Warning Button for Pending Dates */}
+                    {!isSearchActive && !citaContext && !selectedPlace && (
+                        <PendingWarningBtn
+                            pendingCount={pendingDates.length}
+                            isVisible={true}
+                            onClick={() => setIsPendingListOpen(true)}
+                        />
+                    )}
                 </div>
 
                 {/* FAB */}
@@ -497,6 +550,34 @@ export default function UserLugares({ onPlaceSelected }) {
                     <div className={styles.toast}>
                         {toastMessage}
                     </div>
+                )}
+
+                {/* Pending Dates Overlays */}
+                {isPendingListOpen && !selectedPendingDate && (
+                    <PendingDatesList
+                        pendingDates={pendingDates}
+                        onClose={() => setIsPendingListOpen(false)}
+                        onSelectDate={(pd) => setSelectedPendingDate(pd)}
+                    />
+                )}
+
+                {selectedPendingDate && (
+                    <PendingDateForm
+                        pendingDate={selectedPendingDate}
+                        defaultPlaces={MOCK_PLACES}
+                        onClose={() => setSelectedPendingDate(null)}
+                        onSave={(finalData) => {
+                            setSelectedPendingDate(null);
+                            if (pendingDates.length === 1) setIsPendingListOpen(false);
+
+                            // Remove from pending
+                            setPendingDates(prev => prev.filter(p => p.id !== finalData.id));
+
+                            // To actually alter MOCK_PLACES we would need proper global state,
+                            // but for now we just show a success toast.
+                            showToast('¡Cita guardada en el historial! ✨');
+                        }}
+                    />
                 )}
 
                 {/* Photo Viewer Modal */}

@@ -1,0 +1,29 @@
+.warningBtn {
+    position: absolute;
+    bottom: 90px;
+    /* above the FAB */
+    right: 16px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-overlay-light);
+    border: 2px solid #ffd166;
+    /* golden warning */
+    border-radius: 9999px;
+    padding: 10px 16px;
+    color: #bfa14c;
+    box-shadow: 0 4px 12px rgba(255, 209, 102, 0.3);
+    cursor: pointer;
+    font-family: var(--font-fredoka);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.icon {
+    font-size: 20px;
+}
+
+.text {
+    white-space: nowrap;
+}
