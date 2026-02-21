@@ -17,6 +17,7 @@ const TABS = [
 
 export default function UserDashboard() {
     const [activeTab, setActiveTab] = useState('lugares');
+    const [isPlaceSelected, setIsPlaceSelected] = useState(false);
 
     // Partículas solo cuando NO es el mapa
     useEffect(() => {
@@ -64,7 +65,7 @@ export default function UserDashboard() {
             {/* ── MAPA: va directo al appContainer, sin padding ni wrappers ── */}
             {activeTab === 'lugares' && (
                 <div className={styles.mapWrapper}>
-                    <UserLugares />
+                    <UserLugares onPlaceSelected={setIsPlaceSelected} />
                 </div>
             )}
 
@@ -97,8 +98,20 @@ export default function UserDashboard() {
                 </>
             )}
 
-            {/* ── NAVBAR: siempre flotando encima de todo ── */}
-            <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} tabs={TABS} />
+            {/* ── NAVBAR: siempre flotando encima de todo, hidden if place is selected ── */}
+            <AnimatePresence>
+                {!isPlaceSelected && (
+                    <motion.div
+                        initial={{ y: 100, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 100, opacity: 0 }}
+                        transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                        style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50 }}
+                    >
+                        <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} tabs={TABS} />
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
