@@ -1,0 +1,298 @@
+.citaOverlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 240, 243, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 16px 100px;
+}
+
+.citaCard {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(24px);
+    border: 2px solid rgba(183, 228, 199, 0.5);
+    border-radius: 2rem;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    box-shadow:
+        0 20px 60px -10px rgba(255, 183, 178, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.citaHeader {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.citaLive {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    color: #7a5c5c;
+    margin: 0;
+}
+
+.citaSub {
+    font-family: 'Varela Round', sans-serif;
+    font-size: 11px;
+    color: #bcacad;
+    margin: 0;
+}
+
+.citaClose {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #fff0f3;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #bcacad;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.bigCamera {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffb7b2, #ff8fa3);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    box-shadow:
+        0 6px 0 #e87a8e,
+        0 12px 32px rgba(255, 143, 163, 0.4);
+    cursor: pointer;
+    animation: fabFloat 4s ease-in-out infinite;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.bigCamera span {
+    font-size: 44px;
+}
+
+.bigCamera:active {
+    transform: translateY(5px);
+    box-shadow: 0 1px 0 #e87a8e;
+    animation: none;
+}
+
+.bigCameraLabel {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: #7a5c5c;
+    margin: -8px 0 0;
+}
+
+.citaActions {
+    display: flex;
+    gap: 10px;
+}
+
+.citaAction {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(183, 228, 199, 0.12);
+    border: 2px solid rgba(183, 228, 199, 0.5);
+    border-radius: 9999px;
+    padding: 8px 16px;
+    color: #7a5c5c;
+    font-family: 'Varela Round', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.citaAction span {
+    font-size: 17px;
+    color: #88d8b0;
+}
+
+.citaEmpty {
+    font-family: 'Varela Round', sans-serif;
+    font-size: 12px;
+    color: #bcacad;
+    font-style: italic;
+    margin: -4px 0 0;
+}
+
+@keyframes fabFloat {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-6px);
+    }
+}
+
+/* =========================================================================
+   CITA PROGRESS & NEW ELEMENTS
+   ========================================================================= */
+.bingoPill {
+    background: rgba(183, 228, 199, 0.15);
+    border: 1.5px solid #88d8b0;
+    color: #5eb887;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 9999px;
+    margin-bottom: -4px;
+}
+
+.progressRow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.circles {
+    display: flex;
+    gap: 6px;
+}
+
+.circle {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #a8edca;
+    background: transparent;
+    transition: all 0.3s ease;
+}
+
+.circleFilled {
+    background: #88d8b0;
+    border-color: #88d8b0;
+    box-shadow: 0 0 8px rgba(136, 216, 176, 0.6);
+}
+
+.progressLabel {
+    font-family: 'Varela Round', sans-serif;
+    font-size: 13px;
+    color: #bcacad;
+    transition: color 0.3s;
+}
+
+.progressComplete {
+    color: #5eb887;
+    font-weight: 600;
+    font-family: 'Fredoka', sans-serif;
+}
+
+/* Session Photos Strip */
+.sessionPhotosStrip {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    overflow-x: auto;
+    padding: 4px 0 8px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.sessionPhotosStrip::-webkit-scrollbar {
+    display: none;
+}
+
+.sessionPhotoThumb {
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    border-radius: 12px;
+    object-fit: cover;
+    border: 2px solid rgba(136, 216, 176, 0.4);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    animation: thumbEnter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes thumbEnter {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateX(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateX(0);
+    }
+}
+
+/* Warning Box */
+.warningBox {
+    background: #fff8f9;
+    border: 1px solid #ffb7b2;
+    border-radius: 16px;
+    padding: 16px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 8px;
+    box-sizing: border-box;
+}
+
+.warningBox p {
+    font-family: 'Varela Round', sans-serif;
+    font-size: 13px;
+    color: #e87a8e;
+    margin: 0;
+    text-align: center;
+    line-height: 1.4;
+}
+
+.warningActions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.warningBtnPrimary {
+    background: linear-gradient(135deg, #a8edca, #74c69d);
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 9999px;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #5eb887;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.warningBtnPrimary:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #5eb887;
+}
+
+.warningBtnSecondary {
+    background: transparent;
+    color: #bcacad;
+    border: none;
+    padding: 6px;
+    font-family: 'Varela Round', sans-serif;
+    font-size: 13px;
+    text-decoration: underline;
+    cursor: pointer;
+}
