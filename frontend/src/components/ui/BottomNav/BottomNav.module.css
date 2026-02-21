@@ -1,0 +1,68 @@
+/* --- Barra de Navegación Inferior --- */
+.bottomNavContainer {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    pointer-events: none;
+    /* Container is passthrough */
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 0 20px;
+}
+
+.bottomNav {
+    display: flex;
+    background: #ffffff;
+    border-radius: 9999px;
+    box-shadow: 0 8px 30px -4px rgba(255, 183, 178, 0.4);
+    border: 4px solid rgba(183, 228, 199, 0.4);
+    padding: 0.5rem;
+    pointer-events: auto;
+    /* Nav items are clickable */
+    gap: 0.25rem;
+}
+
+.navItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    border: none;
+    background: transparent;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    color: #bcacad;
+}
+
+.navItem:hover {
+    background: rgba(140, 106, 106, 0.1);
+}
+
+.navItemActive {
+    background: #88d8b0;
+    color: #ffffff;
+    box-shadow: none;
+}
+
+.navItemActive:hover {
+    background: #88d8b0;
+}
+
+.navIcon {
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.navLabel {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}

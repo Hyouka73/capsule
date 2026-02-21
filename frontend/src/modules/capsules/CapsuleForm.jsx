@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createCapsule } from '../../apiClient';
 import Button from '../../components/ui/Button/Button';
+import DescriptiveCheckbox from '../../components/ui/DescriptiveCheckbox/DescriptiveCheckbox';
 import styles from './CapsuleForm.module.css';
 
 export default function CapsuleForm({ onSuccess, onCancel }) {
@@ -105,35 +106,21 @@ export default function CapsuleForm({ onSuccess, onCancel }) {
             </div>
 
             <div className={styles.checkboxContainer}>
-                <label className={styles.checkboxLabel}>
-                    <input
-                        type="checkbox"
-                        name="autoDestruct"
-                        checked={formData.autoDestruct}
-                        onChange={handleChange}
-                    />
-                    <div className={styles.checkboxText}>
-                        <span>💥 Autodestrucción Rápida (Read-Once)</span>
-                        <span className={styles.checkboxDesc}>
-                            La cápsula se fulminará para siempre inmediatamente después de que ella la lea.
-                        </span>
-                    </div>
-                </label>
+                <DescriptiveCheckbox
+                    name="autoDestruct"
+                    checked={formData.autoDestruct}
+                    onChange={handleChange}
+                    title="💥 Autodestrucción Rápida (Read-Once)"
+                    description="La cápsula se fulminará para siempre inmediatamente después de que ella la lea."
+                />
 
-                <label className={styles.checkboxLabel}>
-                    <input
-                        type="checkbox"
-                        name="notifyOnUnlock"
-                        checked={formData.notifyOnUnlock}
-                        onChange={handleChange}
-                    />
-                    <div className={styles.checkboxText}>
-                        <span>🔔 Notificación Push (Cloud Tasks)</span>
-                        <span className={styles.checkboxDesc}>
-                            Despertará su teléfono en el instante milimétrico de la fecha de apertura elegida.
-                        </span>
-                    </div>
-                </label>
+                <DescriptiveCheckbox
+                    name="notifyOnUnlock"
+                    checked={formData.notifyOnUnlock}
+                    onChange={handleChange}
+                    title="🔔 Notificación Push (Cloud Tasks)"
+                    description="Despertará su teléfono en el instante milimétrico de la fecha de apertura elegida."
+                />
             </div>
 
             <div className={styles.actions}>

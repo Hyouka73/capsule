@@ -3,6 +3,8 @@ import { getCapsules } from '../../apiClient';
 import CapsuleForm from './CapsuleForm';
 import Button from '../../components/ui/Button/Button';
 import Card from '../../components/ui/Card/Card';
+import PageHeader from '../../components/ui/PageHeader/PageHeader';
+import EmptyState from '../../components/ui/EmptyState/EmptyState';
 import styles from './CapsuleManager.module.css';
 
 export default function CapsuleManager() {
@@ -48,18 +50,13 @@ export default function CapsuleManager() {
 
     return (
         <div className={styles.root}>
-            <div className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>Cápsulas del Tiempo</h1>
-                    <p className={styles.subtitle}>{capsules.length} cápsulas creadas</p>
-                </div>
-                <Button
-                    onClick={() => { setEditingCapsule(null); setShowForm(true); }}
-                    className={styles.newBtn}
-                >
-                    <span className={styles.btnIcon}>✨</span> Nueva Cápsula
-                </Button>
-            </div>
+            <PageHeader
+                title="Cápsulas del Tiempo"
+                subtitle={`${capsules.length} cápsulas creadas`}
+                actionLabel="Nueva Cápsula"
+                actionIcon="✨"
+                onAction={() => { setEditingCapsule(null); setShowForm(true); }}
+            />
 
             {/* Form panel */}
             {showForm && (
@@ -83,14 +80,16 @@ export default function CapsuleManager() {
                     <p>Buscando cápsulas...</p>
                 </div>
             ) : capsules.length === 0 ? (
-                <div className={styles.empty}>
-                    <div className={styles.emptyIllustration}>⏳</div>
-                    <h3>No has enterrado ninguna cápsula</h3>
-                    <p>Escribe mensajes para el futuro y prográmalos para que se abran en una fecha especial.</p>
-                    <Button onClick={() => setShowForm(true)} className={styles.newBtn}>
-                        ¡Crea la primera!
-                    </Button>
-                </div>
+                <EmptyState
+                    icon="⏳"
+                    title="No has enterrado ninguna cápsula"
+                    description="Escribe mensajes para el futuro y prográmalos para que se abran en una fecha especial."
+                    action={
+                        <Button onClick={() => setShowForm(true)} className={styles.newBtn}>
+                            ¡Crea la primera!
+                        </Button>
+                    }
+                />
             ) : (
                 <div className={styles.grid}>
                     {capsules.map(capsule => (

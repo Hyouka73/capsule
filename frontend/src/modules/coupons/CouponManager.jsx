@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import Button from '../../components/ui/Button/Button';
 import Card from '../../components/ui/Card/Card';
+import PageHeader from '../../components/ui/PageHeader/PageHeader';
+import EmptyState from '../../components/ui/EmptyState/EmptyState';
 import styles from './CouponManager.module.css';
 
 export default function CouponManager() {
@@ -10,7 +12,7 @@ export default function CouponManager() {
         { id: '2', emoji: '🎬', title: 'Tarde de Cine', type: 'date_night', description: 'Tú eliges la película, yo pago las palomitas.', instructions: 'Válido para cualquier cine local o peli en casa.', expiryDate: null, isActive: true, isRedeemed: true, redeemedAt: '2025-10-14T20:00:00Z' },
         { id: '3', emoji: '🃏', title: 'Pase Libre', type: 'free_pass', description: 'Vale por salirte con la tuya en una discusión pequeña.', instructions: 'Úsalo con sabiduría. Aplican restricciones.', expiryDate: '2026-05-15', isActive: false, isRedeemed: false }
     ]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading] = useState(false);
     const [showForm, setShowForm] = useState(false);
     const [editingCoupon, setEditingCoupon] = useState(null);
 
@@ -54,18 +56,13 @@ export default function CouponManager() {
 
     return (
         <div className={styles.root}>
-            <div className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>Talonario de Cupones</h1>
-                    <p className={styles.subtitle}>{availableCoupons.length} disponibles, {redeemedCoupons.length} canjeados</p>
-                </div>
-                <Button
-                    onClick={() => { setEditingCoupon(null); setFormData({ emoji: '🎁', title: '', type: 'wish', description: '', instructions: '', expiryDate: '', isActive: true }); setShowForm(true); }}
-                    className={styles.newBtn}
-                >
-                    <span className={styles.btnIcon}>✨</span> Nuevo Cupón
-                </Button>
-            </div>
+            <PageHeader
+                title="Talonario de Cupones"
+                subtitle={`${availableCoupons.length} disponibles, ${redeemedCoupons.length} canjeados`}
+                actionLabel="Nuevo Cupón"
+                actionIcon="✨"
+                onAction={() => { setEditingCoupon(null); setFormData({ emoji: '🎁', title: '', type: 'wish', description: '', instructions: '', expiryDate: '', isActive: true }); setShowForm(true); }}
+            />
 
             {/* Form panel */}
             {showForm && (
@@ -135,11 +132,11 @@ export default function CouponManager() {
                     <p>Buscando talones...</p>
                 </div>
             ) : availableCoupons.length === 0 ? (
-                <div className={styles.empty}>
-                    <div className={styles.emptyIllustration}>🎟️</div>
-                    <h3>El talonario está vacío</h3>
-                    <p>Crea cupones con favores o citas divertidas para que ella los canjee cuando quiera.</p>
-                </div>
+                <EmptyState
+                    icon="🎟️"
+                    title="El talonario está vacío"
+                    description="Crea cupones con favores o citas divertidas para que ella los canjee cuando quiera."
+                />
             ) : (
                 <div className={styles.grid}>
                     {availableCoupons.map(coupon => (

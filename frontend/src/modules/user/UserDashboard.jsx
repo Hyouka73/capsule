@@ -4,6 +4,7 @@ import UserCapsules from '../capsules/UserCapsules';
 import UserCoupons from '../coupons/UserCoupons';
 import UserBingo from '../bingo/UserBingo';
 import UserLugares from '../lugares/UserLugares';
+import BottomNav from '../../components/ui/BottomNav/BottomNav';
 import styles from './UserDashboard.module.css';
 
 const TABS = [
@@ -15,42 +16,37 @@ const TABS = [
 ];
 
 export default function UserDashboard() {
-    const [activeTab, setActiveTab] = useState('lugares'); // Make lugares default since it's the home screen
+    const [activeTab, setActiveTab] = useState('lugares');
 
-    // Efecto sutil de partículas flotantes en el fondo (similar a AdminLogin)
+    // Partículas solo cuando NO es el mapa
     useEffect(() => {
+        if (activeTab === 'lugares') return;
+
         const createParticle = () => {
             const particle = document.createElement('div');
             particle.className = styles.particle;
-
             const size = Math.random() * 8 + 4;
             const left = Math.random() * 100;
             const duration = Math.random() * 20 + 20;
             const delay = Math.random() * 5;
-
             particle.style.width = `${size}px`;
             particle.style.height = `${size}px`;
             particle.style.left = `${left}%`;
             particle.style.animationDuration = `${duration}s`;
             particle.style.animationDelay = `-${delay}s`;
-
             const container = document.getElementById('user-dashboard-bg');
             if (container) container.appendChild(particle);
-
-            setTimeout(() => {
-                particle.remove();
-            }, duration * 1000);
+            setTimeout(() => particle.remove(), duration * 1000);
         };
 
         const interval = setInterval(createParticle, 800);
         return () => clearInterval(interval);
-    }, []);
+    }, [activeTab]);
 
     const renderContent = () => {
         switch (activeTab) {
-            case 'lugares': return <UserLugares />;
-            case 'capsules': return <UserCapsules />;
-            case 'coupons': return <UserCoupons />;
+            case 'sorpresas': return <UserCapsules />;
+            case 'fotos': return <UserCoupons />;
             case 'bingo': return <UserBingo />;
             default: return (
                 <div className={styles.homeWelcome}>
@@ -64,55 +60,45 @@ export default function UserDashboard() {
 
     return (
         <div className={styles.appContainer}>
-            {/* Fondo decorativo Cute Pastel */}
-            <div id="user-dashboard-bg" className={styles.background}>
-                <div className={styles.gradientOrb1}></div>
-                <div className={styles.gradientOrb2}></div>
-                <div className={styles.dotPattern}></div>
-                {/* Elementos flotantes fijos */}
-                <span className={styles.floatingDeco1}>✨</span>
-                <span className={styles.floatingDeco2}>💌</span>
-                <span className={styles.floatingDeco3}>🌸</span>
-            </div>
 
-            {/* Contenido Dinámico */}
-            <main className={styles.mainContent}>
-                <AnimatePresence mode="wait">
-                    <motion.div
-                        key={activeTab}
-                        initial={{ opacity: 0, scale: 0.98, y: 10 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.98, y: -10 }}
-                        transition={{ duration: 0.3 }}
-                        className={styles.tabContentWrapper}
-                    >
-                        {renderContent()}
-                    </motion.div>
-                </AnimatePresence>
-            </main>
+            {/* ── MAPA: va directo al appContainer, sin padding ni wrappers ── */}
+            {activeTab === 'lugares' && (
+                <div className={styles.mapWrapper}>
+                    <UserLugares />
+                </div>
+            )}
 
-            {/* Barra de Navegación Inferior (Glassmorphism) */}
-            <div className={styles.bottomNavContainer}>
-                <nav className={styles.bottomNav}>
-                    {TABS.map(tab => {
-                        const isActive = activeTab === tab.id;
-                        return (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
+            {/* ── OTROS TABS: con fondo decorativo y padding normal ── */}
+            {activeTab !== 'lugares' && (
+                <>
+                    <div id="user-dashboard-bg" className={styles.background}>
+                        <div className={styles.gradientOrb1} />
+                        <div className={styles.gradientOrb2} />
+                        <div className={styles.dotPattern} />
+                        <span className={styles.floatingDeco1}>✨</span>
+                        <span className={styles.floatingDeco2}>💌</span>
+                        <span className={styles.floatingDeco3}>🌸</span>
+                    </div>
+
+                    <main className={styles.mainContent}>
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={activeTab}
+                                initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.98, y: -10 }}
+                                transition={{ duration: 0.25 }}
+                                className={styles.tabContentWrapper}
                             >
-                                <span className={`material-symbols-outlined ${styles.navIcon}`}>
-                                    {tab.icon}
-                                </span>
-                                <span className={styles.navLabel}>
-                                    {tab.label}
-                                </span>
-                            </button>
-                        );
-                    })}
-                </nav>
-            </div>
+                                {renderContent()}
+                            </motion.div>
+                        </AnimatePresence>
+                    </main>
+                </>
+            )}
+
+            {/* ── NAVBAR: siempre flotando encima de todo ── */}
+            <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} tabs={TABS} />
         </div>
     );
 }

@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { toast } from '../../components/ui/PastelToast/PastelToast';
 import { signInAsAdmin } from '../../services/auth';
+import GlassInput from '../../components/ui/GlassInput/GlassInput';
 import styles from './AdminLogin.module.css';
 
 export default function AdminLogin() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     async function handleSubmit(e) {
@@ -69,48 +69,30 @@ export default function AdminLogin() {
                 </div>
 
                 <form onSubmit={handleSubmit} className={styles.form}>
-                    <div className={styles.inputGroup}>
-                        <label className={styles.inputLabel}>Código de Acceso</label>
-                        <div className={styles.inputIcon}>
-                            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1", fontSize: '24px' }}>lock</span>
-                        </div>
-                        <input
-                            className={styles.input}
-                            placeholder="Escribe aquí..."
-                            type="email"
-                            name="email"
-                            required
-                            autoComplete="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                        />
-                        <div className={styles.inputRightIcon}>
-                            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1", fontSize: '18px' }}>favorite</span>
-                        </div>
-                    </div>
+                    <GlassInput
+                        label="Código de Acceso"
+                        leftIcon="lock"
+                        rightIcon="favorite"
+                        placeholder="Escribe aquí..."
+                        type="email"
+                        name="email"
+                        required
+                        autoComplete="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                    />
 
-                    <div className={styles.inputGroup}>
-                        <label className={styles.inputLabel}>Palabra Secreta</label>
-                        <div className={styles.inputIcon}>
-                            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1", fontSize: '24px' }}>key</span>
-                        </div>
-                        <input
-                            className={styles.input}
-                            placeholder="Sssshh..."
-                            type={showPassword ? "text" : "password"}
-                            name="password"
-                            required
-                            autoComplete="current-password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            style={{ paddingRight: '3rem' }}
-                        />
-                        <button type="button" onClick={() => setShowPassword(!showPassword)} className={styles.visibilityBtn}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>
-                                {showPassword ? 'visibility' : 'visibility_off'}
-                            </span>
-                        </button>
-                    </div>
+                    <GlassInput
+                        label="Palabra Secreta"
+                        leftIcon="key"
+                        placeholder="Sssshh..."
+                        type="password"
+                        name="password"
+                        required
+                        autoComplete="current-password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                    />
 
                     <button type="submit" className={styles.submitBtn} disabled={isLoading}>
                         <div className={styles.btnHighlight}></div>

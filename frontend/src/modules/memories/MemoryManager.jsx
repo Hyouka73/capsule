@@ -3,6 +3,8 @@ import { getMemories } from '../../apiClient';
 import MemoryForm from './MemoryForm';
 import Button from '../../components/ui/Button/Button';
 import Card from '../../components/ui/Card/Card';
+import PageHeader from '../../components/ui/PageHeader/PageHeader';
+import EmptyState from '../../components/ui/EmptyState/EmptyState';
 import styles from './MemoryManager.module.css';
 
 export default function MemoryManager() {
@@ -83,18 +85,13 @@ export default function MemoryManager() {
 
     return (
         <div className={styles.root}>
-            <div className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>Recuerdos</h1>
-                    <p className={styles.subtitle}>{memories.length} momentos documentados</p>
-                </div>
-                <Button
-                    onClick={() => { setEditingMemory(null); setShowForm(true); }}
-                    className={styles.newBtn}
-                >
-                    <span className={styles.btnIcon}>✨</span> Nuevo recuerdo
-                </Button>
-            </div>
+            <PageHeader
+                title="Recuerdos"
+                subtitle={`${memories.length} momentos documentados`}
+                actionLabel="Nuevo recuerdo"
+                actionIcon="✨"
+                onAction={() => { setEditingMemory(null); setShowForm(true); }}
+            />
 
             {/* ── Toolbar ── */}
             {!isLoading && memories.length > 0 && !showForm && (
@@ -156,14 +153,16 @@ export default function MemoryManager() {
                     <p>Cargando recuerdos...</p>
                 </div>
             ) : memories.length === 0 ? (
-                <div className={styles.empty}>
-                    <div className={styles.emptyIllustration}>📸</div>
-                    <h3>Aún no hay recuerdos</h3>
-                    <p>Sube fotos y documenta sus mejores momentos juntos.</p>
-                    <Button onClick={() => setShowForm(true)} className={styles.newBtn}>
-                        ¡Crea el primero!
-                    </Button>
-                </div>
+                <EmptyState
+                    icon="📸"
+                    title="Aún no hay recuerdos"
+                    description="Sube fotos y documenta sus mejores momentos juntos."
+                    action={
+                        <Button onClick={() => setShowForm(true)} className={styles.newBtn}>
+                            ¡Crea el primero!
+                        </Button>
+                    }
+                />
             ) : (
                 <div className={styles.grid}>
                     {filteredMemories.map(memory => (

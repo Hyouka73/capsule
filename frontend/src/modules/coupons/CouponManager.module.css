@@ -5,52 +5,6 @@
     gap: 1.5rem;
 }
 
-/* ── Header ── */
-.header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
-    margin-bottom: 1rem;
-}
-
-.title {
-    font-family: var(--font-serif);
-    font-size: 2.25rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin: 0;
-    line-height: 1.2;
-}
-
-.subtitle {
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    margin: 0.25rem 0 0;
-}
-
-.newBtn {
-    background: linear-gradient(135deg, var(--pastel-rose), var(--pastel-rose-light));
-    color: var(--text-primary);
-    border: none;
-    font-weight: 600;
-    box-shadow: 0 4px 12px rgba(255, 183, 178, 0.4);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.3s ease;
-}
-
-.btnIcon {
-    font-size: 1.1em;
-}
-
-.newBtn:hover {
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 6px 16px rgba(255, 183, 178, 0.5);
-}
-
 /* ── Form Panel ── */
 .formPanel {
     margin-bottom: 1rem;
@@ -189,57 +143,6 @@
     border-top: 1px dashed var(--glass-border);
 }
 
-
-/* ── Loading & Empty States ── */
-.loading,
-.empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 40vh;
-    text-align: center;
-    background: var(--glass-bg);
-    border-radius: var(--radius-lg);
-    border: 1px dashed var(--glass-border);
-    padding: 3rem;
-    margin-top: 2rem;
-}
-
-.spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid rgba(255, 183, 178, 0.3);
-    border-top-color: var(--pastel-rose);
-    border-radius: 50%;
-    animation: spin 1s infinite linear;
-    margin-bottom: 1rem;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-.emptyIllustration {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.1));
-}
-
-.empty h3 {
-    font-family: var(--font-serif);
-    font-size: 1.5rem;
-    margin: 0 0 0.5rem;
-    color: var(--text-primary);
-}
-
-.empty p {
-    color: var(--text-secondary);
-    margin: 0 0 1.5rem;
-    font-size: 0.95rem;
-}
 
 /* ── Grid & Cards ── */
 .grid {
