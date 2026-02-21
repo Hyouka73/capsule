@@ -1,8 +1,8 @@
 .citaOverlay {
     position: absolute;
     inset: 0;
-    background: rgba(255, 240, 243, 0.88);
-    background-image: radial-gradient(#ffe5e5 1px, transparent 1px);
+    background: var(--bg-overlay);
+    background-image: var(--bg-dots-pattern);
     background-size: 20px 20px;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -16,17 +16,17 @@
 .citaCard {
     width: 100%;
     margin: 0 16px;
-    background: rgba(255, 255, 255, 0.85);
+    background: var(--bg-overlay-light);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 3px solid rgba(183, 228, 199, 0.4);
+    border: var(--border-mint-thick);
     border-radius: 2rem;
     padding: 24px;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 16px;
-    box-shadow: 0 8px 30px -4px rgba(255, 183, 178, 0.4);
+    box-shadow: var(--shadow-card);
 }
 
 .citaHeader {
@@ -37,17 +37,17 @@
 }
 
 .citaLive {
-    font-family: 'Fredoka', sans-serif;
+    font-family: var(--font-fredoka);
     font-weight: 700;
     font-size: 18px;
-    color: #8c6a6a;
+    color: var(--pastel-text);
     margin: 0;
 }
 
 .citaSub {
-    font-family: 'Varela Round', sans-serif;
+    font-family: var(--font-varela);
     font-size: 12px;
-    color: #bcacad;
+    color: var(--pastel-text-muted);
     margin: 0;
 }
 
@@ -61,15 +61,15 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: #8c6a6a;
-    box-shadow: 0 4px 12px rgba(255, 183, 178, 0.3);
+    color: var(--pastel-text);
+    box-shadow: var(--shadow-pink-glow);
     transition: transform 0.2s, box-shadow 0.2s;
     flex-shrink: 0;
 }
 
 .citaClose:active {
     transform: translateY(2px);
-    box-shadow: 0 2px 6px rgba(255, 183, 178, 0.3);
+    box-shadow: var(--shadow-pink-glow-active);
 }
 
 .separator {
@@ -81,9 +81,9 @@
 
 .bingoPill {
     background: rgba(183, 228, 199, 0.15);
-    border: 1.5px solid #88d8b0;
-    color: #5eb887;
-    font-family: 'Fredoka', sans-serif;
+    border: 1.5px solid var(--pastel-green-btn);
+    color: var(--pastel-shadow-mint-active);
+    font-family: var(--font-fredoka);
     font-weight: 600;
     font-size: 12px;
     padding: 5px 12px;
@@ -108,38 +108,38 @@
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: #ffe5e5;
+    background: var(--pastel-rose-light);
     transition: all 0.3s ease;
 }
 
 .circleFilled {
-    background: #88d8b0;
+    background: var(--pastel-green-btn);
 }
 
 .progressLabel {
-    font-family: 'Varela Round', sans-serif;
+    font-family: var(--font-varela);
     font-size: 13px;
-    color: #8c6a6a;
+    color: var(--pastel-text);
     transition: color 0.3s;
 }
 
 .progressComplete {
-    color: #5eb887;
+    color: var(--pastel-shadow-mint-active);
     font-weight: 600;
-    font-family: 'Fredoka', sans-serif;
+    font-family: var(--font-fredoka);
 }
 
 .bigCamera {
     width: 110px;
     height: 110px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #a8edca, #74c69d);
+    background: linear-gradient(135deg, var(--pastel-sage), var(--pastel-shadow-mint));
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
     border: none;
-    box-shadow: 0 6px 0 #5eb887;
+    box-shadow: var(--shadow-chunky-mint-lg);
     cursor: pointer;
     animation: fabFloat 4s ease-in-out infinite;
     transition: transform 0.1s, box-shadow 0.1s;
@@ -151,15 +151,15 @@
 
 .bigCamera:active {
     transform: translateY(6px);
-    box-shadow: 0 0 0 #5eb887;
+    box-shadow: var(--shadow-chunky-mint-lg-active);
     animation: none;
 }
 
 .bigCameraLabel {
-    font-family: 'Fredoka', sans-serif;
+    font-family: var(--font-fredoka);
     font-weight: 600;
     font-size: 15px;
-    color: #8c6a6a;
+    color: var(--pastel-text);
     margin: -8px 0 0;
 }
 
@@ -173,25 +173,25 @@
     align-items: center;
     gap: 6px;
     background: white;
-    border: 2px solid #b7e4c7;
+    border: 2px solid var(--pastel-sage);
     border-radius: 9999px;
     padding: 8px 16px;
-    color: #8c6a6a;
-    font-family: 'Varela Round', sans-serif;
+    color: var(--pastel-text);
+    font-family: var(--font-varela);
     font-size: 13px;
     cursor: pointer;
-    box-shadow: 0 4px 0 rgba(183, 228, 199, 0.5);
+    box-shadow: var(--shadow-chunky-mint-soft);
     transition: transform 0.1s, box-shadow 0.1s;
 }
 
 .citaAction:active {
     transform: translateY(4px);
-    box-shadow: 0 0px 0 rgba(183, 228, 199, 0.5);
+    box-shadow: var(--shadow-chunky-mint-soft-active);
 }
 
 .citaAction span {
     font-size: 17px;
-    color: #88d8b0;
+    color: var(--pastel-green-btn);
 }
 
 @keyframes fabFloat {
@@ -227,7 +227,7 @@
     min-width: 52px;
     border-radius: 12px;
     object-fit: cover;
-    border: 2px solid rgba(136, 216, 176, 0.4);
+    border: var(--border-mint);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
     animation: thumbEnter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
@@ -246,8 +246,8 @@
 
 /* Warning Box */
 .warningBox {
-    background: #fff8f9;
-    border: 1px solid #ffb7b2;
+    background: var(--bg-main);
+    border: 1px solid var(--pastel-rose);
     border-radius: 16px;
     padding: 16px;
     width: 100%;
@@ -259,9 +259,9 @@
 }
 
 .warningBox p {
-    font-family: 'Varela Round', sans-serif;
+    font-family: var(--font-varela);
     font-size: 13px;
-    color: #e87a8e;
+    color: var(--pastel-shadow-pink);
     margin: 0;
     text-align: center;
     line-height: 1.4;
@@ -274,30 +274,30 @@
 }
 
 .warningBtnPrimary {
-    background: linear-gradient(135deg, #a8edca, #74c69d);
+    background: linear-gradient(135deg, var(--pastel-sage), var(--pastel-shadow-mint));
     color: white;
     border: none;
     padding: 10px;
     border-radius: 9999px;
-    font-family: 'Fredoka', sans-serif;
+    font-family: var(--font-fredoka);
     font-weight: 600;
     font-size: 14px;
     cursor: pointer;
-    box-shadow: 0 3px 0 #5eb887;
+    box-shadow: 0 3px 0 var(--pastel-shadow-mint-active);
     transition: transform 0.1s, box-shadow 0.1s;
 }
 
 .warningBtnPrimary:active {
     transform: translateY(2px);
-    box-shadow: 0 1px 0 #5eb887;
+    box-shadow: 0 1px 0 var(--pastel-shadow-mint-active);
 }
 
 .warningBtnSecondary {
     background: transparent;
-    color: #bcacad;
+    color: var(--pastel-text-muted);
     border: none;
     padding: 6px;
-    font-family: 'Varela Round', sans-serif;
+    font-family: var(--font-varela);
     font-size: 13px;
     text-decoration: underline;
     cursor: pointer;

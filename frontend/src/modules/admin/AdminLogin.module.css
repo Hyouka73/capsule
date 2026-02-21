@@ -14,10 +14,10 @@
     /* horizontal padding so card never touches edges on mobile */
     box-sizing: border-box;
 
-    font-family: 'Varela Round', sans-serif;
+    font-family: var(--font-varela);
     color: var(--pastel-text);
     background-color: var(--pastel-bg);
-    background-image: radial-gradient(var(--pastel-rose-light) 1px, transparent 1px);
+    background-image: var(--bg-dots-pattern);
     background-size: 20px 20px;
 }
 
@@ -144,12 +144,12 @@
 .glassCard {
     position: absolute;
     inset: 0;
-    background-color: rgba(255, 255, 255, 0.55);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background-color: var(--bg-overlay-light);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border-radius: 2.5rem;
-    border: 3px solid rgba(255, 255, 255, 0.85);
-    box-shadow: 0 8px 32px -4px rgba(255, 183, 178, 0.35), 0 0 0 1px rgba(255, 183, 178, 0.1);
+    border: var(--border-mint-thick);
+    box-shadow: var(--shadow-card);
     z-index: 0;
 }
 
@@ -233,15 +233,13 @@
 }
 
 .title {
-    font-family: 'Fredoka', sans-serif !important;
+    font-family: var(--font-fredoka) !important;
     font-size: 2rem;
     font-weight: 700;
     color: var(--pastel-text);
     letter-spacing: 0.025em;
     margin: 0 0 0.2rem;
     text-align: center;
-    /* Override the global h1 serif rule from tokens.css */
-    font-family: 'Fredoka', sans-serif;
 }
 
 .subtitle {
@@ -269,8 +267,8 @@
     background-color: var(--pastel-green-btn);
     color: white;
     border: none;
-    border-radius: 1.25rem;
-    box-shadow: 0 5px 0px #6cc590;
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-chunky-mint-lg);
     transition: all 0.15s;
     display: flex;
     align-items: center;
@@ -279,17 +277,17 @@
     cursor: pointer;
     position: relative;
     overflow: hidden;
-    font-family: 'Fredoka', sans-serif;
+    font-family: var(--font-fredoka);
 }
 
 .submitBtn:hover {
-    background-color: var(--pastel-sage-dark);
-    box-shadow: 0 5px 0px #74b89a;
+    background-color: var(--pastel-shadow-mint);
+    box-shadow: var(--shadow-chunky-mint-lg);
 }
 
 .submitBtn:active {
-    box-shadow: 0 2px 0px #6cc590;
-    transform: translateY(3px);
+    box-shadow: var(--shadow-chunky-mint-lg-active);
+    transform: translateY(6px);
 }
 
 .submitBtn:disabled {
@@ -335,10 +333,10 @@
 
 .avatarBtn {
     padding: 0.75rem;
-    background-color: rgba(255, 255, 255, 0.85);
-    border-radius: 9999px;
+    background-color: var(--bg-overlay-light);
+    border-radius: var(--radius-full);
     color: var(--pastel-sage);
-    border: 2px solid rgba(183, 228, 199, 0.35);
+    border: var(--border-mint);
     transition: all 0.3s;
     cursor: pointer;
     display: flex;
@@ -366,8 +364,8 @@
 }
 
 .footerText {
-    color: rgba(140, 106, 106, 0.75);
-    font-family: 'Fredoka', sans-serif;
+    color: var(--pastel-text);
+    font-family: var(--font-fredoka);
     font-size: 0.85rem;
     letter-spacing: 0.02em;
     display: flex;

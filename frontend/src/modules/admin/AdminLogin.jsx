@@ -19,7 +19,7 @@ export default function AdminLogin() {
                 success: { title: '¡Acceso concedido!', description: 'Bienvenido a Capsule Admin.' },
                 error: { title: 'Acceso denegado', description: 'Credenciales incorrectas.' },
             });
-        } catch (err) {
+        } catch {
             // handled by toast.promise
         } finally {
             setIsLoading(false);

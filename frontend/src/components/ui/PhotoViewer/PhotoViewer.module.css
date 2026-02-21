@@ -2,7 +2,7 @@
     position: fixed;
     inset: 0;
     z-index: 1000;
-    background: rgba(255, 240, 243, 0.96);
+    background: var(--bg-overlay);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     display: flex;
@@ -20,9 +20,9 @@
     height: 40px;
     border-radius: 50%;
     background: white;
-    border: 2px solid rgba(183, 228, 199, 0.4);
-    box-shadow: 0 4px 12px rgba(255, 183, 178, 0.3);
-    color: #8c6a6a;
+    border: var(--border-mint);
+    box-shadow: var(--shadow-pink-glow);
+    color: var(--pastel-text);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -33,7 +33,7 @@
 
 .viewerClose:active {
     transform: translateY(2px);
-    box-shadow: 0 2px 6px rgba(255, 183, 178, 0.3);
+    box-shadow: var(--shadow-pink-glow-active);
 }
 
 .viewerContent {
@@ -52,7 +52,7 @@
     max-height: 60vh;
     object-fit: contain;
     border-radius: 20px;
-    border: 3px solid rgba(183, 228, 199, 0.4);
+    border: var(--border-mint-thick);
     box-shadow: 0 8px 32px rgba(92, 58, 58, 0.12);
 }
 
@@ -68,30 +68,30 @@
     height: 44px;
     border-radius: 9999px;
     background: white;
-    color: #88d8b0;
-    border: 2px solid rgba(183, 228, 199, 0.4);
+    color: var(--pastel-green-btn);
+    border: var(--border-mint);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 4px 0 #74c69d;
+    box-shadow: var(--shadow-chunky-mint);
     transition: transform 0.1s, box-shadow 0.1s;
 }
 
 .viewerBtn:active {
     transform: translateY(3px);
-    box-shadow: 0 1px 0 #74c69d;
+    box-shadow: var(--shadow-chunky-mint-active);
 }
 
 .viewerCounter {
     background: white;
     border-radius: 9999px;
-    border: 2px solid rgba(183, 228, 199, 0.4);
+    border: var(--border-mint);
     padding: 8px 20px;
-    font-family: 'Fredoka', sans-serif;
+    font-family: var(--font-fredoka);
     font-weight: 600;
     font-size: 16px;
-    color: #8c6a6a;
+    color: var(--pastel-text);
     min-width: 60px;
     text-align: center;
 }
@@ -129,6 +129,6 @@
 
 .thumbnailItemActive {
     opacity: 1;
-    border: 2px solid #88d8b0;
+    border: 2px solid var(--pastel-green-btn);
     transform: scale(1.05);
 }

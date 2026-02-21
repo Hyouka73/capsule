@@ -20,6 +20,10 @@
     --pastel-rose-light: #ffe5e5;
     --pastel-green-btn: #88d8b0;
     --pastel-text: #8c6a6a;
+    --pastel-text-muted: #bcacad;
+    --pastel-shadow-mint: #74c69d;
+    --pastel-shadow-mint-active: #5eb887;
+    --pastel-shadow-pink: #e87a8e;
 
     /* Sweet Pink & Mint Green (Legacy Mappings) */
     --accent-primary: var(--pastel-rose);
@@ -67,6 +71,29 @@
     --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
     --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.5);
+
+    /* Login Aesthetic Tokens */
+    --shadow-card: 0 8px 30px -4px rgba(255, 183, 178, 0.4);
+    --shadow-pink-glow: 0 4px 12px rgba(255, 183, 178, 0.3);
+    --shadow-pink-glow-active: 0 2px 6px rgba(255, 183, 178, 0.3);
+    --shadow-chunky-mint: 0 4px 0 var(--pastel-shadow-mint);
+    --shadow-chunky-mint-active: 0 1px 0 var(--pastel-shadow-mint);
+    --shadow-chunky-mint-lg: 0 6px 0 var(--pastel-shadow-mint-active);
+    --shadow-chunky-mint-lg-active: 0 0 0 var(--pastel-shadow-mint-active);
+    --shadow-chunky-mint-soft: 0 4px 0 rgba(183, 228, 199, 0.5);
+
+    /* Borders */
+    --border-mint: 2px solid rgba(183, 228, 199, 0.4);
+    --border-mint-thick: 3px solid rgba(183, 228, 199, 0.4);
+
+    /* Backgrounds */
+    --bg-dots-pattern: radial-gradient(var(--pastel-rose-light) 1px, transparent 1px);
+    --bg-overlay: rgba(255, 240, 243, 0.88);
+    --bg-overlay-light: rgba(255, 255, 255, 0.85);
+
+    /* Typography Overrides */
+    --font-fredoka: 'Fredoka', sans-serif;
+    --font-varela: 'Varela Round', sans-serif;
 }
 
 /* --- Global Overrides --- */
