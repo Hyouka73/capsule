@@ -1,6 +1,9 @@
 import { useState } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../../components/ui/Button/Button';
+import BingoStartModal from './components/BingoStartModal';
+import PhotoViewer from '../../components/ui/PhotoViewer/PhotoViewer';
 import styles from './UserBingo.module.css';
 
 // Mock Data para el usuario (Solo lectura visual)
@@ -13,13 +16,20 @@ const BINGO_SQUARES = Array(20).fill(null).map((_, i) => {
         emoji: isCompleted ? '✨' : '❔',
         isCompleted,
         memoryPhoto: isCompleted && i % 2 === 0 ? 'https://images.unsplash.com/photo-1549468057-5b6fb89cf61a?auto=format&fit=crop&q=80' : null,
+        photos: isCompleted ? [
+            'https://images.unsplash.com/photo-1549468057-5b6fb89cf61a?auto=format&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80'
+        ] : [],
         completedAt: isCompleted ? new Date().toISOString() : null,
-        description: isCompleted ? 'Día de picnic en el parque central' : 'Completa más misiones para descubrir qué es.',
+        description: isCompleted ? 'Día de picnic en el parque central' : 'Completa descubriendo este lugar especial.',
+        minPhotos: 3
     };
 });
 
-export default function UserBingo() {
+export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsModalOpen }) {
     const [selectedSquare, setSelectedSquare] = useState(null);
+    const [selectedStartSquare, setSelectedStartSquare] = useState(null);
+    const [viewerPhotos, setViewerPhotos] = useState(null);
     const completedCount = BINGO_SQUARES.filter(s => s.isCompleted).length;
     const progressPerc = (completedCount / 20) * 100;
 
@@ -54,7 +64,13 @@ export default function UserBingo() {
                             key={square.id}
                             className={`${styles.square} ${square.isCompleted ? styles.completed : styles.empty}`}
                             onClick={() => {
-                                if (square.isCompleted) setSelectedSquare(square);
+                                if (square.isCompleted) {
+                                    setSelectedSquare(square);
+                                    if (setIsModalOpen) setIsModalOpen(true);
+                                } else {
+                                    setSelectedStartSquare(square);
+                                    if (setIsModalOpen) setIsModalOpen(true);
+                                }
                             }}
                         >
                             {square.isCompleted ? (
@@ -89,7 +105,10 @@ export default function UserBingo() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        onClick={() => setSelectedSquare(null)}
+                        onClick={() => {
+                            setSelectedSquare(null);
+                            if (setIsModalOpen) setIsModalOpen(false);
+                        }}
                     >
                         <motion.div
                             className={styles.polaroid}
@@ -98,7 +117,10 @@ export default function UserBingo() {
                             exit={{ scale: 0.8, rotate: -5, opacity: 0 }}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <button className={styles.closeBtn} onClick={() => setSelectedSquare(null)}>×</button>
+                            <button className={styles.closeBtn} onClick={() => {
+                                setSelectedSquare(null);
+                                if (setIsModalOpen) setIsModalOpen(false);
+                            }}>×</button>
 
                             <div className={styles.photoArea}>
                                 {selectedSquare.memoryPhoto ? (
@@ -116,11 +138,45 @@ export default function UserBingo() {
                                 <span className={styles.dateStamp}>
                                     {new Date(selectedSquare.completedAt).toLocaleDateString()}
                                 </span>
+                                {selectedSquare.photos && selectedSquare.photos.length > 0 && (
+                                    <button
+                                        className={styles.galleryBtn}
+                                        onClick={() => setViewerPhotos(selectedSquare.photos)}
+                                    >
+                                        <span className="material-symbols-outlined">photo_library</span>
+                                        Ver Galería ({selectedSquare.photos.length})
+                                    </button>
+                                )}
                             </div>
                         </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            <AnimatePresence>
+                {selectedStartSquare && (
+                    <BingoStartModal
+                        bingoItem={selectedStartSquare}
+                        onClose={() => {
+                            setSelectedStartSquare(null);
+                            if (setIsModalOpen) setIsModalOpen(false);
+                        }}
+                        onStartCita={(bingoData) => {
+                            setSelectedStartSquare(null);
+                            if (setIsModalOpen) setIsModalOpen(false);
+                            if (setBingoContextToMap && setActiveTab) {
+                                setBingoContextToMap(bingoData);
+                                setActiveTab('lugares');
+                            }
+                        }}
+                    />
+                )}
+            </AnimatePresence>
+
+            <PhotoViewer
+                photos={viewerPhotos}
+                onClose={() => setViewerPhotos(null)}
+            />
 
         </div>
     );

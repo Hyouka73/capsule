@@ -33,7 +33,7 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                         if (sessionPhotos.length < citaContext.minPhotos) {
                             setWarningOpen(true);
                         } else {
-                            if (onSave) onSave();
+                            if (onSave) onSave(sessionPhotos);
                         }
                     }}>
                         <span className="material-symbols-outlined">close</span>

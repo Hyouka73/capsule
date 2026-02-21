@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import UserCapsules from '../capsules/UserCapsules';
 import UserCoupons from '../coupons/UserCoupons';
@@ -18,6 +19,8 @@ const TABS = [
 export default function UserDashboard() {
     const [activeTab, setActiveTab] = useState('lugares');
     const [isPlaceSelected, setIsPlaceSelected] = useState(false);
+    const [bingoContextToMap, setBingoContextToMap] = useState(null);
+    const [isBingoModalOpen, setIsBingoModalOpen] = useState(false);
 
     // Partículas solo cuando NO es el mapa
     useEffect(() => {
@@ -48,7 +51,13 @@ export default function UserDashboard() {
         switch (activeTab) {
             case 'sorpresas': return <UserCapsules />;
             case 'fotos': return <UserCoupons />;
-            case 'bingo': return <UserBingo />;
+            case 'bingo': return (
+                <UserBingo
+                    setActiveTab={setActiveTab}
+                    setBingoContextToMap={setBingoContextToMap}
+                    setIsModalOpen={setIsBingoModalOpen}
+                />
+            );
             default: return (
                 <div className={styles.homeWelcome}>
                     <div className={styles.homeHeart}>💖</div>
@@ -65,7 +74,11 @@ export default function UserDashboard() {
             {/* ── MAPA: va directo al appContainer, sin padding ni wrappers ── */}
             {activeTab === 'lugares' && (
                 <div className={styles.mapWrapper}>
-                    <UserLugares onPlaceSelected={setIsPlaceSelected} />
+                    <UserLugares
+                        onPlaceSelected={setIsPlaceSelected}
+                        bingoContextToMap={bingoContextToMap}
+                        clearBingoContext={() => setBingoContextToMap(null)}
+                    />
                 </div>
             )}
 
@@ -98,9 +111,9 @@ export default function UserDashboard() {
                 </>
             )}
 
-            {/* ── NAVBAR: siempre flotando encima de todo, hidden if place is selected ── */}
+            {/* ── NAVBAR: siempre flotando encima de todo, hidden if place is selected or modal open ── */}
             <AnimatePresence>
-                {!isPlaceSelected && (
+                {!isPlaceSelected && !isBingoModalOpen && (
                     <motion.div
                         initial={{ y: 100, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}

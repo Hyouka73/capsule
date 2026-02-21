@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import PhotoViewer from '../../components/ui/PhotoViewer/PhotoViewer';
 import CitaOverlay from './components/CitaOverlay/CitaOverlay';
@@ -221,11 +221,21 @@ function buildIcon(place, isSelected) {
     }
 }
 
-export default function UserLugares({ onPlaceSelected }) {
+export default function UserLugares({ onPlaceSelected, bingoContextToMap, clearBingoContext }) {
     const [selectedPlace, setSelectedPlace] = useState(null);
     const [activeFilter, setActiveFilter] = useState('todos');
     const [citaContext, setCitaContext] = useState(null);
     const [toastMessage, setToastMessage] = useState(null);
+
+    useEffect(() => {
+        if (bingoContextToMap) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setCitaContext(bingoContextToMap);
+            if (clearBingoContext) clearBingoContext();
+            // Hide the bottom navbar immediately when cita opens from bingo
+            if (onPlaceSelected) onPlaceSelected(true);
+        }
+    }, [bingoContextToMap, clearBingoContext, onPlaceSelected]);
 
     // Pending Dates state
     const [pendingDates, setPendingDates] = useState(MOCK_PENDING_DATES);
@@ -537,10 +547,24 @@ export default function UserLugares({ onPlaceSelected }) {
                             setCitaContext(null);
                             if (onPlaceSelected) onPlaceSelected(false);
                         }}
-                        onSave={() => {
+                        onSave={(photos) => {
                             setCitaContext(null);
                             if (onPlaceSelected) onPlaceSelected(false);
-                            showToast("Recuerdo guardado 💚");
+
+                            if (photos && photos.length > 0) {
+                                const newPendingDate = {
+                                    id: `pnd_${Date.now()}`,
+                                    originalDate: new Date().toLocaleString(),
+                                    coverPhoto: photos[0],
+                                    photos: photos,
+                                    isFromBingo: !!citaContext.bingoLabel,
+                                    suggestedTags: citaContext.tags || []
+                                };
+                                setPendingDates(prev => [...prev, newPendingDate]);
+                                showToast("Recuerdo guardado en borradores 📸");
+                            } else {
+                                showToast("Cita finalizada sin fotos.");
+                            }
                         }}
                     />
                 )}

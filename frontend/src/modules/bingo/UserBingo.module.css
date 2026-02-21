@@ -274,3 +274,28 @@
     letter-spacing: 1px;
     opacity: 0.6;
 }
+
+.galleryBtn {
+    margin-top: 10px;
+    background: var(--pastel-bg);
+    border: 1px solid var(--pastel-shadow-mint);
+    border-radius: 9999px;
+    padding: 8px 16px;
+    color: var(--pastel-sage-dark);
+    font-family: var(--font-varela);
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background 0.2s, transform 0.1s;
+    width: 100%;
+}
+
+.galleryBtn:active {
+    transform: translateY(2px);
+    background: var(--pastel-shadow-mint);
+    color: white;
+}

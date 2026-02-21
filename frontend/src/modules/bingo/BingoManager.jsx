@@ -8,24 +8,32 @@ export default function BingoManager() {
     const initialSquares = Array(20).fill(null).map((_, i) => ({
         id: `square-${i}`,
         title: `Reto ${i + 1}`,
+        description: '',
         emoji: '🎯',
+        minPhotos: 3,
         isCompleted: false,
         memoryLink: null
     }));
 
     // Mocking some completed ones
-    initialSquares[0] = { ...initialSquares[0], title: 'Cita en la playa', emoji: '🏖️', isCompleted: true, memoryLink: '123' };
-    initialSquares[5] = { ...initialSquares[5], title: 'Cocinar juntos', emoji: '🍝', isCompleted: true, memoryLink: '456' };
-    initialSquares[12] = { ...initialSquares[12], title: 'Ver el amanecer', emoji: '🌅' };
-    initialSquares[19] = { ...initialSquares[19], title: 'Viaje sorpresa', emoji: '✈️' };
+    // Mocking some completed ones
+    initialSquares[0] = { ...initialSquares[0], title: 'Cita en la playa', description: 'Visitar nuestra playa favorita.', minPhotos: 4, emoji: '🏖️', isCompleted: true, memoryLink: '123' };
+    initialSquares[5] = { ...initialSquares[5], title: 'Cocinar juntos', description: 'Hacer una pizza desde cero.', minPhotos: 5, emoji: '🍝', isCompleted: true, memoryLink: '456' };
+    initialSquares[12] = { ...initialSquares[12], title: 'Ver el amanecer', description: 'Despertar a las 5am e ir al mirador.', minPhotos: 2, emoji: '🌅' };
+    initialSquares[19] = { ...initialSquares[19], title: 'Viaje sorpresa', description: 'Empacar maletas sin decir a dónde.', minPhotos: 10, emoji: '✈️' };
 
     const [squares, setSquares] = useState(initialSquares);
     const [editingSquare, setEditingSquare] = useState(null);
-    const [formData, setFormData] = useState({ title: '', emoji: '' });
+    const [formData, setFormData] = useState({ title: '', emoji: '', description: '', minPhotos: 3 });
 
     const handleEdit = (square) => {
         setEditingSquare(square);
-        setFormData({ title: square.title, emoji: square.emoji });
+        setFormData({
+            title: square.title,
+            emoji: square.emoji,
+            description: square.description || '',
+            minPhotos: square.minPhotos || 3
+        });
     };
 
     const handleSave = (e) => {
@@ -60,13 +68,37 @@ export default function BingoManager() {
                         <button className={styles.closeBtn} onClick={() => setEditingSquare(null)}>✕</button>
                     </div>
                     <form onSubmit={handleSave} className={styles.editForm}>
-                        <div className={styles.formGroup} style={{ flex: '0 0 70px' }}>
-                            <label>Emoji</label>
-                            <input type="text" maxLength="2" required value={formData.emoji} onChange={e => setFormData({ ...formData, emoji: e.target.value })} className={styles.inputEmoji} />
+                        <div className={styles.formRow}>
+                            <div className={styles.formGroup} style={{ flex: '0 0 70px' }}>
+                                <label>Emoji</label>
+                                <input type="text" maxLength="2" required value={formData.emoji} onChange={e => setFormData({ ...formData, emoji: e.target.value })} className={styles.inputEmoji} />
+                            </div>
+                            <div className={styles.formGroup} style={{ flex: '1' }}>
+                                <label>Reto o Meta</label>
+                                <input type="text" required value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className={styles.inputText} />
+                            </div>
                         </div>
-                        <div className={styles.formGroup} style={{ flex: '1' }}>
-                            <label>Reto o Meta</label>
-                            <input type="text" required value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className={styles.inputText} />
+                        <div className={styles.formGroup}>
+                            <label>Descripción / Reglas</label>
+                            <textarea
+                                value={formData.description}
+                                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                                className={styles.inputText}
+                                rows="2"
+                                placeholder="Ej. Tómense una foto en la entrada del cine..."
+                            />
+                        </div>
+                        <div className={styles.formGroup}>
+                            <label>Mínimo de fotos requeridas</label>
+                            <input
+                                type="number"
+                                min="1"
+                                max="20"
+                                required
+                                value={formData.minPhotos}
+                                onChange={e => setFormData({ ...formData, minPhotos: parseInt(e.target.value) || 1 })}
+                                className={styles.inputText}
+                            />
                         </div>
                         <Button type="submit" size="sm">Guardar</Button>
                     </form>
