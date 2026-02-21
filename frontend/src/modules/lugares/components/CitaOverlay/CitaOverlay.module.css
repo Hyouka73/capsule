@@ -1,29 +1,32 @@
 .citaOverlay {
     position: absolute;
     inset: 0;
-    background: rgba(255, 240, 243, 0.75);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(255, 240, 243, 0.88);
+    background-image: radial-gradient(#ffe5e5 1px, transparent 1px);
+    background-size: 20px 20px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 20px 16px 100px;
+    z-index: 100;
 }
 
 .citaCard {
     width: 100%;
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(24px);
-    border: 2px solid rgba(183, 228, 199, 0.5);
+    margin: 0 16px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 3px solid rgba(183, 228, 199, 0.4);
     border-radius: 2rem;
-    padding: 20px;
+    padding: 24px;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 16px;
-    box-shadow:
-        0 20px 60px -10px rgba(255, 183, 178, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 1);
+    box-shadow: 0 8px 30px -4px rgba(255, 183, 178, 0.4);
 }
 
 .citaHeader {
@@ -36,14 +39,14 @@
 .citaLive {
     font-family: 'Fredoka', sans-serif;
     font-weight: 700;
-    font-size: 16px;
-    color: #7a5c5c;
+    font-size: 18px;
+    color: #8c6a6a;
     margin: 0;
 }
 
 .citaSub {
     font-family: 'Varela Round', sans-serif;
-    font-size: 11px;
+    font-size: 12px;
     color: #bcacad;
     margin: 0;
 }
@@ -52,101 +55,30 @@
     width: 38px;
     height: 38px;
     border-radius: 50%;
-    background: #fff0f3;
+    background: white;
     border: none;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: #bcacad;
-    transition: background 0.2s;
+    color: #8c6a6a;
+    box-shadow: 0 4px 12px rgba(255, 183, 178, 0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
     flex-shrink: 0;
 }
 
-.bigCamera {
-    width: 110px;
-    height: 110px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #ffb7b2, #ff8fa3);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    box-shadow:
-        0 6px 0 #e87a8e,
-        0 12px 32px rgba(255, 143, 163, 0.4);
-    cursor: pointer;
-    animation: fabFloat 4s ease-in-out infinite;
-    transition: transform 0.1s, box-shadow 0.1s;
+.citaClose:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 6px rgba(255, 183, 178, 0.3);
 }
 
-.bigCamera span {
-    font-size: 44px;
+.separator {
+    width: 100%;
+    height: 1px;
+    background: rgba(183, 228, 199, 0.3);
+    margin: 4px 0;
 }
 
-.bigCamera:active {
-    transform: translateY(5px);
-    box-shadow: 0 1px 0 #e87a8e;
-    animation: none;
-}
-
-.bigCameraLabel {
-    font-family: 'Fredoka', sans-serif;
-    font-weight: 600;
-    font-size: 15px;
-    color: #7a5c5c;
-    margin: -8px 0 0;
-}
-
-.citaActions {
-    display: flex;
-    gap: 10px;
-}
-
-.citaAction {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(183, 228, 199, 0.12);
-    border: 2px solid rgba(183, 228, 199, 0.5);
-    border-radius: 9999px;
-    padding: 8px 16px;
-    color: #7a5c5c;
-    font-family: 'Varela Round', sans-serif;
-    font-size: 12px;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.citaAction span {
-    font-size: 17px;
-    color: #88d8b0;
-}
-
-.citaEmpty {
-    font-family: 'Varela Round', sans-serif;
-    font-size: 12px;
-    color: #bcacad;
-    font-style: italic;
-    margin: -4px 0 0;
-}
-
-@keyframes fabFloat {
-
-    0%,
-    100% {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-6px);
-    }
-}
-
-/* =========================================================================
-   CITA PROGRESS & NEW ELEMENTS
-   ========================================================================= */
 .bingoPill {
     background: rgba(183, 228, 199, 0.15);
     border: 1.5px solid #88d8b0;
@@ -169,28 +101,25 @@
 
 .circles {
     display: flex;
-    gap: 6px;
+    gap: 10px;
 }
 
 .circle {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
-    border: 2px solid #a8edca;
-    background: transparent;
+    background: #ffe5e5;
     transition: all 0.3s ease;
 }
 
 .circleFilled {
     background: #88d8b0;
-    border-color: #88d8b0;
-    box-shadow: 0 0 8px rgba(136, 216, 176, 0.6);
 }
 
 .progressLabel {
     font-family: 'Varela Round', sans-serif;
     font-size: 13px;
-    color: #bcacad;
+    color: #8c6a6a;
     transition: color 0.3s;
 }
 
@@ -198,6 +127,83 @@
     color: #5eb887;
     font-weight: 600;
     font-family: 'Fredoka', sans-serif;
+}
+
+.bigCamera {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a8edca, #74c69d);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    box-shadow: 0 6px 0 #5eb887;
+    cursor: pointer;
+    animation: fabFloat 4s ease-in-out infinite;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.bigCamera span {
+    font-size: 44px;
+}
+
+.bigCamera:active {
+    transform: translateY(6px);
+    box-shadow: 0 0 0 #5eb887;
+    animation: none;
+}
+
+.bigCameraLabel {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: #8c6a6a;
+    margin: -8px 0 0;
+}
+
+.citaActions {
+    display: flex;
+    gap: 10px;
+}
+
+.citaAction {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: white;
+    border: 2px solid #b7e4c7;
+    border-radius: 9999px;
+    padding: 8px 16px;
+    color: #8c6a6a;
+    font-family: 'Varela Round', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 rgba(183, 228, 199, 0.5);
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.citaAction:active {
+    transform: translateY(4px);
+    box-shadow: 0 0px 0 rgba(183, 228, 199, 0.5);
+}
+
+.citaAction span {
+    font-size: 17px;
+    color: #88d8b0;
+}
+
+@keyframes fabFloat {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
 }
 
 /* Session Photos Strip */

@@ -2,9 +2,9 @@
     position: fixed;
     inset: 0;
     z-index: 1000;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(255, 240, 243, 0.96);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -16,28 +16,29 @@
     position: absolute;
     top: 24px;
     right: 24px;
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    background: rgba(183, 228, 199, 0.3);
-    border: none;
-    color: #5eb887;
+    background: white;
+    border: 2px solid rgba(183, 228, 199, 0.4);
+    box-shadow: 0 4px 12px rgba(255, 183, 178, 0.3);
+    color: #8c6a6a;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     z-index: 1001;
-    transition: background 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .viewerClose:active {
-    background: rgba(183, 228, 199, 0.5);
+    transform: translateY(2px);
+    box-shadow: 0 2px 6px rgba(255, 183, 178, 0.3);
 }
 
 .viewerContent {
     width: 100%;
     max-width: 500px;
-    height: 70vh;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -48,48 +49,86 @@
 
 .viewerImage {
     width: 100%;
-    height: 100%;
+    max-height: 60vh;
     object-fit: contain;
-    border-radius: 24px;
-    filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.15));
+    border-radius: 20px;
+    border: 3px solid rgba(183, 228, 199, 0.4);
+    box-shadow: 0 8px 32px rgba(92, 58, 58, 0.12);
 }
 
 .viewerControls {
     display: flex;
     align-items: center;
-    gap: 20px;
-    background: white;
-    padding: 8px 20px;
-    border-radius: 9999px;
-    box-shadow: 0 8px 24px rgba(136, 216, 176, 0.25);
-    border: 2px solid rgba(183, 228, 199, 0.3);
+    gap: 24px;
+    margin-top: 10px;
 }
 
 .viewerBtn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #a8edca, #74c69d);
-    color: white;
-    border: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    background: white;
+    color: #88d8b0;
+    border: 2px solid rgba(183, 228, 199, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 4px 0 #5eb887;
+    box-shadow: 0 4px 0 #74c69d;
     transition: transform 0.1s, box-shadow 0.1s;
 }
 
 .viewerBtn:active {
     transform: translateY(3px);
-    box-shadow: 0 1px 0 #5eb887;
+    box-shadow: 0 1px 0 #74c69d;
 }
 
 .viewerCounter {
+    background: white;
+    border-radius: 9999px;
+    border: 2px solid rgba(183, 228, 199, 0.4);
+    padding: 8px 20px;
     font-family: 'Fredoka', sans-serif;
     font-weight: 600;
     font-size: 16px;
-    color: #7a5c5c;
-    min-width: 40px;
+    color: #8c6a6a;
+    min-width: 60px;
     text-align: center;
+}
+
+/* =========================================================================
+   MINI STRIP OF THUMBNAILS
+   ========================================================================= */
+.thumbnailsStrip {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    max-width: 500px;
+    overflow-x: auto;
+    padding: 8px 0;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    justify-content: center;
+}
+
+.thumbnailsStrip::-webkit-scrollbar {
+    display: none;
+}
+
+.thumbnailItem {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    border-radius: 10px;
+    object-fit: cover;
+    opacity: 0.6;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+}
+
+.thumbnailItemActive {
+    opacity: 1;
+    border: 2px solid #88d8b0;
+    transform: scale(1.05);
 }

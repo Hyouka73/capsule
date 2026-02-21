@@ -15,8 +15,7 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
             <div className={styles.citaCard}>
                 <div className={styles.citaHeader}>
                     <div>
-                        <p className={styles.citaLive}>🟢 Modo Cita activo</p>
-                        <p className={styles.citaSub}>Detectando tu ubicación...</p>
+                        <p className={styles.citaLive}>🟢 Modo Cita</p>
                     </div>
                     <button className={styles.citaClose} onClick={() => {
                         if (sessionPhotos.length < citaContext.minPhotos) {
@@ -28,6 +27,10 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                         <span className="material-symbols-outlined">close</span>
                     </button>
                 </div>
+
+                <p className={styles.citaSub}>Detectando tu ubicación...</p>
+
+                <div className={styles.separator}></div>
 
                 {citaContext.type === 'bingo' && (
                     <div className={styles.bingoPill}>
@@ -62,15 +65,7 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                 }}>
                     <span className="material-symbols-outlined">add_a_photo</span>
                 </button>
-                <p className={styles.bigCameraLabel}>Toma una foto ahora</p>
-
-                {sessionPhotos.length > 0 && (
-                    <div className={styles.sessionPhotosStrip}>
-                        {sessionPhotos.map((url, i) => (
-                            <img key={i} src={url} alt="" className={styles.sessionPhotoThumb} onError={handleImageError} />
-                        ))}
-                    </div>
-                )}
+                <p className={styles.bigCameraLabel}>Toma una foto</p>
 
                 <div className={styles.citaActions}>
                     <button className={styles.citaAction}>
@@ -82,6 +77,14 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                         Boleto
                     </button>
                 </div>
+
+                {sessionPhotos.length > 0 && (
+                    <div className={styles.sessionPhotosStrip}>
+                        {sessionPhotos.map((url, i) => (
+                            <img key={i} src={url} alt="" className={styles.sessionPhotoThumb} onError={handleImageError} />
+                        ))}
+                    </div>
+                )}
 
                 {warningOpen && (
                     <div className={styles.warningBox}>

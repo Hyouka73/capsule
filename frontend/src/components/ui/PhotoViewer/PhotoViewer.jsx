@@ -38,9 +38,9 @@ export default function PhotoViewer({ photos, onClose }) {
                             >
                                 <span className="material-symbols-outlined">chevron_left</span>
                             </button>
-                            <span className={styles.viewerCounter}>
+                            <div className={styles.viewerCounter}>
                                 {viewerIndex + 1} / {photos.length}
-                            </span>
+                            </div>
                             <button
                                 className={styles.viewerBtn}
                                 onClick={() => setViewerIndex(prev => prev < photos.length - 1 ? prev + 1 : 0)}
@@ -49,6 +49,21 @@ export default function PhotoViewer({ photos, onClose }) {
                             </button>
                         </div>
                     </div>
+
+                    {/* Mini Strip of Thumbnails */}
+                    {photos.length > 1 && (
+                        <div className={styles.thumbnailsStrip}>
+                            {photos.map((url, idx) => (
+                                <img
+                                    key={idx}
+                                    src={url}
+                                    alt={`Miniatura ${idx + 1}`}
+                                    className={`${styles.thumbnailItem} ${idx === viewerIndex ? styles.thumbnailItemActive : ''}`}
+                                    onClick={() => setViewerIndex(idx)}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </motion.div>
             )}
         </AnimatePresence>
