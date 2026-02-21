@@ -4,6 +4,18 @@ import styles from './CitaOverlay.module.css';
 export default function CitaOverlay({ citaContext, onClose, onSave }) {
     const [sessionPhotos, setSessionPhotos] = useState([]);
     const [warningOpen, setWarningOpen] = useState(false);
+    const cameraInputRef = React.useRef(null);
+    const galleryInputRef = React.useRef(null);
+
+    const handleFileAdded = (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const objectUrl = URL.createObjectURL(file);
+            setSessionPhotos(prev => [...prev, objectUrl]);
+        }
+        // Reset input value so the same file can be chosen again if needed
+        e.target.value = '';
+    };
 
     const handleImageError = (e) => {
         e.target.onerror = null;
@@ -51,28 +63,41 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                     </span>
                 </div>
 
-                <button className={styles.bigCamera} onClick={() => {
-                    const UNSPLASH_URLS = [
-                        'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=200&q=80',
-                        'https://images.unsplash.com/photo-1585647347384-2593bc35786b?auto=format&fit=crop&w=200&q=80',
-                        'https://images.unsplash.com/photo-1481070555726-e2fe83477d4a?auto=format&fit=crop&w=200&q=80',
-                        'https://images.unsplash.com/photo-1582216669966-22ac585a73e5?auto=format&fit=crop&w=200&q=80',
-                        'https://images.unsplash.com/photo-1522748906645-95d8ad85fa4b?auto=format&fit=crop&w=200&q=80',
-                        'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=200&q=80',
-                    ];
-                    const randomUrl = UNSPLASH_URLS[Math.floor(Math.random() * UNSPLASH_URLS.length)];
-                    setSessionPhotos([...sessionPhotos, randomUrl]);
-                }}>
+                <button className={styles.bigCamera} onClick={() => cameraInputRef.current?.click()}>
                     <span className="material-symbols-outlined">add_a_photo</span>
                 </button>
+                <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    ref={cameraInputRef}
+                    style={{ display: 'none' }}
+                    onChange={handleFileAdded}
+                />
                 <p className={styles.bigCameraLabel}>Toma una foto</p>
 
                 <div className={styles.citaActions}>
-                    <button className={styles.citaAction}>
+                    <button
+                        className={`${styles.citaAction} ${sessionPhotos.length === 0 ? styles.citaActionDisabled : ''}`}
+                        onClick={() => {
+                            if (sessionPhotos.length > 0) galleryInputRef.current?.click();
+                        }}
+                        disabled={sessionPhotos.length === 0}
+                    >
                         <span className="material-symbols-outlined">photo_library</span>
                         Galería
                     </button>
-                    <button className={styles.citaAction}>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        ref={galleryInputRef}
+                        style={{ display: 'none' }}
+                        onChange={handleFileAdded}
+                    />
+                    <button
+                        className={`${styles.citaAction} ${sessionPhotos.length === 0 ? styles.citaActionDisabled : ''}`}
+                        disabled={sessionPhotos.length === 0}
+                    >
                         <span className="material-symbols-outlined">confirmation_number</span>
                         Boleto
                     </button>

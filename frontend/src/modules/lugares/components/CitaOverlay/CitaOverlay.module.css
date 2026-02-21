@@ -194,6 +194,24 @@
     color: var(--pastel-green-btn);
 }
 
+.citaActionDisabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--pastel-rose-light);
+    border-color: var(--pastel-rose);
+    box-shadow: none;
+    color: var(--pastel-text-muted);
+}
+
+.citaActionDisabled span {
+    color: var(--pastel-text-muted);
+}
+
+.citaActionDisabled:active {
+    transform: none;
+    box-shadow: none;
+}
+
 @keyframes fabFloat {
 
     0%,
