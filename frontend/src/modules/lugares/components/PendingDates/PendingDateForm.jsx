@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import KawaiiInput from '../../../../components/ui/KawaiiInput/KawaiiInput';
+import PlacePickerBottomSheet from './PlacePickerBottomSheet';
 import styles from './PendingDateForm.module.css';
 
 const MOCK_ALL_TAGS = ['cine', 'comida', 'romántico', 'aventura', 'relajación', 'fiesta', 'misterioso'];
@@ -9,6 +10,8 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
     // Determine the default place if one exists.
     // If pendingDate has a suggested place logic, we would set it here.
     const [selectedPlaceId, setSelectedPlaceId] = useState('');
+    const [customLocation, setCustomLocation] = useState(null);
+    const [isPlacePickerOpen, setIsPlacePickerOpen] = useState(false);
     const [selectedTags, setSelectedTags] = useState(pendingDate?.suggestedTags || []);
     const [comments, setComments] = useState('');
 
@@ -22,6 +25,7 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
         onSave({
             ...pendingDate,
             placeId: selectedPlaceId,
+            customLocation: customLocation,
             tags: selectedTags,
             comments: comments
         });
@@ -65,8 +69,11 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
                         iconLeft="location_on"
                         placeholder="Selecciona un lugar o crea uno nuevo"
                         value={selectedPlaceId}
-                        onChange={e => setSelectedPlaceId(e.target.value)}
-                        options={defaultPlaces?.map(p => ({ value: p.id, label: `${p.emoji} ${p.name}` })) || []}
+                        onClick={() => setIsPlacePickerOpen(true)}
+                        options={[
+                            ...(defaultPlaces?.map(p => ({ value: p.id, label: `${p.emoji} ${p.name}` })) || []),
+                            ...(customLocation ? [{ value: 'custom_map', label: '📍 Ubicación elegida en mapa' }] : [])
+                        ]}
                     />
                 </div>
 
@@ -117,6 +124,21 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
                     <span className="material-symbols-outlined">favorite</span>
                 </button>
             </div>
+
+            <PlacePickerBottomSheet
+                isOpen={isPlacePickerOpen}
+                onClose={() => setIsPlacePickerOpen(false)}
+                places={defaultPlaces || []}
+                onSelectPlace={(placeId) => {
+                    setSelectedPlaceId(placeId);
+                    setCustomLocation(null);
+                }}
+                onLocationSelected={(locationData) => {
+                    setCustomLocation(locationData);
+                    setSelectedPlaceId('custom_map');
+                }}
+                initialCoordinates={pendingDate.coordinates}
+            />
         </motion.div>
     );
 }

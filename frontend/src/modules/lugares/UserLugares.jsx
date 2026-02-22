@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import PhotoViewer from '../../components/ui/PhotoViewer/PhotoViewer';
-import CitaOverlay from './components/CitaOverlay/CitaOverlay';
+import MapPin from '../../components/ui/MapPin/MapPin';
 import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
 import PendingWarningBtn from './components/PendingDates/PendingWarningBtn';
 import PendingDatesList from './components/PendingDates/PendingDatesList';
@@ -176,52 +177,83 @@ function FlyToPlace({ place }) {
     return null;
 }
 
+// Track map zoom
+function ZoomTracker({ setMapZoom }) {
+    useMapEvents({
+        zoomend(e) {
+            setMapZoom(e.target.getZoom());
+        }
+    });
+    return null;
+}
+
 // Build custom Leaflet div icon per place type
-function buildIcon(place, isSelected) {
-    if (place.visitCount >= 5) {
-        return L.divIcon({
-            className: '',
-            html: `
-                <div style="position:relative;width:64px;height:64px;">
-                    <div class="${styles.pinPulse}"></div>
-                    <div class="${styles.pinLarge} ${isSelected ? styles.pinSelected : ''}">
-                        <img class="${styles.pinPhoto}" src="${place.coverPhotoUrl}" alt="" />
-                    </div>
-                    <div class="${styles.pinShadow}"></div>
-                </div>`,
-            iconSize: [64, 64],
-            iconAnchor: [32, 58],
-            popupAnchor: [0, -64],
-        });
-    } else if (place.visitCount >= 2) {
-        return L.divIcon({
-            className: '',
-            html: `
-                <div style="position:relative;width:44px;height:44px;">
-                    <div class="${styles.pinMedium} ${isSelected ? styles.pinSelected : ''}">
-                        <span class="material-symbols-outlined ${styles.pinIcon}">favorite</span>
-                    </div>
-                    <div class="${styles.pinShadow}"></div>
-                </div>`,
-            iconSize: [44, 44],
-            iconAnchor: [22, 40],
-            popupAnchor: [0, -44],
-        });
-    } else {
-        return L.divIcon({
-            className: '',
-            html: `
-                <div style="position:relative;width:30px;height:30px;">
-                    <div class="${styles.pinSmall} ${isSelected ? styles.pinSelected : ''}">
-                        <div class="${styles.pinDot}"></div>
-                    </div>
-                    <div class="${styles.pinShadow}"></div>
-                </div>`,
-            iconSize: [30, 30],
-            iconAnchor: [15, 27],
-            popupAnchor: [0, -30],
-        });
+function buildIcon(place, isSelected, zoom) {
+    let size = 'small';
+    if (place.visitCount >= 5) size = 'large';
+    else if (place.visitCount >= 2) size = 'medium';
+
+    const scale = zoom >= 14 ? 1 : zoom >= 12 ? 0.7 : zoom >= 10 ? 0.45 : 0.25;
+
+    // At very low zoom levels, strip down large/medium pins
+    const isLowZoom = zoom < 10;
+    const hideIcon = zoom < 12;
+    const hidePulse = zoom < 13;
+
+    // Force small solid dot at very low zoom
+    if (isLowZoom) {
+        size = 'micro'; // A new internal size specifically for zoomed out map
     }
+
+    // Apply scale to anchor and size logic
+    let iconSize, iconAnchor, popupAnchor;
+
+    if (size === 'large') {
+        iconSize = [70 * scale, 70 * scale];
+        iconAnchor = [35 * scale, 62 * scale];
+        popupAnchor = [0, -60 * scale];
+    } else if (size === 'medium') {
+        iconSize = [46 * scale, 46 * scale];
+        iconAnchor = [23 * scale, 40 * scale];
+        popupAnchor = [0, -35 * scale];
+    } else if (size === 'small') {
+        iconSize = [30 * scale, 30 * scale];
+        iconAnchor = [15 * scale, 26 * scale];
+        popupAnchor = [0, -22 * scale];
+    } else {
+        // 'micro' size for very low zoom
+        iconSize = [20, 20]; // Scale is handled mostly by the fixed size in MapPin
+        iconAnchor = [10, 10];
+        popupAnchor = [0, -10];
+    }
+
+    const html = renderToStaticMarkup(
+        <div style={{
+            width: `${iconSize[0]}px`,
+            height: `${iconSize[1]}px`,
+            display: 'flex',
+            alignItems: size === 'micro' ? 'center' : 'flex-end',
+            justifyContent: 'center',
+            position: 'relative'
+        }}>
+            <div style={{ transform: `scale(${scale})`, transformOrigin: 'bottom center', display: 'flex' }}>
+                <MapPin
+                    size={size}
+                    selected={isSelected}
+                    hideIcon={hideIcon}
+                    hidePulse={hidePulse}
+                />
+            </div>
+        </div>
+    );
+
+    return L.divIcon({
+        className: '',
+        html: html,
+        iconSize: iconSize,
+        iconAnchor: iconAnchor,
+        popupAnchor: popupAnchor,
+    });
 }
 
 export default function UserLugares({ onPlaceSelected, bingoContextToMap, clearBingoContext }) {
@@ -229,6 +261,7 @@ export default function UserLugares({ onPlaceSelected, bingoContextToMap, clearB
     const [activeFilter, setActiveFilter] = useState('todos');
     const [citaContext, setCitaContext] = useState(null);
     const [globalSettings, setGlobalSettings] = useState(null);
+    const [mapZoom, setMapZoom] = useState(13); // Default initial zoom
 
     useEffect(() => {
         const unsub = subscribeToGlobalSettings(data => {
@@ -295,10 +328,9 @@ export default function UserLugares({ onPlaceSelected, bingoContextToMap, clearB
                     style={{ width: '100%', height: '100%' }}
                     zoomControl={false}
                     attributionControl={false}
-                    scrollWheelZoom={true}
-                    doubleClickZoom={true}
-                    touchZoom={true}
+                    className={styles.map}
                 >
+                    <ZoomTracker setMapZoom={setMapZoom} />
                     <TileLayer
                         url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                         subdomains="abcd"
@@ -309,7 +341,7 @@ export default function UserLugares({ onPlaceSelected, bingoContextToMap, clearB
                         <Marker
                             key={place.id}
                             position={[place.coordinates.lat, place.coordinates.lng]}
-                            icon={buildIcon(place, selectedPlace?.id === place.id)}
+                            icon={buildIcon(place, selectedPlace?.id === place.id, mapZoom)}
                             eventHandlers={{
                                 click: () => {
                                     const newPlace = selectedPlace?.id === place.id ? null : place;

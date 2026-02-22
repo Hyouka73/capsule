@@ -1,0 +1,181 @@
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    /* Align bottom sheet to bottom */
+}
+
+.bottomSheet {
+    background: var(--bg-main);
+    width: 100%;
+    max-width: 600px;
+    /* Optional constraint for larger screens */
+    height: 85vh;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+    /* Hide overflow to keep border radius */
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.handle {
+    width: 40px;
+    height: 4px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 2px;
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.header h3 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    color: var(--text-primary);
+}
+
+.closeBtn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.closeBtn:hover {
+    background: var(--glass-bg);
+    color: var(--text-primary);
+}
+
+.searchSection {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.mapBtn {
+    width: 100%;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.95rem;
+    padding: 12px;
+}
+
+.mapIcon {
+    font-size: 20px;
+}
+
+.placesList {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-right: 8px;
+}
+
+/* Custom scrollbar for list */
+.placesList::-webkit-scrollbar {
+    width: 6px;
+}
+
+.placesList::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.placesList::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+
+.placesList::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.placeItem {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-border);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.placeItem:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card-sm);
+    border-color: var(--pastel-green-btn);
+}
+
+.placeEmoji {
+    font-size: 2rem;
+    margin-right: 16px;
+    background: var(--glass-bg);
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+}
+
+.placeInfo {
+    display: flex;
+    flex-direction: column;
+}
+
+.placeName {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+}
+
+.placeTags {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.emptyState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.emptyIcon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+    opacity: 0.5;
+}
