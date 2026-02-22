@@ -35,7 +35,6 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
         >
             <div className={styles.orbTopLeft}></div>
-            <div className={styles.orbBottomRight}></div>
 
             <div className={styles.contentWrapper}>
                 <div className={styles.header}>

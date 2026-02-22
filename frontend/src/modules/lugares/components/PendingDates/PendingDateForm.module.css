@@ -43,13 +43,12 @@
     position: relative;
     z-index: 1;
     width: 100%;
+    box-sizing: border-box;
     background: transparent;
-    padding: 24px 20px 32px;
+    padding: 16px 20px 32px;
     display: flex;
     flex-direction: column;
     gap: 20px;
-    height: auto;
-    min-height: auto;
 }
 
 .header {
@@ -90,8 +89,8 @@
 .heroSection {
     position: relative;
     width: 100%;
-    height: 140px;
-    border-radius: var(--radius-card);
+    height: 180px;
+    border-radius: 16px;
     overflow: hidden;
 }
 
@@ -105,7 +104,7 @@
     position: absolute;
     top: 12px;
     right: 12px;
-    background: var(--pastel-green-btn);
+    background: #88d8b0;
     color: white;
     padding: 4px 10px;
     border-radius: var(--radius-pill);
@@ -148,8 +147,8 @@
 .label {
     font-family: var(--font-display);
     font-weight: bold;
-    color: var(--text-primary);
-    font-size: 14px;
+    color: #8c6a6a;
+    font-size: 13px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -183,19 +182,20 @@
 .select,
 .textarea {
     width: 100%;
-    background: var(--bg-card);
+    background: #ffffff;
     font-family: var(--font-body);
     color: var(--text-primary);
     outline: none;
     box-sizing: border-box;
     transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
+    border: 2px solid rgba(183, 228, 199, 0.5);
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(255, 183, 178, 0.15);
 }
 
 .select {
-    padding: 14px 18px 14px 44px;
+    padding: 14px 16px 14px 44px;
     /* Space for icon */
-    border: var(--border-mint-input);
-    border-radius: var(--radius-pill);
     font-size: 14px;
     appearance: none;
 }
@@ -205,11 +205,9 @@
 }
 
 .textarea {
-    padding: 14px 18px;
-    border: var(--border-mint-input);
-    border-radius: var(--radius-lg);
+    padding: 14px 16px;
     font-size: 13px;
-    min-height: 100px;
+    min-height: 90px;
     resize: none;
 }
 
@@ -220,15 +218,16 @@
 
 .select:focus,
 .textarea:focus {
-    border: 4px solid var(--pastel-green-btn);
-    box-shadow: var(--shadow-mint-glow);
-    padding: 11px 15px;
-    /* Adjust padding to compensate for 3px extra border width */
+    border: 2px solid #88d8b0;
+    box-shadow: 0 4px 16px rgba(136, 216, 176, 0.25);
+    padding: 14px 16px;
+    /* keep same padding for textarea */
 }
 
 /* Specific compensation for select padding with icon */
 .select:focus {
-    padding-left: 41px;
+    padding: 14px 16px 14px 44px;
+    /* keep same padding so it doesnt jump */
 }
 
 
@@ -255,11 +254,11 @@
 }
 
 .tagBtnActive {
-    background: var(--gradient-mint);
+    background: linear-gradient(135deg, #a8edca, #74c69d);
     border: none;
     color: white;
     font-weight: bold;
-    box-shadow: var(--shadow-chunky-mint);
+    box-shadow: 0 4px 0 #74c69d;
     padding: 9px 17px;
     /* Compensate for removed 1px border */
 }
@@ -280,17 +279,17 @@
 .saveBtn {
     width: 100%;
     padding: 16px;
-    background: var(--gradient-mint);
+    background: linear-gradient(135deg, #a8edca, #74c69d);
     color: white;
     border: none;
-    border-radius: var(--radius-pill);
+    border-radius: 9999px;
     font-family: var(--font-display);
     font-size: 16px;
     font-weight: bold;
     cursor: pointer;
-    box-shadow: var(--shadow-chunky-mint-deep);
-    margin-top: 10px;
-    transition: transform 0.3s, background 0.3s, color 0.3s, box-shadow 0.3s;
+    box-shadow: 0 6px 0 #5eb887;
+    margin-top: 24px;
+    transition: transform 0.1s, background 0.3s, color 0.3s, box-shadow 0.1s;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -299,15 +298,13 @@
 
 .saveBtn:active:not(:disabled) {
     transform: translateY(4px);
-    box-shadow: var(--shadow-chunky-mint-deep-active);
+    box-shadow: none;
 }
 
 .saveBtn:disabled {
-    background: var(--pastel-rose-light);
-    color: var(--text-muted);
-    border: 1.5px solid var(--border-mint-color, #E8DFE8);
-    /* Fallback inline in case var isn't strict */
-    border-color: var(--pastel-rose);
+    background: #ffe5e5;
+    color: #bcacad;
+    border: none;
     box-shadow: none;
     cursor: not-allowed;
     transform: none;
