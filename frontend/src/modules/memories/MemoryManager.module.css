@@ -34,7 +34,7 @@
 .searchBox:focus-within {
     border-color: var(--pastel-rose);
     box-shadow: 0 0 0 2px rgba(255, 183, 178, 0.2);
-    background: #fff;
+    background: var(--bg-card);
 }
 
 .searchIcon {
@@ -82,7 +82,7 @@
 
 .select:hover,
 .select:focus {
-    background-color: #fff;
+    background-color: var(--bg-card);
     border-color: var(--pastel-rose);
     color: var(--text-primary);
 }
@@ -118,7 +118,7 @@
 .formPanelHeader h2 {
     margin: 0;
     font-size: 1.5rem;
-    font-family: var(--font-serif);
+    font-family: var(--font-display);
     color: var(--accent-primary);
 }
 
@@ -154,7 +154,7 @@
     display: flex;
     flex-direction: column;
     border: 1px solid var(--glass-border);
-    background: #ffffff;
+    background: var(--bg-card);
 }
 
 .cardHidden {
@@ -255,7 +255,7 @@
     height: 44px;
     border-radius: 50%;
     border: none;
-    background: #ffffff;
+    background: var(--bg-card);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     font-size: 1.1rem;
     cursor: pointer;

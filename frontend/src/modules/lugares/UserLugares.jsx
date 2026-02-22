@@ -5,6 +5,8 @@ import CitaOverlay from './components/CitaOverlay/CitaOverlay';
 import PendingWarningBtn from './components/PendingDates/PendingWarningBtn';
 import PendingDatesList from './components/PendingDates/PendingDatesList';
 import PendingDateForm from './components/PendingDates/PendingDateForm';
+import { toast } from '../../components/ui/PastelToast/PastelToast';
+import { subscribeToGlobalSettings } from '../../services/settingsService';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import L from 'leaflet';
@@ -225,7 +227,14 @@ export default function UserLugares({ onPlaceSelected, bingoContextToMap, clearB
     const [selectedPlace, setSelectedPlace] = useState(null);
     const [activeFilter, setActiveFilter] = useState('todos');
     const [citaContext, setCitaContext] = useState(null);
-    const [toastMessage, setToastMessage] = useState(null);
+    const [globalSettings, setGlobalSettings] = useState(null);
+
+    useEffect(() => {
+        const unsub = subscribeToGlobalSettings(data => {
+            if (data) setGlobalSettings(data);
+        });
+        return unsub;
+    }, []);
 
     useEffect(() => {
         if (bingoContextToMap) {
@@ -249,10 +258,14 @@ export default function UserLugares({ onPlaceSelected, bingoContextToMap, clearB
     const [isSearchActive, setIsSearchActive] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
-    const showToast = (msg) => {
-        setToastMessage(msg);
-        setTimeout(() => setToastMessage(null), 3000);
-    };
+    // --- NAVBAR & OVERLAY LOGIC ---
+    useEffect(() => {
+        const isAnyOverlayOpen = !!citaContext || isPendingListOpen || !!selectedPendingDate || !!selectedPlace;
+        if (onPlaceSelected) {
+            onPlaceSelected(isAnyOverlayOpen);
+        }
+    }, [citaContext, isPendingListOpen, selectedPendingDate, selectedPlace, onPlaceSelected]);
+    // ----------------------------
 
     const filteredPlaces = MOCK_PLACES.filter(p => {
         const matchesFilter = activeFilter === 'todos' || p.tags.includes(activeFilter);
@@ -378,27 +391,30 @@ export default function UserLugares({ onPlaceSelected, bingoContextToMap, clearB
                             </motion.div>
                         )}
                     </AnimatePresence>
-
-                    {/* Warning Button for Pending Dates */}
-                    {!isSearchActive && !citaContext && !selectedPlace && (
-                        <PendingWarningBtn
-                            pendingCount={pendingDates.length}
-                            isVisible={true}
-                            onClick={() => setIsPendingListOpen(true)}
-                        />
-                    )}
                 </div>
 
-                {/* FAB */}
-                {!citaContext && !selectedPlace && (
-                    <div className={styles.fab}>
-                        <button className={styles.fabBtn} onClick={() => {
-                            setCitaContext({ type: 'spontaneous', minPhotos: 5 });
-                            if (onPlaceSelected) onPlaceSelected(true);
-                        }}>
-                            <span className="material-symbols-outlined">camera_alt</span>
-                        </button>
-                        <span className={styles.fabLabel}>Estamos de cita ✨</span>
+                {/* Actions Stack: Grouped to prevent overlaps */}
+                {!citaContext && !selectedPlace && !isPendingListOpen && !selectedPendingDate && (
+                    <div className={styles.actionsStack}>
+                        {/* Warning Button for Pending Dates */}
+                        {!isSearchActive && pendingDates.length > 0 && (
+                            <PendingWarningBtn
+                                pendingCount={pendingDates.length}
+                                isVisible={true}
+                                onClick={() => setIsPendingListOpen(true)}
+                            />
+                        )}
+
+                        {/* FAB — Date Mode Button */}
+                        <div className={styles.fab}>
+                            <button className={styles.fabBtn} onClick={() => {
+                                const minVal = globalSettings?.citaConfig?.minPhotosSpontaneous || 5;
+                                setCitaContext({ type: 'spontaneous', minPhotos: minVal });
+                            }}>
+                                <span className="material-symbols-outlined">camera_alt</span>
+                            </button>
+                            <span className={styles.fabLabel}>Estamos de cita ✨</span>
+                        </div>
                     </div>
                 )}
 
@@ -561,48 +577,41 @@ export default function UserLugares({ onPlaceSelected, bingoContextToMap, clearB
                                     suggestedTags: citaContext.tags || []
                                 };
                                 setPendingDates(prev => [...prev, newPendingDate]);
-                                showToast("Recuerdo guardado en borradores 📸");
+                                toast.success('¡Cita guardada! 📸', `${photos.length} foto${photos.length !== 1 ? 's' : ''} en tus borradores`);
                             } else {
-                                showToast("Cita finalizada sin fotos.");
+                                toast.info('Cita finalizada', 'Sin fotos esta vez.');
                             }
                         }}
                     />
                 )}
 
-                {/* Toast */}
-                {toastMessage && (
-                    <div className={styles.toast}>
-                        {toastMessage}
-                    </div>
-                )}
 
                 {/* Pending Dates Overlays */}
-                {isPendingListOpen && !selectedPendingDate && (
-                    <PendingDatesList
-                        pendingDates={pendingDates}
-                        onClose={() => setIsPendingListOpen(false)}
-                        onSelectDate={(pd) => setSelectedPendingDate(pd)}
-                    />
-                )}
+                <AnimatePresence>
+                    {isPendingListOpen && !selectedPendingDate && (
+                        <PendingDatesList
+                            pendingDates={pendingDates}
+                            onClose={() => setIsPendingListOpen(false)}
+                            onSelectDate={(pd) => setSelectedPendingDate(pd)}
+                        />
+                    )}
+                </AnimatePresence>
 
-                {selectedPendingDate && (
-                    <PendingDateForm
-                        pendingDate={selectedPendingDate}
-                        defaultPlaces={MOCK_PLACES}
-                        onClose={() => setSelectedPendingDate(null)}
-                        onSave={(finalData) => {
-                            setSelectedPendingDate(null);
-                            if (pendingDates.length === 1) setIsPendingListOpen(false);
-
-                            // Remove from pending
-                            setPendingDates(prev => prev.filter(p => p.id !== finalData.id));
-
-                            // To actually alter MOCK_PLACES we would need proper global state,
-                            // but for now we just show a success toast.
-                            showToast('¡Cita guardada en el historial! ✨');
-                        }}
-                    />
-                )}
+                <AnimatePresence>
+                    {selectedPendingDate && (
+                        <PendingDateForm
+                            pendingDate={selectedPendingDate}
+                            defaultPlaces={MOCK_PLACES}
+                            onClose={() => setSelectedPendingDate(null)}
+                            onSave={(finalData) => {
+                                setSelectedPendingDate(null);
+                                if (pendingDates.length === 1) setIsPendingListOpen(false);
+                                setPendingDates(prev => prev.filter(p => p.id !== finalData.id));
+                                toast.success('¡Cita guardada!', 'El recuerdo se añadió al historial ✨');
+                            }}
+                        />
+                    )}
+                </AnimatePresence>
 
                 {/* Photo Viewer Modal */}
                 <PhotoViewer photos={viewerPhotos} onClose={() => setViewerPhotos(null)} />

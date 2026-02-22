@@ -67,7 +67,7 @@
 }
 
 .sidebarTitle {
-    font-family: var(--font-serif);
+    font-family: var(--font-display);
     font-size: 1.25rem;
     font-weight: 700;
     color: var(--text-primary);
@@ -104,7 +104,7 @@
 
 .nav::-webkit-scrollbar-thumb {
     background: var(--glass-border);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-pill);
 }
 
 .navItem {
@@ -131,7 +131,7 @@
 }
 
 .navItem.active {
-    background: #ffffff;
+    background: var(--bg-card);
     color: var(--accent-primary);
     font-weight: 600;
     box-shadow: var(--shadow-sm), 0 0 0 1px var(--glass-border) inset;
@@ -254,7 +254,7 @@
 }
 
 .comingSoon h2 {
-    font-family: var(--font-serif);
+    font-family: var(--font-display);
     margin: 0 0 0.5rem;
     color: var(--text-primary);
     font-size: 1.75rem;

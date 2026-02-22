@@ -36,7 +36,7 @@
 .formPanelHeader h2 {
     margin: 0;
     font-size: 1.5rem;
-    font-family: var(--font-serif);
+    font-family: var(--font-display);
     color: var(--accent-primary);
 }
 
@@ -103,7 +103,7 @@
     outline: none;
     border-color: var(--pastel-rose);
     box-shadow: 0 0 0 3px rgba(255, 183, 178, 0.2);
-    background: #ffffff;
+    background: var(--bg-card);
 }
 
 .textarea {
@@ -157,7 +157,7 @@
     padding: 1.5rem;
     position: relative;
     border: 1px solid var(--glass-border);
-    background: linear-gradient(145deg, #ffffff, #fafafa);
+    background: var(--bg-card);
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     overflow: hidden;
     /* Coupon specific styling */
@@ -166,7 +166,7 @@
 
 .cardInactive {
     opacity: 0.6;
-    background: #fdfdfd;
+    background: var(--bg-card);
     border-left-color: #d1d5db;
     /* text-muted */
 }
@@ -202,7 +202,7 @@
     border-radius: var(--radius-full);
     font-weight: 700;
     text-transform: uppercase;
-    background-color: var(--bg-input);
+    background-color: var(--bg-card);
     color: var(--text-secondary);
     border: 1px solid rgba(0, 0, 0, 0.05);
 }
@@ -293,7 +293,7 @@
     height: 44px;
     border-radius: 50%;
     border: none;
-    background: #ffffff;
+    background: var(--bg-card);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     font-size: 1.1rem;
     cursor: pointer;
@@ -324,7 +324,7 @@
 .historyTitle {
     margin: 0 0 1rem;
     font-size: 1.2rem;
-    font-family: var(--font-serif);
+    font-family: var(--font-display);
     color: var(--text-primary);
 }
 
@@ -338,7 +338,7 @@
     display: flex;
     align-items: center;
     padding: 1rem;
-    background: #ffffff;
+    background: var(--bg-card);
     border-radius: var(--radius-md);
     border: 1px dashed var(--glass-border);
     gap: 1rem;

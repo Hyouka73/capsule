@@ -10,7 +10,7 @@
 }
 
 .title {
-    font-family: var(--font-serif);
+    font-family: var(--font-display);
     font-size: 2.2rem;
     color: var(--accent-primary);
     margin: 0 0 0.5rem;
@@ -119,7 +119,7 @@
 
 .couponText h3 {
     margin: 0 0 0.4rem;
-    font-family: var(--font-serif);
+    font-family: var(--font-display);
     font-size: 1.2rem;
     color: var(--text-primary);
 }
@@ -222,7 +222,7 @@
 }
 
 .modalContent h2 {
-    font-family: var(--font-serif);
+    font-family: var(--font-display);
     color: var(--accent-primary);
     margin: 0 0 0.5rem;
 }
