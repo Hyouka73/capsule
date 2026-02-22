@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useAuth } from './hooks/useAuth';
 import Teaser from './components/Teaser/Teaser';
 import AdminLogin from './modules/admin/AdminLogin';
@@ -38,7 +37,11 @@ export default function App() {
 
   // Partner routes (Dashboard)
   if (isAppRoute) {
-    return <UserDashboard />;
+    return (
+      <PastelToastProvider>
+        <UserDashboard />
+      </PastelToastProvider>
+    );
   }
 
   // Default: teaser

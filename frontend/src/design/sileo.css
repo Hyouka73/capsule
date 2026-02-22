@@ -41,7 +41,7 @@
 /* ===== Title ===== */
 [data-sileo-title] {
     color: var(--pastel-text) !important;
-    font-family: 'Fredoka', 'Varela Round', var(--font-sans), sans-serif !important;
+    font-family: var(--font-display) !important;
     font-weight: 600 !important;
     font-size: 0.95rem !important;
     letter-spacing: 0.01em !important;
@@ -76,7 +76,7 @@
 [data-sileo-description] {
     color: var(--pastel-text) !important;
     opacity: 0.75;
-    font-family: 'Varela Round', var(--font-sans), sans-serif !important;
+    font-family: var(--font-body) !important;
     font-size: 0.875rem !important;
     line-height: 1.45 !important;
     padding: 0 !important;

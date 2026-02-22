@@ -6,11 +6,8 @@
 :root {
     /* --- Colors --- */
     --bg-main: #fff0f3;
-    /* Soft Creamy Pink / Cute Pastel BG */
     --bg-card: #ffffff;
-    /* Tarjetas blancas limpias */
     --bg-input: #fff2f5;
-    /* Inputs en rosa super pálido */
 
     /* Cute Pastel Palette */
     --pastel-bg: #fff0f3;
@@ -25,82 +22,69 @@
     --pastel-shadow-mint-active: #5eb887;
     --pastel-shadow-pink: #e87a8e;
 
-    /* Sweet Pink & Mint Green (Legacy Mappings) */
-    --accent-primary: var(--pastel-rose);
-    /* Rosa Dulce / Principal */
-    --accent-secondary: var(--pastel-sage);
-    /* Verde Menta / Secundario */
-    --accent-soft: rgba(255, 183, 178, 0.15);
-    /* Rosa translúcido basado en pastel-rose */
-    --accent-border: rgba(183, 228, 199, 0.4);
-    /* Opciones bordes verdes pastel-sage */
-
-    /* Text */
+    /* Mappings */
     --text-primary: var(--pastel-text);
-    /* Gris/Marrón oscuro para legibilidad suave */
-    --text-secondary: #9c8484;
-    --text-muted: #bcacad;
+    --text-muted: var(--pastel-text-muted);
     --text-inverse: #ffffff;
-    /* Para texto sobre botones rosas */
 
     /* States */
     --color-success: var(--pastel-green-btn);
-    /* Verde brillante */
     --color-error: #ff758f;
     --color-warning: #ffd166;
     --color-info: #a2d2ff;
 
     /* --- Glassmorphism --- */
     --glass-bg: rgba(255, 255, 255, 0.85);
-    /* Vidrio esmerilado claro */
     --glass-border: rgba(255, 143, 171, 0.25);
-    /* Borde de vidrio rosado */
     --glass-blur: blur(12px);
 
     /* --- Typography --- */
-    --font-serif: 'Playfair Display', Georgia, serif;
-    --font-sans: 'DM Sans', 'Inter', system-ui, sans-serif;
+    --font-display: 'Fredoka', sans-serif;
+    --font-body: 'Varela Round', sans-serif;
 
-    /* --- Spacing --- */
+    /* --- Border Radius --- */
     --radius-sm: 0.4rem;
     --radius-md: 0.75rem;
     --radius-lg: 1.25rem;
-    --radius-full: 9999px;
+    --radius-pill: 9999px;
+    --radius-card: 2rem;
+    --radius-photo: 14px;
 
     /* --- Shadows --- */
     --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
     --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.5);
-
-    /* Login Aesthetic Tokens */
     --shadow-card: 0 8px 30px -4px rgba(255, 183, 178, 0.4);
     --shadow-pink-glow: 0 4px 12px rgba(255, 183, 178, 0.3);
-    --shadow-pink-glow-active: 0 2px 6px rgba(255, 183, 178, 0.3);
-    --shadow-chunky-mint: 0 4px 0 var(--pastel-shadow-mint);
-    --shadow-chunky-mint-active: 0 1px 0 var(--pastel-shadow-mint);
-    --shadow-chunky-mint-lg: 0 6px 0 var(--pastel-shadow-mint-active);
-    --shadow-chunky-mint-lg-active: 0 0 0 var(--pastel-shadow-mint-active);
-    --shadow-chunky-mint-soft: 0 4px 0 rgba(183, 228, 199, 0.5);
+    --shadow-chunky-mint: 0 6px 0 #74c69d;
+    --shadow-chunky-mint-active: 0 2px 0 #74c69d;
+    --shadow-chunky-mint-deep: 0 6px 0 #5eb887;
+    --shadow-chunky-pink: 0 6px 0 #e87a8e;
+    --shadow-chunky-amber: 0 5px 0 #D4891A;
 
-    /* Borders */
+    /* --- Borders --- */
     --border-mint: 2px solid rgba(183, 228, 199, 0.4);
     --border-mint-thick: 3px solid rgba(183, 228, 199, 0.4);
+    --border-mint-input: 4px solid #b7e4c7;
 
-    /* Backgrounds */
+    /* --- Gradients --- */
+    --gradient-mint: linear-gradient(135deg, #a8edca, #74c69d);
+    --gradient-mint-soft: linear-gradient(135deg, #a8edca, #88d8b0);
+    --gradient-rose: linear-gradient(135deg, #ffb7b2, #ff8fa3);
+    --gradient-amber: linear-gradient(135deg, #FFD166, #F5A623);
+
+    /* --- Backgrounds --- */
     --bg-dots-pattern: radial-gradient(var(--pastel-rose-light) 1px, transparent 1px);
     --bg-overlay: rgba(255, 240, 243, 0.88);
+    --bg-overlay-strong: rgba(255, 240, 243, 0.96);
     --bg-overlay-light: rgba(255, 255, 255, 0.85);
-
-    /* Typography Overrides */
-    --font-fredoka: 'Fredoka', sans-serif;
-    --font-varela: 'Varela Round', sans-serif;
 }
 
-/* --- Global Overrides --- */
+/* --- Global Inheritance --- */
 body {
     background-color: var(--bg-main);
     color: var(--text-primary);
-    font-family: var(--font-sans);
+    font-family: var(--font-body);
     margin: 0;
     -webkit-font-smoothing: antialiased;
 }
@@ -109,5 +93,16 @@ h1,
 h2,
 h3,
 h4 {
-    font-family: var(--font-serif);
+    font-family: var(--font-display);
+    margin: 0;
+}
+
+button {
+    font-family: var(--font-display);
+    cursor: pointer;
+}
+
+input,
+textarea {
+    font-family: var(--font-body);
 }
