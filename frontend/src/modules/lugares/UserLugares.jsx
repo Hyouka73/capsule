@@ -177,11 +177,14 @@ function FlyToPlace({ place }) {
     return null;
 }
 
-// Track map zoom
-function ZoomTracker({ setMapZoom }) {
+// Track map events: zoom and click to dismiss search
+function MapEvents({ setMapZoom, onMapClick }) {
     useMapEvents({
         zoomend(e) {
             setMapZoom(e.target.getZoom());
+        },
+        click() {
+            if (onMapClick) onMapClick();
         }
     });
     return null;
@@ -294,11 +297,11 @@ export default function UserLugares({ onPlaceSelected, bingoContextToMap, clearB
 
     // --- NAVBAR & OVERLAY LOGIC ---
     useEffect(() => {
-        const isAnyOverlayOpen = !!citaContext || isPendingListOpen || !!selectedPendingDate || !!selectedPlace;
+        const isAnyOverlayOpen = !!citaContext || isPendingListOpen || !!selectedPendingDate || !!selectedPlace || isSearchActive;
         if (onPlaceSelected) {
             onPlaceSelected(isAnyOverlayOpen);
         }
-    }, [citaContext, isPendingListOpen, selectedPendingDate, selectedPlace, onPlaceSelected]);
+    }, [citaContext, isPendingListOpen, selectedPendingDate, selectedPlace, isSearchActive, onPlaceSelected]);
     // ----------------------------
 
     const filteredPlaces = MOCK_PLACES.filter(p => {
@@ -330,7 +333,17 @@ export default function UserLugares({ onPlaceSelected, bingoContextToMap, clearB
                     attributionControl={false}
                     className={styles.map}
                 >
-                    <ZoomTracker setMapZoom={setMapZoom} />
+                    <MapEvents
+                        setMapZoom={setMapZoom}
+                        onMapClick={() => {
+                            if (isSearchActive) setIsSearchActive(false);
+                            // Also close drawer if clicking map
+                            if (selectedPlace) {
+                                setSelectedPlace(null);
+                                if (onPlaceSelected) onPlaceSelected(false);
+                            }
+                        }}
+                    />
                     <TileLayer
                         url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                         subdomains="abcd"
@@ -361,17 +374,19 @@ export default function UserLugares({ onPlaceSelected, bingoContextToMap, clearB
                 <div className={styles.topControls}>
                     <div className={`${styles.searchWrapper} ${isSearchActive ? styles.searchWrapperActive : ''}`}>
                         {isSearchActive ? (
-                            <KawaiiInput
-                                type="search"
-                                placeholder="Buscar lugar..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                autoFocus
-                                onClear={() => {
-                                    setIsSearchActive(false);
-                                    setSearchQuery('');
-                                }}
-                            />
+                            <div className={styles.searchContainer}>
+                                <KawaiiInput
+                                    type="search"
+                                    placeholder="Buscar lugar..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    autoFocus
+                                    onClear={() => {
+                                        setIsSearchActive(false);
+                                        setSearchQuery('');
+                                    }}
+                                />
+                            </div>
                         ) : (
                             <button
                                 className={styles.searchFabBtn}
@@ -418,32 +433,49 @@ export default function UserLugares({ onPlaceSelected, bingoContextToMap, clearB
                 </div>
 
                 {/* Actions Stack: Grouped to prevent overlaps */}
-                {!citaContext && !selectedPlace && !isPendingListOpen && !selectedPendingDate && (
-                    <div className={styles.actionsStack}>
-                        {/* Warning Button for Pending Dates */}
-                        {!isSearchActive && pendingDates.length > 0 && (
-                            <PendingWarningBtn
-                                pendingCount={pendingDates.length}
-                                isVisible={true}
-                                onClick={() => setIsPendingListOpen(true)}
-                            />
+                <div className={styles.actionsStack}>
+                    {/* Warning Button for Pending Dates: visible even in search or when place selected, unless list/form open */}
+                    <AnimatePresence>
+                        {!isSearchActive && !isPendingListOpen && !selectedPendingDate && pendingDates.length > 0 && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.8, x: 20 }}
+                                animate={{ opacity: 1, scale: 1, x: 0 }}
+                                exit={{ opacity: 0, scale: 0.8, x: 20 }}
+                                transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+                            >
+                                <PendingWarningBtn
+                                    pendingCount={pendingDates.length}
+                                    isVisible={true}
+                                    onClick={() => setIsPendingListOpen(true)}
+                                />
+                            </motion.div>
                         )}
+                    </AnimatePresence>
 
-                        {/* FAB — Date Mode Button */}
-                        <div className={styles.fab}>
-                            <button className={styles.fabBtn} onClick={() => {
-                                const minVal = globalSettings?.citaConfig?.minPhotosSpontaneous || 5;
-                                setCitaContext({ type: 'spontaneous', minPhotos: minVal });
-                            }}>
-                                <span className="material-symbols-outlined">camera_alt</span>
-                            </button>
-                            <span className={styles.fabLabel}>Estamos de cita ✨</span>
-                        </div>
-                    </div>
-                )}
+                    {/* FAB — Date Mode Button: hidden if searching, cita open, or place selected */}
+                    <AnimatePresence>
+                        {!isSearchActive && !citaContext && !selectedPlace && !isPendingListOpen && !selectedPendingDate && (
+                            <motion.div
+                                className={styles.fab}
+                                initial={{ opacity: 0, scale: 0.5, y: 50 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.5, y: 50 }}
+                                transition={{ type: 'spring', damping: 15, stiffness: 250 }}
+                            >
+                                <button className={styles.fabBtn} onClick={() => {
+                                    const minVal = globalSettings?.citaConfig?.minPhotosSpontaneous || 5;
+                                    setCitaContext({ type: 'spontaneous', minPhotos: minVal });
+                                }}>
+                                    <span className="material-symbols-outlined">camera_alt</span>
+                                </button>
+                                <span className={styles.fabLabel}>Estamos de cita ✨</span>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
 
                 {/* Place detail drawer */}
-                {!citaContext && (
+                {!citaContext && !isSearchActive && (
                     <div className={`${styles.drawer} ${selectedPlace ? styles.drawerOpen : ''}`}>
                         <div className={styles.drawerContent}>
                             <div className={styles.drawerHandle} />

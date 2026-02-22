@@ -26,8 +26,11 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
         <div className={styles.citaOverlay}>
             <div className={styles.citaCard}>
                 <div className={styles.citaHeader}>
-                    <div>
-                        <p className={styles.citaLive}>🟢 Modo Cita</p>
+                    <div className={styles.citaHeaderInfo}>
+                        <p className={styles.citaLive}>
+                            <span className={styles.pulseDot}></span>
+                            Modo Cita
+                        </p>
                     </div>
                     <button className={styles.citaClose} onClick={() => {
                         if (sessionPhotos.length > 0) {

@@ -18,6 +18,7 @@ const TABS = [
 
 export default function UserDashboard() {
     const [activeTab, setActiveTab] = useState('lugares');
+    const [prevTab, setPrevTab] = useState('lugares');
     const [isPlaceSelected, setIsPlaceSelected] = useState(false);
     const [bingoContextToMap, setBingoContextToMap] = useState(null);
     const [isBingoModalOpen, setIsBingoModalOpen] = useState(false);
@@ -46,6 +47,37 @@ export default function UserDashboard() {
         const interval = setInterval(createParticle, 800);
         return () => clearInterval(interval);
     }, [activeTab]);
+
+    const handleTabChange = (newTab) => {
+        if (newTab === activeTab) return;
+        setPrevTab(activeTab);
+        setActiveTab(newTab);
+    };
+
+    // Calcular dirección para la animación
+    const getDirection = () => {
+        if (activeTab === 'lugares' || prevTab === 'lugares') return 0;
+        const prevIndex = TABS.findIndex(t => t.id === prevTab);
+        const nextIndex = TABS.findIndex(t => t.id === activeTab);
+        return nextIndex > prevIndex ? 1 : -1;
+    };
+
+    const direction = getDirection();
+
+    const variants = {
+        initial: (dir) => ({
+            x: dir * 40,
+            opacity: 0
+        }),
+        animate: {
+            x: 0,
+            opacity: 1
+        },
+        exit: (dir) => ({
+            x: dir * -40,
+            opacity: 0
+        })
+    };
 
     const renderContent = () => {
         switch (activeTab) {
@@ -92,13 +124,15 @@ export default function UserDashboard() {
                     </div>
 
                     <main className={styles.mainContent}>
-                        <AnimatePresence mode="wait">
+                        <AnimatePresence mode="wait" custom={direction}>
                             <motion.div
                                 key={activeTab}
-                                initial={{ opacity: 0, scale: 0.98, y: 10 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.98, y: -10 }}
-                                transition={{ duration: 0.25 }}
+                                custom={direction}
+                                variants={variants}
+                                initial="initial"
+                                animate="animate"
+                                exit="exit"
+                                transition={{ type: 'spring', damping: 28, stiffness: 280 }}
                                 className={styles.tabContentWrapper}
                             >
                                 {renderContent()}
@@ -118,7 +152,7 @@ export default function UserDashboard() {
                         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                         style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50 }}
                     >
-                        <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} tabs={TABS} />
+                        <BottomNav activeTab={activeTab} setActiveTab={handleTabChange} tabs={TABS} />
                     </motion.div>
                 )}
             </AnimatePresence>

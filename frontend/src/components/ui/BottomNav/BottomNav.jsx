@@ -1,4 +1,4 @@
-import { AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import styles from './BottomNav.module.css';
 
 /**
@@ -22,9 +22,20 @@ export default function BottomNav({ activeTab, setActiveTab, tabs = [] }) {
                             onClick={() => setActiveTab(tab.id)}
                             className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
                         >
-                            <span className={`material-symbols-outlined ${styles.navIcon}`}>
+                            {isActive && (
+                                <motion.div
+                                    layoutId="activeTab"
+                                    className={styles.activeIndicator}
+                                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                                />
+                            )}
+                            <motion.span
+                                animate={isActive ? { scale: [1, 1.2, 1] } : { scale: 1 }}
+                                transition={{ type: 'spring', damping: 10, stiffness: 200, duration: 0.3 }}
+                                className={`material-symbols-outlined ${styles.navIcon}`}
+                            >
                                 {tab.icon}
-                            </span>
+                            </motion.span>
                             <span className={styles.navLabel}>
                                 {tab.label}
                             </span>

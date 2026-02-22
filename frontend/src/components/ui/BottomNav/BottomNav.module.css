@@ -36,8 +36,10 @@
     background: transparent;
     border-radius: var(--radius-pill);
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: color 0.3s ease;
     color: var(--text-muted);
+    position: relative;
+    z-index: 1;
 }
 
 .navItem:hover {
@@ -45,13 +47,19 @@
 }
 
 .navItemActive {
-    background: var(--pastel-green-btn);
     color: var(--bg-card);
-    box-shadow: none;
 }
 
 .navItemActive:hover {
+    background: transparent;
+}
+
+.activeIndicator {
+    position: absolute;
+    inset: 0;
     background: var(--pastel-green-btn);
+    border-radius: var(--radius-pill);
+    z-index: -1;
 }
 
 .navIcon {

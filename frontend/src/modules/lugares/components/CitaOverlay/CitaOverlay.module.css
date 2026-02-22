@@ -1,11 +1,9 @@
 .citaOverlay {
     position: absolute;
     inset: 0;
-    background: var(--bg-overlay);
+    background-color: var(--bg-overlay);
     background-image: var(--bg-dots-pattern);
-    background-size: 20px 20px;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background-size: var(--bg-dots-size);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -16,9 +14,7 @@
 .citaCard {
     width: 100%;
     margin: 0 16px;
-    background: var(--bg-overlay-light);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: var(--bg-card);
     border: var(--border-mint-thick);
     border-radius: var(--radius-card);
     padding: 24px;
@@ -38,64 +34,94 @@
 
 .citaLive {
     font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 18px;
-    color: var(--pastel-text);
+    font-weight: 800;
+    font-size: 20px;
+    color: var(--text-primary);
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pulseDot {
+    width: 12px;
+    height: 12px;
+    background-color: #4ade80;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7);
+    }
+
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 10px rgba(74, 222, 128, 0);
+    }
+
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(74, 222, 128, 0);
+    }
 }
 
 .citaSub {
     font-family: var(--font-body);
-    font-size: 12px;
-    color: var(--pastel-text-muted);
+    font-size: 13px;
+    color: var(--text-muted);
     margin: 0;
 }
 
 .citaClose {
-    width: 38px;
-    height: 38px;
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
     background: white;
-    border: none;
+    border: 2px solid var(--pastel-rose);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: var(--pastel-text);
-    box-shadow: var(--shadow-pink-glow);
+    color: var(--pastel-rose);
+    box-shadow: var(--shadow-chunky-rose-soft, 0 4px 0 #fadadd);
     transition: transform 0.2s, box-shadow 0.2s;
     flex-shrink: 0;
 }
 
 .citaClose:active {
-    transform: translateY(2px);
-    box-shadow: var(--shadow-pink-glow-active);
+    transform: translateY(4px);
+    box-shadow: none;
 }
 
 .separator {
     width: 100%;
-    height: 1px;
-    background: rgba(183, 228, 199, 0.3);
+    height: 2px;
+    background: var(--bg-main);
     margin: 4px 0;
 }
 
 .bingoPill {
-    background: rgba(183, 228, 199, 0.15);
-    border: 1.5px solid var(--pastel-green-btn);
-    color: var(--pastel-shadow-mint-active);
-    font-family: var(--font-display);
-    font-weight: 600;
-    font-size: 12px;
-    padding: 5px 12px;
+    background: var(--pastel-green-btn);
+    color: white;
+    font-family: var(--font-fredoka);
+    font-weight: 700;
+    font-size: 13px;
+    padding: 6px 16px;
     border-radius: var(--radius-pill);
     margin-bottom: -4px;
+    box-shadow: 0 4px 12px rgba(116, 198, 157, 0.2);
 }
 
 .progressRow {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     width: 100%;
 }
 
@@ -105,80 +131,82 @@
 }
 
 .circle {
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
-    background: var(--pastel-rose-light);
+    background: var(--bg-main);
+    border: 2px solid var(--pastel-rose-light);
     transition: all 0.3s ease;
 }
 
 .circleFilled {
-    background: var(--pastel-green-btn);
+    background: var(--gradient-mint);
+    border-color: var(--pastel-green-btn);
 }
 
 .progressLabel {
-    font-family: var(--font-body);
-    font-size: 13px;
-    color: var(--pastel-text);
+    font-family: var(--font-fredoka);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-muted);
     transition: color 0.3s;
 }
 
 .progressComplete {
-    color: var(--pastel-shadow-mint-active);
-    font-weight: 600;
-    font-family: var(--font-display);
+    color: var(--pastel-green-btn);
+    font-weight: 700;
 }
 
 .bigCamera {
-    width: 110px;
-    height: 110px;
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--pastel-sage), var(--pastel-shadow-mint));
+    background: var(--gradient-mint);
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: none;
-    box-shadow: var(--shadow-chunky-mint-lg);
+    border: 3px solid white;
+    box-shadow: var(--shadow-chunky-mint-deep);
     cursor: pointer;
-    animation: fabFloat 4s ease-in-out infinite;
-    transition: transform 0.1s, box-shadow 0.1s;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s;
 }
 
 .bigCamera span {
-    font-size: 44px;
+    font-size: 52px;
 }
 
 .bigCamera:active {
-    transform: translateY(6px);
-    box-shadow: var(--shadow-chunky-mint-lg-active);
-    animation: none;
+    transform: translateY(6px) scale(0.95);
+    box-shadow: none;
 }
 
 .bigCameraLabel {
-    font-family: var(--font-display);
-    font-weight: 600;
-    font-size: 15px;
-    color: var(--pastel-text);
-    margin: -8px 0 0;
+    font-family: var(--font-fredoka);
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text-primary);
+    margin: -4px 0 0;
 }
 
 .citaActions {
     display: flex;
-    gap: 10px;
+    gap: 12px;
+    margin-top: 4px;
 }
 
 .citaAction {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     background: var(--bg-card);
     border: 2px solid var(--pastel-sage);
     border-radius: var(--radius-pill);
-    padding: 8px 16px;
-    color: var(--pastel-text);
-    font-family: var(--font-body);
-    font-size: 13px;
+    padding: 10px 18px;
+    color: var(--text-primary);
+    font-family: var(--font-fredoka);
+    font-weight: 600;
+    font-size: 14px;
     cursor: pointer;
     box-shadow: var(--shadow-chunky-mint-soft);
     transition: transform 0.1s, box-shadow 0.1s;
@@ -186,51 +214,33 @@
 
 .citaAction:active {
     transform: translateY(4px);
-    box-shadow: var(--shadow-chunky-mint-soft-active);
+    box-shadow: none;
 }
 
 .citaAction span {
-    font-size: 17px;
+    font-size: 20px;
     color: var(--pastel-green-btn);
 }
 
 .citaActionDisabled {
     opacity: 0.5;
     cursor: not-allowed;
-    background-color: var(--pastel-rose-light);
-    border-color: var(--pastel-rose);
+    background-color: var(--bg-main);
+    border-color: var(--border-muted);
     box-shadow: none;
-    color: var(--pastel-text-muted);
+    color: var(--text-muted);
 }
 
 .citaActionDisabled span {
-    color: var(--pastel-text-muted);
+    color: var(--text-muted);
 }
 
-.citaActionDisabled:active {
-    transform: none;
-    box-shadow: none;
-}
-
-@keyframes fabFloat {
-
-    0%,
-    100% {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-8px);
-    }
-}
-
-/* Session Photos Strip */
 .sessionPhotosStrip {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     width: 100%;
     overflow-x: auto;
-    padding: 4px 0 8px;
+    padding: 8px 0;
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
@@ -240,81 +250,68 @@
 }
 
 .sessionPhotoThumb {
-    width: 52px;
-    height: 52px;
-    min-width: 52px;
+    width: 60px;
+    height: 60px;
+    min-width: 60px;
     border-radius: 12px;
     object-fit: cover;
-    border: var(--border-mint);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-    animation: thumbEnter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    border: 2px solid var(--pastel-sage);
+    box-shadow: var(--shadow-chunky-mint-soft);
 }
 
-@keyframes thumbEnter {
-    from {
-        opacity: 0;
-        transform: scale(0.8) translateX(10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: scale(1) translateX(0);
-    }
-}
-
-/* Warning Box */
 .warningBox {
-    background: var(--bg-main);
-    border: 1px solid var(--pastel-rose);
+    background: #fff5f5;
+    border: 2px solid var(--pastel-rose);
     border-radius: 16px;
-    padding: 16px;
+    padding: 20px;
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
     margin-top: 8px;
     box-sizing: border-box;
 }
 
 .warningBox p {
-    font-family: var(--font-body);
-    font-size: 13px;
-    color: var(--pastel-shadow-pink);
+    font-family: var(--font-fredoka);
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--pastel-rose-dark);
     margin: 0;
     text-align: center;
-    line-height: 1.4;
+    line-height: 1.5;
 }
 
 .warningActions {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
 }
 
 .warningBtnPrimary {
-    background: linear-gradient(135deg, var(--pastel-sage), var(--pastel-shadow-mint));
+    background: var(--gradient-rose);
     color: white;
-    border: none;
-    padding: 10px;
+    border: 2px solid white;
+    padding: 12px;
     border-radius: var(--radius-pill);
-    font-family: var(--font-display);
-    font-weight: 600;
-    font-size: 14px;
+    font-family: var(--font-fredoka);
+    font-weight: 700;
+    font-size: 15px;
     cursor: pointer;
-    box-shadow: 0 3px 0 var(--pastel-shadow-mint-active);
+    box-shadow: var(--shadow-chunky-rose);
     transition: transform 0.1s, box-shadow 0.1s;
 }
 
 .warningBtnPrimary:active {
-    transform: translateY(2px);
-    box-shadow: 0 1px 0 var(--pastel-shadow-mint-active);
+    transform: translateY(4px);
+    box-shadow: none;
 }
 
 .warningBtnSecondary {
     background: transparent;
-    color: var(--pastel-text-muted);
+    color: var(--text-muted);
     border: none;
-    padding: 6px;
+    padding: 4px;
     font-family: var(--font-body);
     font-size: 13px;
     text-decoration: underline;
@@ -323,37 +320,24 @@
 
 .saveBtn {
     width: 100%;
-    padding: 14px;
-    background: linear-gradient(135deg, var(--pastel-sage), var(--pastel-shadow-mint));
+    padding: 16px;
+    background: var(--gradient-mint);
     color: white;
-    border: none;
+    border: 3px solid white;
     border-radius: var(--radius-pill);
-    font-family: var(--font-display);
-    font-size: 1.1rem;
-    font-weight: bold;
+    font-family: var(--font-fredoka);
+    font-size: 1.2rem;
+    font-weight: 800;
     cursor: pointer;
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 8px;
-    box-shadow: var(--shadow-chunky-mint);
+    gap: 10px;
+    box-shadow: var(--shadow-chunky-mint-deep);
     transition: transform 0.1s, box-shadow 0.1s;
-    animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 .saveBtn:active {
     transform: translateY(4px);
-    box-shadow: var(--shadow-chunky-mint-active);
-}
-
-@keyframes popIn {
-    from {
-        transform: scale(0.7);
-        opacity: 0;
-    }
-
-    to {
-        transform: scale(1);
-        opacity: 1;
-    }
+    box-shadow: none;
 }

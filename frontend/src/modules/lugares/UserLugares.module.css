@@ -87,9 +87,13 @@
 }
 
 .searchWrapperActive {
+    flex: 1;
+    height: auto;
+    overflow: visible;
+}
+
+.searchContainer {
     width: 100%;
-    border-radius: 20px;
-    /* let KawaiiInput handle the rest of styling */
 }
 
 .searchFabBtn {
@@ -608,19 +612,38 @@
 }
 
 .fabBtn {
-    width: 48px;
-    height: 48px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
-    background: #88d8b0 !important;
+    background: var(--gradient-mint) !important;
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: none;
-    box-shadow: 0 4px 0 #74c69d, 0 6px 16px rgba(136, 216, 176, 0.35) !important;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    box-shadow:
+        0 4px 12px rgba(116, 198, 157, 0.3),
+        0 8px 24px rgba(116, 198, 157, 0.2),
+        inset 0 2px 4px rgba(255, 255, 255, 0.3);
     cursor: pointer;
-    transition: transform 0.1s, box-shadow 0.1s;
-    animation: fabFloat 3.5s ease-in-out infinite;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.fabBtn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, transparent 100%);
+    pointer-events: none;
+}
+
+.fabBtn:hover {
+    transform: scale(1.05) translateY(-2px);
+    box-shadow:
+        0 6px 16px rgba(116, 198, 157, 0.4),
+        0 12px 32px rgba(116, 198, 157, 0.25);
 }
 
 .fabBtn span {
@@ -641,19 +664,23 @@
     }
 
     50% {
-        transform: translateY(-6px);
+        transform: translateY(-8px);
     }
 }
 
 .fabLabel {
-    font-family: 'Varela Round', sans-serif;
-    font-size: 10px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 11px;
     color: var(--text-primary);
-    background: #ffffff;
-    padding: 2px 10px;
-    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
     white-space: nowrap;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(136, 216, 176, 0.3);
 }
 
 
