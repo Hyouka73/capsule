@@ -647,33 +647,34 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
+    /* Reduced gap since the button is smaller */
     overflow: visible;
 }
 
 .fabBtn {
-    width: 58px;
-    height: 58px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
-    background: var(--pastel-green-btn) !important;
+    background: #88d8b0 !important;
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
     border: none;
-    box-shadow: var(--shadow-chunky-mint), 0 8px 24px rgba(136, 216, 176, 0.45) !important;
+    box-shadow: 0 4px 0 #74c69d, 0 6px 16px rgba(136, 216, 176, 0.35) !important;
     cursor: pointer;
     transition: transform 0.1s, box-shadow 0.1s;
     animation: fabFloat 3.5s ease-in-out infinite;
 }
 
 .fabBtn span {
-    font-size: 24px;
+    font-size: 20px;
 }
 
 .fabBtn:active {
     transform: translateY(4px);
-    box-shadow: 0 1px 0 #e87a8e;
+    box-shadow: none !important;
     animation: none;
 }
 
@@ -690,14 +691,12 @@
 }
 
 .fabLabel {
-    font-family: var(--font-display);
-    font-weight: 600;
+    font-family: 'Varela Round', sans-serif;
     font-size: 10px;
     color: var(--text-primary);
-    background: var(--bg-overlay-strong);
-    backdrop-filter: blur(8px);
-    padding: 3px 10px;
-    border-radius: 12px;
+    background: #ffffff;
+    padding: 2px 10px;
+    border-radius: 10px;
     white-space: nowrap;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }

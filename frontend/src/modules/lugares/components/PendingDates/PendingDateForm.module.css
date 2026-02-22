@@ -238,15 +238,15 @@
 }
 
 .tagBtn {
-    background: var(--bg-card);
-    border: var(--border-mint);
-    border-radius: var(--radius-pill);
-    padding: 8px 16px;
-    font-family: var(--font-body);
-    font-size: 14px;
+    background: #ffffff;
+    border: 1.5px solid rgba(183, 228, 199, 0.6);
+    border-radius: 9999px;
+    padding: 6px 14px;
+    font-family: 'Varela Round', sans-serif;
+    font-size: 13px;
     color: var(--text-muted);
     cursor: pointer;
-    transition: transform 0.15s, background 0.2s, color 0.2s, box-shadow 0.2s;
+    transition: transform 0.15s, background 0.2s, color 0.2s, border-color 0.2s;
 }
 
 .tagBtn:active {
@@ -254,13 +254,14 @@
 }
 
 .tagBtnActive {
-    background: linear-gradient(135deg, #a8edca, #74c69d);
-    border: none;
-    color: white;
+    background: rgba(136, 216, 176, 0.15);
+    border: 1.5px solid #88d8b0;
+    color: #88d8b0;
+    font-family: var(--font-display);
+    /* Fallback for Fredoka */
     font-weight: bold;
-    box-shadow: 0 4px 0 #74c69d;
-    padding: 9px 17px;
-    /* Compensate for removed 1px border */
+    box-shadow: none;
+    padding: 6px 14px;
 }
 
 .bingoBanner {
