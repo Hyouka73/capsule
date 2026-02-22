@@ -30,10 +30,10 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                         <p className={styles.citaLive}>🟢 Modo Cita</p>
                     </div>
                     <button className={styles.citaClose} onClick={() => {
-                        if (sessionPhotos.length < citaContext.minPhotos) {
+                        if (sessionPhotos.length > 0) {
                             setWarningOpen(true);
                         } else {
-                            if (onSave) onSave(sessionPhotos);
+                            if (onClose) onClose();
                         }
                     }}>
                         <span className="material-symbols-outlined">close</span>
@@ -111,9 +111,19 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                     </div>
                 )}
 
+                {sessionPhotos.length >= citaContext.minPhotos && (
+                    <button
+                        className={styles.saveBtn}
+                        onClick={() => { if (onSave) onSave(sessionPhotos); }}
+                    >
+                        <span className="material-symbols-outlined">check_circle</span>
+                        Guardar Cita
+                    </button>
+                )}
+
                 {warningOpen && (
                     <div className={styles.warningBox}>
-                        <p>Aún no hay suficientes fotos para completar la cita. ¿Salir de todas formas?</p>
+                        <p>¿Salir sin guardar? Perderás las fotos.</p>
                         <div className={styles.warningActions}>
                             <button className={styles.warningBtnPrimary} onClick={() => setWarningOpen(false)}>Seguir</button>
                             <button className={styles.warningBtnSecondary} onClick={() => {

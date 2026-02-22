@@ -20,7 +20,7 @@
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: var(--border-mint-thick);
-    border-radius: 2rem;
+    border-radius: var(--radius-card);
     padding: 24px;
     display: flex;
     flex-direction: column;
@@ -37,7 +37,7 @@
 }
 
 .citaLive {
-    font-family: var(--font-fredoka);
+    font-family: var(--font-display);
     font-weight: 700;
     font-size: 18px;
     color: var(--pastel-text);
@@ -45,7 +45,7 @@
 }
 
 .citaSub {
-    font-family: var(--font-varela);
+    font-family: var(--font-body);
     font-size: 12px;
     color: var(--pastel-text-muted);
     margin: 0;
@@ -83,11 +83,11 @@
     background: rgba(183, 228, 199, 0.15);
     border: 1.5px solid var(--pastel-green-btn);
     color: var(--pastel-shadow-mint-active);
-    font-family: var(--font-fredoka);
+    font-family: var(--font-display);
     font-weight: 600;
     font-size: 12px;
     padding: 5px 12px;
-    border-radius: 9999px;
+    border-radius: var(--radius-pill);
     margin-bottom: -4px;
 }
 
@@ -117,7 +117,7 @@
 }
 
 .progressLabel {
-    font-family: var(--font-varela);
+    font-family: var(--font-body);
     font-size: 13px;
     color: var(--pastel-text);
     transition: color 0.3s;
@@ -126,7 +126,7 @@
 .progressComplete {
     color: var(--pastel-shadow-mint-active);
     font-weight: 600;
-    font-family: var(--font-fredoka);
+    font-family: var(--font-display);
 }
 
 .bigCamera {
@@ -156,7 +156,7 @@
 }
 
 .bigCameraLabel {
-    font-family: var(--font-fredoka);
+    font-family: var(--font-display);
     font-weight: 600;
     font-size: 15px;
     color: var(--pastel-text);
@@ -172,12 +172,12 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    background: white;
+    background: var(--bg-card);
     border: 2px solid var(--pastel-sage);
-    border-radius: 9999px;
+    border-radius: var(--radius-pill);
     padding: 8px 16px;
     color: var(--pastel-text);
-    font-family: var(--font-varela);
+    font-family: var(--font-body);
     font-size: 13px;
     cursor: pointer;
     box-shadow: var(--shadow-chunky-mint-soft);
@@ -277,7 +277,7 @@
 }
 
 .warningBox p {
-    font-family: var(--font-varela);
+    font-family: var(--font-body);
     font-size: 13px;
     color: var(--pastel-shadow-pink);
     margin: 0;
@@ -296,8 +296,8 @@
     color: white;
     border: none;
     padding: 10px;
-    border-radius: 9999px;
-    font-family: var(--font-fredoka);
+    border-radius: var(--radius-pill);
+    font-family: var(--font-display);
     font-weight: 600;
     font-size: 14px;
     cursor: pointer;
@@ -315,8 +315,45 @@
     color: var(--pastel-text-muted);
     border: none;
     padding: 6px;
-    font-family: var(--font-varela);
+    font-family: var(--font-body);
     font-size: 13px;
     text-decoration: underline;
     cursor: pointer;
+}
+
+.saveBtn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, var(--pastel-sage), var(--pastel-shadow-mint));
+    color: white;
+    border: none;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    box-shadow: var(--shadow-chunky-mint);
+    transition: transform 0.1s, box-shadow 0.1s;
+    animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.saveBtn:active {
+    transform: translateY(4px);
+    box-shadow: var(--shadow-chunky-mint-active);
+}
+
+@keyframes popIn {
+    from {
+        transform: scale(0.7);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
