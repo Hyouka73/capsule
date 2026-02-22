@@ -19,11 +19,11 @@
     position: relative;
     display: flex;
     align-items: center;
-    background: #ffffff;
-    border-radius: 20px;
+    background: var(--bg-card);
+    border-radius: var(--radius-card);
     padding: 14px 16px;
-    box-shadow: 0 4px 12px rgba(255, 183, 178, 0.15);
-    border: 2px solid rgba(183, 228, 199, 0.3);
+    box-shadow: var(--shadow-card-sm);
+    border: var(--border-mint);
     transition: all 0.2s ease;
     cursor: text;
 }
@@ -35,8 +35,8 @@
 }
 
 .inputWrapperFocus {
-    border-color: #88d8b0;
-    box-shadow: 0 4px 16px rgba(136, 216, 176, 0.25);
+    border-color: var(--pastel-green-btn);
+    box-shadow: var(--shadow-mint-glow);
 }
 
 .inputWrapperError {
@@ -46,7 +46,7 @@
 .inputWrapperDisabled {
     opacity: 0.5;
     pointer-events: none;
-    background: #f9f9f9;
+    background: var(--bg-input);
 }
 
 .clickable {
@@ -54,7 +54,7 @@
 }
 
 .leftIcon {
-    color: #88d8b0;
+    color: var(--pastel-green-btn);
     font-size: 20px;
     margin-right: 12px;
     flex-shrink: 0;
@@ -67,7 +67,7 @@
 .photoThumbnail {
     width: 48px;
     height: 48px;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     object-fit: cover;
     margin-right: 12px;
     flex-shrink: 0;
@@ -76,14 +76,14 @@
 .photoPlaceholder {
     width: 48px;
     height: 48px;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     background: rgba(183, 228, 199, 0.2);
     display: flex;
     align-items: center;
     justify-content: center;
     margin-right: 12px;
     flex-shrink: 0;
-    color: #88d8b0;
+    color: var(--pastel-green-btn);
 }
 
 .photoPlaceholder span {
@@ -129,7 +129,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #88d8b0;
+    color: var(--pastel-green-btn);
     background: transparent;
     border: none;
     padding: 0;
@@ -171,7 +171,7 @@
     width: 44px;
     height: 24px;
     border-radius: 12px;
-    background: #e0e0e0;
+    background: var(--pastel-rose-light);
     position: relative;
     cursor: pointer;
     transition: background 0.3s ease;
@@ -180,7 +180,7 @@
 }
 
 .toggleWrapperActive {
-    background: #88d8b0;
+    background: var(--pastel-green-btn);
 }
 
 .toggleKnob {

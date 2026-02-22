@@ -69,6 +69,7 @@ export default function KawaiiInput({
             switch (type) {
                 case 'search': icon = 'search'; break;
                 case 'date': icon = 'calendar_month'; break;
+                case 'password': icon = 'lock'; break;
                 default: icon = null;
             }
         }
@@ -124,7 +125,7 @@ export default function KawaiiInput({
             case 'toggle':
                 return (
                     <div className={styles.valueText}>
-                        {label || placeholder}
+                        {placeholder || ''}
                     </div>
                 );
             case 'search':
@@ -176,10 +177,10 @@ export default function KawaiiInput({
                     className={styles.rightAction}
                     onClick={(e) => {
                         e.stopPropagation();
+                        // Nota: onClear es requerido si se usa type === 'search'
+                        // No se provee fallback a onChange para evitar mutaciones silenciosas
                         if (onClear) {
                             onClear();
-                        } else if (onChange) {
-                            onChange({ target: { value: '' } });
                         }
                         if (inputRef.current) inputRef.current.focus();
                     }}
@@ -243,7 +244,7 @@ export default function KawaiiInput({
 
     return (
         <div className={styles.container}>
-            {label && type !== 'toggle' && (
+            {label && (
                 <label className={styles.label}>{label}</label>
             )}
 
@@ -252,7 +253,11 @@ export default function KawaiiInput({
                 {renderMainContent()}
                 {renderRightContent()}
 
-                {/* Overlay native inputs for generic select/date if not handled by a custom onClick sheet */}
+                {/* 
+                 * Overlay native inputs for generic select/date.
+                 * Desactivamos intencionalmente (!onClick) si el componente padre maneja
+                 * la acción (ej. un Custom Bottom Sheet) para evitar conflictos con el UI nativo.
+                 */}
                 {type === 'select' && options && options.length > 0 && !onClick && (
                     <select
                         className={styles.hiddenNativeInput}
