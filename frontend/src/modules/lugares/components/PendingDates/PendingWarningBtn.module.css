@@ -1,29 +1,32 @@
 .warningBtn {
-    position: absolute;
-    bottom: 90px;
-    /* above the FAB */
-    right: 16px;
-    z-index: 10;
     display: flex;
     align-items: center;
     gap: 8px;
-    background: var(--bg-overlay-light);
-    border: 2px solid #ffd166;
-    /* golden warning */
-    border-radius: 9999px;
-    padding: 10px 16px;
-    color: #bfa14c;
-    box-shadow: 0 4px 12px rgba(255, 209, 102, 0.3);
+    background: white;
+    border: 2px solid var(--pastel-rose);
+    border-radius: var(--radius-pill);
+    padding: 8px 16px;
+    color: var(--pastel-rose-dark, #e87a8e);
+    box-shadow: var(--shadow-chunky-rose, 0 4px 0 #fadadd);
     cursor: pointer;
     font-family: var(--font-fredoka);
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 700;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.warningBtn:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #fadadd;
 }
 
 .icon {
-    font-size: 20px;
+    font-size: 18px;
+    color: var(--pastel-rose);
 }
 
 .text {
     white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
