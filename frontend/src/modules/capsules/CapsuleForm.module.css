@@ -28,32 +28,6 @@
     color: var(--text-primary);
 }
 
-.field input[type="text"],
-.field input[type="datetime-local"],
-.field select,
-.field textarea {
-    padding: 0.75rem 1rem;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--accent-border);
-    background: var(--bg-input);
-    color: var(--text-primary);
-    font-family: var(--font-body);
-    font-size: 1rem;
-    outline: none;
-    transition: border-color 0.2s;
-}
-
-.field input:focus,
-.field select:focus,
-.field textarea:focus {
-    border-color: var(--accent-primary);
-}
-
-.field textarea {
-    min-height: 120px;
-    resize: vertical;
-}
-
 .checkboxContainer {
     display: flex;
     flex-direction: column;

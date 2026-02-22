@@ -3,6 +3,7 @@ import Button from '../../components/ui/Button/Button';
 import Card from '../../components/ui/Card/Card';
 import PageHeader from '../../components/ui/PageHeader/PageHeader';
 import EmptyState from '../../components/ui/EmptyState/EmptyState';
+import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
 import styles from './CouponManager.module.css';
 
 export default function CouponManager() {
@@ -73,48 +74,39 @@ export default function CouponManager() {
                     </div>
                     <form onSubmit={handleCreated} className={styles.form}>
                         <div className={styles.formRow}>
-                            <div className={styles.formGroup} style={{ flex: '0 0 80px' }}>
-                                <label>Emoji</label>
-                                <input type="text" maxLength="2" required value={formData.emoji} onChange={e => setFormData({ ...formData, emoji: e.target.value })} className={styles.emojiInput} />
+                            <div className={styles.formGroup} style={{ flex: '0 0 100px' }}>
+                                <KawaiiInput type="text" label="Emoji" maxLength="2" required value={formData.emoji} onChange={e => setFormData({ ...formData, emoji: e.target.value })} />
                             </div>
                             <div className={styles.formGroup} style={{ flex: '1' }}>
-                                <label>Título del Cupón</label>
-                                <input type="text" required placeholder="Ej. Vale por un abrazo..." value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className={styles.input} />
+                                <KawaiiInput type="text" label="Título del Cupón" required placeholder="Ej. Vale por un abrazo..." value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
                             </div>
                         </div>
 
                         <div className={styles.formRow}>
                             <div className={styles.formGroup} style={{ flex: '1' }}>
-                                <label>Categoría</label>
-                                <select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value })} className={styles.input}>
-                                    <option value="massage">💆‍♀️ Masaje / Relax</option>
-                                    <option value="date_night">🍷 Date Night</option>
-                                    <option value="free_pass">🃏 Pase Libre</option>
-                                    <option value="wish">✨ Deseo Libre</option>
-                                    <option value="naughty">🌶️ Picante</option>
-                                </select>
+                                <KawaiiInput type="select" label="Categoría" value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value })} options={[
+                                    { value: 'massage', label: '💆‍♀️ Masaje / Relax' },
+                                    { value: 'date_night', label: '🍷 Date Night' },
+                                    { value: 'free_pass', label: '🃏 Pase Libre' },
+                                    { value: 'wish', label: '✨ Deseo Libre' },
+                                    { value: 'naughty', label: '🌶️ Picante' }
+                                ]} />
                             </div>
                             <div className={styles.formGroup} style={{ flex: '1' }}>
-                                <label>Expiración (Opcional)</label>
-                                <input type="date" value={formData.expiryDate} onChange={e => setFormData({ ...formData, expiryDate: e.target.value })} className={styles.input} />
+                                <KawaiiInput type="date" label="Expiración (Opcional)" value={formData.expiryDate} onChange={e => setFormData({ ...formData, expiryDate: e.target.value })} />
                             </div>
                         </div>
 
                         <div className={styles.formGroup}>
-                            <label>Descripción corta</label>
-                            <textarea required rows="2" placeholder="¿Qué incluye este cupón?" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className={styles.textarea} />
+                            <KawaiiInput type="textarea" label="Descripción corta" required rows="2" placeholder="¿Qué incluye este cupón?" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
                         </div>
 
                         <div className={styles.formGroup}>
-                            <label>Reglas o instrucciones (Opcional)</label>
-                            <input type="text" placeholder="Ej. Válido solo los fines de semana" value={formData.instructions} onChange={e => setFormData({ ...formData, instructions: e.target.value })} className={styles.input} />
+                            <KawaiiInput type="text" label="Reglas o instrucciones (Opcional)" placeholder="Ej. Válido solo los fines de semana" value={formData.instructions} onChange={e => setFormData({ ...formData, instructions: e.target.value })} />
                         </div>
 
                         <div className={styles.toggleGroup}>
-                            <label className={styles.checkboxLabel}>
-                                <input type="checkbox" checked={formData.isActive} onChange={e => setFormData({ ...formData, isActive: e.target.checked })} />
-                                <span className={styles.checkboxText}>Cupón Activo (Visible para ella)</span>
-                            </label>
+                            <KawaiiInput type="toggle" label="Cupón Activo (Visible para ella)" value={formData.isActive} onChange={e => setFormData({ ...formData, isActive: e.target.checked || e.target.value })} />
                         </div>
 
                         <div className={styles.formActions}>

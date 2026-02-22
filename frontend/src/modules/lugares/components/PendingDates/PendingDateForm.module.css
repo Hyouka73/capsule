@@ -144,15 +144,7 @@
     gap: 8px;
 }
 
-.label {
-    font-family: var(--font-display);
-    font-weight: bold;
-    color: #8c6a6a;
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
+
 
 .optionalBadge {
     background: white;
@@ -165,70 +157,7 @@
     font-weight: normal;
 }
 
-.inputWrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
 
-.inputIcon {
-    position: absolute;
-    left: 14px;
-    color: var(--pastel-sage-dark);
-    font-size: 20px;
-    pointer-events: none;
-}
-
-.select,
-.textarea {
-    width: 100%;
-    background: #ffffff;
-    font-family: var(--font-body);
-    color: var(--text-primary);
-    outline: none;
-    box-sizing: border-box;
-    transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
-    border: 2px solid rgba(183, 228, 199, 0.5);
-    border-radius: 16px;
-    box-shadow: 0 4px 12px rgba(255, 183, 178, 0.15);
-}
-
-.select {
-    padding: 14px 16px 14px 44px;
-    /* Space for icon */
-    font-size: 14px;
-    appearance: none;
-}
-
-.select.placeholder {
-    color: var(--text-muted);
-}
-
-.textarea {
-    padding: 14px 16px;
-    font-size: 13px;
-    min-height: 90px;
-    resize: none;
-}
-
-.textarea::placeholder {
-    color: var(--text-muted);
-    font-style: italic;
-}
-
-.select:focus,
-.textarea:focus {
-    border: 2px solid #88d8b0;
-    box-shadow: 0 4px 16px rgba(136, 216, 176, 0.25);
-    padding: 14px 16px;
-    /* keep same padding for textarea */
-}
-
-/* Specific compensation for select padding with icon */
-.select:focus {
-    padding: 14px 16px 14px 44px;
-    /* keep same padding so it doesnt jump */
-}
 
 
 .tagsContainer {

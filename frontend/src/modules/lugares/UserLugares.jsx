@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import PhotoViewer from '../../components/ui/PhotoViewer/PhotoViewer';
 import CitaOverlay from './components/CitaOverlay/CitaOverlay';
+import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
 import PendingWarningBtn from './components/PendingDates/PendingWarningBtn';
 import PendingDatesList from './components/PendingDates/PendingDatesList';
 import PendingDateForm from './components/PendingDates/PendingDateForm';
@@ -328,26 +329,17 @@ export default function UserLugares({ onPlaceSelected, bingoContextToMap, clearB
                 <div className={styles.topControls}>
                     <div className={`${styles.searchWrapper} ${isSearchActive ? styles.searchWrapperActive : ''}`}>
                         {isSearchActive ? (
-                            <div className={styles.searchContainer}>
-                                <span className={`material-symbols-outlined ${styles.searchIcon}`}>search</span>
-                                <input
-                                    type="text"
-                                    className={styles.searchInput}
-                                    placeholder="Buscar lugar..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    autoFocus
-                                />
-                                <button
-                                    className={styles.closeSearchBtn}
-                                    onClick={() => {
-                                        setIsSearchActive(false);
-                                        setSearchQuery('');
-                                    }}
-                                >
-                                    <span className="material-symbols-outlined">close</span>
-                                </button>
-                            </div>
+                            <KawaiiInput
+                                type="search"
+                                placeholder="Buscar lugar..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                autoFocus
+                                onClear={() => {
+                                    setIsSearchActive(false);
+                                    setSearchQuery('');
+                                }}
+                            />
                         ) : (
                             <button
                                 className={styles.searchFabBtn}

@@ -1,0 +1,294 @@
+import React, { useState, useRef } from 'react';
+import styles from './KawaiiInput.module.css';
+
+export default function KawaiiInput({
+    type = 'text', // text, search, select, date, photo, textarea, toggle
+    label,
+    value,
+    onChange,
+    onFocus,
+    onBlur,
+    onClick,
+    placeholder,
+    iconLeft,
+    iconRight,
+    error,
+    disabled = false,
+    photos = [], // for photo picker
+    options = [], // for select
+    className = '',
+    onClear,
+    ...rest
+}) {
+    const [isFocused, setIsFocused] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const inputRef = useRef(null);
+
+    const handleFocus = (e) => {
+        setIsFocused(true);
+        if (onFocus) onFocus(e);
+    };
+
+    const handleBlur = (e) => {
+        setIsFocused(false);
+        if (onBlur) onBlur(e);
+    };
+
+    const handleWrapperClick = () => {
+        if (disabled) return;
+        if (inputRef.current && (type === 'text' || type === 'search' || type === 'textarea')) {
+            inputRef.current.focus();
+        }
+        if (onClick) onClick();
+    };
+
+    const wrapperClasses = [
+        styles.inputWrapper,
+        isFocused ? styles.inputWrapperFocus : '',
+        error ? styles.inputWrapperError : '',
+        disabled ? styles.inputWrapperDisabled : '',
+        type === 'textarea' ? styles.inputWrapperTextarea : '',
+        (type === 'select' || type === 'date' || type === 'photo' || type === 'toggle' || onClick) ? styles.clickable : '',
+        className
+    ].filter(Boolean).join(' ');
+
+    const renderLeftContent = () => {
+        if (type === 'photo') {
+            if (photos && photos.length > 0) {
+                return <img src={photos[0]} alt="Selected" className={styles.photoThumbnail} />;
+            }
+            return (
+                <div className={styles.photoPlaceholder}>
+                    <span className="material-symbols-outlined">image</span>
+                </div>
+            );
+        }
+
+        let icon = iconLeft;
+        if (!icon) {
+            switch (type) {
+                case 'search': icon = 'search'; break;
+                case 'date': icon = 'calendar_month'; break;
+                default: icon = null;
+            }
+        }
+
+        if (icon) {
+            return (
+                <span className={`material-symbols-outlined ${styles.leftIcon} ${type === 'textarea' ? styles.leftIconTextarea : ''}`}>
+                    {icon}
+                </span>
+            );
+        }
+        return null;
+    };
+
+    const renderMainContent = () => {
+        switch (type) {
+            case 'textarea':
+                return (
+                    <textarea
+                        ref={inputRef}
+                        className={styles.textareaElement}
+                        value={value || ''}
+                        onChange={onChange}
+                        onFocus={handleFocus}
+                        onBlur={handleBlur}
+                        placeholder={placeholder}
+                        disabled={disabled}
+                        {...rest}
+                    />
+                );
+            case 'select': {
+                // Find selected option label
+                const selectedOpt = options.find(opt => (opt.value || opt.id) === value);
+                const displayVal = selectedOpt ? (selectedOpt.label || selectedOpt.name || (selectedOpt.emoji ? `${selectedOpt.emoji} ${selectedOpt.name}` : value)) : '';
+                return (
+                    <div className={`${styles.valueText} ${!value ? styles.valuePlaceholder : ''}`}>
+                        {value ? displayVal : placeholder}
+                    </div>
+                );
+            }
+            case 'date':
+                return (
+                    <div className={`${styles.valueText} ${!value ? styles.valuePlaceholder : ''}`}>
+                        {value || placeholder}
+                    </div>
+                );
+            case 'photo':
+                return (
+                    <div className={`${styles.valueText} ${!photos?.length ? styles.valuePlaceholder : ''}`}>
+                        {photos?.length > 0 ? `${photos.length} foto${photos.length !== 1 ? 's' : ''} seleccionada${photos.length !== 1 ? 's' : ''}` : (placeholder || 'Agregar fotos')}
+                    </div>
+                );
+            case 'toggle':
+                return (
+                    <div className={styles.valueText}>
+                        {label || placeholder}
+                    </div>
+                );
+            case 'search':
+            case 'text':
+            case 'password':
+            case 'email':
+            case 'number':
+            default: {
+                const inputType = type === 'password' ? (showPassword ? 'text' : 'password') : (type === 'search' ? 'text' : type);
+                return (
+                    <input
+                        ref={inputRef}
+                        type={inputType}
+                        className={styles.inputElement}
+                        value={value || ''}
+                        onChange={onChange}
+                        onFocus={handleFocus}
+                        onBlur={handleBlur}
+                        placeholder={placeholder}
+                        disabled={disabled}
+                        {...rest}
+                    />
+                );
+            }
+        }
+    };
+
+    const renderRightContent = () => {
+        if (type === 'toggle') {
+            return (
+                <div
+                    className={`${styles.toggleWrapper} ${value ? styles.toggleWrapperActive : ''}`}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (!disabled && onChange) {
+                            onChange({ target: { checked: !value, value: !value } });
+                        }
+                    }}
+                >
+                    <div className={styles.toggleKnob} />
+                </div>
+            );
+        }
+
+        if (type === 'search' && value) {
+            return (
+                <button
+                    type="button"
+                    className={styles.rightAction}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (onClear) {
+                            onClear();
+                        } else if (onChange) {
+                            onChange({ target: { value: '' } });
+                        }
+                        if (inputRef.current) inputRef.current.focus();
+                    }}
+                >
+                    <span className="material-symbols-outlined">close</span>
+                </button>
+            );
+        }
+
+        if (type === 'photo') {
+            return (
+                <div className={styles.rightAction}>
+                    <span className="material-symbols-outlined">add_photo_alternate</span>
+                </div>
+            );
+        }
+
+        if (type === 'date') {
+            return (
+                <div className={styles.rightAction}>
+                    <span className="material-symbols-outlined">chevron_right</span>
+                </div>
+            );
+        }
+
+        if (type === 'select') {
+            return (
+                <div className={styles.rightAction}>
+                    <span className="material-symbols-outlined">expand_more</span>
+                </div>
+            );
+        }
+
+        if (type === 'password') {
+            return (
+                <button
+                    type="button"
+                    className={styles.rightAction}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setShowPassword(!showPassword);
+                    }}
+                >
+                    <span className="material-symbols-outlined">
+                        {showPassword ? 'visibility_off' : 'visibility'}
+                    </span>
+                </button>
+            );
+        }
+
+        if (iconRight) {
+            return (
+                <div className={styles.rightAction}>
+                    <span className="material-symbols-outlined">{iconRight}</span>
+                </div>
+            );
+        }
+
+        return null;
+    };
+
+    return (
+        <div className={styles.container}>
+            {label && type !== 'toggle' && (
+                <label className={styles.label}>{label}</label>
+            )}
+
+            <div className={wrapperClasses} onClick={handleWrapperClick}>
+                {renderLeftContent()}
+                {renderMainContent()}
+                {renderRightContent()}
+
+                {/* Overlay native inputs for generic select/date if not handled by a custom onClick sheet */}
+                {type === 'select' && options && options.length > 0 && !onClick && (
+                    <select
+                        className={styles.hiddenNativeInput}
+                        value={value || ''}
+                        onChange={onChange}
+                        onFocus={handleFocus}
+                        onBlur={handleBlur}
+                        disabled={disabled}
+                    >
+                        <option value="" disabled>{placeholder}</option>
+                        {options.map(opt => (
+                            <option key={opt.value || opt.id} value={opt.value || opt.id}>
+                                {opt.label || opt.name || (opt.emoji ? `${opt.emoji} ${opt.name}` : '')}
+                            </option>
+                        ))}
+                    </select>
+                )}
+
+                {type === 'date' && !onClick && (
+                    <input
+                        type="date"
+                        className={styles.hiddenNativeInput}
+                        value={value || ''}
+                        onChange={onChange}
+                        onFocus={handleFocus}
+                        onBlur={handleBlur}
+                        disabled={disabled}
+                    />
+                )}
+            </div>
+
+            {error && (
+                <div className={styles.errorText}>
+                    {typeof error === 'string' ? error : 'Este campo es requerido'}
+                </div>
+            )}
+        </div>
+    );
+}

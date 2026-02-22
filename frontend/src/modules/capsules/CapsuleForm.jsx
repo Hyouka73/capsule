@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { createCapsule } from '../../apiClient';
 import Button from '../../components/ui/Button/Button';
 import DescriptiveCheckbox from '../../components/ui/DescriptiveCheckbox/DescriptiveCheckbox';
+import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
 import styles from './CapsuleForm.module.css';
 
 export default function CapsuleForm({ onSuccess, onCancel }) {
@@ -48,9 +49,9 @@ export default function CapsuleForm({ onSuccess, onCancel }) {
             {error && <div className={styles.error}>{error}</div>}
 
             <div className={styles.field}>
-                <label>Título (Secreto Interno)</label>
-                <input
+                <KawaiiInput
                     type="text"
+                    label="Título (Secreto Interno)"
                     name="title"
                     required
                     value={formData.title}
@@ -60,9 +61,9 @@ export default function CapsuleForm({ onSuccess, onCancel }) {
             </div>
 
             <div className={styles.field}>
-                <label>Mensaje Gancho / Teaser (Visible antes de abrir)</label>
-                <input
+                <KawaiiInput
                     type="text"
+                    label="Mensaje Gancho / Teaser (Visible antes de abrir)"
                     name="teaserMessage"
                     required
                     value={formData.teaserMessage}
@@ -73,18 +74,24 @@ export default function CapsuleForm({ onSuccess, onCancel }) {
 
             <div className={styles.row}>
                 <div className={styles.field}>
-                    <label>Condición de Apertura</label>
-                    <select name="unlockTrigger" value={formData.unlockTrigger} onChange={handleChange}>
-                        <option value="date">Fecha y Hora Específica</option>
-                        <option value="manual">Manual (Tú decides cuándo)</option>
-                    </select>
+                    <KawaiiInput
+                        type="select"
+                        label="Condición de Apertura"
+                        name="unlockTrigger"
+                        value={formData.unlockTrigger}
+                        onChange={handleChange}
+                        options={[
+                            { value: 'date', label: 'Fecha y Hora Específica' },
+                            { value: 'manual', label: 'Manual (Tú decides cuándo)' }
+                        ]}
+                    />
                 </div>
 
                 {formData.unlockTrigger === 'date' && (
                     <div className={styles.field}>
-                        <label>Fecha de Desbloqueo</label>
-                        <input
-                            type="datetime-local"
+                        <KawaiiInput
+                            type="date"
+                            label="Fecha de Desbloqueo"
                             name="unlockDate"
                             required
                             value={formData.unlockDate}
@@ -95,8 +102,9 @@ export default function CapsuleForm({ onSuccess, onCancel }) {
             </div>
 
             <div className={styles.field}>
-                <label>El Mensaje Secreto</label>
-                <textarea
+                <KawaiiInput
+                    type="textarea"
+                    label="El Mensaje Secreto"
                     name="message"
                     required
                     value={formData.message}

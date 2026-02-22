@@ -79,59 +79,8 @@
     letter-spacing: 0.5px;
 }
 
-.input,
-.textarea,
-.emojiInput {
-    padding: 0.75rem 1rem;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--glass-border);
-    background: var(--bg-input);
-    color: var(--text-primary);
-    font-family: inherit;
-    font-size: 1rem;
-    transition: all 0.2s;
-}
-
-.emojiInput {
-    font-size: 1.5rem;
-    text-align: center;
-}
-
-.input:focus,
-.textarea:focus,
-.emojiInput:focus {
-    outline: none;
-    border-color: var(--pastel-rose);
-    box-shadow: 0 0 0 3px rgba(255, 183, 178, 0.2);
-    background: var(--bg-card);
-}
-
-.textarea {
-    resize: vertical;
-    min-height: 80px;
-}
-
 .toggleGroup {
     margin: 1.5rem 0;
-}
-
-.checkboxLabel {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.75rem;
-    cursor: pointer;
-}
-
-.checkboxLabel input {
-    width: 1.2rem;
-    height: 1.2rem;
-    accent-color: var(--pastel-rose);
-    cursor: pointer;
-}
-
-.checkboxText {
-    font-weight: 500;
-    font-size: 0.95rem;
 }
 
 .formActions {

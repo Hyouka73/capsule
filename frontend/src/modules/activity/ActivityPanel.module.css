@@ -114,16 +114,6 @@
     color: var(--accent-primary);
 }
 
-.filterSelect {
-    padding: 0.5rem 1rem;
-    background: var(--bg-input);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-sm);
-    color: var(--text-primary);
-    font-size: 0.9rem;
-    cursor: pointer;
-}
-
 .feedList {
     display: flex;
     flex-direction: column;

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { toast } from '../../components/ui/PastelToast/PastelToast';
 import { signInAsAdmin } from '../../services/auth';
-import GlassInput from '../../components/ui/GlassInput/GlassInput';
+import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
 import styles from './AdminLogin.module.css';
 
 export default function AdminLogin() {
@@ -69,10 +69,10 @@ export default function AdminLogin() {
                 </div>
 
                 <form onSubmit={handleSubmit} className={styles.form}>
-                    <GlassInput
+                    <KawaiiInput
                         label="Código de Acceso"
-                        leftIcon="lock"
-                        rightIcon="favorite"
+                        iconLeft="lock"
+                        iconRight="favorite"
                         placeholder="Escribe aquí..."
                         type="email"
                         name="email"
@@ -82,9 +82,9 @@ export default function AdminLogin() {
                         onChange={(e) => setEmail(e.target.value)}
                     />
 
-                    <GlassInput
+                    <KawaiiInput
                         label="Palabra Secreta"
-                        leftIcon="key"
+                        iconLeft="key"
                         placeholder="Sssshh..."
                         type="password"
                         name="password"

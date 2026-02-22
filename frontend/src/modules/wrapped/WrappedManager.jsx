@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Card from '../../components/ui/Card/Card';
 import Button from '../../components/ui/Button/Button';
+import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
 import styles from './WrappedManager.module.css';
 
 export default function WrappedManager() {
@@ -50,10 +51,7 @@ export default function WrappedManager() {
                                 <span className={styles.toggleLabel}>Mostrar Wrapped al usuario</span>
                                 <span className={styles.toggleDesc}>Activa esto cuando quieras que ella reciba la notificación y vea el Wrapped de este año.</span>
                             </div>
-                            <label className={styles.switch}>
-                                <input type="checkbox" checked={isWrappedEnabled} onChange={(e) => setIsWrappedEnabled(e.target.checked)} />
-                                <span className={styles.slider}></span>
-                            </label>
+                            <KawaiiInput type="toggle" value={isWrappedEnabled} onChange={(e) => setIsWrappedEnabled(e.target.value)} />
                         </div>
                     </div>
                 </Card>

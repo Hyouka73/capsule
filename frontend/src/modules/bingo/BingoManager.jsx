@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Button from '../../components/ui/Button/Button';
 import Card from '../../components/ui/Card/Card';
+import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
 import styles from './BingoManager.module.css';
 
 export default function BingoManager() {
@@ -69,35 +70,32 @@ export default function BingoManager() {
                     </div>
                     <form onSubmit={handleSave} className={styles.editForm}>
                         <div className={styles.formRow}>
-                            <div className={styles.formGroup} style={{ flex: '0 0 70px' }}>
-                                <label>Emoji</label>
-                                <input type="text" maxLength="2" required value={formData.emoji} onChange={e => setFormData({ ...formData, emoji: e.target.value })} className={styles.inputEmoji} />
+                            <div className={styles.formGroup} style={{ flex: '0 0 100px' }}>
+                                <KawaiiInput type="text" label="Emoji" maxLength="2" required value={formData.emoji} onChange={e => setFormData({ ...formData, emoji: e.target.value })} />
                             </div>
                             <div className={styles.formGroup} style={{ flex: '1' }}>
-                                <label>Reto o Meta</label>
-                                <input type="text" required value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className={styles.inputText} />
+                                <KawaiiInput type="text" label="Reto o Meta" required value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
                             </div>
                         </div>
                         <div className={styles.formGroup}>
-                            <label>Descripción / Reglas</label>
-                            <textarea
+                            <KawaiiInput
+                                type="textarea"
+                                label="Descripción / Reglas"
                                 value={formData.description}
                                 onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                className={styles.inputText}
                                 rows="2"
                                 placeholder="Ej. Tómense una foto en la entrada del cine..."
                             />
                         </div>
                         <div className={styles.formGroup}>
-                            <label>Mínimo de fotos requeridas</label>
-                            <input
+                            <KawaiiInput
                                 type="number"
+                                label="Mínimo de fotos requeridas"
                                 min="1"
                                 max="20"
                                 required
                                 value={formData.minPhotos}
                                 onChange={e => setFormData({ ...formData, minPhotos: parseInt(e.target.value) || 1 })}
-                                className={styles.inputText}
                             />
                         </div>
                         <Button type="submit" size="sm">Guardar</Button>

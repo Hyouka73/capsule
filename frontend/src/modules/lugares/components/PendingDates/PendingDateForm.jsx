@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import KawaiiInput from '../../../../components/ui/KawaiiInput/KawaiiInput';
 import styles from './PendingDateForm.module.css';
 
 const MOCK_ALL_TAGS = ['cine', 'comida', 'romántico', 'aventura', 'relajación', 'fiesta', 'misterioso'];
@@ -58,20 +59,15 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
                 </div>
 
                 <div className={styles.formGroup}>
-                    <label className={styles.label}>¿Dónde fue?</label>
-                    <div className={styles.inputWrapper}>
-                        <span className={`material-symbols-outlined ${styles.inputIcon}`}>location_on</span>
-                        <select
-                            className={`${styles.select} ${!selectedPlaceId ? styles.placeholder : ''}`}
-                            value={selectedPlaceId}
-                            onChange={e => setSelectedPlaceId(e.target.value)}
-                        >
-                            <option value="">Selecciona un lugar o crea uno nuevo</option>
-                            {defaultPlaces?.map(p => (
-                                <option key={p.id} value={p.id}>{p.emoji} {p.name}</option>
-                            ))}
-                        </select>
-                    </div>
+                    <KawaiiInput
+                        type="select"
+                        label="¿Dónde fue?"
+                        iconLeft="location_on"
+                        placeholder="Selecciona un lugar o crea uno nuevo"
+                        value={selectedPlaceId}
+                        onChange={e => setSelectedPlaceId(e.target.value)}
+                        options={defaultPlaces?.map(p => ({ value: p.id, label: `${p.emoji} ${p.name}` })) || []}
+                    />
                 </div>
 
                 <div className={styles.formGroup}>
@@ -90,12 +86,14 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
                 </div>
 
                 <div className={styles.formGroup}>
-                    <label className={styles.label}>
-                        Nuestros recuerdos
-                        <span className={styles.optionalBadge}>(Opcional)</span>
-                    </label>
-                    <textarea
-                        className={styles.textarea}
+                    <KawaiiInput
+                        type="textarea"
+                        label={
+                            <>
+                                Nuestros recuerdos
+                                <span className={styles.optionalBadge}>(Opcional)</span>
+                            </>
+                        }
                         placeholder="Escribe aquí un resumen bonito de lo que pasó, chistes locales o lo que no quieres olvidar..."
                         value={comments}
                         onChange={e => setComments(e.target.value)}

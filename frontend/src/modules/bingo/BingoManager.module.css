@@ -90,23 +90,6 @@
     text-transform: uppercase;
 }
 
-.inputEmoji {
-    padding: 0.6rem;
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-sm);
-    text-align: center;
-    font-size: 1.2rem;
-    background: var(--bg-card);
-}
-
-.inputText {
-    padding: 0.6rem 1rem;
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-sm);
-    background: var(--bg-card);
-    width: 100%;
-}
-
 /* Bingo Board */
 .boardContainer {
     background: var(--glass-bg);

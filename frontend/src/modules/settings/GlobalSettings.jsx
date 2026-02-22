@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Card from '../../components/ui/Card/Card';
 import Button from '../../components/ui/Button/Button';
+import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
 import { getGlobalSettings, saveGlobalSettings } from '../../services/settingsService';
 import styles from './GlobalSettings.module.css';
 
@@ -134,7 +135,9 @@ export default function GlobalSettings() {
                         <div className={styles.formGroup}>
                             <label>Enlace de Invitación Activo</label>
                             <div className={styles.inviteWrapper}>
-                                <input type="text" readOnly value={settings.inviteLink} className={styles.input} />
+                                <div style={{ flex: 1 }}>
+                                    <KawaiiInput type="text" readOnly value={settings.inviteLink} />
+                                </div>
                                 <Button variant="secondary" onClick={handleCopyInvite}>Copiar</Button>
                             </div>
                             <p className={styles.helpText}>Compártelo para que ella pueda registrarse e ingresar a la cápsula.</p>
@@ -172,22 +175,20 @@ export default function GlobalSettings() {
                             <label>Fotos mínimas (Modo Cita)</label>
                             <p className={styles.helpText}>Cuántas fotos se requieren para poder guardar una cita.</p>
                             <div className={styles.citaInputs}>
-                                <div className={styles.inputField}>
-                                    <small>Cita Espontánea</small>
-                                    <input
+                                <div className={styles.inputField} style={{ flex: 1 }}>
+                                    <KawaiiInput
                                         type="number"
+                                        label="Cita Espontánea"
                                         value={settings.citaConfig.minPhotosSpontaneous}
                                         onChange={e => setSettings(p => ({ ...p, citaConfig: { ...p.citaConfig, minPhotosSpontaneous: parseInt(e.target.value) || 1 } }))}
-                                        className={styles.input}
                                     />
                                 </div>
-                                <div className={styles.inputField}>
-                                    <small>Bingo (Por defecto)</small>
-                                    <input
+                                <div className={styles.inputField} style={{ flex: 1 }}>
+                                    <KawaiiInput
                                         type="number"
+                                        label="Bingo (Por defecto)"
                                         value={settings.citaConfig.minPhotosBingoDefault}
                                         onChange={e => setSettings(p => ({ ...p, citaConfig: { ...p.citaConfig, minPhotosBingoDefault: parseInt(e.target.value) || 1 } }))}
-                                        className={styles.input}
                                     />
                                 </div>
                             </div>
@@ -216,10 +217,9 @@ function ToggleRow({ label, desc, checked, onChange }) {
                 <span className={styles.toggleLabel}>{label}</span>
                 <span className={styles.toggleDesc}>{desc}</span>
             </div>
-            <label className={styles.switch}>
-                <input type="checkbox" checked={checked} onChange={onChange} />
-                <span className={styles.slider}></span>
-            </label>
+            <KawaiiInput type="toggle" value={checked} onChange={e => {
+                if (onChange) onChange();
+            }} />
         </div>
     );
 }

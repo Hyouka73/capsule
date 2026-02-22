@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Card from '../../components/ui/Card/Card';
+import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
 import styles from './ActivityPanel.module.css';
 
 export default function ActivityPanel() {
@@ -69,14 +70,16 @@ export default function ActivityPanel() {
                 <Card className={styles.feedCardContainer} glass>
                     <div className={styles.feedHeader}>
                         <h3>Última Actividad</h3>
-                        <select className={styles.filterSelect} value={filter} onChange={e => setFilter(e.target.value)}>
-                            <option value="all">Todas las acciones</option>
-                            <option value="session">Sesiones</option>
-                            <option value="coupon_used">Cupones</option>
-                            <option value="capsule_viewed">Cápsulas Leídas</option>
-                            <option value="memory_created">Recuerdos</option>
-                            <option value="bingo_marked">Bingo</option>
-                        </select>
+                        <div style={{ width: '200px' }}>
+                            <KawaiiInput type="select" value={filter} onChange={e => setFilter(e.target.value)} options={[
+                                { value: 'all', label: 'Todas las acciones' },
+                                { value: 'session', label: 'Sesiones' },
+                                { value: 'coupon_used', label: 'Cupones' },
+                                { value: 'capsule_viewed', label: 'Cápsulas Leídas' },
+                                { value: 'memory_created', label: 'Recuerdos' },
+                                { value: 'bingo_marked', label: 'Bingo' }
+                            ]} />
+                        </div>
                     </div>
 
                     <div className={styles.feedList}>
