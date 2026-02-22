@@ -14,7 +14,7 @@ const BINGO_SQUARES = Array(20).fill(null).map((_, i) => {
     return {
         id: i.toString(),
         title: isCompleted ? `Misión ${i + 1}` : 'Misión Secreta',
-        emoji: isCompleted ? '✨' : '❔',
+        emoji: isCompleted ? 'favorite' : 'help_outline',
         isCompleted,
         memoryPhoto: isCompleted && i % 2 === 0 ? 'https://images.unsplash.com/photo-1549468057-5b6fb89cf61a?auto=format&fit=crop&q=80' : null,
         photos: isCompleted ? [
@@ -51,17 +51,16 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
 
             {/* Barra de progreso */}
             <div className={styles.progressContainer}>
-                <div className={styles.progressText}>
-                    <span>Progreso del año</span>
-                    <span>{completedCount} / 20</span>
-                </div>
                 <div className={styles.progressBarBg}>
                     <motion.div
                         className={styles.progressBarFill}
                         initial={{ width: 0 }}
                         animate={{ width: `${progressPerc}%` }}
-                        transition={{ duration: 1, ease: 'easeOut' }}
+                        transition={{ duration: 0.8, ease: 'easeOut' }}
                     />
+                </div>
+                <div className={styles.progressBadge}>
+                    {completedCount}/{BINGO_SQUARES.length}
                 </div>
             </div>
 
@@ -69,9 +68,11 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
             <div className={styles.boardCard}>
                 <div className={styles.grid}>
                     {BINGO_SQUARES.map((square) => (
-                        <div
+                        <motion.div
                             key={square.id}
                             className={`${styles.square} ${square.isCompleted ? styles.completed : styles.empty}`}
+                            whileTap={square.isCompleted ? { scale: 1.05 } : { scale: 0.95, boxShadow: "0 4px 12px rgba(97,218,190,0.4)" }}
+                            transition={square.isCompleted ? { type: "spring", stiffness: 400, damping: 20 } : { duration: 0.15 }}
                             onClick={() => {
                                 if (square.isCompleted) {
                                     setSelectedSquare(square);
@@ -83,28 +84,28 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
                             }}
                         >
                             {square.isCompleted ? (
-                                <motion.div
-                                    className={styles.completedContent}
-                                    whileTap={{ scale: 0.9 }}
-                                >
-                                    <span className={styles.emoji}>{square.emoji}</span>
-                                    {/* Si tiene foto, mostramos un iconito de polaroid o badge */}
-                                    {square.memoryPhoto && (
-                                        <div className={styles.photoBadge}>📸</div>
-                                    )}
-                                    <div className={styles.stampOverlay}>HECHO</div>
-                                </motion.div>
+                                <div className={styles.completedContent}>
+                                    <span className={`material-symbols-outlined ${styles.checkIcon}`}>check_circle</span>
+                                    <span className={styles.dateBadge}>
+                                        {new Date(square.completedAt)
+                                            .toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+                                            .replace('.', '')}
+                                    </span>
+                                </div>
                             ) : (
                                 <div className={styles.emptyContent}>
-                                    <span className={styles.emptyIcon}>❔</span>
+                                    <span className={`material-symbols-outlined ${styles.emptyIcon}`}>help_outline</span>
                                 </div>
                             )}
-                        </div>
+                        </motion.div>
                     ))}
                 </div>
             </div>
 
-            <p className={styles.footerHint}>Toca las casillas marcadas para recordar ese momento.</p>
+            <p className={styles.footerHint}>
+                <span className={`material-symbols-outlined ${styles.footerIcon}`}>favorite</span>
+                Toca las casillas marcadas para recordar ese momento.
+            </p>
 
             {/* Modal de Detalle (Polaroid) */}
             <AnimatePresence>
@@ -136,7 +137,9 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
                                     <img src={selectedSquare.memoryPhoto} alt="Memoria" className={styles.memoryImg} />
                                 ) : (
                                     <div className={styles.noPhotoDefault}>
-                                        <span className={styles.bigEmoji}>{selectedSquare.emoji}</span>
+                                        <span className={`material-symbols-outlined ${styles.bigFavoriteIcon}`}>
+                                            {selectedSquare.emoji === 'favorite' ? 'favorite' : selectedSquare.emoji}
+                                        </span>
                                     </div>
                                 )}
                             </div>

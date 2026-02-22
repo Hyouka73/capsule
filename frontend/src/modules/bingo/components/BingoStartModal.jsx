@@ -33,7 +33,7 @@ export default function BingoStartModal({ bingoItem, onClose, onStartCita, defau
 
                 <div className={styles.content}>
                     <div className={styles.iconWrapper}>
-                        <span className={styles.emoji}>{bingoItem.emoji}</span>
+                        <span className={bingoItem.emoji === 'favorite' || bingoItem.emoji === 'help_outline' ? `material-symbols-outlined ${styles.emoji} ${styles.materialEmoji}` : styles.emoji}>{bingoItem.emoji}</span>
                     </div>
                     <h2 className={styles.title}>{bingoItem.title}</h2>
 

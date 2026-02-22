@@ -68,45 +68,6 @@
     }
 }
 
-.floatingDeco1,
-.floatingDeco2,
-.floatingDeco3 {
-    position: absolute;
-    font-size: 2rem;
-    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
-    animation: float 6s infinite ease-in-out alternate;
-}
-
-.floatingDeco1 {
-    top: 15%;
-    left: 10%;
-    animation-delay: 0s;
-}
-
-.floatingDeco2 {
-    bottom: 25%;
-    right: 12%;
-    animation-delay: -2s;
-    font-size: 2.5rem;
-}
-
-.floatingDeco3 {
-    top: 40%;
-    right: 5%;
-    animation-delay: -4s;
-    font-size: 1.5rem;
-}
-
-@keyframes float {
-    0% {
-        transform: translateY(0) rotate(0deg);
-    }
-
-    100% {
-        transform: translateY(-20px) rotate(5deg);
-    }
-}
-
 .particle {
     position: absolute;
     bottom: -20px;

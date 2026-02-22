@@ -89,9 +89,6 @@ export default function UserDashboard() {
                         <div className={styles.gradientOrb1} />
                         <div className={styles.gradientOrb2} />
                         <div className={styles.dotPattern} />
-                        <span className={styles.floatingDeco1}>✨</span>
-                        <span className={styles.floatingDeco2}>💌</span>
-                        <span className={styles.floatingDeco3}>🌸</span>
                     </div>
 
                     <main className={styles.mainContent}>
