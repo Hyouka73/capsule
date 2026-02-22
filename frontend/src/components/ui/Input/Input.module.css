@@ -22,7 +22,7 @@
     padding: 0.75rem 1rem;
     outline: none;
     transition: all 0.2s;
-    font-family: var(--font-sans);
+    font-family: var(--font-body);
 }
 
 .input:focus {

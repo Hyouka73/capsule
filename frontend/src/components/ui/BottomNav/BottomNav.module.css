@@ -15,10 +15,10 @@
 
 .bottomNav {
     display: flex;
-    background: #ffffff;
-    border-radius: 9999px;
-    box-shadow: 0 8px 30px -4px rgba(255, 183, 178, 0.4);
-    border: 4px solid rgba(183, 228, 199, 0.4);
+    background: var(--bg-card);
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow-card);
+    border: var(--border-mint-thick);
     padding: 0.5rem;
     pointer-events: auto;
     /* Nav items are clickable */
@@ -34,10 +34,10 @@
     padding: 0.5rem 0.75rem;
     border: none;
     background: transparent;
-    border-radius: 9999px;
+    border-radius: var(--radius-pill);
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    color: #bcacad;
+    color: var(--text-muted);
 }
 
 .navItem:hover {
@@ -45,13 +45,13 @@
 }
 
 .navItemActive {
-    background: #88d8b0;
-    color: #ffffff;
+    background: var(--pastel-green-btn);
+    color: var(--bg-card);
     box-shadow: none;
 }
 
 .navItemActive:hover {
-    background: #88d8b0;
+    background: var(--pastel-green-btn);
 }
 
 .navIcon {
@@ -60,7 +60,7 @@
 }
 
 .navLabel {
-    font-family: 'Fredoka', sans-serif;
+    font-family: var(--font-display);
     font-weight: 700;
     font-size: 10px;
     letter-spacing: 0.02em;

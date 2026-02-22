@@ -37,7 +37,7 @@
         0 8px 28px -6px rgba(255, 183, 178, 0.4),
         0 0 0 1px rgba(255, 183, 178, 0.12);
 
-    font-family: 'Varela Round', sans-serif;
+    font-family: var(--font-body);
     user-select: none;
 }
 
@@ -89,7 +89,7 @@
 }
 
 .title {
-    font-family: 'Fredoka', 'Varela Round', sans-serif;
+    font-family: var(--font-display);
     font-weight: 600;
     font-size: 0.95rem;
     line-height: 1.2;
@@ -113,8 +113,8 @@
 }
 
 .description {
-    font-family: 'Varela Round', sans-serif;
-    font-size: 0.85rem;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
     line-height: 1.4;
     color: var(--pastel-text, #8c6a6a);
     opacity: 0.8;
