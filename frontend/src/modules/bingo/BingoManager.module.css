@@ -10,7 +10,7 @@
 }
 
 .title {
-    font-family: var(--font-serif);
+    font-family: var(--font-display);
     font-size: 2.25rem;
     font-weight: 700;
     color: var(--text-primary);
@@ -96,14 +96,14 @@
     border-radius: var(--radius-sm);
     text-align: center;
     font-size: 1.2rem;
-    background: #fff;
+    background: var(--bg-card);
 }
 
 .inputText {
     padding: 0.6rem 1rem;
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-sm);
-    background: #fff;
+    background: var(--bg-card);
     width: 100%;
 }
 
@@ -132,7 +132,7 @@
 }
 
 .square {
-    background: #ffffff;
+    background: var(--bg-card);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -209,7 +209,7 @@
     height: 36px;
     border-radius: 50%;
     border: 1px solid var(--glass-border);
-    background: #ffffff;
+    background: var(--bg-card);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     font-size: 1rem;
     cursor: pointer;

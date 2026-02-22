@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../../components/ui/Button/Button';
 import BingoStartModal from './components/BingoStartModal';
 import PhotoViewer from '../../components/ui/PhotoViewer/PhotoViewer';
+import { subscribeToGlobalSettings } from '../../services/settingsService';
 import styles from './UserBingo.module.css';
 
 // Mock Data para el usuario (Solo lectura visual)
@@ -30,6 +31,14 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
     const [selectedSquare, setSelectedSquare] = useState(null);
     const [selectedStartSquare, setSelectedStartSquare] = useState(null);
     const [viewerPhotos, setViewerPhotos] = useState(null);
+    const [globalSettings, setGlobalSettings] = useState(null);
+
+    useEffect(() => {
+        const unsub = subscribeToGlobalSettings(data => {
+            if (data) setGlobalSettings(data);
+        });
+        return unsub;
+    }, []);
     const completedCount = BINGO_SQUARES.filter(s => s.isCompleted).length;
     const progressPerc = (completedCount / 20) * 100;
 
@@ -157,6 +166,7 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
                 {selectedStartSquare && (
                     <BingoStartModal
                         bingoItem={selectedStartSquare}
+                        defaultMinPhotos={globalSettings?.citaConfig?.minPhotosBingoDefault || 3}
                         onClose={() => {
                             setSelectedStartSquare(null);
                             if (setIsModalOpen) setIsModalOpen(false);

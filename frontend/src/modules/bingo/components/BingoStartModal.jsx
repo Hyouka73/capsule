@@ -3,13 +3,15 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import styles from './BingoStartModal.module.css';
 
-export default function BingoStartModal({ bingoItem, onClose, onStartCita }) {
+export default function BingoStartModal({ bingoItem, onClose, onStartCita, defaultMinPhotos = 3 }) {
+    const minPhotosVal = bingoItem.minPhotos || defaultMinPhotos;
+
     const handleStartCita = () => {
         if (onStartCita) {
             onStartCita({
                 type: 'bingo',
                 bingoLabel: `${bingoItem.emoji} ${bingoItem.title}`,
-                minPhotos: bingoItem.minPhotos || 3,
+                minPhotos: minPhotosVal,
                 description: bingoItem.description,
                 tags: bingoItem.suggestedTags || []
             });
@@ -41,7 +43,7 @@ export default function BingoStartModal({ bingoItem, onClose, onStartCita }) {
                         </p>
                         <div className={styles.reqs}>
                             <span className="material-symbols-outlined">photo_camera</span>
-                            <span>Mínimo {bingoItem.minPhotos || 3} fotos requeridas</span>
+                            <span>Mínimo {minPhotosVal} fotos requeridas</span>
                         </div>
                     </div>
 

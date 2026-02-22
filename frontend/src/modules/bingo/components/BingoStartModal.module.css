@@ -118,7 +118,7 @@
     background: linear-gradient(135deg, var(--pastel-sage), var(--pastel-shadow-mint));
     color: white;
     border: none;
-    border-radius: 9999px;
+    border-radius: var(--radius-pill);
     font-family: var(--font-fredoka);
     font-size: 1.1rem;
     font-weight: bold;
