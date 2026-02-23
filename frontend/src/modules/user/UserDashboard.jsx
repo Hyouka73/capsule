@@ -10,7 +10,7 @@ import styles from './UserDashboard.module.css';
 
 const TABS = [
     { id: 'lugares', label: 'Lugares', icon: 'map' },
-    { id: 'fotos', label: 'Fotos', icon: 'photo_library' },
+    { id: 'caprichos', label: 'Caprichitos', icon: 'redeem' },
     { id: 'sorpresas', label: 'Sorpresas', icon: 'card_giftcard' },
     { id: 'bingo', label: 'Bingo', icon: 'grid_view' },
     { id: 'mas', label: 'Más', icon: 'more_horiz' },
@@ -22,6 +22,7 @@ export default function UserDashboard() {
     const [isPlaceSelected, setIsPlaceSelected] = useState(false);
     const [bingoContextToMap, setBingoContextToMap] = useState(null);
     const [isBingoModalOpen, setIsBingoModalOpen] = useState(false);
+    const [isCouponsModalOpen, setIsCouponsModalOpen] = useState(false);
 
     // Partículas solo cuando NO es el mapa
     useEffect(() => {
@@ -52,6 +53,8 @@ export default function UserDashboard() {
         if (newTab === activeTab) return;
         setPrevTab(activeTab);
         setActiveTab(newTab);
+        // Reset modals when changing tabs
+        setIsCouponsModalOpen(false);
     };
 
     // Calcular dirección para la animación
@@ -82,7 +85,7 @@ export default function UserDashboard() {
     const renderContent = () => {
         switch (activeTab) {
             case 'sorpresas': return <UserCapsules />;
-            case 'fotos': return <UserCoupons />;
+            case 'caprichos': return <UserCoupons onModalStateChange={setIsCouponsModalOpen} />;
             case 'bingo': return (
                 <UserBingo
                     setActiveTab={setActiveTab}
@@ -144,7 +147,7 @@ export default function UserDashboard() {
 
             {/* ── NAVBAR: siempre flotando encima de todo, hidden if place is selected or modal open ── */}
             <AnimatePresence>
-                {!isPlaceSelected && !isBingoModalOpen && (
+                {!isPlaceSelected && !isBingoModalOpen && !isCouponsModalOpen && (
                     <motion.div
                         initial={{ y: 100, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
