@@ -30,7 +30,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 72px;
+    height: 64px;
     /* Fixed height for stability when items shift */
     border: none;
     background: transparent;
@@ -41,25 +41,21 @@
     z-index: 1;
 }
 
-.navItem:hover {
-    background: rgba(140, 106, 106, 0.1);
-}
-
 .navItemActive {
     color: #ffffff;
 }
 
 .activeIndicator {
     position: absolute;
-    width: 72px;
-    height: 72px;
+    width: 68px;
+    height: 68px;
     background: #80cfab;
     /* Solid mint green from image */
     border-radius: 50%;
     z-index: -1;
-    top: -20px;
+    top: -28px;
     left: 50%;
-    margin-left: -36px;
+    margin-left: -34px;
     box-shadow: 0 8px 24px rgba(128, 207, 171, 0.4);
 }
 

@@ -31,7 +31,7 @@ export default function BottomNav({ activeTab, setActiveTab, tabs = [] }) {
                             )}
                             <motion.div
                                 className={styles.itemContent}
-                                animate={{ y: isActive ? -20 : 0 }}
+                                animate={{ y: isActive ? -28 : 0 }}
                                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                             >
                                 <span className={`material-symbols-outlined ${styles.navIcon}`}>
