@@ -1,0 +1,96 @@
+/* Bottom Sheet Modal */
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.modalContent {
+    background: #ffffff;
+    width: 100%;
+    border-radius: 32px 32px 0 0;
+    padding: 16px 24px 48px;
+    text-align: center;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.dragHandle {
+    width: 40px;
+    height: 4px;
+    background: var(--text-muted);
+    opacity: 0.3;
+    border-radius: 4px;
+    margin-bottom: 24px;
+}
+
+.modalEmoji {
+    font-size: 64px;
+    line-height: 1;
+    margin-bottom: 16px;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+}
+
+.modalContent h2 {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--text-primary);
+    margin: 0 0 12px;
+}
+
+.modalContent p {
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--text-primary);
+    margin: 0 0 24px;
+}
+
+.actions {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.confirmBtn {
+    width: 100%;
+    background: var(--gradient-mint);
+    color: white;
+    border: none;
+    padding: 16px 20px;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-display);
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: var(--shadow-chunky-mint);
+    transition: all 0.2s;
+}
+
+.confirmBtn:active {
+    transform: translateY(4px);
+    box-shadow: var(--shadow-chunky-mint-active);
+}
+
+.cancelBtn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: bold;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+    padding: 12px;
+    cursor: pointer;
+}
