@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import Button from '../../../../components/ui/Button/Button';
+import Button from '../ui/Button/Button';
 import styles from './MapLocationPicker.module.css';
 
 // Fix leaflet default icon

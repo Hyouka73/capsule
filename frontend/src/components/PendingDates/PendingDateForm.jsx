@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import KawaiiInput from '../../../../components/ui/KawaiiInput/KawaiiInput';
+import KawaiiInput from '../ui/KawaiiInput/KawaiiInput';
 import PlacePickerBottomSheet from './PlacePickerBottomSheet';
 import styles from './PendingDateForm.module.css';
 

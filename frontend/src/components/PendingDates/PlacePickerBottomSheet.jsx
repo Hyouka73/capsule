@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import KawaiiInput from '../../../../components/ui/KawaiiInput/KawaiiInput';
-import Button from '../../../../components/ui/Button/Button';
+import KawaiiInput from '../ui/KawaiiInput/KawaiiInput';
+import Button from '../ui/Button/Button';
 import MapLocationPicker from './MapLocationPicker';
 import styles from './PlacePickerBottomSheet.module.css';
 
