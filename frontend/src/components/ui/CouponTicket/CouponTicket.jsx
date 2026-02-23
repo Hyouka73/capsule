@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import styles from './CouponTicket.module.css';
+import { CouponIcons } from '../../../icons/CouponIcons';
 
 export default function CouponTicket({ coupon, onRedeem }) {
     return (
@@ -15,7 +16,9 @@ export default function CouponTicket({ coupon, onRedeem }) {
                 <div className={styles.serialNumber}>
                     #{coupon.id.padStart(3, '0')}
                 </div>
-                <div className={styles.couponEmoji}>{coupon.emoji}</div>
+                <div className={styles.couponIcon}>
+                    {CouponIcons[coupon.icon] ? CouponIcons[coupon.icon]({ className: styles.svgIcon }) : '🎟️'}
+                </div>
             </div>
 
             <div className={styles.ticketBody}>
@@ -30,7 +33,7 @@ export default function CouponTicket({ coupon, onRedeem }) {
                             className={styles.redeemBtn}
                             onClick={() => onRedeem(coupon)}
                         >
-                            Canjear 💝
+                            Canjear
                         </button>
                     ) : (
                         <div className={styles.usedStamp}>

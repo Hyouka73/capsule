@@ -61,12 +61,20 @@
     white-space: nowrap;
 }
 
-.couponEmoji {
-    font-size: 42px;
-    line-height: 1;
-    margin: 0;
+.couponIcon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
     /* Move it slightly right to balance visual center since serial number uses the left padding */
     transform: translateX(8px);
+}
+
+.svgIcon {
+    width: 100%;
+    height: 100%;
 }
 
 /* Lado derecho (.ticketBody) */
@@ -154,8 +162,8 @@
     border-color: rgba(183, 228, 199, 0.3);
 }
 
-.couponUsed .couponEmoji {
-    filter: grayscale(0.5);
+.couponUsed .couponIcon {
+    opacity: 0.6;
 }
 
 .couponUsed .serialNumber {
