@@ -6,42 +6,7 @@ import styles from './UserCoupons.module.css';
 import CouponTicket from '../../components/ui/CouponTicket/CouponTicket';
 import BottomSheetModal from '../../components/ui/BottomSheetModal/BottomSheetModal';
 
-// Mock data
-const MOCK_COUPONS = [
-    {
-        id: '1',
-        title: 'Noche de Películas',
-        description: 'Tú eliges la peli, yo pongo las palomitas y los abrazos.',
-        type: 'date_night',
-        emoji: '🍿',
-        isUsed: false,
-    },
-    {
-        id: '2',
-        title: 'Masaje de 30 min',
-        description: 'Válido para un masaje relajante en la zona que prefieras.',
-        type: 'massage',
-        emoji: '💆‍♀️',
-        isUsed: false,
-    },
-    {
-        id: '3',
-        title: 'Pizza Night',
-        description: 'Cena de pizza casera o de tu lugar favorito, ¡yo invito!',
-        type: 'food',
-        emoji: '🍕',
-        isUsed: false,
-    },
-    {
-        id: '4',
-        title: 'Desayuno en la cama',
-        description: 'Día libre de cocinar. Te llevo tu desayuno favorito.',
-        type: 'favor',
-        emoji: '🥞',
-        isUsed: true,
-        usedAt: new Date(Date.now() - 345600000).toISOString(),
-    }
-];
+import { MOCK_COUPONS } from '../../data/couponsData';
 
 export default function UserCoupons({ onModalStateChange }) {
     const [activeTab, setActiveTab] = useState('available');
@@ -90,7 +55,7 @@ export default function UserCoupons({ onModalStateChange }) {
                 onChange={handleTabChange}
             />
 
-            <div className={styles.couponList} style={{ minHeight: '300px' }}>
+            <div className={styles.couponList}>
                 <AnimatePresence mode="popLayout" custom={activeTab === 'available' ? -1 : 1}>
                     <motion.div
                         key={activeTab}
