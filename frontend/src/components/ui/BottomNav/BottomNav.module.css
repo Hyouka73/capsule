@@ -15,30 +15,29 @@
 
 .bottomNav {
     display: flex;
-    background: var(--bg-card);
-    border-radius: var(--radius-pill);
-    box-shadow: var(--shadow-card);
-    border: var(--border-mint-thick);
-    padding: 0.5rem;
+    background: #ffffff;
+    border-radius: 32px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+    padding: 0 0.5rem;
     pointer-events: auto;
-    /* Nav items are clickable */
-    gap: 0.25rem;
+    width: 100%;
+    max-width: 420px;
 }
 
 .navItem {
+    position: relative;
+    flex: 1;
     display: flex;
-    flex-direction: column;
-    align-items: center;
     justify-content: center;
-    gap: 0.25rem;
-    padding: 0.5rem 0.75rem;
+    align-items: center;
+    height: 72px;
+    /* Fixed height for stability when items shift */
     border: none;
     background: transparent;
-    border-radius: var(--radius-pill);
     cursor: pointer;
+    color: #9ca3af;
+    /* Greyish color for unselected */
     transition: color 0.3s ease;
-    color: var(--text-muted);
-    position: relative;
     z-index: 1;
 }
 
@@ -47,30 +46,42 @@
 }
 
 .navItemActive {
-    color: var(--bg-card);
-}
-
-.navItemActive:hover {
-    background: transparent;
+    color: #ffffff;
 }
 
 .activeIndicator {
     position: absolute;
-    inset: 0;
-    background: var(--pastel-green-btn);
-    border-radius: var(--radius-pill);
+    width: 72px;
+    height: 72px;
+    background: #80cfab;
+    /* Solid mint green from image */
+    border-radius: 50%;
     z-index: -1;
+    top: -20px;
+    left: 50%;
+    margin-left: -36px;
+    box-shadow: 0 8px 24px rgba(128, 207, 171, 0.4);
+}
+
+.itemContent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
 }
 
 .navIcon {
-    font-size: 1.5rem;
+    font-size: 26px;
     line-height: 1;
+    font-variation-settings: 'FILL' 1;
+    /* Solid icons */
 }
 
 .navLabel {
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: 10px;
+    font-size: 11px;
     letter-spacing: 0.02em;
     white-space: nowrap;
 }

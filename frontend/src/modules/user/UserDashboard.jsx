@@ -10,8 +10,8 @@ import styles from './UserDashboard.module.css';
 
 const TABS = [
     { id: 'lugares', label: 'Lugares', icon: 'map' },
-    { id: 'caprichos', label: 'Caprichitos', icon: 'redeem' },
-    { id: 'sorpresas', label: 'Sorpresas', icon: 'card_giftcard' },
+    { id: 'caprichos', label: 'Caprichitos', icon: 'favorite' },
+    { id: 'sorpresas', label: 'Sorpresas', icon: 'redeem' },
     { id: 'bingo', label: 'Bingo', icon: 'grid_view' },
     { id: 'mas', label: 'Más', icon: 'more_horiz' },
 ];

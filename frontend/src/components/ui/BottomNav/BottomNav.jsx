@@ -29,16 +29,18 @@ export default function BottomNav({ activeTab, setActiveTab, tabs = [] }) {
                                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                                 />
                             )}
-                            <motion.span
-                                animate={isActive ? { scale: [1, 1.2, 1] } : { scale: 1 }}
-                                transition={{ type: 'spring', damping: 10, stiffness: 200, duration: 0.3 }}
-                                className={`material-symbols-outlined ${styles.navIcon}`}
+                            <motion.div
+                                className={styles.itemContent}
+                                animate={{ y: isActive ? -20 : 0 }}
+                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                             >
-                                {tab.icon}
-                            </motion.span>
-                            <span className={styles.navLabel}>
-                                {tab.label}
-                            </span>
+                                <span className={`material-symbols-outlined ${styles.navIcon}`}>
+                                    {tab.icon}
+                                </span>
+                                <span className={styles.navLabel}>
+                                    {tab.label}
+                                </span>
+                            </motion.div>
                         </button>
                     );
                 })}
