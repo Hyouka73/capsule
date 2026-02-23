@@ -24,9 +24,9 @@ export default function BottomNav({ activeTab, setActiveTab, tabs = [] }) {
                         >
                             {isActive && (
                                 <motion.div
-                                    layoutId="activeTab"
+                                    layoutId="bottomNavIndicator"
                                     className={styles.activeIndicator}
-                                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                                 />
                             )}
                             <motion.span
