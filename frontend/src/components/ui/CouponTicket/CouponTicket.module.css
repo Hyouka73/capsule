@@ -1,0 +1,171 @@
+/* Boleto Horizontal Design */
+.couponCard {
+    display: flex;
+    flex-direction: row;
+    min-height: 150px;
+    border-radius: 16px;
+    overflow: hidden;
+    /* Cierra los bordes exteriores redondos */
+    box-shadow: var(--shadow-card);
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+
+/* Lado izquierdo (.ticketStub) */
+.ticketStub {
+    width: 100px;
+    min-height: 150px;
+    /* Misma altura */
+    background: var(--gradient-mint);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+    /* Para que las mordidas queden arriba */
+    flex-shrink: 0;
+}
+
+/* Las mordidas de perforación (Top and Bottom) */
+.ticketStub::before,
+.ticketStub::after {
+    content: '';
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--bg-main);
+    right: -12px;
+    z-index: 5;
+}
+
+.ticketStub::before {
+    top: -12px;
+}
+
+.ticketStub::after {
+    bottom: -12px;
+}
+
+.serialNumber {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%) rotate(-90deg);
+    font-family: var(--font-display);
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.9);
+    letter-spacing: 2px;
+    white-space: nowrap;
+}
+
+.couponEmoji {
+    font-size: 42px;
+    line-height: 1;
+    margin: 0;
+    /* Move it slightly right to balance visual center since serial number uses the left padding */
+    transform: translateX(8px);
+}
+
+/* Lado derecho (.ticketBody) */
+.ticketBody {
+    flex: 1;
+    background: var(--bg-card);
+    border-radius: 0 16px 16px 0;
+    border: var(--border-mint);
+    border-left: 2px dashed rgba(183, 228, 199, 0.6);
+    /* Línea de corte punteada */
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: unset;
+    height: auto;
+    /* Auto height para adaptarse mejor */
+}
+
+.couponText {
+    width: 100%;
+}
+
+.couponText h3 {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--text-primary);
+    margin: 0 0 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.couponText p {
+    font-family: var(--font-body);
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--text-muted);
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.ticketAction {
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-end;
+    margin-top: 12px;
+}
+
+.redeemBtn {
+    width: auto;
+    background: var(--gradient-mint);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-display);
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: var(--shadow-chunky-mint);
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.redeemBtn:active {
+    transform: translateY(4px);
+    box-shadow: var(--shadow-chunky-mint-active);
+}
+
+/* Used State */
+.couponUsed .ticketStub {
+    background: rgba(183, 228, 199, 0.3);
+}
+
+.couponUsed .ticketBody {
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(183, 228, 199, 0.3);
+}
+
+.couponUsed .couponEmoji {
+    filter: grayscale(0.5);
+}
+
+.couponUsed .serialNumber {
+    color: rgba(0, 0, 0, 0.3);
+}
+
+.usedStamp {
+    color: var(--text-muted);
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: bold;
+    padding: 0;
+}
