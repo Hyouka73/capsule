@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import UserCapsules from '../capsules/UserCapsules';
 import UserCoupons from '../coupons/UserCoupons';
 import UserBingo from '../bingo/UserBingo';
-import UserLugares from '../lugares/UserLugares';
+import MapView from '../map/MapView';
 import BottomNav from '../../components/ui/BottomNav/BottomNav';
 import styles from './UserDashboard.module.css';
 
@@ -103,7 +103,7 @@ export default function UserDashboard() {
             {/* ── MAPA: va directo al appContainer, sin padding ni wrappers ── */}
             {activeTab === 'lugares' && (
                 <div className={styles.mapWrapper}>
-                    <UserLugares
+                    <MapView
                         onPlaceSelected={setIsPlaceSelected}
                         bingoContextToMap={bingoContextToMap}
                         clearBingoContext={() => setBingoContextToMap(null)}

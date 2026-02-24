@@ -2,7 +2,7 @@ const { getFirestore, Timestamp } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
 const { v4: uuidv4 } = require('uuid');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { COLLECTIONS } = require('../config/constants');
+const { COLLECTIONS, PARTNER_SINGLETON_ID } = require('../config/constants');
 
 /**
  * exchangeInviteToken — HTTPS Callable
@@ -45,7 +45,7 @@ async function exchangeInviteToken(request) {
     }
 
     // 2. Find or create the partner user in Firebase Auth
-    const partnerId = 'partner_main'; // Single partner — fixed UID for simplicity
+    const partnerId = PARTNER_SINGLETON_ID; // Single partner — fixed UID for simplicity
     let userRecord;
 
     try {

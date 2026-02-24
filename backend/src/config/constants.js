@@ -21,6 +21,8 @@ const COLLECTIONS = {
     APP_CONFIG: 'appConfig',
 };
 
+const PARTNER_SINGLETON_ID = 'partner_main';
+
 /**
  * Storage paths — organized by feature.
  */
@@ -86,5 +88,6 @@ module.exports = {
     CAPSULE_TYPES,
     UNLOCK_TRIGGERS,
     ACTIVITY_ACTIONS,
-    ARTIFACT_TYPES
+    ARTIFACT_TYPES,
+    PARTNER_SINGLETON_ID
 };
