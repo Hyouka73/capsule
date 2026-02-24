@@ -75,6 +75,10 @@
             "queryScope": "COLLECTION",
             "fields": [
                 {
+                    "fieldPath": "unlockTrigger",
+                    "order": "ASCENDING"
+                },
+                {
                     "fieldPath": "isUnlocked",
                     "order": "ASCENDING"
                 },

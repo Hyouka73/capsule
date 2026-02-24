@@ -121,7 +121,8 @@ service cloud.firestore {
       allow create: if isAdmin();
       allow update: if isAdmin() ||
         (isPartner() && isNotRevoked() && isValidDevice() &&
-         request.resource.data.categories.size() == resource.data.categories.size());
+         request.resource.data.categories.size() == resource.data.categories.size() &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['categories']));
     }
 
     // ── WRAPPED DATA ─────────────────────────────────────────────────────────
