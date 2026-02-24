@@ -1,48 +1,57 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../services/firebase';
+import { getToken, onMessage } from 'firebase/messaging';
+import { arrayUnion, doc, updateDoc } from 'firebase/firestore';
+import { auth, messaging, db } from '../services/firebase';
+import firebaseConfig from '../config/firebase';
 import {
     getCurrentUserClaims,
     signOut as authSignOut,
 } from '../services/auth';
-import { ROLES } from '../config/constants';
+import { ROLES, COLLECTIONS } from '../config/constants';
 
 const AuthContext = createContext(null);
 
-/**
- * Authentication provider — wraps the app and provides auth state.
- *
- * Exposes:
- *   user          — Firebase Auth user object (or null)
- *   role          — "admin" | "partner" | null
- *   deviceId      — Device fingerprint from custom claims (partner only)
- *   isLoading     — true while resolving auth state on first load
- *   isAuthenticated
- *   isAdmin
- *   isPartner
- *   signOut()
- *
- * Usage:
- *   const { user, role, isAdmin, isPartner, isLoading } = useAuth();
- */
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [role, setRole] = useState(null);
     const [deviceId, setDeviceId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    // Register FCM Token for partners
+    const registerFCM = useCallback(async (userId) => {
+        if (!messaging) return;
+        try {
+            const token = await getToken(messaging, {
+                vapidKey: firebaseConfig.vapidKey
+            });
+            if (token) {
+                const userRef = doc(db, COLLECTIONS.USERS, userId);
+                await updateDoc(userRef, {
+                    fcmTokens: arrayUnion(token)
+                });
+            }
+        } catch (err) {
+            console.error('FCM Registration failed:', err);
+        }
+    }, []);
+
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
                 let claims = { role: null, deviceId: null };
                 try {
-                    claims = await getCurrentUserClaims(true); // forceRefresh=true → always gets latest claims
-                } catch {
-                    // Token fetch failed — user is still recognized, role stays null temporarily
-                }
+                    claims = await getCurrentUserClaims(true);
+                } catch { /* session error */ }
+
                 setUser(firebaseUser);
                 setRole(claims.role);
                 setDeviceId(claims.deviceId);
+
+                // If partner, try registering FCM
+                if (claims.role === ROLES.PARTNER) {
+                    registerFCM(firebaseUser.uid);
+                }
             } else {
                 setUser(null);
                 setRole(null);
@@ -51,8 +60,20 @@ export function AuthProvider({ children }) {
             setIsLoading(false);
         });
 
-        return unsubscribe;
-    }, []);
+        // Listen for foreground messages
+        let unsubscribeMessaging = () => { };
+        if (messaging) {
+            unsubscribeMessaging = onMessage(messaging, (payload) => {
+                console.log('Message received in foreground: ', payload);
+                // Trigger global toast or similar
+            });
+        }
+
+        return () => {
+            unsubscribe();
+            unsubscribeMessaging();
+        };
+    }, [registerFCM]);
 
     const signOut = useCallback(() => authSignOut(), []);
 
@@ -74,10 +95,6 @@ export function AuthProvider({ children }) {
     );
 }
 
-/**
- * Hook to access auth state
- * @returns {{ user, role, deviceId, isLoading, isAuthenticated, isAdmin, isPartner, signOut }}
- */
 export function useAuth() {
     const context = useContext(AuthContext);
     if (context === null) {
