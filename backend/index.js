@@ -4,6 +4,7 @@ initializeApp();
 
 const { onPhotoUploaded } = require('./src/triggers/onPhotoUploaded');
 const { taskUnlockCapsule } = require('./src/triggers/taskUnlockCapsule');
+const { unlockScheduledCapsules } = require('./src/api/unlockScheduledCapsules');
 const { exchangeInviteToken } = require('./src/api/exchangeInviteToken');
 const { generateInviteToken } = require('./src/api/generateInviteToken');
 
@@ -18,6 +19,7 @@ const { getCapsules } = require('./src/api/getCapsules');
 
 exports.onPhotoUploaded = onPhotoUploaded;
 exports.taskUnlockCapsule = taskUnlockCapsule;
+exports.unlockScheduledCapsules = unlockScheduledCapsules;
 exports.exchangeInviteToken = exchangeInviteToken;
 exports.generateInviteToken = generateInviteToken;
 
