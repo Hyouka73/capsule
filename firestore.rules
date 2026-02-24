@@ -125,6 +125,15 @@ service cloud.firestore {
          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['categories']));
     }
 
+    // ── INSTANTANEAS ──────────────────────────────────────────────────────────
+    match /instantaneas/{id} {
+      allow read: if canAccess();
+      allow create: if isAdmin();
+      allow update: if isPartner() && 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isSeen', 'seenAt']);
+      allow delete: if isAdmin();
+    }
+
     // ── WRAPPED DATA ─────────────────────────────────────────────────────────
     match /wrappedData/{year} {
       allow read: if canAccess() &&

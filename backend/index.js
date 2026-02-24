@@ -7,6 +7,7 @@ const { taskUnlockCapsule } = require('./src/triggers/taskUnlockCapsule');
 const { unlockScheduledCapsules } = require('./src/api/unlockScheduledCapsules');
 const { exchangeInviteToken } = require('./src/api/exchangeInviteToken');
 const { generateInviteToken } = require('./src/api/generateInviteToken');
+const { createSnapshot } = require('./src/api/createSnapshot');
 
 // Nuevas APIs BFF
 const { createMemory } = require('./src/api/createMemory');
@@ -31,3 +32,4 @@ exports.getMemories = getMemories;
 exports.createCapsule = createCapsule;
 exports.openCapsule = openCapsule;
 exports.getCapsules = getCapsules;
+exports.createSnapshot = createSnapshot;

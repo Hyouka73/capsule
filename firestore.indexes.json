@@ -165,7 +165,36 @@
                     "order": "DESCENDING"
                 }
             ]
+        },
+        {
+            "collectionGroup": "instantaneas",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "isSeen",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
         }
     ],
-    "fieldOverrides": []
+    "fieldOverrides": [
+        {
+            "collectionGroup": "photos",
+            "fieldPath": "createdAt",
+            "indexes": [
+                {
+                    "order": "DESCENDING",
+                    "queryScope": "COLLECTION_GROUP"
+                },
+                {
+                    "order": "ASCENDING",
+                    "queryScope": "COLLECTION_GROUP"
+                }
+            ]
+        }
+    ]
 }
