@@ -5,6 +5,7 @@ import UserCapsules from '../capsules/UserCapsules';
 import UserCoupons from '../coupons/UserCoupons';
 import UserBingo from '../bingo/UserBingo';
 import MapView from '../map/MapView';
+import GalleryView from '../gallery/GalleryView';
 import BottomNav from '../../components/ui/BottomNav/BottomNav';
 import styles from './UserDashboard.module.css';
 
@@ -78,6 +79,7 @@ export default function UserDashboard() {
 
     const renderContent = () => {
         switch (activeTab) {
+            case 'galeria': return <GalleryView />;
             case 'sorpresas': return <UserCapsules />;
             case 'caprichos': return <UserCoupons onModalStateChange={setIsCouponsModalOpen} />;
             case 'bingo': return (
