@@ -4,14 +4,14 @@ import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-lea
 import PhotoViewer from '../../components/ui/PhotoViewer/PhotoViewer';
 import MapPin from '../../components/ui/MapPin/MapPin';
 import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
-import PendingWarningBtn from '../../components/PendingDates/PendingWarningBtn';
 import PendingDatesList from '../../components/PendingDates/PendingDatesList';
 import PendingDateForm from '../../components/PendingDates/PendingDateForm';
 import CitaOverlay from '../../components/Cita/CitaOverlay';
-import { toast } from '../../components/ui/PastelToast/PastelToast';
 import { subscribeToGlobalSettings } from '../../services/settingsService';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
+import SnapshotButton from '../snapshots/components/SnapshotButton';
+import { useAuth } from '../../hooks/useAuth';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import styles from './MapView.module.css';
@@ -30,13 +30,12 @@ import { MOCK_PLACES, ALL_POSSIBLE_FILTERS, MOCK_PENDING_DATES } from '../../dat
 function FlyToPlace({ place }) {
     const map = useMap();
     if (place) {
-        // Offset latitude by -0.005 so the pin appears in the upper half above the drawer
         map.flyTo([place.coordinates.lat - 0.005, place.coordinates.lng], 15, { duration: 1.2, easeLinearity: 0.25 });
     }
     return null;
 }
 
-// Track map events: zoom and click to dismiss search
+// Track map events
 function MapEvents({ setMapZoom, onMapClick }) {
     useMapEvents({
         zoomend(e) {
@@ -49,27 +48,20 @@ function MapEvents({ setMapZoom, onMapClick }) {
     return null;
 }
 
-// Build custom Leaflet div icon per place type
+// Build custom Leaflet div icon
 function buildIcon(place, isSelected, zoom) {
     let size = 'small';
     if (place.visitCount >= 5) size = 'large';
     else if (place.visitCount >= 2) size = 'medium';
 
     const scale = zoom >= 14 ? 1 : zoom >= 12 ? 0.7 : zoom >= 10 ? 0.45 : 0.25;
-
-    // At very low zoom levels, strip down large/medium pins
     const isLowZoom = zoom < 10;
     const hideIcon = zoom < 12;
     const hidePulse = zoom < 13;
 
-    // Force small solid dot at very low zoom
-    if (isLowZoom) {
-        size = 'micro'; // A new internal size specifically for zoomed out map
-    }
+    if (isLowZoom) size = 'micro';
 
-    // Apply scale to anchor and size logic
     let iconSize, iconAnchor, popupAnchor;
-
     if (size === 'large') {
         iconSize = [70 * scale, 70 * scale];
         iconAnchor = [35 * scale, 62 * scale];
@@ -83,8 +75,7 @@ function buildIcon(place, isSelected, zoom) {
         iconAnchor = [15 * scale, 26 * scale];
         popupAnchor = [0, -22 * scale];
     } else {
-        // 'micro' size for very low zoom
-        iconSize = [20, 20]; // Scale is handled mostly by the fixed size in MapPin
+        iconSize = [20, 20];
         iconAnchor = [10, 10];
         popupAnchor = [0, -10];
     }
@@ -118,12 +109,19 @@ function buildIcon(place, isSelected, zoom) {
     });
 }
 
-export default function MapView({ onPlaceSelected, bingoContextToMap, clearBingoContext }) {
+export default function MapView({
+    onPlaceSelected,
+    bingoContextToMap,
+    clearBingoContext,
+    openPendingSignal,
+    onPendingSignalHandled
+}) {
+    const { isPartner, isAdmin } = useAuth();
     const [selectedPlace, setSelectedPlace] = useState(null);
     const [activeFilter, setActiveFilter] = useState('todos');
     const [citaContext, setCitaContext] = useState(null);
     const [globalSettings, setGlobalSettings] = useState(null);
-    const [mapZoom, setMapZoom] = useState(13); // Default initial zoom
+    const [mapZoom, setMapZoom] = useState(13);
 
     useEffect(() => {
         const unsub = subscribeToGlobalSettings(data => {
@@ -134,34 +132,31 @@ export default function MapView({ onPlaceSelected, bingoContextToMap, clearBingo
 
     useEffect(() => {
         if (bingoContextToMap) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             setCitaContext(bingoContextToMap);
             if (clearBingoContext) clearBingoContext();
-            // Hide the bottom navbar immediately when cita opens from bingo
             if (onPlaceSelected) onPlaceSelected(true);
         }
     }, [bingoContextToMap, clearBingoContext, onPlaceSelected]);
 
-    // Pending Dates state
-    const [pendingDates, setPendingDates] = useState(MOCK_PENDING_DATES);
+    const [pendingDates] = useState(MOCK_PENDING_DATES);
     const [isPendingListOpen, setIsPendingListOpen] = useState(false);
     const [selectedPendingDate, setSelectedPendingDate] = useState(null);
-
-    // Photo viewer state
     const [viewerPhotos, setViewerPhotos] = useState(null);
-
-    // Search state
     const [isSearchActive, setIsSearchActive] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
-    // --- NAVBAR & OVERLAY LOGIC ---
+    // Handle quick access signal from Navbar
+    useEffect(() => {
+        if (openPendingSignal) {
+            setIsPendingListOpen(true);
+            if (onPendingSignalHandled) onPendingSignalHandled();
+        }
+    }, [openPendingSignal, onPendingSignalHandled]);
+
     useEffect(() => {
         const isAnyOverlayOpen = !!citaContext || isPendingListOpen || !!selectedPendingDate || !!selectedPlace || isSearchActive;
-        if (onPlaceSelected) {
-            onPlaceSelected(isAnyOverlayOpen);
-        }
+        if (onPlaceSelected) onPlaceSelected(isAnyOverlayOpen);
     }, [citaContext, isPendingListOpen, selectedPendingDate, selectedPlace, isSearchActive, onPlaceSelected]);
-    // ----------------------------
 
     const filteredPlaces = MOCK_PLACES.filter(p => {
         const matchesFilter = activeFilter === 'todos' || p.tags.includes(activeFilter);
@@ -169,11 +164,8 @@ export default function MapView({ onPlaceSelected, bingoContextToMap, clearBingo
         return matchesFilter && matchesSearch;
     });
 
-    // Calculate dynamic filters based on currently available tags in MOCK_PLACES
     const availableTags = new Set();
-    MOCK_PLACES.forEach(place => {
-        place.tags?.forEach(tag => availableTags.add(tag));
-    });
+    MOCK_PLACES.forEach(place => place.tags?.forEach(tag => availableTags.add(tag)));
 
     const activeFilters = ALL_POSSIBLE_FILTERS.filter(
         opt => opt.id === 'todos' || availableTags.has(opt.id)
@@ -181,8 +173,7 @@ export default function MapView({ onPlaceSelected, bingoContextToMap, clearBingo
 
     return (
         <div className={styles.screen}>
-
-            {/* ── THE MAP (fills entire background) ── */}
+            {/* ── THE MAP ── */}
             <div className={styles.mapLayer}>
                 <MapContainer
                     center={[16.7521, -93.1152]}
@@ -196,7 +187,6 @@ export default function MapView({ onPlaceSelected, bingoContextToMap, clearBingo
                         setMapZoom={setMapZoom}
                         onMapClick={() => {
                             if (isSearchActive) setIsSearchActive(false);
-                            // Also close drawer if clicking map
                             if (selectedPlace) {
                                 setSelectedPlace(null);
                                 if (onPlaceSelected) onPlaceSelected(false);
@@ -226,92 +216,78 @@ export default function MapView({ onPlaceSelected, bingoContextToMap, clearBingo
                 </MapContainer>
             </div>
 
-            {/* ── OVERLAY LAYER (all UI lives here, above map) ── */}
+            {/* ── OVERLAY LAYER ── */}
             <div className={styles.overlay}>
-
                 {/* Top Controls: Search & Filters */}
                 <div className={styles.topControls}>
                     <div className={`${styles.searchWrapper} ${isSearchActive ? styles.searchWrapperActive : ''}`}>
-                        {isSearchActive ? (
-                            <div className={styles.searchContainer}>
-                                <KawaiiInput
-                                    type="search"
-                                    placeholder="Buscar lugar..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    autoFocus
-                                    onClear={() => {
-                                        setIsSearchActive(false);
-                                        setSearchQuery('');
-                                    }}
-                                />
-                            </div>
-                        ) : (
-                            <button
-                                className={styles.searchFabBtn}
-                                type="button"
-                                aria-label="Buscar lugar"
-                                onClick={() => setIsSearchActive(true)}
-                            >
-                                <span className="material-symbols-outlined">search</span>
-                            </button>
-                        )}
+                        <AnimatePresence mode="wait">
+                            {!isSearchActive ? (
+                                <motion.button
+                                    key="fab"
+                                    className={styles.searchFabBtn}
+                                    onClick={() => setIsSearchActive(true)}
+                                    initial={{ scale: 0.8, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    exit={{ scale: 0.8, opacity: 0 }}
+                                >
+                                    <span className="material-symbols-outlined">search</span>
+                                </motion.button>
+                            ) : (
+                                <motion.div
+                                    key="input"
+                                    className={styles.searchContainer}
+                                    initial={{ width: 0, opacity: 0 }}
+                                    animate={{ width: '100%', opacity: 1 }}
+                                    exit={{ width: 0, opacity: 0 }}
+                                >
+                                    <KawaiiInput
+                                        placeholder="Busca un lugar mágico..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        onClear={() => {
+                                            setSearchQuery('');
+                                            setIsSearchActive(false);
+                                        }}
+                                        autoFocus
+                                    />
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
 
-                    <AnimatePresence>
-                        {!isSearchActive && (
-                            <motion.div
-                                className={styles.filtersScroll}
-                                initial={{ opacity: 0, scale: 0.95, width: 0 }}
-                                animate={{ opacity: 1, scale: 1, width: 'auto' }}
-                                exit={{ opacity: 0, scale: 0.95, width: 0 }}
-                                transition={{ duration: 0.2 }}
-                            >
-                                {activeFilters.map(opt => (
-                                    <button
-                                        key={opt.id}
-                                        className={`${styles.chip} ${activeFilter === opt.id ? styles.chipActive : ''}`}
-                                        onClick={() => {
-                                            setActiveFilter(opt.id);
-                                            setSelectedPlace(null);
-                                            if (onPlaceSelected) onPlaceSelected(false);
-                                        }}
+                    {!isSearchActive && (
+                        <div className={styles.filtersScroll}>
+                            {activeFilters.map(opt => (
+                                <button
+                                    key={opt.id}
+                                    className={`${styles.chip} ${activeFilter === opt.id ? styles.chipActive : ''}`}
+                                    onClick={() => {
+                                        setActiveFilter(opt.id);
+                                        if (onPlaceSelected) onPlaceSelected(false);
+                                    }}
+                                >
+                                    <span
+                                        className={`material-symbols-outlined ${styles.chipIcon}`}
+                                        style={activeFilter === opt.id ? { fontVariationSettings: "'FILL' 1" } : {}}
                                     >
-                                        <span
-                                            className={`material-symbols-outlined ${styles.chipIcon}`}
-                                            style={activeFilter === opt.id ? { fontVariationSettings: "'FILL' 1" } : {}}
-                                        >
-                                            {opt.icon}
-                                        </span>
-                                        {opt.label}
-                                    </button>
-                                ))}
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                                        {opt.icon}
+                                    </span>
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Snapshot Button — Residencia original */}
+                    {(isPartner || isAdmin) && !isSearchActive && (
+                        <SnapshotButton variant="map" />
+                    )}
                 </div>
 
-                {/* Actions Stack: Grouped to prevent overlaps */}
-                <div className={styles.actionsStack}>
-                    {/* Warning Button for Pending Dates: visible even in search or when place selected, unless list/form open */}
-                    <AnimatePresence>
-                        {!isSearchActive && !isPendingListOpen && !selectedPendingDate && pendingDates.length > 0 && (
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.8, x: 20 }}
-                                animate={{ opacity: 1, scale: 1, x: 0 }}
-                                exit={{ opacity: 0, scale: 0.8, x: 20 }}
-                                transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-                            >
-                                <PendingWarningBtn
-                                    pendingCount={pendingDates.length}
-                                    isVisible={true}
-                                    onClick={() => setIsPendingListOpen(true)}
-                                />
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
 
-                    {/* FAB — Date Mode Button: hidden if searching, cita open, or place selected */}
+                {/* Actions Stack: Bottom Right */}
+                <div className={styles.actionsStack}>
                     <AnimatePresence>
                         {!isSearchActive && !citaContext && !selectedPlace && !isPendingListOpen && !selectedPendingDate && (
                             <motion.div
@@ -338,7 +314,6 @@ export default function MapView({ onPlaceSelected, bingoContextToMap, clearBingo
                     <div className={`${styles.drawer} ${selectedPlace ? styles.drawerOpen : ''}`}>
                         <div className={styles.drawerContent}>
                             <div className={styles.drawerHandle} />
-
                             <div className={styles.placeRow}>
                                 <div className={styles.placeTitleGroup}>
                                     <div className={styles.placeTitleWrapper}>
@@ -357,180 +332,62 @@ export default function MapView({ onPlaceSelected, bingoContextToMap, clearBingo
                                         setSelectedPlace(null);
                                         if (onPlaceSelected) onPlaceSelected(false);
                                     }}
-                                    aria-label="Cerrar"
                                 >
-                                    <span className="material-symbols-outlined">keyboard_arrow_down</span>
+                                    <span className="material-symbols-outlined">close</span>
                                 </button>
                             </div>
-
-                            <div className={styles.photosGrid}>
-                                {(selectedPlace?.visits?.length || 0) <= 2 ? (
-                                    // 1 or 2 visits: side by side
-                                    selectedPlace?.visits?.map((visit) => (
-                                        <div key={visit.id} className={styles.photoWrapHorizontal}>
-                                            <img
-                                                src={visit.coverPhoto}
-                                                alt=""
-                                                className={styles.photoGridImg}
-                                                onClick={() => setViewerPhotos(visit.photos)}
-                                                onError={(e) => {
-                                                    e.target.style.display = 'none';
-                                                    e.target.parentElement.style.background = '#e8f7f0';
-                                                    e.target.parentElement.innerHTML = '<span class="material-symbols-outlined" style="color:#88d8b0;font-size:28px;display:flex;align-items:center;justify-content:center;height:100%">image_not_supported</span>';
-                                                }}
-                                            />
-                                            <div className={styles.visitDateBadge}>
-                                                <span className="material-symbols-outlined">calendar_month</span> {visit.date}
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : selectedPlace?.visits?.length === 3 ? (
-                                    // Exactly 3 visits: 1 large left, 2 stacked right
-                                    <>
-                                        <div className={styles.photoWrapLargeLeft}>
-                                            <img src={selectedPlace.visits[0].coverPhoto} alt="" className={styles.photoGridImg}
-                                                onClick={() => setViewerPhotos(selectedPlace.visits[0].photos)}
-                                                onError={(e) => {
-                                                    e.target.style.display = 'none';
-                                                    e.target.parentElement.style.background = '#e8f7f0';
-                                                    e.target.parentElement.innerHTML = '<span class="material-symbols-outlined" style="color:#88d8b0;font-size:28px;display:flex;align-items:center;justify-content:center;height:100%">image_not_supported</span>';
-                                                }} />
-                                            <div className={styles.visitDateBadge}>
-                                                <span className="material-symbols-outlined">calendar_month</span> {selectedPlace.visits[0].date}
-                                            </div>
-                                        </div>
-                                        <div className={styles.photoWrapStackedRight}>
-                                            <div className={styles.photoWrapSmall}>
-                                                <img src={selectedPlace.visits[1].coverPhoto} alt="" className={styles.photoGridImg}
-                                                    onClick={() => setViewerPhotos(selectedPlace.visits[1].photos)}
-                                                    onError={(e) => {
-                                                        e.target.style.display = 'none';
-                                                        e.target.parentElement.style.background = '#e8f7f0';
-                                                        e.target.parentElement.innerHTML = '<span class="material-symbols-outlined" style="color:#88d8b0;font-size:28px;display:flex;align-items:center;justify-content:center;height:100%">image_not_supported</span>';
-                                                    }} />
-                                                <div className={styles.visitDateBadgeSmall}>
-                                                    {selectedPlace.visits[1].date}
-                                                </div>
-                                            </div>
-                                            <div className={styles.photoWrapSmall}>
-                                                <img src={selectedPlace.visits[2].coverPhoto} alt="" className={styles.photoGridImg}
-                                                    onClick={() => setViewerPhotos(selectedPlace.visits[2].photos)}
-                                                    onError={(e) => {
-                                                        e.target.style.display = 'none';
-                                                        e.target.parentElement.style.background = '#e8f7f0';
-                                                        e.target.parentElement.innerHTML = '<span class="material-symbols-outlined" style="color:#88d8b0;font-size:28px;display:flex;align-items:center;justify-content:center;height:100%">image_not_supported</span>';
-                                                    }} />
-                                                <div className={styles.visitDateBadgeSmall}>
-                                                    {selectedPlace.visits[2].date}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </>
-                                ) : (
-                                    // 4 or more visits: 2x2 grid
-                                    selectedPlace?.visits?.slice(0, 4).map((visit, i) => (
-                                        <div key={visit.id} className={styles.photoWrapGridItem}>
-                                            <img src={visit.coverPhoto} alt="" className={styles.photoGridImg}
-                                                onClick={() => setViewerPhotos(visit.photos)}
-                                                onError={(e) => {
-                                                    e.target.style.display = 'none';
-                                                    e.target.parentElement.style.background = '#e8f7f0';
-                                                    e.target.parentElement.innerHTML = '<span class="material-symbols-outlined" style="color:#88d8b0;font-size:28px;display:flex;align-items:center;justify-content:center;height:100%">image_not_supported</span>';
-                                                }} />
-
-                                            {i === 3 && selectedPlace.visits.length > 4 ? (
-                                                <div className={styles.photoMoreOverlay} onClick={() => setViewerPhotos(visit.photos)}>
-                                                    +{selectedPlace.visits.length - 4} citas
-                                                </div>
-                                            ) : (
-                                                <div className={styles.visitDateBadgeSmall}>
-                                                    {visit.date}
-                                                </div>
+                            {selectedPlace?.photos?.length > 0 && (
+                                <div className={styles.photosGrid}>
+                                    {selectedPlace.photos.slice(0, 4).map((img, idx) => (
+                                        <div key={idx} className={styles.photoWrapGridItem} onClick={() => setViewerPhotos(selectedPlace.photos)}>
+                                            <img src={img} className={styles.photoGridImg} alt="" />
+                                            {idx === 3 && selectedPlace.photos.length > 4 && (
+                                                <div className={styles.photoMoreOverlay}>+{selectedPlace.photos.length - 4}</div>
                                             )}
                                         </div>
-                                    ))
-                                )}
-                            </div>
-
-                            <div className={styles.statsRow}>
-                                <div className={styles.statItemMint}>
-                                    <span className="material-symbols-outlined" style={{ fontSize: 13 }}>photo_library</span>
-                                    {selectedPlace?.visits?.reduce((acc, visit) => acc + visit.photos.length, 0) || 0} fotos
+                                    ))}
                                 </div>
-                                <div className={styles.statItemGray}>
-                                    <span className="material-symbols-outlined" style={{ fontSize: 13 }}>calendar_month</span>
-                                    {selectedPlace?.lastVisitDate}
-                                </div>
-                                <div className={styles.statItemRose}>
-                                    <span className="material-symbols-outlined" style={{ fontSize: 13, fontVariationSettings: "'FILL' 1" }}>favorite</span>
-                                    {selectedPlace?.visitCount} visitas
-                                </div>
-                            </div>
+                            )}
                         </div>
                     </div>
                 )}
+            </div>
 
-                {/* Modo Cita */}
+            {/* ── Modals & Overlays ── */}
+            <AnimatePresence>
+                {isPendingListOpen && (
+                    <PendingDatesList
+                        pendingDates={pendingDates}
+                        onClose={() => setIsPendingListOpen(false)}
+                        onSelectDate={(date) => {
+                            setSelectedPendingDate(date);
+                            setIsPendingListOpen(false);
+                        }}
+                    />
+                )}
+                {selectedPendingDate && (
+                    <PendingDateForm
+                        pendingDate={selectedPendingDate}
+                        onClose={() => setSelectedPendingDate(null)}
+                    />
+                )}
                 {citaContext && (
                     <CitaOverlay
-                        citaContext={citaContext}
+                        context={citaContext}
                         onClose={() => {
                             setCitaContext(null);
                             if (onPlaceSelected) onPlaceSelected(false);
                         }}
-                        onSave={(photos) => {
-                            setCitaContext(null);
-                            if (onPlaceSelected) onPlaceSelected(false);
-
-                            if (photos && photos.length > 0) {
-                                const newPendingDate = {
-                                    id: `pnd_${Date.now()}`,
-                                    originalDate: new Date().toLocaleString(),
-                                    coverPhoto: photos[0],
-                                    photos: photos,
-                                    isFromBingo: !!citaContext.bingoLabel,
-                                    suggestedTags: citaContext.tags || []
-                                };
-                                setPendingDates(prev => [...prev, newPendingDate]);
-                                toast.success('¡Cita guardada! 📸', `${photos.length} foto${photos.length !== 1 ? 's' : ''} en tus borradores`);
-                            } else {
-                                toast.info('Cita finalizada', 'Sin fotos esta vez.');
-                            }
-                        }}
                     />
                 )}
+            </AnimatePresence>
 
-
-                {/* Pending Dates Overlays */}
-                <AnimatePresence>
-                    {isPendingListOpen && !selectedPendingDate && (
-                        <PendingDatesList
-                            pendingDates={pendingDates}
-                            onClose={() => setIsPendingListOpen(false)}
-                            onSelectDate={(pd) => setSelectedPendingDate(pd)}
-                        />
-                    )}
-                </AnimatePresence>
-
-                <AnimatePresence>
-                    {selectedPendingDate && (
-                        <PendingDateForm
-                            pendingDate={selectedPendingDate}
-                            defaultPlaces={MOCK_PLACES}
-                            onClose={() => setSelectedPendingDate(null)}
-                            onSave={(finalData) => {
-                                setSelectedPendingDate(null);
-                                if (pendingDates.length === 1) setIsPendingListOpen(false);
-                                setPendingDates(prev => prev.filter(p => p.id !== finalData.id));
-                                toast.success('¡Cita guardada!', 'El recuerdo se añadió al historial ✨');
-                            }}
-                        />
-                    )}
-                </AnimatePresence>
-
-                {/* Photo Viewer Modal */}
-                <PhotoViewer photos={viewerPhotos} onClose={() => setViewerPhotos(null)} />
-            </div>
+            {viewerPhotos && (
+                <PhotoViewer
+                    photos={viewerPhotos}
+                    onClose={() => setViewerPhotos(null)}
+                />
+            )}
         </div>
     );
 }

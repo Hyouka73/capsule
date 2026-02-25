@@ -8,7 +8,7 @@ import styles from './BottomNav.module.css';
  * @param {function} props.setActiveTab - Function to update active tab
  * @param {Array<{id: string, label: string, icon: string}>} props.tabs - Array of tab definitions
  */
-export default function BottomNav({ activeTab, setActiveTab, tabs = [] }) {
+export default function BottomNav({ activeTab, setActiveTab, tabs = [], pendingCount = 0 }) {
     if (!tabs || tabs.length === 0) return null;
 
     return (
@@ -16,27 +16,36 @@ export default function BottomNav({ activeTab, setActiveTab, tabs = [] }) {
             <nav className={styles.bottomNav}>
                 {tabs.map(tab => {
                     const isActive = activeTab === tab.id;
+                    const hasBadge = tab.id === 'lugares' && pendingCount > 0;
+
                     return (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
                         >
-                            {isActive && (
-                                <motion.div
-                                    layoutId="bottomNavIndicator"
-                                    className={styles.activeIndicator}
-                                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                                />
-                            )}
                             <motion.div
                                 className={styles.itemContent}
-                                animate={{ y: isActive ? -28 : 0 }}
-                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                                initial={false}
+                                animate={{ scale: isActive ? 1.1 : 1 }}
                             >
-                                <span className={`material-symbols-outlined ${styles.navIcon}`}>
-                                    {tab.icon}
-                                </span>
+                                <div className={styles.iconWrapper}>
+                                    <span
+                                        className={`material-symbols-outlined ${styles.navIcon}`}
+                                        style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}
+                                    >
+                                        {tab.icon}
+                                    </span>
+                                    {hasBadge && (
+                                        <motion.div
+                                            className={styles.badge}
+                                            initial={{ scale: 0 }}
+                                            animate={{ scale: 1 }}
+                                        >
+                                            {pendingCount}
+                                        </motion.div>
+                                    )}
+                                </div>
                                 <span className={styles.navLabel}>
                                     {tab.label}
                                 </span>

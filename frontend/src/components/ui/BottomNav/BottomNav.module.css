@@ -1,83 +1,87 @@
-/* --- Barra de Navegación Inferior --- */
 .bottomNavContainer {
     position: fixed;
     bottom: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 50;
-    pointer-events: none;
-    /* Container is passthrough */
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    padding: 0 20px;
+    left: 16px;
+    right: 16px;
+    z-index: 100;
 }
 
 .bottomNav {
-    display: flex;
     background: #ffffff;
-    border-radius: 32px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
-    padding: 0 0.5rem;
-    pointer-events: auto;
-    width: 100%;
-    max-width: 420px;
+    border-radius: 28px;
+    padding: 10px 8px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 8px 32px rgba(255, 183, 178, 0.25);
 }
 
 .navItem {
-    position: relative;
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 64px;
-    /* Fixed height for stability when items shift */
+    background: none;
     border: none;
-    background: transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 4px 8px;
     cursor: pointer;
-    color: #9ca3af;
-    /* Greyish color for unselected */
-    transition: color 0.3s ease;
-    z-index: 1;
+    flex: 1;
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.navItemActive {
-    color: #ffffff;
-}
-
-.activeIndicator {
-    position: absolute;
-    width: 68px;
-    height: 68px;
-    background: #80cfab;
-    /* Solid mint green from image */
-    border-radius: 50%;
-    z-index: -1;
-    top: -28px;
-    left: 50%;
-    margin-left: -34px;
-    box-shadow: 0 8px 24px rgba(128, 207, 171, 0.4);
+.navItem:focus,
+.navItem:active,
+.navItem:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
 }
 
 .itemContent {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 4px;
+    gap: 3px;
+}
+
+.iconWrapper {
+    position: relative;
 }
 
 .navIcon {
-    font-size: 26px;
-    line-height: 1;
-    font-variation-settings: 'FILL' 1;
-    /* Solid icons */
+    font-size: 24px;
+    color: var(--pastel-text-muted);
+}
+
+.navItemActive .navIcon {
+    color: var(--pastel-sage-dark);
 }
 
 .navLabel {
-    font-family: var(--font-display);
+    font-family: var(--font-body);
+    font-size: 0.6rem;
+    color: var(--pastel-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.navItemActive .navLabel {
+    color: var(--pastel-sage-dark);
+    font-weight: 600;
+}
+
+.badge {
+    position: absolute;
+    top: -4px;
+    right: -8px;
+    background: #ff4444;
+    color: white;
+    font-size: 0.6rem;
     font-weight: 700;
-    font-size: 11px;
-    letter-spacing: 0.02em;
-    white-space: nowrap;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }

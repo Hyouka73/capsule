@@ -75,6 +75,11 @@
     gap: 12px;
 }
 
+.snapshotMapBtn {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
 .searchWrapper {
     width: 42px;
     height: 42px;
@@ -584,17 +589,19 @@
 /* =========================================================================
    FAB — DATE MODE BUTTON & ACTIONS STACK
    ========================================================================= */
+/* =========================================================================
+   ACTION CONTROLS (Bottom Right Stack)
+   ========================================================================= */
 .actionsStack {
     position: absolute;
     bottom: 100px;
-    /* Above BottomNav area */
     right: 18px;
     z-index: 100;
+    pointer-events: none;
     display: flex;
     flex-direction: column-reverse;
     align-items: flex-end;
     gap: 12px;
-    pointer-events: none;
     overflow: visible;
 }
 
@@ -602,12 +609,16 @@
     pointer-events: auto;
 }
 
+.snapshotTopRight {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
 .fab {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    /* Reduced gap since the button is smaller */
     overflow: visible;
 }
 

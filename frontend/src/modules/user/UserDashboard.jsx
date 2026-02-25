@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../../hooks/useAuth';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import UserCapsules from '../capsules/UserCapsules';
@@ -10,14 +11,17 @@ import BottomNav from '../../components/ui/BottomNav/BottomNav';
 import styles from './UserDashboard.module.css';
 
 import { TABS } from '../../data/dashboardData';
+import { MOCK_PENDING_DATES } from '../../data/mapData';
 
 export default function UserDashboard() {
+    const { isPartner } = useAuth();
     const [activeTab, setActiveTab] = useState('lugares');
     const [prevTab, setPrevTab] = useState('lugares');
     const [isPlaceSelected, setIsPlaceSelected] = useState(false);
     const [bingoContextToMap, setBingoContextToMap] = useState(null);
     const [isBingoModalOpen, setIsBingoModalOpen] = useState(false);
     const [isCouponsModalOpen, setIsCouponsModalOpen] = useState(false);
+    const [openPendingSignal, setOpenPendingSignal] = useState(false);
 
     // Partículas solo cuando NO es el mapa
     useEffect(() => {
@@ -45,7 +49,13 @@ export default function UserDashboard() {
     }, [activeTab]);
 
     const handleTabChange = (newTab) => {
-        if (newTab === activeTab) return;
+        if (newTab === activeTab) {
+            // Si ya estamos en lugares y hay citas pendientes, mandamos señal para abrir lista
+            if (newTab === 'lugares' && MOCK_PENDING_DATES.length > 0) {
+                setOpenPendingSignal(true);
+            }
+            return;
+        }
         setPrevTab(activeTab);
         setActiveTab(newTab);
         // Reset modals when changing tabs
@@ -109,6 +119,8 @@ export default function UserDashboard() {
                         onPlaceSelected={setIsPlaceSelected}
                         bingoContextToMap={bingoContextToMap}
                         clearBingoContext={() => setBingoContextToMap(null)}
+                        openPendingSignal={openPendingSignal}
+                        onPendingSignalHandled={() => setOpenPendingSignal(false)}
                     />
                 </div>
             )}
@@ -151,7 +163,12 @@ export default function UserDashboard() {
                         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                         style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50 }}
                     >
-                        <BottomNav activeTab={activeTab} setActiveTab={handleTabChange} tabs={TABS} />
+                        <BottomNav
+                            activeTab={activeTab}
+                            setActiveTab={handleTabChange}
+                            tabs={TABS}
+                            pendingCount={MOCK_PENDING_DATES.length}
+                        />
                     </motion.div>
                 )}
             </AnimatePresence>
