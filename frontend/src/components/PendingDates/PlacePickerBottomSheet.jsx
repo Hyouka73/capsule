@@ -15,12 +15,14 @@ export default function PlacePickerBottomSheet({
 }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [isMapOpen, setIsMapOpen] = useState(false);
+    const [selectedId, setSelectedId] = useState('');
 
     // Reset map state when closing the bottom sheet
     useEffect(() => {
         if (!isOpen) {
             setIsMapOpen(false);
             setSearchTerm('');
+            setSelectedId('');
         }
     }, [isOpen]);
 
@@ -108,11 +110,8 @@ export default function PlacePickerBottomSheet({
                                 filteredPlaces.map(place => (
                                     <div
                                         key={place.id}
-                                        className={styles.placeItem}
-                                        onClick={() => {
-                                            onSelectPlace(place.id);
-                                            onClose();
-                                        }}
+                                        className={`${styles.placeItem} ${selectedId === place.id ? styles.placeItemActive : ''}`}
+                                        onClick={() => setSelectedId(place.id)}
                                     >
                                         <div className={styles.placeEmoji}>{place.emoji}</div>
                                         <div className={styles.placeInfo}>
@@ -123,6 +122,9 @@ export default function PlacePickerBottomSheet({
                                                 </span>
                                             )}
                                         </div>
+                                        {selectedId === place.id && (
+                                            <span className={`material-symbols-outlined ${styles.checkIcon}`}>check_circle</span>
+                                        )}
                                     </div>
                                 ))
                             ) : (
@@ -131,6 +133,23 @@ export default function PlacePickerBottomSheet({
                                     <p>No encontramos ese lugar.</p>
                                 </div>
                             )}
+                        </div>
+
+                        {/* Footer with Selection Button */}
+                        <div className={styles.footer}>
+                            <Button
+                                className={styles.confirmBtn}
+                                onClick={() => {
+                                    if (selectedId) {
+                                        onSelectPlace(selectedId);
+                                        onClose();
+                                    }
+                                }}
+                                disabled={!selectedId}
+                            >
+                                Seleccionar este lugar
+                                <span className="material-symbols-outlined">done_all</span>
+                            </Button>
                         </div>
                     </div>
                 </div>

@@ -14,6 +14,7 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
     const [isPlacePickerOpen, setIsPlacePickerOpen] = useState(false);
     const [selectedTags, setSelectedTags] = useState(pendingDate?.suggestedTags || []);
     const [comments, setComments] = useState('');
+    const [locationError, setLocationError] = useState(false);
 
     const toggleTag = (tag) => {
         setSelectedTags(prev =>
@@ -21,7 +22,14 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
         );
     };
 
+    if (!pendingDate) return null;
+
     const handleSave = () => {
+        if (!selectedPlaceId && !customLocation) {
+            setLocationError(true);
+            return;
+        }
+
         onSave({
             ...pendingDate,
             placeId: selectedPlaceId,
@@ -63,18 +71,45 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
                 </div>
 
                 <div className={styles.formGroup}>
-                    <KawaiiInput
-                        type="select"
-                        label="¿Dónde fue?"
-                        iconLeft="location_on"
-                        placeholder="Selecciona un lugar o crea uno nuevo"
-                        value={selectedPlaceId}
-                        onClick={() => setIsPlacePickerOpen(true)}
-                        options={[
-                            ...(defaultPlaces?.map(p => ({ value: p.id, label: `${p.emoji} ${p.name}` })) || []),
-                            ...(customLocation ? [{ value: 'custom_map', label: '📍 Ubicación elegida en mapa' }] : [])
-                        ]}
-                    />
+                    {selectedPlaceId === 'custom_map' && customLocation ? (
+                        <div className={styles.confirmedLocationBadge}>
+                            <div className={styles.confirmedLeft}>
+                                <div className={styles.checkCircle}>
+                                    <span className="material-symbols-outlined">check</span>
+                                </div>
+                                <div className={styles.locationMeta}>
+                                    <span className={styles.locationLabel}>Ubicación confirmada</span>
+                                    <span className={styles.locationCoords}>
+                                        {customLocation.lat.toFixed(4)}, {customLocation.lng.toFixed(4)}
+                                    </span>
+                                </div>
+                            </div>
+                            <button
+                                className={styles.editLocationBtn}
+                                onClick={() => setIsPlacePickerOpen(true)}
+                            >
+                                <span className="material-symbols-outlined">edit_location_alt</span>
+                                Cambiar
+                            </button>
+                        </div>
+                    ) : (
+                        <KawaiiInput
+                            type="select"
+                            label="¿Dónde fue?"
+                            iconLeft="location_on"
+                            placeholder="Selecciona un lugar o crea uno nuevo"
+                            value={selectedPlaceId}
+                            onClick={() => {
+                                setLocationError(false);
+                                setIsPlacePickerOpen(true);
+                            }}
+                            error={locationError ? "Por favor selecciona una ubicación para continuar" : null}
+                            options={[
+                                ...(defaultPlaces?.map(p => ({ value: p.id, label: `${p.emoji} ${p.name}` })) || []),
+                                ...(customLocation ? [{ value: 'custom_map', label: '📍 Ubicación elegida en mapa' }] : [])
+                            ]}
+                        />
+                    )}
                 </div>
 
                 <div className={styles.formGroup}>

@@ -3,48 +3,62 @@
     flex-direction: column;
     height: 100%;
     width: 100%;
+    gap: 12px;
 }
 
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
+    padding: 0 4px;
+}
+
+.headerTitle {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.headerTitle h3 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    color: var(--text-primary);
+}
+
+.headerTitle p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
 }
 
 .backBtn {
-    background: none;
-    border: none;
-    color: var(--text-muted);
+    background: var(--bg-card);
+    border: 2px solid var(--pastel-text-muted);
+    color: var(--text-primary);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 8px;
-    border-radius: 50%;
-    transition: background 0.2s;
+    padding: 6px;
+    border-radius: var(--radius-md);
+    margin-right: 12px;
+    box-shadow: 0 3px 0 var(--pastel-text-muted);
+    transition: all 0.2s;
 }
 
-.backBtn:hover {
-    background: var(--glass-bg);
-    color: var(--text-primary);
-}
-
-.header h3 {
-    margin: 0;
-    font-family: var(--font-display);
-    font-size: 1.25rem;
-    color: var(--text-primary);
+.backBtn:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 var(--pastel-text-muted);
 }
 
 .mapWrapper {
     flex: 1;
     position: relative;
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-card);
     overflow: hidden;
-    margin-bottom: 20px;
-    border: 1px solid var(--glass-border);
-    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 4px solid var(--pastel-text);
+    box-shadow: 0 8px 0 rgba(0, 0, 0, 0.1);
 }
 
 .map {
@@ -58,19 +72,19 @@
     top: 16px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(255, 255, 255, 0.95);
-    padding: 8px 16px;
-    border-radius: var(--radius-full);
+    background: var(--bg-card);
+    padding: 10px 20px;
+    border-radius: var(--radius-pill);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     z-index: 20;
-    box-shadow: var(--shadow-card-sm);
+    box-shadow: var(--shadow-chunky-mint);
     font-family: var(--font-display);
     font-size: 0.9rem;
     color: var(--text-primary);
     pointer-events: none;
-    border: 1px solid var(--pastel-green-btn);
+    border: 3px solid var(--pastel-green-btn);
 }
 
 .miniSpinner {
@@ -92,32 +106,51 @@
     }
 }
 
-
 .hintOverlay {
     position: absolute;
     bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(255, 255, 255, 0.9);
-    padding: 8px 16px;
-    border-radius: var(--radius-full);
-    font-family: var(--font-body);
+    background: var(--bg-card);
+    padding: 10px 18px;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-display);
     font-size: 0.85rem;
-    color: var(--text-secondary);
-    box-shadow: var(--shadow-card-sm);
+    color: var(--text-primary);
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.1);
     z-index: 20;
     pointer-events: none;
     white-space: nowrap;
+    border: 2px solid var(--pastel-text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.hintOverlay span {
+    font-size: 1.2rem;
+    color: var(--pastel-green-btn);
 }
 
 .footer {
-    padding-bottom: 10px;
+    padding: 8px 0 16px;
 }
 
 .confirmBtn {
-    width: 100%;
-    justify-content: center;
-    gap: 8px;
-    font-size: 1rem;
-    padding: 14px;
+    width: 100% !important;
+    justify-content: center !important;
+    gap: 12px !important;
+    font-size: 1.1rem !important;
+    padding: 16px !important;
+    border-radius: var(--radius-lg) !important;
+    background: var(--pastel-green-btn) !important;
+    border: 3px solid var(--pastel-shadow-mint-active) !important;
+    box-shadow: var(--shadow-chunky-mint) !important;
+    color: white !important;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.1);
+}
+
+.confirmBtn:active {
+    box-shadow: var(--shadow-chunky-mint-active) !important;
+    transform: translateY(4px);
 }

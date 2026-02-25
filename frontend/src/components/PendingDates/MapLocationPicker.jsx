@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import Button from '../ui/Button/Button';
+import { toast } from '../ui/PastelToast/PastelToast';
 import styles from './MapLocationPicker.module.css';
 
 // Fix leaflet default icon
@@ -99,6 +100,7 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
 
     const handleConfirm = () => {
         if (position) {
+            toast.success('Ubicación Capturada', 'Hemos guardado el lugar de este recuerdo ✨');
             onConfirm(position);
         }
     };
@@ -109,7 +111,10 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
                 <button className={styles.backBtn} onClick={onCancel}>
                     <span className="material-symbols-outlined">arrow_back</span>
                 </button>
-                <h3>Elegir ubicación</h3>
+                <div className={styles.headerTitle}>
+                    <h3>Elegir ubicación</h3>
+                    <p>Mueve el pin al lugar exacto</p>
+                </div>
                 <div style={{ width: 40 }} /> {/* Spacer */}
             </div>
 
@@ -136,6 +141,7 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
                 </MapContainer>
 
                 <div className={styles.hintOverlay}>
+                    <span className="material-symbols-outlined">touch_app</span>
                     Arrastra el pin o toca el mapa para ajustar
                 </div>
             </div>
@@ -145,9 +151,10 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
                     className={styles.confirmBtn}
                     onClick={handleConfirm}
                     disabled={!position}
+                    variant="primary"
                 >
-                    Confirmar Ubicación
-                    <span className="material-symbols-outlined">location_on</span>
+                    Guardar Ubicación
+                    <span className="material-symbols-outlined">check_circle</span>
                 </Button>
             </div>
         </div>

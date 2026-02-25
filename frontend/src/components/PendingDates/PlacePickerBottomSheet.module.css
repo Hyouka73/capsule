@@ -132,7 +132,19 @@
 .placeItem:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-card-sm);
+    border-color: var(--pastel-rose);
+}
+
+.placeItemActive {
     border-color: var(--pastel-green-btn);
+    background: white;
+    box-shadow: var(--shadow-chunky-mint-soft);
+}
+
+.checkIcon {
+    margin-left: auto;
+    color: var(--pastel-green-btn);
+    font-size: 28px;
 }
 
 .placeEmoji {

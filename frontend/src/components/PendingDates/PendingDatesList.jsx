@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import styles from './PendingDatesList.module.css';
 
-export default function PendingDatesList({ pendingDates, onClose, onSelectDate }) {
+export default function PendingDatesList({ pendingDates = [], onClose, onSelectDate }) {
     return (
         <motion.div
             className={styles.overlay}
