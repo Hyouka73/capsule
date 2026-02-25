@@ -57,3 +57,14 @@ body {
   background: var(--accent-soft);
   color: var(--text-primary);
 }
+
+/* ============================================
+   Animations
+   ============================================ */
+
+/* Global animation for Snapshot Overlay progress ring */
+@keyframes fillRing {
+  to {
+    stroke-dashoffset: 0;
+  }
+}

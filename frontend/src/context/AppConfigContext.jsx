@@ -32,6 +32,9 @@ const DEFAULT_CONFIG = {
         partnerFcmEnabled: true,
         adminActivityLogEnabled: true,
     },
+    snapshotConfig: {
+        timerSeconds: 9,
+    },
 };
 
 /**
@@ -43,6 +46,7 @@ const DEFAULT_CONFIG = {
  *   wrappedConfig   — Anniversary date config
  *   mapConfig       — Mapbox defaults
  *   notifications   — FCM / activity log toggles
+ *   snapshotConfig   — Timer and behaviour config for snapshot overlay
  *   isConfigLoaded  — False until first Firestore snapshot arrives
  *   isFeatureOn(name) — Helper function
  *
@@ -73,6 +77,7 @@ export function AppConfigProvider({ children }) {
                         wrappedConfig: { ...DEFAULT_CONFIG.wrappedConfig, ...data.wrapped },
                         mapConfig: { ...DEFAULT_CONFIG.mapConfig, ...data.map },
                         notifications: { ...DEFAULT_CONFIG.notifications, ...data.notifications },
+                        snapshotConfig: { ...DEFAULT_CONFIG.snapshotConfig, ...data.snapshotConfig },
                     });
                 } else {
                     // Document doesn't exist yet — use defaults
