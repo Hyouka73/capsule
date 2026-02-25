@@ -8,6 +8,8 @@ import UserBingo from '../bingo/UserBingo';
 import MapView from '../map/MapView';
 import GalleryView from '../gallery/GalleryView';
 import BottomNav from '../../components/ui/BottomNav/BottomNav';
+import SnapshotOverlay from '../snapshots/components/SnapshotOverlay';
+import SnapshotCreator from '../snapshots/components/SnapshotCreator';
 import styles from './UserDashboard.module.css';
 
 import { TABS } from '../../data/dashboardData';
@@ -22,6 +24,9 @@ export default function UserDashboard() {
     const [isBingoModalOpen, setIsBingoModalOpen] = useState(false);
     const [isCouponsModalOpen, setIsCouponsModalOpen] = useState(false);
     const [openPendingSignal, setOpenPendingSignal] = useState(false);
+    const [isSnapshotOpen, setIsSnapshotOpen] = useState(false);
+    const [activeSnapshot, setActiveSnapshot] = useState(null);
+    const [isCameraOpen, setIsCameraOpen] = useState(false);
 
     // Partículas solo cuando NO es el mapa
     useEffect(() => {
@@ -121,6 +126,11 @@ export default function UserDashboard() {
                         clearBingoContext={() => setBingoContextToMap(null)}
                         openPendingSignal={openPendingSignal}
                         onPendingSignalHandled={() => setOpenPendingSignal(false)}
+                        onOpenSnapshot={(snapshot) => {
+                            setActiveSnapshot(snapshot);
+                            setIsSnapshotOpen(true);
+                        }}
+                        onOpenCamera={() => setIsCameraOpen(true)}
                     />
                 </div>
             )}
@@ -155,7 +165,7 @@ export default function UserDashboard() {
 
             {/* ── NAVBAR: siempre flotando encima de todo, hidden if place is selected or modal open ── */}
             <AnimatePresence>
-                {!isPlaceSelected && !isBingoModalOpen && !isCouponsModalOpen && (
+                {!isPlaceSelected && !isBingoModalOpen && !isCouponsModalOpen && !isSnapshotOpen && !isCameraOpen && (
                     <motion.div
                         initial={{ y: 100, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
@@ -172,6 +182,23 @@ export default function UserDashboard() {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            <AnimatePresence>
+                {isSnapshotOpen && activeSnapshot && (
+                    <SnapshotOverlay
+                        key="snapshot-overlay"
+                        snapshot={activeSnapshot}
+                        onClose={() => {
+                            setIsSnapshotOpen(false);
+                            setActiveSnapshot(null);
+                        }}
+                    />
+                )}
+            </AnimatePresence>
+
+            {isCameraOpen && (
+                <SnapshotCreator onClose={() => setIsCameraOpen(false)} />
+            )}
         </div>
     );
 }

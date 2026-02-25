@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../services/firebase';
 import Card from '../../components/ui/Card/Card';
 import Button from '../../components/ui/Button/Button';
 import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
-import { getGlobalSettings, saveGlobalSettings } from '../../services/settingsService';
+import { getGlobalSettings, saveGlobalSettings, saveSnapshotConfig } from '../../services/settingsService';
 import styles from './GlobalSettings.module.css';
 
 export default function GlobalSettings() {
@@ -24,6 +26,8 @@ export default function GlobalSettings() {
         }
     });
 
+    const [snapshotTimer, setSnapshotTimer] = useState(9);
+
     const [isSaving, setIsSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -32,6 +36,14 @@ export default function GlobalSettings() {
             try {
                 const data = await getGlobalSettings();
                 if (data) setSettings(data);
+                // Load snapshotConfig from appConfig/main
+                const appConfigSnap = await getDoc(doc(db, 'appConfig', 'main'));
+                if (appConfigSnap.exists()) {
+                    const ac = appConfigSnap.data();
+                    if (ac.snapshotConfig?.timerSeconds) {
+                        setSnapshotTimer(ac.snapshotConfig.timerSeconds);
+                    }
+                }
             } catch (err) {
                 console.error('Error loading settings:', err);
             } finally {
@@ -59,6 +71,7 @@ export default function GlobalSettings() {
         setIsSaving(true);
         try {
             await saveGlobalSettings(settings);
+            await saveSnapshotConfig({ timerSeconds: snapshotTimer });
             alert('Configuración global guardada en la base de datos.');
         } catch (err) {
             console.error('Error saving settings:', err);
@@ -191,6 +204,21 @@ export default function GlobalSettings() {
                                         onChange={e => setSettings(p => ({ ...p, citaConfig: { ...p.citaConfig, minPhotosBingoDefault: parseInt(e.target.value) || 1 } }))}
                                     />
                                 </div>
+                            </div>
+                        </div>
+
+                        <div className={styles.divider}></div>
+
+                        <div className={styles.formGroup}>
+                            <label>📸 Instantáneas — Timer</label>
+                            <p className={styles.helpText}>Cuántos segundos se muestra la instantánea antes de cerrarse automáticamente.</p>
+                            <div style={{ maxWidth: 180 }}>
+                                <KawaiiInput
+                                    type="number"
+                                    label="Segundos"
+                                    value={snapshotTimer}
+                                    onChange={e => setSnapshotTimer(Math.max(1, parseInt(e.target.value) || 1))}
+                                />
                             </div>
                         </div>
 

@@ -11,6 +11,7 @@ import { subscribeToGlobalSettings } from '../../services/settingsService';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import SnapshotButton from '../snapshots/components/SnapshotButton';
+import { toast } from '../../components/ui/PastelToast/PastelToast';
 import { useAuth } from '../../hooks/useAuth';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -114,7 +115,9 @@ export default function MapView({
     bingoContextToMap,
     clearBingoContext,
     openPendingSignal,
-    onPendingSignalHandled
+    onPendingSignalHandled,
+    onOpenSnapshot,
+    onOpenCamera
 }) {
     const { isPartner, isAdmin } = useAuth();
     const [selectedPlace, setSelectedPlace] = useState(null);
@@ -144,6 +147,12 @@ export default function MapView({
     const [viewerPhotos, setViewerPhotos] = useState(null);
     const [isSearchActive, setIsSearchActive] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+
+    const handleSavePendingDate = (data) => {
+        console.log('[PendingDate] Guardado (pendiente Firestore):', data);
+        toast.success('¡Cita guardada! 💾', 'Pronto la verás en el mapa ✨');
+        setSelectedPendingDate(null);
+    };
 
     // Handle quick access signal from Navbar
     useEffect(() => {
@@ -281,7 +290,10 @@ export default function MapView({
 
                     {/* Snapshot Button — Residencia original */}
                     {(isPartner || isAdmin) && !isSearchActive && (
-                        <SnapshotButton variant="map" />
+                        <SnapshotButton
+                            onOpenSnapshot={onOpenSnapshot}
+                            onOpenCamera={onOpenCamera}
+                        />
                     )}
                 </div>
 
@@ -369,11 +381,12 @@ export default function MapView({
                     <PendingDateForm
                         pendingDate={selectedPendingDate}
                         onClose={() => setSelectedPendingDate(null)}
+                        onSave={handleSavePendingDate}
                     />
                 )}
                 {citaContext && (
                     <CitaOverlay
-                        context={citaContext}
+                        citaContext={citaContext}
                         onClose={() => {
                             setCitaContext(null);
                             if (onPlaceSelected) onPlaceSelected(false);

@@ -47,22 +47,22 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
 
                 <div className={styles.separator}></div>
 
-                {citaContext.type === 'bingo' && (
+                {citaContext?.type === 'bingo' && (
                     <div className={styles.bingoPill}>
-                        {citaContext.bingoLabel || '📍 Bingo'}
+                        {citaContext?.bingoLabel || '📍 Bingo'}
                     </div>
                 )}
 
                 <div className={styles.progressRow}>
                     <div className={styles.circles}>
-                        {Array.from({ length: citaContext.minPhotos }).map((_, i) => (
+                        {Array.from({ length: citaContext?.minPhotos ?? 0 }).map((_, i) => (
                             <div key={i} className={`${styles.circle} ${i < sessionPhotos.length ? styles.circleFilled : ''}`} />
                         ))}
                     </div>
-                    <span className={`${styles.progressLabel} ${sessionPhotos.length >= citaContext.minPhotos ? styles.progressComplete : ''}`}>
-                        {sessionPhotos.length >= citaContext.minPhotos
+                    <span className={`${styles.progressLabel} ${sessionPhotos.length >= (citaContext?.minPhotos ?? 0) ? styles.progressComplete : ''}`}>
+                        {sessionPhotos.length >= (citaContext?.minPhotos ?? 0)
                             ? "✅ ¡Cita completada! Puedes seguir subiendo fotos"
-                            : `${sessionPhotos.length}/${citaContext.minPhotos} fotos para completar la cita`}
+                            : `${sessionPhotos.length}/${citaContext?.minPhotos ?? 0} fotos para completar la cita`}
                     </span>
                 </div>
 
@@ -114,7 +114,7 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                     </div>
                 )}
 
-                {sessionPhotos.length >= citaContext.minPhotos && (
+                {sessionPhotos.length >= (citaContext?.minPhotos ?? 0) && (
                     <button
                         className={styles.saveBtn}
                         onClick={() => { if (onSave) onSave(sessionPhotos); }}
