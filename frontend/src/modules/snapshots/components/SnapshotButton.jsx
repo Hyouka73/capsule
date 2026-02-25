@@ -8,16 +8,15 @@ import {
     limit
 } from 'firebase/firestore';
 import { db } from '../../../services/firebase';
-import SnapshotOverlay from './SnapshotOverlay';
 import styles from './SnapshotButton.module.css';
 import TulipIcon from '../../../components/ui/TulipIcon';
 
 /**
  * SnapshotButton — Polished version with high-fidelity SVG and premium glass.
+ * Delegates overlay rendering to parent via callbacks.
  */
-export default function SnapshotButton() {
+export default function SnapshotButton({ onOpenSnapshot, onOpenCamera }) {
     const [latestSnapshot, setLatestSnapshot] = useState(null);
-    const [isOverlayOpen, setIsOverlayOpen] = useState(false);
 
     useEffect(() => {
         const q = query(
@@ -41,26 +40,20 @@ export default function SnapshotButton() {
     const hasUnseen = !!latestSnapshot;
 
     return (
-        <>
-            <button
-                className={`${styles.instantaneasBtn} ${hasUnseen ? styles.hasNew : styles.discrete}`}
-                onClick={() => {
-                    if (hasUnseen) setIsOverlayOpen(true);
-                }}
-                disabled={!hasUnseen}
-                title="Ver instantáneas"
-            >
-                <div className={styles.iconWrapper}>
-                    <TulipIcon size={26} />
-                </div>
-            </button>
-
-            {hasUnseen && isOverlayOpen && (
-                <SnapshotOverlay
-                    snapshot={latestSnapshot}
-                    onClose={() => setIsOverlayOpen(false)}
-                />
-            )}
-        </>
+        <button
+            className={`${styles.instantaneasBtn} ${hasUnseen ? styles.hasNew : styles.discrete}`}
+            onClick={() => {
+                if (hasUnseen) {
+                    onOpenSnapshot(latestSnapshot);
+                } else {
+                    onOpenCamera();
+                }
+            }}
+            title="Instantáneas"
+        >
+            <div className={styles.iconWrapper}>
+                <TulipIcon size={26} />
+            </div>
+        </button>
     );
 }

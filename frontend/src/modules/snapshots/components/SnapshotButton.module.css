@@ -46,7 +46,9 @@
 }
 
 .discrete {
-    opacity: 0.9;
+    opacity: 0.45;
+    cursor: default;
+    filter: grayscale(0.3);
 }
 
 .hasNew {
