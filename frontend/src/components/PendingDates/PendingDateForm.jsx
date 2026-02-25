@@ -153,7 +153,7 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
                 <button
                     className={styles.saveBtn}
                     onClick={handleSave}
-                    disabled={!selectedPlaceId}
+                    disabled={!selectedPlaceId && !customLocation}
                 >
                     Guardar cita para siempre
                     <span className="material-symbols-outlined">favorite</span>

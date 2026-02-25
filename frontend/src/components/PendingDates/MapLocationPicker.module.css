@@ -154,3 +154,38 @@
     box-shadow: var(--shadow-chunky-mint-active) !important;
     transform: translateY(4px);
 }
+
+.confirmBadge {
+    text-align: center;
+    padding: 10px 20px;
+    background: var(--gradient-mint);
+    color: white;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.95rem;
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow-chunky-mint);
+    animation: badgeFadeInOut 2s ease forwards;
+}
+
+@keyframes badgeFadeInOut {
+    0% {
+        opacity: 0;
+        transform: translateY(8px) scale(0.95);
+    }
+
+    15% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    80% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-4px) scale(0.95);
+    }
+}

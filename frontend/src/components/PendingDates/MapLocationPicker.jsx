@@ -65,6 +65,7 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
     const [mapCenter] = useState(defaultPos); // initial map center, doesn't change
     const [isLocating, setIsLocating] = useState(false);
     const [targetFlyPos, setTargetFlyPos] = useState(null);
+    const [showConfirmBadge, setShowConfirmBadge] = useState(false);
     const hasAttemptedGeo = useRef(false);
 
     useEffect(() => {
@@ -100,8 +101,12 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
 
     const handleConfirm = () => {
         if (position) {
+            setShowConfirmBadge(true);
             toast.success('Ubicación Capturada', 'Hemos guardado el lugar de este recuerdo ✨');
-            onConfirm(position);
+            setTimeout(() => {
+                setShowConfirmBadge(false);
+                onConfirm(position);
+            }, 2000);
         }
     };
 
@@ -150,12 +155,17 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
                 <Button
                     className={styles.confirmBtn}
                     onClick={handleConfirm}
-                    disabled={!position}
+                    disabled={!position || showConfirmBadge}
                     variant="primary"
                 >
-                    Guardar Ubicación
+                    Confirmar ubicación 📍
                     <span className="material-symbols-outlined">check_circle</span>
                 </Button>
+                {showConfirmBadge && (
+                    <div className={styles.confirmBadge}>
+                        ✓ ¡Ubicación guardada!
+                    </div>
+                )}
             </div>
         </div>
     );
