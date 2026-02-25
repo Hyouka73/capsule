@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import MemoryManager from '../memories/MemoryManager';
 import CapsuleManager from '../capsules/CapsuleManager';
@@ -7,24 +7,33 @@ import BingoManager from '../bingo/BingoManager';
 import ActivityPanel from '../activity/ActivityPanel';
 import WrappedManager from '../wrapped/WrappedManager';
 import GlobalSettings from '../settings/GlobalSettings';
+import SnapshotCreator from '../snapshots/components/SnapshotCreator';
 import Button from '../../components/ui/Button/Button';
 import styles from './AdminDashboard.module.css';
 
 const SECTIONS = [
+    { id: 'activity', label: 'Actividad', icon: '📊' },
     { id: 'memories', label: 'Recuerdos', icon: '📸' },
     { id: 'capsules', label: 'Cápsulas', icon: '⏳' },
     { id: 'coupons', label: 'Cupones', icon: '🎁' },
     { id: 'bingo', label: 'Bingo', icon: '🎯' },
-    { id: 'activity', label: 'Actividad', icon: '📊' },
     { id: 'wrapped', label: 'Wrapped', icon: '🎬' },
     { id: 'settings', label: 'Config', icon: '⚙️' },
 ];
 
 export default function AdminDashboard() {
     const { signOut, user } = useAuth();
-    const [activeSection, setActiveSection] = useState('memories');
+    const [activeSection, setActiveSection] = useState('activity');
+    const [isSnapshotModalOpen, setIsSnapshotModalOpen] = useState(false);
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
-    // Mapeo simple de IDs a componentes
+    // Track responsiveness
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     const renderContent = () => {
         switch (activeSection) {
             case 'memories': return <MemoryManager />;
@@ -34,7 +43,7 @@ export default function AdminDashboard() {
             case 'activity': return <ActivityPanel />;
             case 'wrapped': return <WrappedManager />;
             case 'settings': return <GlobalSettings />;
-            default: return <MemoryManager />;
+            default: return <ActivityPanel />;
         }
     };
 
@@ -89,6 +98,26 @@ export default function AdminDashboard() {
                     {renderContent()}
                 </div>
             </main>
+
+            {/* ── Instantánea FAB (Fixed) ── */}
+            <button
+                className={styles.fab}
+                onClick={() => setIsSnapshotModalOpen(true)}
+                title="Nueva Instantánea"
+            >
+                <span className="material-symbols-outlined">add_a_photo</span>
+            </button>
+
+            {/* ── Modal ── */}
+            {isSnapshotModalOpen && (
+                <SnapshotCreator
+                    onClose={() => setIsSnapshotModalOpen(false)}
+                    onSuccess={() => {
+                        // Optional: Refresh activity or show toast
+                        setActiveSection('activity');
+                    }}
+                />
+            )}
         </div>
     );
 }
