@@ -1,3 +1,4 @@
+// File is already ESM, no changes needed for node compatibility here.
 /**
  * EXIF metadata extractor for photos.
  * Uses the `exifr` library — works in browser and Node.

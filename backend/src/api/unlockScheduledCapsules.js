@@ -1,7 +1,7 @@
-const { onSchedule } = require('firebase-functions/v2/scheduler');
-const { getFirestore, Timestamp } = require('firebase-admin/firestore');
-const { getMessaging } = require('firebase-admin/messaging');
-const { COLLECTIONS, PARTNER_SINGLETON_ID } = require('../config/constants');
+import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { getMessaging } from 'firebase-admin/messaging';
+import { COLLECTIONS, PARTNER_SINGLETON_ID } from '../config/constants.js';
 
 /**
  * unlockScheduledCapsules — Scheduled Trigger (Cron)
@@ -9,7 +9,7 @@ const { COLLECTIONS, PARTNER_SINGLETON_ID } = require('../config/constants');
  * Runs every hour to check for capsules that should have been unlocked
  * but weren't (e.g., due to a failed Cloud Task or if Cloud Tasks weren't used).
  */
-exports.unlockScheduledCapsules = onSchedule('every 1 hours', async (event) => {
+export const unlockScheduledCapsules = onSchedule('every 1 hours', async (event) => {
     const db = getFirestore();
     const now = Timestamp.now();
 

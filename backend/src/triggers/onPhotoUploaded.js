@@ -1,28 +1,6 @@
-const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
-const { getStorage } = require('firebase-admin/storage');
-const path = require('path');
-const os = require('os');
-const fs = require('fs');
-const sharp = require('sharp');
-const { COLLECTIONS } = require('../config/constants');
+import { onObjectFinalized } from 'firebase-functions/v2/storage';
 
-/**
- * onPhotoUploaded — Storage trigger
- *
- * Fires when a file is uploaded to:
- *   memories/{memoryId}/photos/{photoId}/original.jpg
- *
- * What it does:
- *   1. Skips thumbnails and non-images (prevents infinite loop)
- *   2. Downloads the file to /tmp
- *   3. Converts HEIC → JPEG if needed (via Sharp)
- *   4. Generates a 400px-wide thumbnail
- *   5. Uploads the thumbnail to {same path}/thumb_400.jpg
- *   6. Updates the photo doc: { thumbnailUrl, thumbnailPath, uploadStatus: "completed" }
- *   7. Updates the memory doc: { photoCount++, mainPhotoUrl if first photo }
- *   8. Updates the place doc: { photoCount++ }
- */
-async function onPhotoUploaded(event) {
+export const onPhotoUploaded = onObjectFinalized({ region: 'us-central1' }, async (event) => {
     const filePath = event.data.name;
     const contentType = event.data.contentType;
     const bucket = event.data.bucket;
@@ -35,7 +13,6 @@ async function onPhotoUploaded(event) {
 
     // Parse the path: memories/{memoryId}/photos/{photoId}/original.jpg
     const parts = filePath.split('/');
-    // parts: ['memories', memoryId, 'photos', photoId, 'original.jpg']
     if (parts.length < 5 || parts[0] !== 'memories' || parts[2] !== 'photos') return;
 
     const memoryId = parts[1];
@@ -54,7 +31,7 @@ async function onPhotoUploaded(event) {
 
         // 3 + 4. Convert to JPEG if HEIC + generate 400px thumbnail
         await sharp(originalTmpPath)
-            .rotate() // Auto-rotate based on EXIF orientation
+            .rotate()
             .resize({ width: 400, withoutEnlargement: true })
             .jpeg({ quality: 80 })
             .toFile(thumbTmpPath);
@@ -69,7 +46,7 @@ async function onPhotoUploaded(event) {
             },
         });
 
-        // Get thumbnail public URL (using same pattern as original)
+        // Get thumbnail public URL
         const thumbFile = storageBucket.file(thumbStoragePath);
         await thumbFile.makePublic();
         const thumbUrl = `https://storage.googleapis.com/${bucket}/${thumbStoragePath}`;
@@ -85,7 +62,7 @@ async function onPhotoUploaded(event) {
             uploadStatus: 'completed',
         });
 
-        // 7. Update the parent memory: photoCount++, mainPhotoUrl if first
+        // 7. Update the parent memory
         const memoryRef = db.collection(COLLECTIONS.MEMORIES).doc(memoryId);
         const memorySnap = await memoryRef.get();
 
@@ -93,7 +70,6 @@ async function onPhotoUploaded(event) {
             const memoryData = memorySnap.data();
             const isFirstPhoto = memoryData.photoCount === 0;
 
-            // Get the original URL for mainPhotoUrl
             const originalFile = storageBucket.file(filePath);
             await originalFile.makePublic();
             const originalUrl = `https://storage.googleapis.com/${bucket}/${filePath}`;
@@ -107,7 +83,7 @@ async function onPhotoUploaded(event) {
                 updatedAt: FieldValue.serverTimestamp(),
             });
 
-            // 8. Update the place: photoCount++
+            // 8. Update the place
             if (memoryData.placeId) {
                 const placeRef = db.collection(COLLECTIONS.PLACES).doc(memoryData.placeId);
                 await placeRef.update({
@@ -118,11 +94,8 @@ async function onPhotoUploaded(event) {
             }
         }
     } finally {
-        // Cleanup tmp files
         for (const tmpFile of [originalTmpPath, thumbTmpPath]) {
             try { if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile); } catch { /* ignore */ }
         }
     }
-}
-
-module.exports = { onPhotoUploaded };
+});

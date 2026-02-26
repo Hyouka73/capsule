@@ -1,7 +1,7 @@
 /**
  * Collection names — single source of truth for Firestore.
  */
-const COLLECTIONS = {
+export const COLLECTIONS = {
     // Core data
     USERS: 'users',
     INVITE_TOKENS: 'inviteTokens',
@@ -15,28 +15,23 @@ const COLLECTIONS = {
     COUPONS: 'coupons',
     BINGO_BOARD: 'bingoBoard',
     WRAPPED_DATA: 'wrappedData',
+    INSTANTANEAS: 'instantaneas', // Added
 
     // System
     ACTIVITY_LOG: 'activityLog',
     APP_CONFIG: 'appConfig',
 };
 
-const PARTNER_SINGLETON_ID = 'partner_main';
+export const PARTNER_SINGLETON_ID = 'partner_main';
 
-/**
- * Storage paths — organized by feature.
- */
-const STORAGE_PATHS = {
+export const STORAGE_PATHS = {
     PHOTO_ORIGINAL: (memoryId, photoId) =>
         `memories/${memoryId}/photos/${photoId}/original.jpg`,
     PHOTO_THUMB: (memoryId, photoId) =>
         `memories/${memoryId}/photos/${photoId}/thumb_400.jpg`
 };
 
-/**
- * Capsule content types
- */
-const CAPSULE_TYPES = {
+export const CAPSULE_TYPES = {
     MESSAGE: 'message',
     PHOTO: 'photo',
     LINK: 'link',
@@ -44,18 +39,13 @@ const CAPSULE_TYPES = {
     PDF: 'pdf',
 };
 
-/**
- * Capsule unlock triggers
- */
-const UNLOCK_TRIGGERS = {
+export const UNLOCK_TRIGGERS = {
     DATE: 'date',
     MANUAL: 'manual',
+    WEEKLY: 'weekly', // Added
 };
 
-/**
- * Activity log actions
- */
-const ACTIVITY_ACTIONS = {
+export const ACTIVITY_ACTIONS = {
     CREATE: 'create',
     UPDATE: 'update',
     DELETE: 'delete',
@@ -67,27 +57,27 @@ const ACTIVITY_ACTIONS = {
     COUPON_USED: 'coupon_used',
     BINGO_COMPLETED: 'bingo_completed',
     WRAPPED_OPENED: 'wrapped_opened',
+    SNAPSHOT_SEEN: 'snapshot_seen', // Added
 };
 
-/**
- * Artifact types for activity log and navigation
- */
-const ARTIFACT_TYPES = {
-    MEMORY: 'memory',
-    PHOTO: 'photo',
-    PLACE: 'place',
-    CAPSULE: 'capsule',
-    COUPON: 'coupon',
-    BINGO: 'bingo',
-    WRAPPED: 'wrapped',
+export const ARTIFACT_TYPES = {
+    TICKET: 'ticket',
+    NOTE: 'note',
+    PDF: 'pdf',
+    OTHER: 'other'
 };
 
-module.exports = {
-    COLLECTIONS,
-    STORAGE_PATHS,
-    CAPSULE_TYPES,
-    UNLOCK_TRIGGERS,
-    ACTIVITY_ACTIONS,
-    ARTIFACT_TYPES,
-    PARTNER_SINGLETON_ID
+export const COUPON_DELIVERY_TYPES = {
+    SIMPLE: 'simple',
+    EXPIRING: 'expiring',
+    GEO: 'geo',
+    SCAVENGER: 'scavenger'
+};
+
+export const COUPON_CONTENT_TYPES = {
+    FREE_PASS: 'free_pass',
+    DATE_NIGHT: 'date_night',
+    MASSAGE: 'massage',
+    WISH: 'wish',
+    CUSTOM: 'custom',
 };

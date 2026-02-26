@@ -11,6 +11,7 @@
     "engines": {
         "node": "20"
     },
+    "type": "module",
     "main": "index.js",
     "dependencies": {
         "exifr": "^7.1.3",

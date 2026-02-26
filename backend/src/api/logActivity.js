@@ -1,12 +1,12 @@
-const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { getFirestore, FieldValue } = require('firebase-admin/firestore');
-const { COLLECTIONS } = require('../config/constants');
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { COLLECTIONS } from '../config/constants.js';
 
 /**
  * LogActivity API 
  * Mapeo controlado del log de actividades.
  */
-exports.logActivity = onCall({ region: 'us-central1' }, async (request) => {
+export const logActivity = onCall({ region: 'us-central1' }, async (request) => {
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Operación denegada.');
     }

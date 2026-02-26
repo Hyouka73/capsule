@@ -1,8 +1,8 @@
-const { getFirestore, Timestamp } = require('firebase-admin/firestore');
-const { getAuth } = require('firebase-admin/auth');
-const { v4: uuidv4 } = require('uuid');
-const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { COLLECTIONS, PARTNER_SINGLETON_ID } = require('../config/constants');
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
+import { v4 as uuidv4 } from 'uuid';
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { COLLECTIONS, PARTNER_SINGLETON_ID } from '../config/constants.js';
 
 /**
  * exchangeInviteToken — HTTPS Callable
@@ -12,7 +12,7 @@ const { COLLECTIONS, PARTNER_SINGLETON_ID } = require('../config/constants');
  * Input:  { token: string, deviceFingerprint: string }
  * Output: { customToken: string, userId: string }
  */
-async function exchangeInviteToken(request) {
+export const exchangeInviteToken = onCall({ region: 'us-central1' }, async (request) => {
     const { token, deviceFingerprint } = request.data;
 
     if (!token || !deviceFingerprint) {
@@ -104,6 +104,4 @@ async function exchangeInviteToken(request) {
     });
 
     return { customToken, userId: partnerId };
-}
-
-module.exports = { exchangeInviteToken };
+});

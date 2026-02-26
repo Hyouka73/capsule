@@ -1,20 +1,7 @@
-import {
-    collection,
-    doc,
-    addDoc,
-    getDoc,
-    getDocs,
-    updateDoc,
-    query,
-    where,
-    orderBy,
-    limit,
-    serverTimestamp,
-    increment,
-    GeoPoint,
-} from 'firebase/firestore';
-import { db } from './firebase';
-import { COLLECTIONS, PLACE_CATEGORIES } from '../config/constants';
+import { getFirestore, FieldValue, GeoPoint } from 'firebase-admin/firestore';
+import { COLLECTIONS, PLACE_CATEGORIES } from '../config/constants.js';
+
+const db = getFirestore();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PLACES
@@ -50,7 +37,7 @@ export async function findNearbyPlace(lat, lng, radiusKm = 0.05) {
     return places.find(p => {
         const dist = haversineKm(lat, lng, p.coordinates.lat, p.coordinates.lng);
         return dist <= radiusKm;
-    }) ?? null;
+    }) || null;
 }
 
 /**
@@ -58,12 +45,10 @@ export async function findNearbyPlace(lat, lng, radiusKm = 0.05) {
  * @returns {Promise<object[]>}
  */
 export async function getPlaces() {
-    const q = query(
-        collection(db, COLLECTIONS.PLACES),
-        orderBy('lastVisitDate', 'desc'),
-        limit(500)
-    );
-    const snapshot = await getDocs(q);
+    const snapshot = await db.collection(COLLECTIONS.PLACES)
+        .orderBy('lastVisitDate', 'desc')
+        .limit(500)
+        .get();
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
@@ -73,9 +58,9 @@ export async function getPlaces() {
  * @returns {Promise<object|null>}
  */
 export async function getPlace(placeId) {
-    const docRef = doc(db, COLLECTIONS.PLACES, placeId);
-    const snapshot = await getDoc(docRef);
-    if (!snapshot.exists()) return null;
+    const docRef = db.collection(COLLECTIONS.PLACES).doc(placeId);
+    const snapshot = await docRef.get();
+    if (!snapshot.exists) return null;
     return { id: snapshot.id, ...snapshot.data() };
 }
 
@@ -85,26 +70,25 @@ export async function getPlace(placeId) {
  * @returns {Promise<string>} New place ID
  */
 export async function createPlace(data) {
-    const now = serverTimestamp();
-    const placeRef = await addDoc(collection(db, COLLECTIONS.PLACES), {
+    const now = FieldValue.serverTimestamp();
+    const placeRef = await db.collection(COLLECTIONS.PLACES).add({
         name: data.name,
-        address: data.address ?? null,
-        city: data.city ?? '',
-        country: data.country ?? 'México',
+        address: data.address || null,
+        city: data.city || '',
+        country: data.country || 'México',
         coordinates: {
             lat: data.lat,
             lng: data.lng,
         },
-        // Stored as GeoPoint for potential future geo queries
         geoPoint: new GeoPoint(data.lat, data.lng),
-        category: data.category ?? PLACE_CATEGORIES.OTRO,
+        category: data.category || PLACE_CATEGORIES.OTRO,
         coverPhotoUrl: null,
         coverPhotoStoragePath: null,
         visitCount: 1,
         photoCount: 0,
         firstVisitDate: now,
         lastVisitDate: now,
-        tags: data.tags ?? [],
+        tags: data.tags || [],
         createdAt: now,
         updatedAt: now,
     });
@@ -117,16 +101,16 @@ export async function createPlace(data) {
  * @param {object} delta - e.g. { visitCount: 1, photoCount: 3 }
  */
 export async function updatePlaceStats(placeId, delta = {}) {
-    const docRef = doc(db, COLLECTIONS.PLACES, placeId);
-    const updates = { updatedAt: serverTimestamp() };
+    const docRef = db.collection(COLLECTIONS.PLACES).doc(placeId);
+    const updates = { updatedAt: FieldValue.serverTimestamp() };
 
-    if (delta.visitCount) updates.visitCount = increment(delta.visitCount);
-    if (delta.photoCount) updates.photoCount = increment(delta.photoCount);
+    if (delta.visitCount) updates.visitCount = FieldValue.increment(delta.visitCount);
+    if (delta.photoCount) updates.photoCount = FieldValue.increment(delta.photoCount);
     if (delta.lastVisitDate) updates.lastVisitDate = delta.lastVisitDate;
     if (delta.coverPhotoUrl) updates.coverPhotoUrl = delta.coverPhotoUrl;
     if (delta.tags) updates.tags = delta.tags;
 
-    await updateDoc(docRef, updates);
+    await docRef.update(updates);
 }
 
 /**
@@ -145,7 +129,7 @@ export async function findOrCreatePlace(locationData) {
         // Update last visit + increment visitCount
         await updatePlaceStats(existing.id, {
             visitCount: 1,
-            lastVisitDate: serverTimestamp(),
+            lastVisitDate: FieldValue.serverTimestamp(),
         });
         return { placeId: existing.id, isNew: false };
     }

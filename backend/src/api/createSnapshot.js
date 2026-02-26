@@ -1,7 +1,7 @@
-const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { getFirestore, Timestamp } = require('firebase-admin/firestore');
-const { sendNotificationToTokens } = require('../utils/notifications');
-const { COLLECTIONS, PARTNER_SINGLETON_ID } = require('../config/constants');
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { sendNotificationToTokens } from '../utils/notifications.js';
+import { COLLECTIONS, PARTNER_SINGLETON_ID } from '../config/constants.js';
 
 /**
  * createSnapshot — Admin API to share a quick photo
@@ -13,7 +13,7 @@ const { COLLECTIONS, PARTNER_SINGLETON_ID } = require('../config/constants');
  * 4. We create a subdoc in /instantaneas/{id}/photos/{photoId} so it appears in Gallery
  * 5. We notify the partner via FCM
  */
-exports.createSnapshot = onCall(async (request) => {
+export const createSnapshot = onCall({ region: 'us-central1' }, async (request) => {
     // 1. Security Check
     if (!request.auth || request.auth.token.role !== 'admin') {
         throw new HttpsError('permission-denied', 'Only admins can create snapshots.');
@@ -28,7 +28,7 @@ exports.createSnapshot = onCall(async (request) => {
     const batch = db.batch();
 
     // 2. Create the Snapshot document
-    const snapshotRef = db.collection('instantaneas').doc();
+    const snapshotRef = db.collection(COLLECTIONS.INSTANTANEAS).doc();
     const snapshotData = {
         photoUrl,
         storagePath,

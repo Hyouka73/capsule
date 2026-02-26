@@ -1,6 +1,6 @@
-const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { getFirestore, Timestamp } = require('firebase-admin/firestore');
-const { COLLECTIONS } = require('../config/constants');
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { COLLECTIONS } from '../config/constants.js';
 
 /**
  * openCapsule — Serverless BFF API (Protocolo Read-Once)
@@ -9,7 +9,7 @@ const { COLLECTIONS } = require('../config/constants');
  * Si la cápsula tiene configurada la "autodestrucción", el backend inmediatamente la fulmina de la BBDD, 
  * devolviendo los datos (foto/mensaje) sólo esta única y última vez al cliente para que los autodescargue.
  */
-exports.openCapsule = onCall({ region: 'us-central1' }, async (request) => {
+export const openCapsule = onCall({ region: 'us-central1' }, async (request) => {
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Debes iniciar sesión para abrir una cápsula.');
     }

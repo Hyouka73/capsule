@@ -1,24 +1,28 @@
-const { onCall } = require('firebase-functions/v2/https');
-const { getFirestore } = require('firebase-admin/firestore');
-const { COLLECTIONS } = require('../config/constants');
+import { onCall } from 'firebase-functions/v2/https';
+import { getFirestore } from 'firebase-admin/firestore';
+import { COLLECTIONS } from '../config/constants.js';
 
 /**
  * getMemories API 
  * Retorna las memorias filtradas y ordenadas centralizando la lógica en el backend.
  */
-exports.getMemories = onCall({ region: 'us-central1' }, async (request) => {
+export const getMemories = onCall({ region: 'us-central1' }, async (request) => {
     if (!request.auth) return { success: false, error: 'Unauthorized' };
 
-    const { limit = 20, tag, isSpecial, placeId } = request.data || {};
+    const { limit = 20, tag, isSpecial, placeId, lastEventDate } = request.data || {};
 
     const db = getFirestore();
     let query = db.collection(COLLECTIONS.MEMORIES)
-        .orderBy('eventDate', 'desc')
-        .limit(limit);
+        .where('isHidden', '==', false)
+        .orderBy('eventDate', 'desc');
 
-    if (tag) query = query.where('tags', 'array-contains', tag);
-    if (isSpecial) query = query.where('isSpecial', '==', true);
     if (placeId) query = query.where('placeId', '==', placeId);
+
+    if (lastEventDate) {
+        query = query.startAfter(new Date(lastEventDate));
+    }
+
+    query = query.limit(limit);
 
     try {
         const snapshot = await query.get();
@@ -31,7 +35,11 @@ exports.getMemories = onCall({ region: 'us-central1' }, async (request) => {
             updatedAt: doc.data().updatedAt?.toDate()?.toISOString(),
         }));
 
-        return { success: true, memories };
+        return {
+            success: true,
+            memories,
+            lastEventDate: memories[memories.length - 1]?.eventDate ?? null
+        };
     } catch (error) {
         console.error('Error fetching memories:', error);
         return { success: false, error: 'Error interno del servidor.' };

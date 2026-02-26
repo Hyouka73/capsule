@@ -1,10 +1,7 @@
-import {
-    collection,
-    addDoc,
-    serverTimestamp,
-} from 'firebase/firestore';
-import { db } from './firebase';
-import { COLLECTIONS, ACTIVITY_ACTIONS } from '../config/constants';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { COLLECTIONS, ACTIVITY_ACTIONS } from '../config/constants.js';
+
+const db = getFirestore();
 
 /**
  * Activity Logger — records partner actions to /activityLog
@@ -35,7 +32,7 @@ export async function logActivity({
     displayText,
 }) {
     try {
-        await addDoc(collection(db, COLLECTIONS.ACTIVITY_LOG), {
+        await db.collection(COLLECTIONS.ACTIVITY_LOG).add({
             userId,
             action,
             targetType,
@@ -43,7 +40,7 @@ export async function logActivity({
             metadata,
             displayText,
             isReadByAdmin: false,
-            createdAt: serverTimestamp(),
+            createdAt: FieldValue.serverTimestamp(),
         });
     } catch (err) {
         console.warn('[activityLogger] Failed to log activity:', err.message);

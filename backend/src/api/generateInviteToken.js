@@ -1,16 +1,8 @@
-const { getFirestore, Timestamp } = require('firebase-admin/firestore');
-const { HttpsError } = require('firebase-functions/v2/https');
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { v4 as uuidv4 } from 'uuid';
 
-/**
- * generateInviteToken — HTTPS Callable (admin only)
- *
- * Creates a new invite token link in /inviteTokens.
- * Only callable by an authenticated admin.
- *
- * Input:  { expiresInDays?: number } — null = no expiry
- * Output: { tokenId: string, inviteUrl: string }
- */
-async function generateInviteToken(request) {
+export const generateInviteToken = onCall({ region: 'us-central1' }, async (request) => {
     // Must be authenticated as admin
     if (!request.auth || request.auth.token.role !== 'admin') {
         throw new HttpsError('permission-denied', 'Solo el admin puede generar tokens de invitación');
@@ -19,8 +11,6 @@ async function generateInviteToken(request) {
     const { expiresInDays = null } = request.data ?? {};
     const db = getFirestore();
 
-    // Generate a UUID as the token
-    const { v4: uuidv4 } = require('uuid');
     const tokenId = uuidv4();
 
     const expiresAt = expiresInDays
@@ -44,6 +34,4 @@ async function generateInviteToken(request) {
     const inviteUrl = `${baseUrl}/join?t=${tokenId}`;
 
     return { tokenId, inviteUrl };
-}
-
-module.exports = { generateInviteToken };
+});

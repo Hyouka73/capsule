@@ -1,6 +1,6 @@
-const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { getFirestore } = require('firebase-admin/firestore');
-const { COLLECTIONS } = require('../config/constants');
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { getFirestore } from 'firebase-admin/firestore';
+import { COLLECTIONS } from '../config/constants.js';
 
 /**
  * getCapsules — Serverless BFF API
@@ -9,7 +9,7 @@ const { COLLECTIONS } = require('../config/constants');
  * si quien solicita es 'partner' y la cápsula aún está bloqueada, brindando seguridad
  * total directamente en el servidor.
  */
-exports.getCapsules = onCall({ region: 'us-central1' }, async (request) => {
+export const getCapsules = onCall({ region: 'us-central1' }, async (request) => {
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Debes iniciar sesión.');
     }

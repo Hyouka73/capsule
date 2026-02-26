@@ -1,35 +1,27 @@
-const { initializeApp } = require('firebase-admin/app');
+import { initializeApp } from 'firebase-admin/app';
 
+// 1. Initialize Firebase Admin
 initializeApp();
 
-const { onPhotoUploaded } = require('./src/triggers/onPhotoUploaded');
-const { taskUnlockCapsule } = require('./src/triggers/taskUnlockCapsule');
-const { unlockScheduledCapsules } = require('./src/api/unlockScheduledCapsules');
-const { exchangeInviteToken } = require('./src/api/exchangeInviteToken');
-const { generateInviteToken } = require('./src/api/generateInviteToken');
-const { createSnapshot } = require('./src/api/createSnapshot');
+/**
+ * PROJECT CAPSULE - Cloud Functions Entry Point
+ * Firebase Functions v6 (v2 SDK) + ES Modules
+ */
 
-// Nuevas APIs BFF
-const { createMemory } = require('./src/api/createMemory');
-const { logActivity } = require('./src/api/logActivity');
-const { findOrCreatePlace } = require('./src/api/findOrCreatePlace');
-const { getMemories } = require('./src/api/getMemories');
-const { createCapsule } = require('./src/api/createCapsule');
-const { openCapsule } = require('./src/api/openCapsule');
-const { getCapsules } = require('./src/api/getCapsules');
+// --- API Functions (HTTPS onCall) ---
+export { createCapsule } from './src/api/createCapsule.js';
+export { createMemory } from './src/api/createMemory.js';
+export { createSnapshot } from './src/api/createSnapshot.js';
+export { exchangeInviteToken } from './src/api/exchangeInviteToken.js';
+export { findOrCreatePlace } from './src/api/findOrCreatePlace.js';
+export { generateInviteToken } from './src/api/generateInviteToken.js';
+export { getCapsules } from './src/api/getCapsules.js';
+export { getMemories } from './src/api/getMemories.js';
+export { logActivity } from './src/api/logActivity.js';
+export { openCapsule } from './src/api/openCapsule.js';
+export { unlockScheduledCapsules } from './src/api/unlockScheduledCapsules.js';
 
-exports.onPhotoUploaded = onPhotoUploaded;
-exports.taskUnlockCapsule = taskUnlockCapsule;
-exports.unlockScheduledCapsules = unlockScheduledCapsules;
-exports.exchangeInviteToken = exchangeInviteToken;
-exports.generateInviteToken = generateInviteToken;
+// --- Triggers ---
+export { onPhotoUploaded } from './src/triggers/onPhotoUploaded.js';
+export { taskUnlockCapsule } from './src/triggers/taskUnlockCapsule.js';
 
-// Front-to-Back APIs
-exports.createMemory = createMemory;
-exports.logActivity = logActivity;
-exports.findOrCreatePlace = findOrCreatePlace;
-exports.getMemories = getMemories;
-exports.createCapsule = createCapsule;
-exports.openCapsule = openCapsule;
-exports.getCapsules = getCapsules;
-exports.createSnapshot = createSnapshot;

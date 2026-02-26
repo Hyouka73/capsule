@@ -1,12 +1,12 @@
-const { onCall } = require('firebase-functions/v2/https');
-const { getFirestore, FieldValue } = require('firebase-admin/firestore');
-const { COLLECTIONS } = require('../config/constants');
+import { onCall } from 'firebase-functions/v2/https';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { COLLECTIONS } from '../config/constants.js';
 
 /**
  * findOrCreatePlace API 
  * Backend Service: Mapea la lógica transaccional de lugares.
  */
-exports.findOrCreatePlace = onCall({ region: 'us-central1' }, async (request) => {
+export const findOrCreatePlace = onCall({ region: 'us-central1' }, async (request) => {
     // 1. Verificación básica (solo autenticados)
     if (!request.auth) return { success: false, error: 'Unauthorized' };
 

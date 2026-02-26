@@ -1,11 +1,11 @@
-const { getMessaging } = require('firebase-admin/messaging');
+import { getMessaging } from 'firebase-admin/messaging';
 
 /**
  * sendNotificationToTokens — Sends a push notification to specific FCM tokens.
  * @param {string[]} tokens - Array of device tokens
  * @param {object} payload - Notification data { title, body, data }
  */
-async function sendNotificationToTokens(tokens, payload) {
+export async function sendNotificationToTokens(tokens, payload) {
     if (!tokens || tokens.length === 0) return;
 
     const message = {
@@ -28,5 +28,3 @@ async function sendNotificationToTokens(tokens, payload) {
         throw error;
     }
 }
-
-module.exports = { sendNotificationToTokens };

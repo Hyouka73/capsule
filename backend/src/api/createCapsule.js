@@ -1,7 +1,7 @@
-const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
-const { getFunctions } = require('firebase-admin/functions');
-const { COLLECTIONS } = require('../config/constants');
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { getFunctions } from 'firebase-admin/functions';
+import { COLLECTIONS } from '../config/constants.js';
 
 /**
  * createCapsule — Serverless BFF API
@@ -9,7 +9,7 @@ const { COLLECTIONS } = require('../config/constants');
  * Crea una nueva cápsula del tiempo. Si la fecha de apertura es en el futuro,
  * encola automáticamente una tarea (Cloud Task) para el desbloqueo y notificación exacta.
  */
-exports.createCapsule = onCall({ region: 'us-central1' }, async (request) => {
+export const createCapsule = onCall({ region: 'us-central1' }, async (request) => {
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Debes iniciar sesión para crear una cápsula.');
     }

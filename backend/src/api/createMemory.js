@@ -1,12 +1,12 @@
-const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { getFirestore, FieldValue } = require('firebase-admin/firestore');
-const { COLLECTIONS } = require('../config/constants');
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { COLLECTIONS } from '../config/constants.js';
 
 /**
  * createMemory API - Solo para usuarios autenticados (Admin o Partner)
  * Valida los datos y maneja la escritura en Firestore de forma segura.
  */
-exports.createMemory = onCall({ region: 'us-central1' }, async (request) => {
+export const createMemory = onCall({ region: 'us-central1' }, async (request) => {
     // 1. Verificar autenticación
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Debes iniciar sesión para crear un recuerdo.');
@@ -35,6 +35,7 @@ exports.createMemory = onCall({ region: 'us-central1' }, async (request) => {
         photoCount: 0,
         mainPhotoUrl: null,
         isSpecial: false,
+        isHidden: false,
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
     };

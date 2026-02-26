@@ -1,7 +1,7 @@
-const { onTaskDispatched } = require('firebase-functions/v2/tasks');
-const { getFirestore, Timestamp } = require('firebase-admin/firestore');
-const { getMessaging } = require('firebase-admin/messaging');
-const { COLLECTIONS } = require('../config/constants');
+import { onTaskDispatched } from 'firebase-functions/v2/tasks';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { getMessaging } from 'firebase-admin/messaging';
+import { COLLECTIONS, PARTNER_SINGLETON_ID } from '../config/constants.js';
 
 /**
  * taskUnlockCapsule — Cloud Task Handler
@@ -59,7 +59,7 @@ const taskUnlockCapsule = onTaskDispatched(
 
             // Fallback outside transaction to avoid messaging limits
             if (notifyData) {
-                const partnerDoc = await db.collection(COLLECTIONS.USERS).doc('partner_main').get();
+                const partnerDoc = await db.collection(COLLECTIONS.USERS).doc(PARTNER_SINGLETON_ID).get();
                 if (partnerDoc.exists && partnerDoc.data().fcmTokens?.length) {
                     const { fcmTokens } = partnerDoc.data();
                     const messaging = getMessaging();
@@ -84,5 +84,3 @@ const taskUnlockCapsule = onTaskDispatched(
         }
     }
 );
-
-module.exports = { taskUnlockCapsule };
