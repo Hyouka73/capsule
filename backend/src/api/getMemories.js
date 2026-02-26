@@ -9,12 +9,21 @@ import { COLLECTIONS } from '../config/constants.js';
 export const getMemories = onCall({ region: 'us-central1' }, async (request) => {
     if (!request.auth) return { success: false, error: 'Unauthorized' };
 
-    const { limit = 20, tag, isSpecial, placeId, lastEventDate } = request.data || {};
+    const { limit, pageSize, tag, isSpecial, placeId, lastEventDate, includeHidden = false } = request.data || {};
+    const resolvedLimit = limit ?? pageSize ?? 20;
 
     const db = getFirestore();
-    let query = db.collection(COLLECTIONS.MEMORIES)
-        .where('isHidden', '==', false)
-        .orderBy('eventDate', 'desc');
+    const isAdmin = request.auth.uid === process.env.ADMIN_UID;
+
+    let query = db.collection(COLLECTIONS.MEMORIES);
+
+    // Si data.includeHidden === true Y el llamador es el admin, omitir el filtro isHidden.
+    // En cualquier otro caso, mantener where('isHidden', '==', false).
+    if (!(includeHidden === true && isAdmin)) {
+        query = query.where('isHidden', '==', false);
+    }
+
+    query = query.orderBy('eventDate', 'desc');
 
     if (placeId) query = query.where('placeId', '==', placeId);
 
@@ -22,7 +31,7 @@ export const getMemories = onCall({ region: 'us-central1' }, async (request) => 
         query = query.startAfter(new Date(lastEventDate));
     }
 
-    query = query.limit(limit);
+    query = query.limit(resolvedLimit);
 
     try {
         const snapshot = await query.get();
@@ -37,7 +46,7 @@ export const getMemories = onCall({ region: 'us-central1' }, async (request) => 
 
         return {
             success: true,
-            memories,
+            docs: memories,
             lastEventDate: memories[memories.length - 1]?.eventDate ?? null
         };
     } catch (error) {

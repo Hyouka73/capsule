@@ -9,7 +9,7 @@ import { COLLECTIONS, PARTNER_SINGLETON_ID } from '../config/constants.js';
  * Runs every hour to check for capsules that should have been unlocked
  * but weren't (e.g., due to a failed Cloud Task or if Cloud Tasks weren't used).
  */
-export const unlockScheduledCapsules = onSchedule('every 1 hours', async (event) => {
+export const unlockScheduledCapsules = onSchedule('every 24 hours', async (event) => {
     const db = getFirestore();
     const now = Timestamp.now();
 

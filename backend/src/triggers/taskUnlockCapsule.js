@@ -9,7 +9,7 @@ import { COLLECTIONS, PARTNER_SINGLETON_ID } from '../config/constants.js';
  * This function handles messages enqueued by Firebase Cloud Tasks.
  * It strictly runs at a specific timestamp requested when the capsule was created.
  */
-const taskUnlockCapsule = onTaskDispatched(
+export const taskUnlockCapsule = onTaskDispatched(
     {
         retryConfig: {
             maxAttempts: 3,

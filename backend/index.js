@@ -20,6 +20,8 @@ export { getMemories } from './src/api/getMemories.js';
 export { logActivity } from './src/api/logActivity.js';
 export { openCapsule } from './src/api/openCapsule.js';
 export { unlockScheduledCapsules } from './src/api/unlockScheduledCapsules.js';
+export { updateMemory } from './src/api/updateMemory.js';
+export { deleteMemory } from './src/api/deleteMemory.js';
 
 // --- Triggers ---
 export { onPhotoUploaded } from './src/triggers/onPhotoUploaded.js';
