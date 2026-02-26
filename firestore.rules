@@ -79,6 +79,14 @@ service cloud.firestore {
              .hasOnly(["isSpecial", "partnerNote", "uploadStatus"]));
         allow delete: if isAdmin();
       }
+
+      match /artifacts/{artifactId} {
+        allow read: if canAccess();
+        allow create: if canAccess() &&
+          request.resource.data.uploadedBy == request.auth.uid;
+        allow update: if isAdmin();
+        allow delete: if isAdmin();
+      }
     }
 
     // ── ARTIFACTS ────────────────────────────────────────────────────────────
@@ -132,6 +140,12 @@ service cloud.firestore {
       allow update: if isPartner() && 
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isSeen', 'seenAt']);
       allow delete: if isAdmin();
+
+      match /photos/{photoId} {
+        allow read: if canAccess();
+        allow create: if isAdmin();
+        allow delete: if isAdmin();
+      }
     }
 
     // ── WRAPPED DATA ─────────────────────────────────────────────────────────
