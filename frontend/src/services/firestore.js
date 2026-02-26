@@ -142,6 +142,60 @@ export async function deleteDocument(collectionName, docId) {
     await deleteDoc(docRef);
 }
 
+// ─── SUBCOLLECTIONS ──────────────────────────────────
+
+/**
+ * Get all documents in a subcollection
+ */
+export async function getSubCollection(parentCol, parentId, subCol, maxResults = 50) {
+    const q = query(collection(db, parentCol, parentId, subCol), limit(maxResults));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+/**
+ * Create a new document in a subcollection
+ */
+export async function createSubDocument(parentCol, parentId, subCol, data) {
+    const docRef = await addDoc(collection(db, parentCol, parentId, subCol), {
+        ...data,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+    });
+    return docRef.id;
+}
+
+/**
+ * Query documents in a subcollection
+ */
+export async function querySubCollection(parentCol, parentId, subCol, filters = [], options = {}) {
+    const {
+        orderByField = 'createdAt',
+        orderDirection = 'desc',
+        maxResults = 20,
+        lastDoc = null,
+    } = options;
+
+    const constraints = [
+        ...filters.map(([field, op, value]) => where(field, op, value)),
+        orderBy(orderByField, orderDirection),
+        limit(maxResults),
+    ];
+
+    if (lastDoc) {
+        constraints.push(startAfter(lastDoc));
+    }
+
+    const q = query(collection(db, parentCol, parentId, subCol), ...constraints);
+    const snapshot = await getDocs(q);
+
+    return {
+        docs: snapshot.docs.map(d => ({ id: d.id, ...d.data() })),
+        lastDoc: snapshot.docs[snapshot.docs.length - 1] || null,
+        hasMore: snapshot.docs.length === maxResults,
+    };
+}
+
 // ─── HELPERS ─────────────────────────────────────────
 
 export { serverTimestamp };

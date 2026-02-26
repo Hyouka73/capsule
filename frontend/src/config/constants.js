@@ -15,6 +15,7 @@ export const COLLECTIONS = {
     WRAPPED_DATA: 'wrappedData',
     ACTIVITY_LOG: 'activityLog',
     APP_CONFIG: 'appConfig',
+    INSTANTANEAS: 'instantaneas',
 };
 
 export const CAPSULE_TYPES = {
@@ -28,6 +29,7 @@ export const CAPSULE_TYPES = {
 export const UNLOCK_TRIGGERS = {
     DATE: 'date',
     MANUAL: 'manual',
+    WEEKLY: 'weekly',
 };
 
 export const ACTIVITY_ACTIONS = {
@@ -42,16 +44,14 @@ export const ACTIVITY_ACTIONS = {
     COUPON_USED: 'coupon_used',
     BINGO_COMPLETED: 'bingo_completed',
     WRAPPED_OPENED: 'wrapped_opened',
+    SNAPSHOT_SEEN: 'snapshot_seen',
 };
 
 export const ARTIFACT_TYPES = {
-    MEMORY: 'memory',
-    PHOTO: 'photo',
-    PLACE: 'place',
-    CAPSULE: 'capsule',
-    COUPON: 'coupon',
-    BINGO: 'bingo',
-    WRAPPED: 'wrapped',
+    TICKET: 'ticket',
+    NOTE: 'note',
+    PDF: 'pdf',
+    OTHER: 'other'
 };
 
 export const ROLES = {
@@ -59,23 +59,33 @@ export const ROLES = {
     PARTNER: 'partner',
 };
 
-export const COUPON_TYPES = {
+export const COUPON_DELIVERY_TYPES = {
+    SIMPLE: 'simple',
+    EXPIRING: 'expiring',
+    GEO: 'geo',
+    SCAVENGER: 'scavenger'
+};
+
+export const COUPON_CONTENT_TYPES = {
     FREE_PASS: 'free_pass',
     DATE_NIGHT: 'date_night',
     MASSAGE: 'massage',
     WISH: 'wish',
+    CUSTOM: 'custom',
 };
 
-export const MEMORY_TAGS = [
-    'Viaje ✈️',
-    'Cita 🍷',
-    'Aniversario 💝',
-    'Random 🤪',
-    'Logro 🎯',
-    'Hito 🌟',
-    'Familia 👨‍👩‍👦',
-    'Amigos 👯‍♂️'
-];
+export const MEMORY_TAGS = {
+    VIAJE: { value: 'viaje', label: 'Viaje ✈️' },
+    CITA: { value: 'cita', label: 'Cita 🍷' },
+    ANIVERSARIO: { value: 'aniversario', label: 'Aniversario 💝' },
+    RANDOM: { value: 'random', label: 'Random 🤪' },
+    LOGRO: { value: 'logro', label: 'Logro 🎯' },
+    HITO: { value: 'hito', label: 'Hito 🌟' },
+    FAMILIA: { value: 'familia', label: 'Familia 👨‍👩‍👦' },
+    AMIGOS: { value: 'amigos', label: 'Amigos 👯‍♂️' }
+};
+
+export const MEMORY_TAGS_OPTIONS = Object.values(MEMORY_TAGS);
 
 export const PLACE_CATEGORIES = {
     RESTAURANTE: 'restaurante',
@@ -90,4 +100,5 @@ export const PLACE_CATEGORIES = {
 
 export const SINGLETON_DOCS = {
     APP_CONFIG: 'main',
+    BINGO_BOARD: 'board',
 };

@@ -1,7 +1,7 @@
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
 
-const SETTINGS_DOC_PATH = 'config/global';
+const SETTINGS_DOC_PATH = 'appConfig/main';
 
 /**
  * Persist global application settings
