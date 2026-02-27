@@ -23,6 +23,13 @@ service firebase.storage {
       allow delete: if isAdmin();
     }
 
+    // Instantáneas (admin sube, ambos leen)
+    match /instantaneas/{snapshotId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin() && isValidFile();
+      allow delete: if isAdmin();
+    }
+
     // Artifacts (boletos, PDFs escaneados)
     match /artifacts/{artifactId}/{fileName} {
       allow read: if request.auth != null;
