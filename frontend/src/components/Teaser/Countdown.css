@@ -11,12 +11,13 @@
     --flip-duration: 0.65s;
 
     /* Colores locales para el contador */
-    --card-bg-color: #1e1e2e;
+    --card-bg-color: #0d0d1a;
     /* Azul oscuro profundo (casi negro) */
-    --text-gold: #f2d689;
-    /* Dorado Champagne brillante */
-    --text-gold-shadow: #bfa15f;
+    --text-gold: #d4a853;
+    /* Dorado Champagne suave */
+    --text-gold-shadow: #8b6b23;
     /* Sombra dorada más oscura */
+    font-family: 'Bodoni Moda', serif;
 }
 
 .countdown-teaser {

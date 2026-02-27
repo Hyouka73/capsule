@@ -143,14 +143,6 @@ function IntroSequence({ onComplete, onSkipToLetter, onSakuraTrigger, photoCount
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            <button
-                className="skip-intro-btn"
-                onClick={handleSkip}
-                aria-label="Saltar introducción"
-            >
-                Saltar ›
-            </button>
         </motion.div>
     );
 }

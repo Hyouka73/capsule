@@ -7,6 +7,8 @@
     width: 100%;
     min-height: 100vh;
     min-height: 100dvh;
+    background: #060610;
+    color: #f8f0ff;
 }
 
 .main-content {
@@ -55,4 +57,52 @@
     .main-content {
         align-items: center;
     }
+}
+
+/* ============================================
+   Unified Button Styles (Vercel Match)
+   ============================================ */
+
+.skip-intro-btn,
+.skip-letter-btn {
+    position: fixed;
+    bottom: 40px;
+    right: 40px;
+    background: rgba(255, 255, 255, 0.03);
+    color: rgb(107, 101, 128);
+    /* Muted lavender */
+    border: 0.8px solid rgba(255, 255, 255, 0.06);
+    border-radius: 9999px;
+    padding: 10px 24px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    font-family: 'Roboto', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 99999;
+    /* Highest possible to ensure visibility */
+}
+
+.skip-intro-btn:hover,
+.skip-letter-btn:hover {
+    color: #b0a8c0;
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
+}
+
+.skip-intro-btn:active,
+.skip-letter-btn:active {
+    transform: translateY(0);
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.skip-intro-btn:focus-visible,
+.skip-letter-btn:focus-visible {
+    outline: 2px solid rgba(176, 168, 192, 0.5);
+    outline-offset: 2px;
 }

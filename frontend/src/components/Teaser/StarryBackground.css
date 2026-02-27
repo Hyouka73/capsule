@@ -17,10 +17,10 @@
     position: absolute;
     inset: 0;
     background:
-        radial-gradient(ellipse 80% 60% at 20% 80%, rgba(139, 108, 199, 0.08) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 50% at 85% 15%, rgba(212, 114, 138, 0.06) 0%, transparent 55%),
-        radial-gradient(ellipse 90% 70% at 50% 50%, rgba(212, 168, 83, 0.04) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 40% at 10% 20%, rgba(60, 80, 160, 0.05) 0%, transparent 50%);
+        radial-gradient(ellipse 80% 60% at 20% 80%, rgba(139, 108, 199, 0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 85% 15%, rgba(212, 114, 138, 0.1) 0%, transparent 55%),
+        radial-gradient(ellipse 90% 70% at 50% 50%, rgba(212, 168, 83, 0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 10% 20%, rgba(60, 80, 160, 0.1) 0%, transparent 50%);
     animation: nebula-drift 60s ease-in-out infinite alternate;
 }
 
@@ -49,7 +49,7 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse at center, transparent 30%, rgba(6, 6, 16, 0.6) 100%);
+    background: radial-gradient(ellipse at center, transparent 20%, rgba(0, 0, 0, 0.85) 100%);
     pointer-events: none;
 }
 

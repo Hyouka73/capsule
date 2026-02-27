@@ -28,8 +28,6 @@ function FlowerGarden({ visible, onComplete }) {
             transition={{ duration: 1.2 }}
             aria-hidden="true"
         >
-
-
             <div className="flowers">
                 {/* Flower 1 */}
                 <div className="flower flower--1">

@@ -76,15 +76,17 @@
 /* Header styles removed as per request */
 
 .greeting {
-    font-family: var(--font-handwriting);
+    font-family: 'Bodoni Moda', serif;
+    font-weight: 700;
+    font-style: italic;
     font-size: 3.4rem;
     color: #ffd1e8;
     margin: 1.2rem 0 2.2rem;
 }
 
 .content p {
-    font-family: var(--font-display);
-    /* 'Playfair Display' */
+    font-family: 'Bodoni Moda', serif;
+    font-weight: 400;
     font-size: 1.28rem;
     line-height: 1.85;
     margin-bottom: 1.8rem;
@@ -93,7 +95,9 @@
 }
 
 .highlight {
-    font-family: var(--font-handwriting);
+    font-family: 'Bodoni Moda', serif;
+    font-weight: 700;
+    font-style: italic;
     font-size: 2.1rem;
     color: #ffccdd;
     display: block;
@@ -110,7 +114,9 @@
 }
 
 .signature {
-    font-family: var(--font-handwriting);
+    font-family: 'Bodoni Moda', serif;
+    font-weight: 700;
+    font-style: italic;
     font-size: 3.2rem;
     color: #ffd1e8;
     text-align: right;
@@ -184,37 +190,4 @@
     .highlight {
         font-size: 2.5rem;
     }
-}
-
-/* Skip button - Retained */
-.skip-letter-btn {
-    position: fixed;
-    bottom: var(--space-2xl);
-    right: var(--space-xl);
-    font-family: var(--font-body);
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: var(--color-text-muted);
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-full);
-    padding: var(--space-sm) var(--space-lg);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    z-index: 110;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-}
-
-.skip-letter-btn:hover {
-    color: var(--color-text-secondary);
-    border-color: rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.06);
-}
-
-.skip-letter-btn:focus-visible {
-    outline: 2px solid var(--color-gold);
-    outline-offset: 2px;
 }

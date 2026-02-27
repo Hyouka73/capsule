@@ -25,7 +25,7 @@ const LETTER_BODY = [
     { type: 'signature', text: '-Church' }
 ];
 
-const LetterReveal = ({ visible, onComplete }) => {
+const LetterReveal = ({ visible, onComplete, onFinished, skipTriggered = false }) => {
     const [isVisible, setIsVisible] = useState(false);
 
     // Typing state
@@ -97,7 +97,24 @@ const LetterReveal = ({ visible, onComplete }) => {
         el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     }, [currentBlockIndex, currentCharIndex]);
 
-    // Auto-advance logic: if finished naturally (not skipped), wait 5s and proceed
+    // Link internal status to parent
+    useEffect(() => {
+        if (isFinished) {
+            onFinished?.(true);
+        }
+    }, [isFinished, onFinished]);
+
+    // Handle external skip trigger from Teaser.jsx
+    useEffect(() => {
+        if (skipTriggered && !isFinished) {
+            setIsTyping(false);
+            setIsFinished(true);
+            setIsSkipped(true);
+            setCurrentBlockIndex(LETTER_BODY.length);
+        }
+    }, [skipTriggered, isFinished]);
+
+    // Auto-advance logic: if finished naturally (not skipped), wait 6s and proceed
     useEffect(() => {
         if (isFinished && !isSkipped) {
             const timer = setTimeout(() => {
@@ -106,19 +123,6 @@ const LetterReveal = ({ visible, onComplete }) => {
             return () => clearTimeout(timer);
         }
     }, [isFinished, isSkipped, onComplete]);
-
-    const handleSkip = useCallback((e) => {
-        e.stopPropagation();
-        if (!isFinished) {
-            setIsTyping(false);
-            setIsFinished(true);
-            setIsSkipped(true);
-            // Force completion logic
-            setCurrentBlockIndex(LETTER_BODY.length);
-        } else {
-            onComplete();
-        }
-    }, [isFinished, onComplete]);
 
     // Helper to render text up to current point
     const renderBlockContent = (block, index) => {
@@ -164,17 +168,6 @@ const LetterReveal = ({ visible, onComplete }) => {
                     </div>
                 </div>
             </div>
-
-            {isVisible && createPortal(
-                <button
-                    className="skip-letter-btn"
-                    onClick={handleSkip}
-                    aria-label={isFinished ? "Continuar" : "Omitir animación"}
-                >
-                    {isFinished ? "Continuar ›" : "Omitir ›"}
-                </button>,
-                document.body
-            )}
         </div>
     );
 };

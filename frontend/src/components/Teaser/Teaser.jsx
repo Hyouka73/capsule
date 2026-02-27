@@ -28,6 +28,8 @@ function Teaser() {
     const [phase, setPhase] = useState('intro');
     const [showCountdown, setShowCountdown] = useState(false);
     const [showSakura, setShowSakura] = useState(false);
+    const [isLetterFinished, setIsLetterFinished] = useState(false);
+    const [letterSkipTriggered, setLetterSkipTriggered] = useState(false);
 
     const handleIntroComplete = useCallback(() => {
         setPhase('flowers');
@@ -47,6 +49,7 @@ function Teaser() {
     }, []);
 
     const handleLetterComplete = useCallback(() => {
+        setIsLetterFinished(true);
         setShowCountdown(true);
     }, []);
 
@@ -89,7 +92,12 @@ function Teaser() {
                             transition={{ duration: 1.5, ease: 'easeOut' }}
                         >
                             <div className="main-scroll">
-                                <LetterReveal visible={!showCountdown} onComplete={handleLetterComplete} />
+                                <LetterReveal
+                                    visible={!showCountdown}
+                                    onComplete={handleLetterComplete}
+                                    onFinished={setIsLetterFinished}
+                                    skipTriggered={letterSkipTriggered}
+                                />
 
                                 <AnimatePresence>
                                     {showCountdown && (
@@ -121,6 +129,29 @@ function Teaser() {
 
             {/* 🌸 Sakura petals — rendered at App level so they persist above flower garden */}
             {showSakura && <SakuraOverlay />}
+
+            {/* Centralized Buttons */}
+            {phase === 'intro' && (
+                <button className="skip-intro-btn" onClick={handleIntroComplete}>
+                    Saltar ›
+                </button>
+            )}
+            {phase === 'flowers' && (
+                <button className="skip-intro-btn" onClick={handleFlowersComplete}>
+                    Saltar ›
+                </button>
+            )}
+            {phase === 'letter' && !showCountdown && (
+                <button className="skip-letter-btn" onClick={() => {
+                    if (isLetterFinished) {
+                        handleLetterComplete();
+                    } else {
+                        setLetterSkipTriggered(true);
+                    }
+                }}>
+                    {isLetterFinished ? "Continuar ›" : "Omitir ›"}
+                </button>
+            )}
         </div>
     );
 }
