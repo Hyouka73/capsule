@@ -55,3 +55,15 @@ export function openCapsule(payload) {
 export function getCapsules(payload) {
     return callBackendApi('getCapsules', payload);
 }
+
+export function updateMemory(payload) {
+    return callBackendApi('updateMemory', payload);
+}
+
+export function deleteMemory(payload) {
+    return callBackendApi('deleteMemory', payload);
+}
+
+export function createSnapshot(payload) {
+    return callBackendApi('createSnapshot', payload);
+}

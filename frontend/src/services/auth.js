@@ -3,7 +3,8 @@ import {
     signOut as firebaseSignOut,
 } from 'firebase/auth';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from './firebase';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { auth, db, functions } from './firebase';
 import { COLLECTIONS } from '../config/constants';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -65,9 +66,6 @@ export async function signInAsAdmin(email, password) {
  * @returns {Promise<{ customToken: string, userId: string }>}
  */
 export async function exchangeInviteToken(inviteToken, deviceFingerprint) {
-    // Dynamic import to avoid bundling firebase/functions unless needed
-    const { getFunctions, httpsCallable } = await import('firebase/functions');
-    const functions = getFunctions();
     const exchange = httpsCallable(functions, 'exchangeInviteToken');
     const result = await exchange({ token: inviteToken, deviceFingerprint });
     return result.data;

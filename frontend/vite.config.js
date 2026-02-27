@@ -13,6 +13,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         // Exclude firebase-messaging-sw.js from precaching
         globIgnores: ['firebase-messaging-sw.js'],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
           {
             urlPattern: ({ url }) => {
