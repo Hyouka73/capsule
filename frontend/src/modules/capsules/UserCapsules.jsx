@@ -1,25 +1,71 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from './UserCapsules.module.css';
 import { CapsuleIcons } from '../../icons/CapsuleIcons';
-import { MOCK_CAPSULES } from '../../data/capsulesData';
+import { getCapsules } from '../../apiClient';
+
+/**
+ * Normaliza los campos raw de Firestore a los campos derivados que espera la UI.
+ */
+function normalizeCapsule(raw) {
+    const now = Date.now();
+    const opensAt = raw.opensAt ? new Date(raw.opensAt).getTime() : null;
+    const destructsAt = raw.destructsAt ? new Date(raw.destructsAt).getTime() : null;
+
+    let status = 'locked';
+    if (raw.isDestructed) status = 'destructed';
+    else if (raw.isUnlocked) status = 'unlocked';
+    else if (opensAt && opensAt > now) status = 'scheduled';
+
+    const opensInDays = opensAt ? Math.ceil((opensAt - now) / 86400000) : null;
+    const destroysInHours = destructsAt ? Math.ceil((destructsAt - now) / 3600000) : null;
+
+    return {
+        ...raw,
+        status,
+        type: raw.type || 'standard',
+        opensInDays,
+        destroysInHours,
+        domain: raw.domain || null,
+    };
+}
 
 /**
  * UserCapsules — Vista de Cápsulas del Tiempo (Buzón)
  * Rediseñado con tokens y lógica de estados (locked, unlocked, destructible).
  */
 export default function UserCapsules() {
+    const [capsules, setCapsules] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [selectedCapsule, setSelectedCapsule] = useState(null);
+
+    useEffect(() => {
+        getCapsules({})
+            .then(res => {
+                const normalized = (res.docs || []).map(normalizeCapsule);
+                setCapsules(normalized);
+            })
+            .catch(err => console.error(err))
+            .finally(() => setIsLoading(false));
+    }, []);
+
+    if (isLoading) {
+        return (
+            <div className={styles.root}>
+                <div className={styles.loading}>Cargando sorpresas... ✨</div>
+            </div>
+        );
+    }
 
     return (
         <div className={styles.root}>
             <div className={styles.header}>
                 <h1 className={styles.title}>Buzón del Tiempo</h1>
-                <p className={styles.subtitle}>7 sorpresas listas para ti</p>
+                <p className={styles.subtitle}>{capsules.length} sorpresas listas para ti</p>
             </div>
 
             <div className={styles.grid}>
-                {MOCK_CAPSULES.map(capsule => (
+                {capsules.map(capsule => (
                     <CapsuleCard
                         key={capsule.id}
                         capsule={capsule}

@@ -1,15 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../../../services/firebase';
+import { storage } from '../../../services/firebase';
+import { useAuth } from '../../../hooks/useAuth';
+import { createSnapshot } from '../../../apiClient';
 import styles from './SnapshotCreator.module.css';
 
 /**
  * SnapshotCreator — Camera capture screen.
  * Captures a photo, previews it, uploads to Firebase Storage,
- * then creates a Firestore doc in `instantaneas`.
+ * then creates a Firestore doc via Cloud Function.
  */
 export default function SnapshotCreator({ onClose }) {
+    const { user } = useAuth(); // Importado según requerimiento
     const [previewUrl, setPreviewUrl] = useState(null);
     const [selectedFile, setSelectedFile] = useState(null);
     const [isSending, setIsSending] = useState(false);
@@ -40,19 +42,18 @@ export default function SnapshotCreator({ onClose }) {
 
         try {
             const uuid = crypto.randomUUID();
-            const path = `instantaneas/${uuid}/photo.jpg`;
+            const path = `instantaneas/${uuid}/original.jpg`;
             const fileRef = storageRef(storage, path);
 
+            // Upload direct to Storage
             await uploadBytes(fileRef, selectedFile);
             const photoUrl = await getDownloadURL(fileRef);
 
-            await addDoc(collection(db, 'instantaneas'), {
-                photoUrl,
+            // Save to DB via Cloud Function
+            await createSnapshot({
                 storagePath: path,
+                photoUrl,
                 message: '',
-                isSeen: false,
-                seenAt: null,
-                createdAt: serverTimestamp(),
             });
 
             onClose();

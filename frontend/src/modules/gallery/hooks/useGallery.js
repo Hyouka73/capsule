@@ -5,9 +5,10 @@ import {
     orderBy,
     limit,
     startAfter,
-    getDocs
+    getDocs,
+    where
 } from 'firebase/firestore';
-import { db } from '../../../services/firebase';
+import { db, auth } from '../../../services/firebase';
 
 /**
  * useGallery — Custom hook for paginated photo fetching
@@ -19,11 +20,18 @@ export function useGallery(pageSize = 20) {
     const [hasMore, setHasMore] = useState(true);
     const [error, setError] = useState(null);
     const lastDocRef = useRef(null);
+    const isLoadingRef = useRef(false);
 
     const fetchPhotos = useCallback(async (isInitial = false) => {
-        if (loading || (!hasMore && !isInitial)) return;
+        if (!auth.currentUser) {
+            setLoading(false);
+            isLoadingRef.current = false;
+            return;
+        }
+        if (isLoadingRef.current || (!hasMore && !isInitial)) return;
 
         setLoading(true);
+        isLoadingRef.current = true;
         setError(null);
 
         try {
@@ -33,12 +41,16 @@ export function useGallery(pageSize = 20) {
             if (isInitial) {
                 q = query(
                     photosCol,
+                    where('isSnapshot', '!=', true),
+                    orderBy('isSnapshot', 'asc'),
                     orderBy('createdAt', 'desc'),
                     limit(pageSize)
                 );
             } else if (lastDocRef.current) {
                 q = query(
                     photosCol,
+                    where('isSnapshot', '!=', true),
+                    orderBy('isSnapshot', 'asc'),
                     orderBy('createdAt', 'desc'),
                     startAfter(lastDocRef.current),
                     limit(pageSize)
@@ -47,6 +59,7 @@ export function useGallery(pageSize = 20) {
 
             if (!q) {
                 setLoading(false);
+                isLoadingRef.current = false;
                 return;
             }
 
@@ -72,8 +85,9 @@ export function useGallery(pageSize = 20) {
             setError(err.message);
         } finally {
             setLoading(false);
+            isLoadingRef.current = false;
         }
-    }, [loading, hasMore, pageSize]);
+    }, [hasMore, pageSize]);
 
     // Initial fetch
     useEffect(() => {

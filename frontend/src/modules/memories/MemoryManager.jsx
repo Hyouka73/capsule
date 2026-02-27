@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { getMemories } from '../../apiClient';
+import { getMemories, updateMemory, deleteMemory } from '../../apiClient';
 import MemoryForm from './MemoryForm';
 import Button from '../../components/ui/Button/Button';
 import Card from '../../components/ui/Card/Card';
@@ -25,7 +25,7 @@ export default function MemoryManager() {
     async function loadMemories() {
         setIsLoading(true);
         try {
-            const { docs } = await getMemories({ pageSize: 50 });
+            const { docs } = await getMemories({ pageSize: 50, includeHidden: true });
             setMemories(docs ?? []);
         } catch (err) {
             console.error('Error loading memories:', err);
@@ -72,16 +72,27 @@ export default function MemoryManager() {
         return result;
     }, [memories, searchQuery, filterStatus, sortBy]);
 
-    // Mock actions
-    const handleToggleVisibility = (id) => {
-        setMemories(prev => prev.map(m => m.id === id ? { ...m, isHidden: !m.isHidden } : m));
-    };
-
-    const handleDelete = (id) => {
-        if (confirm('¿Seguro que quieres eliminar este recuerdo? (UI mock)')) {
-            setMemories(prev => prev.filter(m => m.id !== id));
+    // Conectado a Firestore vía Backend
+    async function handleToggleVisibility(id) {
+        const memory = memories.find(m => m.id === id);
+        if (!memory) return;
+        try {
+            await updateMemory({ memoryId: id, isHidden: !memory.isHidden });
+            setMemories(prev => prev.map(m => m.id === id ? { ...m, isHidden: !m.isHidden } : m));
+        } catch (err) {
+            console.error('Error toggling visibility:', err);
         }
-    };
+    }
+
+    async function handleDelete(id) {
+        if (!confirm('¿Seguro que quieres eliminar este recuerdo?')) return;
+        try {
+            await deleteMemory({ memoryId: id });
+            setMemories(prev => prev.filter(m => m.id !== id));
+        } catch (err) {
+            console.error('Error deleting memory:', err);
+        }
+    }
 
     return (
         <div className={styles.root}>

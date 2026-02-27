@@ -25,7 +25,7 @@ L.Icon.Default.mergeOptions({
     shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-import { MOCK_PLACES, ALL_POSSIBLE_FILTERS, MOCK_PENDING_DATES } from '../../data/mapData';
+import { usePlaces } from './hooks/usePlaces';
 
 // Fly to a selected place
 function FlyToPlace({ place }) {
@@ -141,7 +141,8 @@ export default function MapView({
         }
     }, [bingoContextToMap, clearBingoContext, onPlaceSelected]);
 
-    const [pendingDates] = useState(MOCK_PENDING_DATES);
+    const { places, loading: placesLoading } = usePlaces();
+    const [pendingDates] = useState([]);
     const [isPendingListOpen, setIsPendingListOpen] = useState(false);
     const [selectedPendingDate, setSelectedPendingDate] = useState(null);
     const [viewerPhotos, setViewerPhotos] = useState(null);
@@ -167,18 +168,33 @@ export default function MapView({
         if (onPlaceSelected) onPlaceSelected(isAnyOverlayOpen);
     }, [citaContext, isPendingListOpen, selectedPendingDate, selectedPlace, isSearchActive, onPlaceSelected]);
 
-    const filteredPlaces = MOCK_PLACES.filter(p => {
-        const matchesFilter = activeFilter === 'todos' || p.tags.includes(activeFilter);
+    const filteredPlaces = places.filter(p => {
+        const matchesFilter = activeFilter === 'todos' || p.tags?.includes(activeFilter);
         const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
         return matchesFilter && matchesSearch;
     });
 
-    const availableTags = new Set();
-    MOCK_PLACES.forEach(place => place.tags?.forEach(tag => availableTags.add(tag)));
+    const uniqueTags = [...new Set(places.flatMap(p => p.tags ?? []))];
 
-    const activeFilters = ALL_POSSIBLE_FILTERS.filter(
-        opt => opt.id === 'todos' || availableTags.has(opt.id)
-    );
+    const TAG_ICONS = {
+        'cine': 'movie',
+        'comida': 'restaurant',
+        'romántico': 'local_florist',
+        'aventura': 'hiking',
+        'relajación': 'spa',
+        'fiesta': 'celebration',
+        'misterioso': 'help_center',
+        'todos': 'favorite'
+    };
+
+    const activeFilters = [
+        { id: 'todos', label: 'Todos', icon: 'favorite' },
+        ...uniqueTags.map(tag => ({
+            id: tag,
+            label: tag.charAt(0).toUpperCase() + tag.slice(1),
+            icon: TAG_ICONS[tag] || 'bookmark'
+        }))
+    ];
 
     return (
         <div className={styles.screen}>
@@ -285,6 +301,11 @@ export default function MapView({
                                     {opt.label}
                                 </button>
                             ))}
+                            {placesLoading && places.length === 0 && (
+                                <div style={{ display: 'flex', alignItems: 'center', padding: '0 10px', fontSize: '10px', opacity: 0.6 }}>
+                                    ✨ Cargando...
+                                </div>
+                            )}
                         </div>
                     )}
 

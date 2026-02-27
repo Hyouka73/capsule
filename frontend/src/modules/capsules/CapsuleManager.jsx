@@ -21,7 +21,7 @@ export default function CapsuleManager() {
         setIsLoading(true);
         try {
             const result = await getCapsules();
-            setCapsules(result.capsules || []);
+            setCapsules(result.docs || []);
         } catch (err) {
             console.error('Error loading capsules:', err);
         } finally {

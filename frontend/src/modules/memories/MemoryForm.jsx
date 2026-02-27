@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 // En lugar de llamar servicios de DB, delegamos al Backend (Serverless BFF)
-import { createMemory, findOrCreatePlace } from '../../apiClient';
+import { createMemory, findOrCreatePlace, updateMemory } from '../../apiClient';
 import PhotoUploader from './PhotoUploader';
-import { MEMORY_TAGS, PLACE_CATEGORIES } from '../../config/constants';
+import { MEMORY_TAGS_OPTIONS, PLACE_CATEGORIES } from '../../config/constants';
 
 import Input from '../../components/ui/Input/Input';
 import Button from '../../components/ui/Button/Button';
@@ -17,7 +17,11 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel }) 
         title: initialData?.title ?? '',
         description: initialData?.description ?? '',
         eventDate: initialData?.eventDate
-            ? toInputDate(initialData.eventDate.toDate())
+            ? toInputDate(
+                typeof initialData.eventDate.toDate === 'function'
+                    ? initialData.eventDate.toDate()
+                    : new Date(initialData.eventDate)
+            )
             : toInputDate(new Date()),
         tags: initialData?.tags ?? [],
         adminNotes: initialData?.adminNotes ?? '',
@@ -81,9 +85,7 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel }) 
             };
 
             if (isEditing) {
-                // TODO: create updateMemory API for BFF
-                console.warn('Update memory API pending for BFF. Using mock success.');
-                // await updateMemory(initialData.id, memoryPayload);
+                await updateMemory({ memoryId: initialData.id, ...memoryPayload });
                 setMemoryId(initialData.id);
             } else {
                 const response = await createMemory(memoryPayload);
@@ -190,14 +192,14 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel }) 
 
                     <div className={styles.sectionLabel}>🏷️ Tags</div>
                     <div className={styles.tags}>
-                        {MEMORY_TAGS.map(tag => (
+                        {MEMORY_TAGS_OPTIONS.map(({ value, label }) => (
                             <button
-                                key={tag}
+                                key={value}
                                 type="button"
-                                className={`${styles.tagBtn} ${form.tags.includes(tag) ? styles.tagActive : ''}`}
-                                onClick={() => toggleTag(tag)}
+                                className={`${styles.tagBtn} ${form.tags.includes(value) ? styles.tagActive : ''}`}
+                                onClick={() => toggleTag(value)}
                             >
-                                {tag}
+                                {label}
                             </button>
                         ))}
                     </div>
