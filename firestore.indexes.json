@@ -221,6 +221,38 @@
                     "order": "DESCENDING"
                 }
             ]
+        },
+        {
+            "collectionGroup": "capsules",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "isDestructed",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "memories",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "isHidden",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "placeId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "eventDate",
+                    "order": "DESCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": [

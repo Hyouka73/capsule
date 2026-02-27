@@ -186,3 +186,27 @@
         width: 600px;
     }
 }
+
+/* ── Camera FAB (instantáneas persistente en tabs no-mapa) ── */
+.cameraFab {
+    position: fixed;
+    bottom: 90px;
+    right: 20px;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--gradient-rose, linear-gradient(135deg, #ffb7b2, #ff758f));
+    border: none;
+    font-size: 22px;
+    box-shadow: 0 4px 20px rgba(255, 117, 143, 0.35);
+    cursor: pointer;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: box-shadow 0.2s ease;
+}
+
+.cameraFab:active {
+    box-shadow: none;
+}

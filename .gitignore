@@ -32,5 +32,9 @@ backend/.env
 
 PROJECT_CAPSULE_MASTER_ARCHITECTURE.md
 RESUME_EXECUTE.md
+FLUJOS_APP.md
+diagnostic_report.md
+problemas.txt
 
+.firebase/
 serviceAccountKey.json

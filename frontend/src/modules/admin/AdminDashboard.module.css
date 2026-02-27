@@ -301,17 +301,18 @@
         flex-direction: row;
         overflow-x: auto;
         overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
         padding: 0;
         gap: 0.5rem;
         justify-content: space-evenly;
         width: 100%;
         max-width: 600px;
-        /* Hide scrollbar for tabs */
-        scrollbar-width: none;
+        scrollbar-width: thin;
+        scrollbar-color: var(--glass-border) transparent;
     }
 
     .nav::-webkit-scrollbar {
-        display: none;
+        height: 2px;
     }
 
     .navItem {
@@ -321,7 +322,7 @@
         border-radius: var(--radius-md);
         justify-content: center;
         text-align: center;
-        min-width: 60px;
+        min-width: 48px;
     }
 
     .navIcon {
@@ -376,6 +377,13 @@
 
 .fab span {
     font-size: 28px;
+}
+
+@media (max-width: 768px) {
+    .fab {
+        bottom: 90px;
+        right: 16px;
+    }
 }
 
 @media (min-width: 769px) {

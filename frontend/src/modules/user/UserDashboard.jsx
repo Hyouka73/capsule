@@ -16,7 +16,7 @@ import { TABS } from '../../data/dashboardData';
 import { MOCK_PENDING_DATES } from '../../data/mapData';
 
 export default function UserDashboard() {
-    const { isPartner } = useAuth();
+    const { isPartner, isAdmin } = useAuth();
     const [activeTab, setActiveTab] = useState('lugares');
     const [prevTab, setPrevTab] = useState('lugares');
     const [isPlaceSelected, setIsPlaceSelected] = useState(false);
@@ -160,10 +160,27 @@ export default function UserDashboard() {
                             </motion.div>
                         </AnimatePresence>
                     </main>
+
+                    {/* ── FAB cámara persistente en tabs no-mapa (Fix 10: SnapshotButton siempre visible) ── */}
+                    {(isPartner || isAdmin) && !isSnapshotOpen && !isCameraOpen && (
+                        <motion.button
+                            className={styles.cameraFab}
+                            onClick={() => setIsCameraOpen(true)}
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0, opacity: 0 }}
+                            whileTap={{ scale: 0.9 }}
+                            aria-label="Enviar instantánea"
+                        >
+                            📷
+                        </motion.button>
+                    )}
                 </>
             )}
 
-            {/* ── NAVBAR: siempre flotando encima de todo, hidden if place is selected or modal open ── */}
+            {/* ── NAVBAR: siempre flotando encima de todo, hidden if place is selected or modal open ──
+                Fix 11: Removed inline style={{ position: 'fixed', bottom: 0 }} from motion.div wrapper
+                so BottomNav.module.css .bottomNavContainer { bottom: 16px } controls positioning. ── */}
             <AnimatePresence>
                 {!isPlaceSelected && !isBingoModalOpen && !isCouponsModalOpen && !isSnapshotOpen && !isCameraOpen && (
                     <motion.div
@@ -171,7 +188,6 @@ export default function UserDashboard() {
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: 100, opacity: 0 }}
                         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                        style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50 }}
                     >
                         <BottomNav
                             activeTab={activeTab}

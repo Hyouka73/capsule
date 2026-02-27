@@ -74,7 +74,7 @@ export default function SnapshotCreator({ onClose }) {
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                capture="environment"
+                {...(!(/iPad|iPhone|iPod/.test(navigator.userAgent)) && { capture: 'environment' })}
                 onChange={handleFileChange}
                 style={{ display: 'none' }}
             />

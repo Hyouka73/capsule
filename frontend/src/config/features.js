@@ -10,12 +10,12 @@ const FEATURES = {
     teaser: true,
 
     // TIER 1 — MVP (launch April 4)
-    memoryMap: false,
-    photoGallery: false,
-    shoebox: false,
-    timeCapsules: false,
-    wrapped: false,
-    adminPanel: false,
+    memoryMap: true,
+    photoGallery: true,
+    shoebox: true,
+    timeCapsules: true,
+    wrapped: true,
+    adminPanel: true,
 
     // TIER 2 — Post-launch
     bingoBoard: false,
