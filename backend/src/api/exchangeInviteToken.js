@@ -1,6 +1,5 @@
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
-import { v4 as uuidv4 } from 'uuid';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { COLLECTIONS, PARTNER_SINGLETON_ID } from '../config/constants.js';
 

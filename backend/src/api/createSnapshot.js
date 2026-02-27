@@ -77,5 +77,5 @@ export const createSnapshot = onCall({ region: 'us-central1' }, async (request) 
         // We don't fail the whole request if only notification fails
     }
 
-    return { id: snapshotRef.id };
+    return { success: true, id: snapshotRef.id };
 });

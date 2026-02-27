@@ -63,8 +63,21 @@ export const openCapsule = onCall({ region: 'us-central1' }, async (request) => 
             success: true,
             capsule: {
                 id: capsuleId,
-                ...capsuleData,
-                isDestructedNow: !!capsuleData.autoDestruct
+                title: capsuleData.title ?? null,
+                message: capsuleData.message ?? null,
+                photoUrl: capsuleData.photoUrl ?? null,
+                storagePath: capsuleData.storagePath ?? null,
+                autoDestruct: capsuleData.autoDestruct ?? false,
+                isUnlocked: capsuleData.isUnlocked ?? false,
+                isViewed: capsuleData.isViewed ?? false,
+                isDestructed: capsuleData.isDestructed ?? false,
+                opensAt: capsuleData.opensAt?.toDate?.()?.toISOString() ?? capsuleData.opensAt ?? null,
+                createdAt: capsuleData.createdAt?.toDate?.()?.toISOString() ?? capsuleData.createdAt ?? null,
+                destructsAt: capsuleData.destructsAt?.toDate?.()?.toISOString() ?? capsuleData.destructsAt ?? null,
+                openedAt: capsuleData.openedAt?.toDate?.()?.toISOString() ?? capsuleData.openedAt ?? null,
+                viewedAt: capsuleData.viewedAt?.toDate?.()?.toISOString() ?? capsuleData.viewedAt ?? null,
+                destructedAt: capsuleData.destructedAt?.toDate?.()?.toISOString() ?? capsuleData.destructedAt ?? null,
+                isDestructedNow: !!capsuleData.autoDestruct,
             }
         };
 

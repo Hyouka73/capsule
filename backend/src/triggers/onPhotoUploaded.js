@@ -1,4 +1,11 @@
 import { onObjectFinalized } from 'firebase-functions/v2/storage';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getStorage } from 'firebase-admin/storage';
+import sharp from 'sharp';
+import path from 'path';
+import os from 'os';
+import fs from 'fs';
+import { COLLECTIONS } from '../config/constants.js';
 
 export const onPhotoUploaded = onObjectFinalized({ region: 'us-central1' }, async (event) => {
     const filePath = event.data.name;
