@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { uploadFile, compressImage } from '../services/storage';
-import { updateMemory } from '../services/memories';
+import { createMemory, createSnapshot } from '../apiClient';
 import { STORAGE_PATHS } from '../config/constants';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -107,25 +107,61 @@ export function useOfflineQueue() {
         processingRef.current = true;
         setIsProcessing(true);
 
+        const DELAY_BETWEEN_UPLOADS = 3000;
+
         try {
             const pending = await getAllPending();
+            // Sort FIFO (oldest first)
+            pending.sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+
             for (const item of pending) {
                 try {
                     await updateQueueItem(item.id, { status: 'uploading', retryCount: (item.retryCount ?? 0) + 1 });
 
-                    const url = await uploadFile(item.compressedBlob, item.targetStoragePath);
+                    if (item.type === 'photo') {
+                        // Original photo-only upload
+                        const url = await uploadFile(item.compressedBlob, item.targetStoragePath);
+                        if (item.firestoreUpdates && item.targetMemoryId) {
+                            // Photo-only items don't call createMemory, they update an existing one
+                            // This path is kept for backwards compatibility
+                        }
+                    } else if (item.type === 'memory') {
+                        // Upload all photos, then create memory via Cloud Function
+                        const photoUrls = [];
+                        for (let i = 0; i < (item.photos?.length ?? 0); i++) {
+                            const photo = item.photos[i];
+                            const photoId = crypto.randomUUID();
+                            const tempMemoryId = item.id; // Use queue item id as temp memory id
+                            const storagePath = STORAGE_PATHS.PHOTO_ORIGINAL(tempMemoryId, photoId);
+                            const url = await uploadFile(photo.blob, storagePath);
+                            photoUrls.push({ url, storagePath, photoId });
 
-                    // Update Firestore doc that was waiting for this upload
-                    if (item.firestoreUpdates) {
-                        await updateMemory(item.targetMemoryId, {
-                            ...item.firestoreUpdates,
-                            mainPhotoUrl: url,
+                            if (i < item.photos.length - 1) {
+                                await new Promise(r => setTimeout(r, DELAY_BETWEEN_UPLOADS));
+                            }
+                        }
+
+                        // Call createMemory with the form data
+                        await createMemory({
+                            ...item.data,
+                            offlinePhotoUrls: photoUrls,
+                        });
+                    } else if (item.type === 'snapshot') {
+                        // Upload single photo, then create snapshot doc
+                        const snapshotId = item.id;
+                        const storagePath = STORAGE_PATHS.SNAPSHOT_ORIGINAL(snapshotId);
+                        const blob = item.photos?.[0]?.blob ?? item.compressedBlob;
+                        const url = await uploadFile(blob, storagePath);
+
+                        await createSnapshot({
+                            storagePath,
+                            photoUrl: url,
+                            message: item.data?.message ?? '',
                         });
                     }
 
                     await removeFromQueue(item.id);
                 } catch (err) {
-                    // Mark as failed if too many retries
                     if ((item.retryCount ?? 0) >= 3) {
                         await updateQueueItem(item.id, { status: 'failed' });
                     } else {
@@ -133,6 +169,9 @@ export function useOfflineQueue() {
                     }
                     console.warn('[offlineQueue] Upload failed, will retry:', err.message);
                 }
+
+                // Rate limit between items
+                await new Promise(r => setTimeout(r, DELAY_BETWEEN_UPLOADS));
             }
         } finally {
             processingRef.current = false;
@@ -191,8 +230,74 @@ export function useOfflineQueue() {
         return { queued: true, photoId, storagePath };
     }, [refreshCount]);
 
+    /**
+     * Queue a complete memory (form data + photo files) for offline upload.
+     *
+     * @param {object} formData - Memory form fields (title, eventDate, tags, etc.)
+     * @param {File[]} photoFiles - Array of raw photo files
+     * @returns {Promise<{queued: boolean}>}
+     */
+    const queueMemory = useCallback(async (formData, photoFiles) => {
+        const compressedPhotos = await Promise.all(
+            photoFiles.map(async (file) => {
+                const blob = await compressImage(file, 1200, 0.8);
+                return { blob, fileName: file.name, size: blob.size, mimeType: 'image/jpeg' };
+            })
+        );
+
+        await saveToQueue({
+            id: crypto.randomUUID(),
+            type: 'memory',
+            data: formData,
+            photos: compressedPhotos,
+            status: 'pending',
+            retryCount: 0,
+            createdAt: Date.now(),
+        });
+
+        await refreshCount();
+
+        // Try processing immediately if online
+        if (navigator.onLine) {
+            processQueue();
+        }
+
+        return { queued: true };
+    }, [refreshCount, processQueue]);
+
+    /**
+     * Queue a snapshot photo for offline upload.
+     *
+     * @param {File} photoFile - The snapshot photo file
+     * @param {string} message - Optional short message
+     * @returns {Promise<{queued: boolean}>}
+     */
+    const queueSnapshot = useCallback(async (photoFile, message = '') => {
+        const blob = await compressImage(photoFile, 1200, 0.8);
+
+        await saveToQueue({
+            id: crypto.randomUUID(),
+            type: 'snapshot',
+            data: { message },
+            photos: [{ blob, fileName: photoFile.name, size: blob.size, mimeType: 'image/jpeg' }],
+            status: 'pending',
+            retryCount: 0,
+            createdAt: Date.now(),
+        });
+
+        await refreshCount();
+
+        if (navigator.onLine) {
+            processQueue();
+        }
+
+        return { queued: true };
+    }, [refreshCount, processQueue]);
+
     return {
         queueUpload,
+        queueMemory,
+        queueSnapshot,
         pendingCount,
         isProcessing,
         processQueue,

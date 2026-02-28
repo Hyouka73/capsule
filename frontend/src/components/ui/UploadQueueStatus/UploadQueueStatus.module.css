@@ -1,0 +1,50 @@
+.badge {
+    position: fixed;
+    bottom: 5rem;
+    left: 1rem;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--color-bg-card, rgba(20, 20, 35, 0.95));
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+    border-radius: var(--radius-pill, 999px);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    font-family: var(--font-body, 'Inter', sans-serif);
+    animation: slideIn 0.3s ease-out;
+}
+
+.icon {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.text {
+    font-size: 0.78rem;
+    color: var(--color-text-secondary, #c0b8d0);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.spinner {
+    display: inline-block;
+    animation: spin 1.5s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
