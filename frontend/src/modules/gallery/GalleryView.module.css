@@ -66,6 +66,32 @@
     font-variation-settings: 'FILL' 1;
 }
 
+.snapshotBadge {
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    font-size: 0.7rem;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    padding: 2px 6px;
+    border-radius: var(--radius-pill, 999px);
+    color: #fff;
+    line-height: 1.4;
+}
+
+.unseenBadge {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    font-size: 0.7rem;
+    background: rgba(255, 77, 109, 0.75);
+    backdrop-filter: blur(4px);
+    padding: 2px 6px;
+    border-radius: var(--radius-pill, 999px);
+    color: #fff;
+    line-height: 1.4;
+}
+
 /* Empty State */
 .emptyState {
     display: flex;

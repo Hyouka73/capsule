@@ -39,6 +39,26 @@
     align-items: center;
     justify-content: center;
     transition: transform 0.3s ease;
+    position: relative;
+}
+
+.badgeCount {
+    position: absolute;
+    top: -6px;
+    right: -8px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    background: #ff4d6d;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    box-shadow: 0 2px 6px rgba(255, 77, 109, 0.4);
 }
 
 .instantaneasBtn:hover .iconWrapper {

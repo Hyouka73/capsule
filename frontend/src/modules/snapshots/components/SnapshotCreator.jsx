@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../../services/firebase';
 import { useAuth } from '../../../hooks/useAuth';
@@ -11,19 +11,17 @@ import styles from './SnapshotCreator.module.css';
  * then creates a Firestore doc via Cloud Function.
  */
 export default function SnapshotCreator({ onClose }) {
-    const { user } = useAuth(); // Importado según requerimiento
+    const { user } = useAuth(); // eslint-disable-line no-unused-vars
     const [previewUrl, setPreviewUrl] = useState(null);
     const [selectedFile, setSelectedFile] = useState(null);
     const [isSending, setIsSending] = useState(false);
     const fileInputRef = useRef(null);
 
-    // Auto-open camera on mount
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            fileInputRef.current?.click();
-        }, 100);
-        return () => clearTimeout(timer);
-    }, []);
+    // ⚠️ NOTE: We do NOT auto-open the camera with setTimeout.
+    // On iOS/Safari, programmatic input.click() only works when called
+    // DIRECTLY from a user gesture (tap). Any async delay (setTimeout, promise, etc.)
+    // breaks the gesture trust chain and Safari silently blocks the picker.
+    // The user taps the placeholder squircle which calls handleCapture directly.
 
     const handleCapture = () => {
         fileInputRef.current?.click();

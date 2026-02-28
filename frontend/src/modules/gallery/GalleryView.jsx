@@ -93,6 +93,12 @@ export default function GalleryView() {
                                     <span className="material-symbols-outlined">favorite</span>
                                 </div>
                             )}
+                            {photo._type === 'snapshot' && (
+                                <div className={styles.snapshotBadge}>📸</div>
+                            )}
+                            {photo.wasUnseen && (
+                                <div className={styles.unseenBadge}>📥</div>
+                            )}
                         </motion.div>
                     ))}
 

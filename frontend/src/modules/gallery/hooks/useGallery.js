@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
+    collection,
     collectionGroup,
     query,
     orderBy,
@@ -11,8 +12,9 @@ import {
 import { db, auth } from '../../../services/firebase';
 
 /**
- * useGallery — Custom hook for paginated photo fetching
+ * useGallery — Custom hook for paginated photo fetching.
  * Uses collectionGroup('photos') to get all photos across all memories.
+ * Now also includes archived snapshots merged chronologically.
  */
 export function useGallery(pageSize = 20) {
     const [photos, setPhotos] = useState([]);
@@ -35,11 +37,12 @@ export function useGallery(pageSize = 20) {
         setError(null);
 
         try {
-            let q;
+            // --- 1. Fetch memory photos (non-snapshot photos) ---
+            let photosQuery;
             const photosCol = collectionGroup(db, 'photos');
 
             if (isInitial) {
-                q = query(
+                photosQuery = query(
                     photosCol,
                     where('isSnapshot', '!=', true),
                     orderBy('isSnapshot', 'asc'),
@@ -47,7 +50,7 @@ export function useGallery(pageSize = 20) {
                     limit(pageSize)
                 );
             } else if (lastDocRef.current) {
-                q = query(
+                photosQuery = query(
                     photosCol,
                     where('isSnapshot', '!=', true),
                     orderBy('isSnapshot', 'asc'),
@@ -57,29 +60,51 @@ export function useGallery(pageSize = 20) {
                 );
             }
 
-            if (!q) {
-                setLoading(false);
-                isLoadingRef.current = false;
-                return;
+            let memoryPhotos = [];
+            if (photosQuery) {
+                const snapshot = await getDocs(photosQuery);
+                memoryPhotos = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                    parentPath: doc.ref.parent.parent?.path,
+                    _type: 'memory',
+                }));
+                lastDocRef.current = snapshot.docs[snapshot.docs.length - 1] || null;
+                setHasMore(snapshot.docs.length === pageSize);
             }
 
-            const snapshot = await getDocs(q);
+            // --- 2. Fetch archived snapshots (only on initial load) ---
+            let archivedSnapshots = [];
+            if (isInitial) {
+                const snapshotsQuery = query(
+                    collection(db, 'instantaneas'),
+                    where('isArchived', '==', true),
+                    orderBy('createdAt', 'desc'),
+                    limit(pageSize)
+                );
+                const snapshotsSnap = await getDocs(snapshotsQuery);
+                archivedSnapshots = snapshotsSnap.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                    url: doc.data().photoUrl,
+                    _type: 'snapshot',
+                    isSnapshot: true,
+                    wasUnseen: !doc.data().isSeen,
+                }));
+            }
 
-            const newPhotos = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                // Store parent reference path if needed for context
-                parentPath: doc.ref.parent.parent?.path
-            }));
+            // --- 3. Merge and sort chronologically ---
+            const allPhotos = [...memoryPhotos, ...archivedSnapshots].sort((a, b) => {
+                const aTime = a.createdAt?.toMillis?.() ?? a.createdAt?.seconds * 1000 ?? 0;
+                const bTime = b.createdAt?.toMillis?.() ?? b.createdAt?.seconds * 1000 ?? 0;
+                return bTime - aTime; // Newest first
+            });
 
             if (isInitial) {
-                setPhotos(newPhotos);
+                setPhotos(allPhotos);
             } else {
-                setPhotos(prev => [...prev, ...newPhotos]);
+                setPhotos(prev => [...prev, ...memoryPhotos]);
             }
-
-            lastDocRef.current = snapshot.docs[snapshot.docs.length - 1] || null;
-            setHasMore(snapshot.docs.length === pageSize);
         } catch (err) {
             console.error('Error fetching gallery photos:', err);
             setError(err.message);

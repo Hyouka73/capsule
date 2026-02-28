@@ -9,6 +9,23 @@
     overflow: hidden;
 }
 
+.counter {
+    position: fixed;
+    top: 24px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(8px);
+    border-radius: 999px;
+    padding: 0.35rem 0.9rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.78rem;
+    font-weight: 600;
+    font-family: var(--font-body, 'Inter', sans-serif);
+    z-index: 10;
+    letter-spacing: 0.03em;
+}
+
 .closeBtn {
     position: fixed;
     top: 20px;
