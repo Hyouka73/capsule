@@ -72,6 +72,61 @@
     box-shadow: var(--shadow-chunky-mint-active);
 }
 
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.input {
+    width: 100%;
+    padding: 14px 20px;
+    border-radius: var(--radius-card);
+    border: 2px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    margin: 20px 0;
+    text-align: center;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.input:focus {
+    border-color: var(--color-mint);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.helpText {
+    margin-top: 16px;
+    font-size: 0.85rem !important;
+    font-style: italic;
+}
+
+.errorActions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.btnGhost {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--glass-border);
+    padding: 10px 20px;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btnGhost:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;

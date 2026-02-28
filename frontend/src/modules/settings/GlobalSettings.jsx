@@ -5,6 +5,7 @@ import Card from '../../components/ui/Card/Card';
 import Button from '../../components/ui/Button/Button';
 import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
 import { getGlobalSettings, saveGlobalSettings, saveSnapshotConfig } from '../../services/settingsService';
+import { generateInviteToken } from '../../apiClient';
 import styles from './GlobalSettings.module.css';
 
 export default function GlobalSettings() {
@@ -86,6 +87,18 @@ export default function GlobalSettings() {
         alert('Enlace copiado al portapapeles');
     };
 
+    const handleRegenerateInvite = async () => {
+        if (!confirm('¿Seguro? El enlace anterior dejará de funcionar para nuevos dispositivos.')) return;
+        try {
+            const { inviteUrl } = await generateInviteToken({ expiresInDays: 7 });
+            setSettings(prev => ({ ...prev, inviteLink: inviteUrl }));
+            alert('¡Nuevo enlace generado exitosamente!');
+        } catch (err) {
+            console.error('Error generating token:', err);
+            alert('Error al generar el token: ' + err.message);
+        }
+    };
+
     return (
         <div className={styles.root}>
             <div className={styles.header}>
@@ -154,7 +167,14 @@ export default function GlobalSettings() {
                                 <Button variant="secondary" onClick={handleCopyInvite}>Copiar</Button>
                             </div>
                             <p className={styles.helpText}>Compártelo para que ella pueda registrarse e ingresar a la cápsula.</p>
-                            <Button variant="ghost" size="sm" className={styles.revokeBtn} onClick={() => alert('Mock: Regenerando link...')}>↻ Revocar y generar nuevo enlace</Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className={styles.revokeBtn}
+                                onClick={handleRegenerateInvite}
+                            >
+                                ↻ Revocar y generar nuevo enlace
+                            </Button>
                         </div>
 
                         <div className={styles.divider}></div>

@@ -67,3 +67,7 @@ export function deleteMemory(payload) {
 export function createSnapshot(payload) {
     return callBackendApi('createSnapshot', payload);
 }
+
+export function generateInviteToken(payload) {
+    return callBackendApi('generateInviteToken', payload);
+}
