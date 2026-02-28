@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../../services/firebase';
 import { useAuth } from '../../../hooks/useAuth';
@@ -7,19 +7,31 @@ import styles from './SnapshotCreator.module.css';
 
 /**
  * SnapshotCreator — Camera capture screen.
- * Captures a photo, previews it, uploads to Firebase Storage,
- * then creates a Firestore doc via Cloud Function.
+ * Uses a <label> with a nested hidden <input type="file" capture="environment">
+ * to open the native camera on mobile devices.
  */
 export default function SnapshotCreator({ onClose }) {
     const { user } = useAuth(); // eslint-disable-line no-unused-vars
     const [previewUrl, setPreviewUrl] = useState(null);
     const [selectedFile, setSelectedFile] = useState(null);
     const [isSending, setIsSending] = useState(false);
-    const fileInputRef = useRef(null);
 
-    // ⚠️ NOTE: We use a <label> wrapping the <input> so tapping the pillow
-    // directly triggers the OS camera without needing JavaScript .click().
-    // This is the ONLY reliable way on iOS Safari and Android PWAs.
+    // Proactively request camera permission on mount so the OS prompts the user
+    useEffect(() => {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    // We got permission — immediately stop the stream
+                    // (we only needed to trigger the permission dialog)
+                    stream.getTracks().forEach(t => t.stop());
+                })
+                .catch(() => {
+                    // Permission denied or unavailable — that's okay,
+                    // the <input capture> will still try its best
+                    console.warn('[SnapshotCreator] Camera permission not granted, falling back to input capture');
+                });
+        }
+    }, []);
 
     const handleFileChange = (e) => {
         const file = e.target.files?.[0];
@@ -64,15 +76,6 @@ export default function SnapshotCreator({ onClose }) {
                 ✕
             </button>
 
-            <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                id="snapshot-camera-input"
-                onChange={handleFileChange}
-                style={{ display: 'none' }}
-            />
-
             <div className={styles.content}>
                 {/* Pillow clip definition */}
                 <svg height="0" width="0" style={{ position: 'absolute' }}>
@@ -86,7 +89,7 @@ export default function SnapshotCreator({ onClose }) {
                     </defs>
                 </svg>
 
-                {/* Pillow — camera trigger (label) or preview */}
+                {/* Pillow — camera trigger or preview */}
                 {previewUrl ? (
                     <div className={styles.squircle}>
                         <img
@@ -96,7 +99,15 @@ export default function SnapshotCreator({ onClose }) {
                         />
                     </div>
                 ) : (
-                    <label htmlFor="snapshot-camera-input" className={styles.squircle}>
+                    <label className={styles.squircle} style={{ cursor: 'pointer' }}>
+                        {/* Hidden input INSIDE the label — most reliable cross-browser pattern */}
+                        <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            onChange={handleFileChange}
+                            style={{ position: 'absolute', width: 0, height: 0, opacity: 0, overflow: 'hidden' }}
+                        />
                         <div className={styles.placeholder}>
                             <span className={styles.cameraEmoji}>📷</span>
                             <p className={styles.placeholderText}>Toca para abrir la cámara</p>
@@ -118,3 +129,4 @@ export default function SnapshotCreator({ onClose }) {
         </div>
     );
 }
+

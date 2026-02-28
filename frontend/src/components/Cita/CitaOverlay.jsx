@@ -1,11 +1,22 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './CitaOverlay.module.css';
 
 export default function CitaOverlay({ citaContext, onClose, onSave }) {
     const [sessionPhotos, setSessionPhotos] = useState([]);
     const [warningOpen, setWarningOpen] = useState(false);
-    const cameraInputRef = React.useRef(null);
-    const galleryInputRef = React.useRef(null);
+
+    // Proactively request camera permission so Chrome shows the dialog
+    useEffect(() => {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    stream.getTracks().forEach(t => t.stop());
+                })
+                .catch(() => {
+                    console.warn('[CitaOverlay] Camera permission not granted');
+                });
+        }
+    }, []);
 
     const handleFileAdded = (e) => {
         const file = e.target.files?.[0];
@@ -66,38 +77,33 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                     </span>
                 </div>
 
-                <label className={styles.bigCamera} htmlFor="cita-camera-input">
-                    <span className="material-symbols-outlined">add_a_photo</span>
-                </label>
-                <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    id="cita-camera-input"
-                    ref={cameraInputRef}
-                    style={{ display: 'none' }}
-                    onChange={handleFileAdded}
-                />
-                <p className={styles.bigCameraLabel}>Toma una foto</p>
-
-                <div className={styles.citaActions}>
-                    <button
-                        className={`${styles.citaAction} ${sessionPhotos.length === 0 ? styles.citaActionDisabled : ''}`}
-                        onClick={() => {
-                            if (sessionPhotos.length > 0) galleryInputRef.current?.click();
-                        }}
-                        disabled={sessionPhotos.length === 0}
-                    >
-                        <span className="material-symbols-outlined">photo_library</span>
-                        Galería
-                    </button>
+                <label className={styles.bigCamera} style={{ cursor: 'pointer' }}>
                     <input
                         type="file"
                         accept="image/*"
-                        ref={galleryInputRef}
-                        style={{ display: 'none' }}
+                        capture="environment"
                         onChange={handleFileAdded}
+                        style={{ position: 'absolute', width: 0, height: 0, opacity: 0, overflow: 'hidden' }}
                     />
+                    <span className="material-symbols-outlined">add_a_photo</span>
+                </label>
+                <p className={styles.bigCameraLabel}>Toma una foto</p>
+
+                <div className={styles.citaActions}>
+                    <label
+                        className={`${styles.citaAction} ${sessionPhotos.length === 0 ? styles.citaActionDisabled : ''}`}
+                        style={{ cursor: sessionPhotos.length > 0 ? 'pointer' : 'default' }}
+                    >
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileAdded}
+                            disabled={sessionPhotos.length === 0}
+                            style={{ position: 'absolute', width: 0, height: 0, opacity: 0, overflow: 'hidden' }}
+                        />
+                        <span className="material-symbols-outlined">photo_library</span>
+                        Galería
+                    </label>
                     <button
                         className={`${styles.citaAction} ${sessionPhotos.length === 0 ? styles.citaActionDisabled : ''}`}
                         disabled={sessionPhotos.length === 0}
