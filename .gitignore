@@ -35,6 +35,7 @@ RESUME_EXECUTE.md
 FLUJOS_APP.md
 diagnostic_report.md
 problemas.txt
+implementation_plan.md
 
 .firebase/
 serviceAccountKey.json
