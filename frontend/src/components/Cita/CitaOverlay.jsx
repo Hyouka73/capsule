@@ -1,20 +1,48 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import styles from './CitaOverlay.module.css';
 
 export default function CitaOverlay({ citaContext, onClose, onSave }) {
     const [sessionPhotos, setSessionPhotos] = useState([]);
     const [warningOpen, setWarningOpen] = useState(false);
-    const cameraInputRef = React.useRef(null);
-    const galleryInputRef = React.useRef(null);
 
-    const handleFileAdded = (e) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const objectUrl = URL.createObjectURL(file);
-            setSessionPhotos(prev => [...prev, objectUrl]);
-        }
-        // Reset input value so the same file can be chosen again if needed
-        e.target.value = '';
+    /**
+     * Opens a file picker by dynamically appending an <input> to document.body and clicking it.
+     * This is the most reliable pattern for PWA mobile camera access:
+     *  - Avoids Safari's gesture trust chain restrictions (triggered by a direct user tap -> this fn)
+     *  - Works on Android Chrome/Brave in PWA mode
+     *  - capture="environment" reliably opens native camera (not gallery) when called this way
+     */
+    const openNativeCamera = () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.capture = 'environment'; // Opens rear camera directly
+        input.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+        input.addEventListener('change', (e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                setSessionPhotos(prev => [...prev, URL.createObjectURL(file)]);
+            }
+            document.body.removeChild(input);
+        });
+        document.body.appendChild(input);
+        input.click();
+    };
+
+    const openGallery = () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+        input.addEventListener('change', (e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                setSessionPhotos(prev => [...prev, URL.createObjectURL(file)]);
+            }
+            document.body.removeChild(input);
+        });
+        document.body.appendChild(input);
+        input.click();
     };
 
     const handleImageError = (e) => {
@@ -66,36 +94,20 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                     </span>
                 </div>
 
-                <button className={styles.bigCamera} onClick={() => cameraInputRef.current?.click()}>
+                <button className={styles.bigCamera} onClick={openNativeCamera}>
                     <span className="material-symbols-outlined">add_a_photo</span>
                 </button>
-                <input
-                    type="file"
-                    accept="image/*"
-                    ref={cameraInputRef}
-                    style={{ display: 'none' }}
-                    onChange={handleFileAdded}
-                />
                 <p className={styles.bigCameraLabel}>Toma una foto</p>
 
                 <div className={styles.citaActions}>
                     <button
                         className={`${styles.citaAction} ${sessionPhotos.length === 0 ? styles.citaActionDisabled : ''}`}
-                        onClick={() => {
-                            if (sessionPhotos.length > 0) galleryInputRef.current?.click();
-                        }}
+                        onClick={() => { if (sessionPhotos.length > 0) openGallery(); }}
                         disabled={sessionPhotos.length === 0}
                     >
                         <span className="material-symbols-outlined">photo_library</span>
                         Galería
                     </button>
-                    <input
-                        type="file"
-                        accept="image/*"
-                        ref={galleryInputRef}
-                        style={{ display: 'none' }}
-                        onChange={handleFileAdded}
-                    />
                     <button
                         className={`${styles.citaAction} ${sessionPhotos.length === 0 ? styles.citaActionDisabled : ''}`}
                         disabled={sessionPhotos.length === 0}
