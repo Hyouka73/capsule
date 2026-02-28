@@ -72,7 +72,6 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                 <input
                     type="file"
                     accept="image/*"
-                    capture="environment"
                     ref={cameraInputRef}
                     style={{ display: 'none' }}
                     onChange={handleFileAdded}
