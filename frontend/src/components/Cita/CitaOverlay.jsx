@@ -1,16 +1,19 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import styles from './CitaOverlay.module.css';
 
 export default function CitaOverlay({ citaContext, onClose, onSave }) {
     const [sessionPhotos, setSessionPhotos] = useState([]);
     const [warningOpen, setWarningOpen] = useState(false);
+    const cameraInputRef = React.useRef(null);
+    const galleryInputRef = React.useRef(null);
 
     const handleFileAdded = (e) => {
         const file = e.target.files?.[0];
         if (file) {
-            setSessionPhotos(prev => [...prev, URL.createObjectURL(file)]);
+            const objectUrl = URL.createObjectURL(file);
+            setSessionPhotos(prev => [...prev, objectUrl]);
         }
-        // Reset so same file can be captured again
+        // Reset input value so the same file can be chosen again if needed
         e.target.value = '';
     };
 
@@ -63,33 +66,38 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                     </span>
                 </div>
 
-                {/* NATIVE CAMERA FALLBACK: Wrap input in a label to bypass PWA restrictions */}
-                <label className={styles.bigCamera}>
-                    <input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        onChange={handleFileAdded}
-                        style={{ display: 'none' }}
-                    />
+                <label className={styles.bigCamera} htmlFor="cita-camera-input">
                     <span className="material-symbols-outlined">add_a_photo</span>
                 </label>
+                <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    id="cita-camera-input"
+                    ref={cameraInputRef}
+                    style={{ display: 'none' }}
+                    onChange={handleFileAdded}
+                />
                 <p className={styles.bigCameraLabel}>Toma una foto</p>
 
                 <div className={styles.citaActions}>
-                    {/* NATIVE GALLERY FALLBACK */}
-                    <label className={`${styles.citaAction} ${sessionPhotos.length === 0 ? styles.citaActionDisabled : ''}`}>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleFileAdded}
-                            style={{ display: 'none' }}
-                            disabled={sessionPhotos.length === 0}
-                        />
+                    <button
+                        className={`${styles.citaAction} ${sessionPhotos.length === 0 ? styles.citaActionDisabled : ''}`}
+                        onClick={() => {
+                            if (sessionPhotos.length > 0) galleryInputRef.current?.click();
+                        }}
+                        disabled={sessionPhotos.length === 0}
+                    >
                         <span className="material-symbols-outlined">photo_library</span>
                         Galería
-                    </label>
-
+                    </button>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        ref={galleryInputRef}
+                        style={{ display: 'none' }}
+                        onChange={handleFileAdded}
+                    />
                     <button
                         className={`${styles.citaAction} ${sessionPhotos.length === 0 ? styles.citaActionDisabled : ''}`}
                         disabled={sessionPhotos.length === 0}
