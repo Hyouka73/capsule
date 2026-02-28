@@ -30,7 +30,7 @@ import { usePlaces } from './hooks/usePlaces';
 // Fly to a selected place
 function FlyToPlace({ place }) {
     const map = useMap();
-    if (place) {
+    if (place && place.coordinates && typeof place.coordinates.lat !== 'undefined' && typeof place.coordinates.lng !== 'undefined') {
         map.flyTo([place.coordinates.lat - 0.005, place.coordinates.lng], 15, { duration: 1.2, easeLinearity: 0.25 });
     }
     return null;
@@ -224,7 +224,7 @@ export default function MapView({
                         maxZoom={19}
                     />
                     <FlyToPlace place={selectedPlace} />
-                    {filteredPlaces.map(place => (
+                    {filteredPlaces.filter(p => p.coordinates && typeof p.coordinates.lat !== 'undefined' && typeof p.coordinates.lng !== 'undefined').map(place => (
                         <Marker
                             key={place.id}
                             position={[place.coordinates.lat, place.coordinates.lng]}
