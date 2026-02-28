@@ -15,12 +15,20 @@ export async function callBackendApi(name, data = {}) {
         const callable = httpsCallable(functions, name);
         const result = await callable(data);
 
-        if (!result.data.success) {
+        // Si el backend explicitamente dice success: false, lanzamos el error que mandó
+        if (result.data && result.data.success === false) {
             throw new Error(result.data.error || 'API Error.');
+        }
+
+        // Si no trae la bandera success pero tampoco dio error, logueamos un warning
+        // pero permitimos que pase (para no romper compatibilidad hacia atrás).
+        if (result.data && typeof result.data.success === 'undefined') {
+            console.warn(`[API Client Warning] /${name} did not return a 'success' flag.`, result.data);
         }
 
         return result.data;
     } catch (error) {
+        // Logueamos el error completo para debuggear en la consola del cliente
         console.error(`[API Client Error] /${name}:`, error);
         throw error;
     }

@@ -4,6 +4,7 @@ import { db } from '../../services/firebase';
 import Card from '../../components/ui/Card/Card';
 import Button from '../../components/ui/Button/Button';
 import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
+import { toast } from '../../components/ui/PastelToast/PastelToast';
 import { getGlobalSettings, saveGlobalSettings, saveSnapshotConfig } from '../../services/settingsService';
 import { generateInviteToken } from '../../apiClient';
 import styles from './GlobalSettings.module.css';
@@ -73,10 +74,10 @@ export default function GlobalSettings() {
         try {
             await saveGlobalSettings(settings);
             await saveSnapshotConfig({ timerSeconds: snapshotTimer });
-            alert('Configuración global guardada en la base de datos.');
+            toast.success('Configuración guardada.', 'Los cambios se han aplicado.');
         } catch (err) {
             console.error('Error saving settings:', err);
-            alert('Error al guardar la configuración.');
+            toast.error('Error al guardar.', 'No se pudo aplicar la configuración.');
         } finally {
             setIsSaving(false);
         }
@@ -84,7 +85,7 @@ export default function GlobalSettings() {
 
     const handleCopyInvite = () => {
         navigator.clipboard.writeText(settings.inviteLink);
-        alert('Enlace copiado al portapapeles');
+        toast.success('Enlace copiado.', 'Comparte este link con tu pareja.');
     };
 
     const handleRegenerateInvite = async () => {
@@ -92,10 +93,11 @@ export default function GlobalSettings() {
         try {
             const { inviteUrl } = await generateInviteToken({ expiresInDays: 7 });
             setSettings(prev => ({ ...prev, inviteLink: inviteUrl }));
-            alert('¡Nuevo enlace generado exitosamente!');
+            toast.success('¡Enlace generado!', 'El nuevo token está listo.');
         } catch (err) {
             console.error('Error generating token:', err);
-            alert('Error al generar el token: ' + err.message);
+            const userMsg = err.message || 'Error del servidor';
+            toast.error('Error al generar enlace', userMsg);
         }
     };
 
