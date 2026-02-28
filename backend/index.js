@@ -26,4 +26,5 @@ export { deleteMemory } from './src/api/deleteMemory.js';
 // --- Triggers ---
 export { onPhotoUploaded } from './src/triggers/onPhotoUploaded.js';
 export { taskUnlockCapsule } from './src/triggers/taskUnlockCapsule.js';
+export { taskArchiveSnapshot } from './src/triggers/taskArchiveSnapshot.js';
 

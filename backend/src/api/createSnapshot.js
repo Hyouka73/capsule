@@ -1,5 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { getFunctions } from 'firebase-admin/functions';
 import { sendNotificationToTokens } from '../utils/notifications.js';
 import { COLLECTIONS, PARTNER_SINGLETON_ID } from '../config/constants.js';
 
@@ -29,13 +30,20 @@ export const createSnapshot = onCall({ region: 'us-central1' }, async (request) 
 
     // 2. Create the Snapshot document
     const snapshotRef = db.collection(COLLECTIONS.INSTANTANEAS).doc();
+    // 2. Snapshot TTL: 24 hours after creation
+    const now = Timestamp.now();
+    const expiresAt = Timestamp.fromMillis(now.toMillis() + 24 * 60 * 60 * 1000);
+
     const snapshotData = {
         photoUrl,
         storagePath,
         message: message?.substring(0, 80) || '',
-        createdAt: Timestamp.now(),
+        createdAt: now,
         isSeen: false,
         seenAt: null,
+        isArchived: false,
+        archivedAt: null,
+        expiresAt,
         createdBy: request.auth.uid
     };
     batch.set(snapshotRef, snapshotData);
@@ -53,6 +61,19 @@ export const createSnapshot = onCall({ region: 'us-central1' }, async (request) 
     });
 
     await batch.commit();
+
+    // 3. Enqueue Cloud Task to archive exactly 24h from now
+    try {
+        const queue = getFunctions().taskQueue('taskArchiveSnapshot');
+        await queue.enqueue(
+            { snapshotId: snapshotRef.id },
+            { scheduleTime: expiresAt.toDate() }
+        );
+        console.log(`Cloud Task programada para archivar snapshot ${snapshotRef.id} en ${expiresAt.toDate()}`);
+    } catch (taskErr) {
+        // Non-fatal: the snapshot was created successfully. Archiving may be delayed.
+        console.error('[createSnapshot] Failed to enqueue archive task:', taskErr.message);
+    }
 
     // 4. Send Notification to Partner
     try {
