@@ -16,10 +16,8 @@ export default function PhotoUploader({ memoryId, onDone, onGpsDetected }) {
     const [isProcessing, setIsProcessing] = useState(false);
     const fileInputRef = useRef(null);
 
-    // Detect iOS — capture='environment' attribute on iOS forces camera-only
-    // and prevents photo library selection, or is silently ignored in some browsers.
-    // We omit it entirely on iOS and let the user choose via the native sheet.
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    // We do NOT use capture="environment" — on Android it can block the
+    // native file picker sheet. Without it, the OS shows camera + gallery options.
 
     function updateUploadStatus(id, delta) {
         setUploads(current => current.map(u => u.id === id ? { ...u, ...delta } : u));
@@ -112,7 +110,6 @@ export default function PhotoUploader({ memoryId, onDone, onGpsDetected }) {
                     type="file"
                     multiple
                     accept="image/*"
-                    {...(!isIOS && { capture: 'environment' })}
                     onChange={onDrop}
                     id="file-input"
                     className={styles.hiddenInput}

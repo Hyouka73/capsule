@@ -22,6 +22,9 @@ export default function SnapshotCreator({ onClose }) {
     // DIRECTLY from a user gesture (tap). Any async delay (setTimeout, promise, etc.)
     // breaks the gesture trust chain and Safari silently blocks the picker.
     // The user taps the placeholder squircle which calls handleCapture directly.
+    //
+    // ⚠️ We do NOT use capture="environment" — on Android it can block the native
+    // file picker sheet. Without it, the OS shows camera + gallery options natively.
 
     const handleCapture = () => {
         fileInputRef.current?.click();
@@ -72,7 +75,6 @@ export default function SnapshotCreator({ onClose }) {
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                {...(!(/iPad|iPhone|iPod/.test(navigator.userAgent)) && { capture: 'environment' })}
                 onChange={handleFileChange}
                 style={{ display: 'none' }}
             />

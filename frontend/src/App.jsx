@@ -21,7 +21,7 @@ import './App.css';
  * No router library needed — path-based routing with window.location.
  */
 export default function App() {
-  const { isAdmin, isLoading } = useAuth();
+  const { isAdmin, isAuthenticated, isLoading } = useAuth();
   const path = window.location.pathname;
 
   const isJoinRoute = path.startsWith('/join');
@@ -49,8 +49,13 @@ export default function App() {
     );
   }
 
-  // Partner routes (Dashboard)
+  // Partner routes (Dashboard) — require authentication
   if (isAppRoute) {
+    if (!isAuthenticated) {
+      // User landed on /app without a session → send to join flow
+      window.location.replace('/join');
+      return <LoadingScreen />;
+    }
     return (
       <PastelToastProvider>
         <UserDashboard />
