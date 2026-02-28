@@ -1,5 +1,6 @@
 import { onCall } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { logger } from 'firebase-functions';
 import { COLLECTIONS } from '../config/constants.js';
 
 /**
@@ -54,7 +55,7 @@ export const findOrCreatePlace = onCall({ region: 'us-central1' }, async (reques
         return { success: true, placeId: newPlaceRef.id };
 
     } catch (err) {
-        console.error('Error finding/creating place:', err);
+        logger.error('Error finding/creating place:', err);
         return { success: false, error: err.message };
     }
 });

@@ -1,5 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
+import { logger } from 'firebase-functions';
 import { COLLECTIONS } from '../config/constants.js';
 
 /**
@@ -57,7 +58,7 @@ export const getCapsules = onCall({ region: 'us-central1' }, async (request) => 
             docs: capsules
         };
     } catch (error) {
-        console.error('Error fetching capsules:', error);
+        logger.error('Error fetching capsules:', error);
         throw new HttpsError('internal', 'Ocurrió un error al obtener las cápsulas de Firestore.');
     }
 });

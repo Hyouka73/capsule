@@ -1,5 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { logger } from 'firebase-functions';
 import { COLLECTIONS } from '../config/constants.js';
 
 /**
@@ -82,7 +83,7 @@ export const openCapsule = onCall({ region: 'us-central1' }, async (request) => 
         };
 
     } catch (error) {
-        console.error(`Error in openCapsule [${capsuleId}]:`, error);
+        logger.error(`Error in openCapsule [${capsuleId}]:`, error);
         if (error instanceof HttpsError) throw error;
         throw new HttpsError('internal', 'Falló la apertura de la cápsula.');
     }

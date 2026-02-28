@@ -1,5 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { logger } from 'firebase-functions';
 import { COLLECTIONS } from '../config/constants.js';
 
 /**
@@ -43,7 +44,7 @@ export const deleteMemory = onCall({ region: 'us-central1' }, async (request) =>
     } catch (error) {
         if (error instanceof HttpsError) throw error;
 
-        console.error('Error in deleteMemory:', error);
+        logger.error('Error in deleteMemory:', error);
         throw new HttpsError('internal', 'Falló el borrado del recuerdo en la base de datos.');
     }
 });

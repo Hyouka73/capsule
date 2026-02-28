@@ -1,5 +1,6 @@
 import { onCall } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
+import { logger } from 'firebase-functions';
 import { COLLECTIONS } from '../config/constants.js';
 
 /**
@@ -50,7 +51,7 @@ export const getMemories = onCall({ region: 'us-central1' }, async (request) => 
             lastEventDate: memories[memories.length - 1]?.eventDate ?? null
         };
     } catch (error) {
-        console.error('Error fetching memories:', error);
+        logger.error('Error fetching memories:', error);
         return { success: false, error: 'Error interno del servidor.' };
     }
 });

@@ -1,5 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { logger } from 'firebase-functions';
 import { COLLECTIONS } from '../config/constants.js';
 
 /**
@@ -51,7 +52,7 @@ export const createMemory = onCall({ region: 'us-central1' }, async (request) =>
             message: 'Recuerdo creado correctamente.'
         };
     } catch (error) {
-        console.error('Error in createMemory:', error);
+        logger.error('Error in createMemory:', error);
         throw new HttpsError('internal', 'Falló la creación del recuerdo en la base de datos.');
     }
 });

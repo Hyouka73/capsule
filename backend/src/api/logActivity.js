@@ -1,5 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { logger } from 'firebase-functions';
 import { COLLECTIONS } from '../config/constants.js';
 
 /**
@@ -34,8 +35,8 @@ export const logActivity = onCall({ region: 'us-central1' }, async (request) => 
         await db.collection(COLLECTIONS.ACTIVITY_LOG).add(logData);
         return { success: true };
     } catch (error) {
-        console.error('Error logging activity:', error);
+        logger.error('Error logging activity:', error);
         // Fallamos silenciosamente para no bloquear la app
-        return { success: false, error: error.message };
+        return { success: false, error: 'Error interno del servidor.' };
     }
 });

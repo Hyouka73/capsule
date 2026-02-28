@@ -1,6 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { getFunctions } from 'firebase-admin/functions';
+import { logger } from 'firebase-functions';
 import { sendNotificationToTokens } from '../utils/notifications.js';
 import { COLLECTIONS, PARTNER_SINGLETON_ID } from '../config/constants.js';
 
@@ -69,10 +70,10 @@ export const createSnapshot = onCall({ region: 'us-central1' }, async (request) 
             { snapshotId: snapshotRef.id },
             { scheduleTime: expiresAt.toDate() }
         );
-        console.log(`Cloud Task programada para archivar snapshot ${snapshotRef.id} en ${expiresAt.toDate()}`);
+        logger.info(`Cloud Task programada para archivar snapshot ${snapshotRef.id} en ${expiresAt.toDate()}`);
     } catch (taskErr) {
         // Non-fatal: the snapshot was created successfully. Archiving may be delayed.
-        console.error('[createSnapshot] Failed to enqueue archive task:', taskErr.message);
+        logger.error('[createSnapshot] Failed to enqueue archive task:', taskErr.message);
     }
 
     // 4. Send Notification to Partner
@@ -94,7 +95,7 @@ export const createSnapshot = onCall({ region: 'us-central1' }, async (request) 
             }
         }
     } catch (err) {
-        console.error('Error sending snapshot notification:', err);
+        logger.error('Error sending snapshot notification:', err);
         // We don't fail the whole request if only notification fails
     }
 

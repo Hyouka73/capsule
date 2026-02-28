@@ -1,5 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { logger } from 'firebase-functions';
 import { COLLECTIONS } from '../config/constants.js';
 
 /**
@@ -55,7 +56,7 @@ export const updateMemory = onCall({ region: 'us-central1' }, async (request) =>
     } catch (error) {
         if (error instanceof HttpsError) throw error;
 
-        console.error('Error in updateMemory:', error);
+        logger.error('Error in updateMemory:', error);
         throw new HttpsError('internal', 'Falló la actualización del recuerdo en la base de datos.');
     }
 });
