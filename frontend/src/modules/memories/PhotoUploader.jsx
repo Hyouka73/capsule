@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { logActivity } from '../../apiClient';
 // Base Firebase SDK se usará temporalmente para subir a Storage, 
@@ -6,13 +6,20 @@ import { logActivity } from '../../apiClient';
 import { getStorage, ref, uploadBytesResumable } from 'firebase/storage';
 import { app } from '../../services/firebase';
 import { ACTIVITY_ACTIONS, ARTIFACT_TYPES } from '../../config/constants';
+import { autoDetectGps } from '../../utils/extractGpsFromFile';
 import Button from '../../components/ui/Button/Button';
 import styles from './PhotoUploader.module.css';
 
-export default function PhotoUploader({ memoryId, onDone }) {
+export default function PhotoUploader({ memoryId, onDone, onGpsDetected }) {
     const { user } = useAuth();
     const [uploads, setUploads] = useState([]); // { id, file, progress, status, error }
     const [isProcessing, setIsProcessing] = useState(false);
+    const fileInputRef = useRef(null);
+
+    // Detect iOS — capture='environment' attribute on iOS forces camera-only
+    // and prevents photo library selection, or is silently ignored in some browsers.
+    // We omit it entirely on iOS and let the user choose via the native sheet.
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
     function updateUploadStatus(id, delta) {
         setUploads(current => current.map(u => u.id === id ? { ...u, ...delta } : u));
@@ -33,6 +40,13 @@ export default function PhotoUploader({ memoryId, onDone }) {
         }));
 
         setUploads(prev => [...prev, ...newUploads]);
+
+        // GPS auto-detect from first photo (runs in parallel, non-blocking)
+        if (onGpsDetected && files.length > 0) {
+            autoDetectGps(files[0]).then(coords => {
+                if (coords) onGpsDetected(coords);
+            }).catch(() => { /* silent */ });
+        }
 
         const storage = getStorage(app);
 
@@ -94,9 +108,11 @@ export default function PhotoUploader({ memoryId, onDone }) {
                 onDrop={onDrop}
             >
                 <input
+                    ref={fileInputRef}
                     type="file"
                     multiple
                     accept="image/*"
+                    {...(!isIOS && { capture: 'environment' })}
                     onChange={onDrop}
                     id="file-input"
                     className={styles.hiddenInput}

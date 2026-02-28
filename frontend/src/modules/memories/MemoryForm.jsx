@@ -9,7 +9,8 @@ import Input from '../../components/ui/Input/Input';
 import Button from '../../components/ui/Button/Button';
 import styles from './MemoryForm.module.css';
 
-export default function MemoryForm({ initialData = null, onSuccess, onCancel }) {
+export default function MemoryForm({ initialData = null, onSuccess, onCancel, role = 'admin', bingoContext = null }) {
+    const isPartner = role === 'partner';
     const { user } = useAuth();
     const isEditing = !!initialData;
 
@@ -24,13 +25,13 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel }) 
             )
             : toInputDate(new Date()),
         tags: initialData?.tags ?? [],
-        adminNotes: initialData?.adminNotes ?? '',
+        adminNotes: isPartner ? '' : (initialData?.adminNotes ?? ''),
         // Place fields
-        placeName: initialData?.placeName ?? '',
+        placeName: bingoContext?.placeName ?? initialData?.placeName ?? '',
         placeCity: '',
         placeLat: '',
         placeLng: '',
-        placeCategory: PLACE_CATEGORIES.OTRO,
+        placeCategory: bingoContext?.placeCategory ?? PLACE_CATEGORIES.OTRO,
     });
 
     const [memoryId, setMemoryId] = useState(initialData?.id ?? null);
@@ -79,9 +80,10 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel }) 
                 description: form.description,
                 eventDate: form.eventDate, // String YYYY-MM-DD
                 tags: form.tags,
-                adminNotes: form.adminNotes,
+                ...(isPartner ? {} : { adminNotes: form.adminNotes }),
                 placeId: finalPlaceId,
                 placeName: finalPlaceName,
+                ...(bingoContext ? { bingoContext } : {}),
             };
 
             if (isEditing) {
@@ -204,16 +206,18 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel }) 
                         ))}
                     </div>
 
-                    <div className={styles.field}>
-                        <label className={styles.label}>Notas privadas</label>
-                        <textarea
-                            className={styles.textarea}
-                            placeholder="Contexto interno..."
-                            value={form.adminNotes}
-                            onChange={e => setForm(f => ({ ...f, adminNotes: e.target.value }))}
-                            rows={2}
-                        />
-                    </div>
+                    {!isPartner && (
+                        <div className={styles.field}>
+                            <label className={styles.label}>Notas privadas</label>
+                            <textarea
+                                className={styles.textarea}
+                                placeholder="Contexto interno..."
+                                value={form.adminNotes}
+                                onChange={e => setForm(f => ({ ...f, adminNotes: e.target.value }))}
+                                rows={2}
+                            />
+                        </div>
+                    )}
 
                     {error && <p className={styles.error}>{error}</p>}
 
@@ -230,6 +234,15 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel }) 
                 <PhotoUploader
                     memoryId={memoryId}
                     onDone={onSuccess}
+                    onGpsDetected={(coords) => {
+                        if (coords && !form.placeLat) {
+                            setForm(f => ({
+                                ...f,
+                                placeLat: String(coords.lat),
+                                placeLng: String(coords.lng),
+                            }));
+                        }
+                    }}
                 />
             )}
         </div>

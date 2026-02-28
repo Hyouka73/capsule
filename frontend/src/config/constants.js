@@ -98,6 +98,11 @@ export const PLACE_CATEGORIES = {
     OTRO: 'otro'
 };
 
+export const STORAGE_PATHS = {
+    PHOTO_ORIGINAL: (memoryId, photoId) => `memories/${memoryId}/photos/${photoId}/original.jpg`,
+    SNAPSHOT_ORIGINAL: (snapshotId) => `instantaneas/${snapshotId}/original.jpg`,
+};
+
 export const SINGLETON_DOCS = {
     APP_CONFIG: 'main',
     BINGO_BOARD: 'board',
