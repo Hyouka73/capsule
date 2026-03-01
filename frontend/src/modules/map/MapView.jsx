@@ -6,7 +6,6 @@ import MapPin from '../../components/ui/MapPin/MapPin';
 import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
 import PendingDatesList from '../../components/PendingDates/PendingDatesList';
 import PendingDateForm from '../../components/PendingDates/PendingDateForm';
-import CitaOverlay from '../../components/Cita/CitaOverlay';
 import { subscribeToGlobalSettings } from '../../services/settingsService';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
@@ -117,12 +116,13 @@ export default function MapView({
     openPendingSignal,
     onPendingSignalHandled,
     onOpenSnapshot,
-    onOpenCamera
+    onOpenCamera,
+    citaContext,
+    onCitaContextChange
 }) {
     const { isPartner, isAdmin } = useAuth();
     const [selectedPlace, setSelectedPlace] = useState(null);
     const [activeFilter, setActiveFilter] = useState('todos');
-    const [citaContext, setCitaContext] = useState(null);
     const [globalSettings, setGlobalSettings] = useState(null);
     const [mapZoom, setMapZoom] = useState(13);
 
@@ -135,11 +135,11 @@ export default function MapView({
 
     useEffect(() => {
         if (bingoContextToMap) {
-            setCitaContext(bingoContextToMap);
+            if (onCitaContextChange) onCitaContextChange(bingoContextToMap);
             if (clearBingoContext) clearBingoContext();
             if (onPlaceSelected) onPlaceSelected(true);
         }
-    }, [bingoContextToMap, clearBingoContext, onPlaceSelected]);
+    }, [bingoContextToMap, clearBingoContext, onPlaceSelected, onCitaContextChange]);
 
     const { places, loading: placesLoading } = usePlaces();
     const [pendingDates] = useState([]);
@@ -332,7 +332,7 @@ export default function MapView({
                             >
                                 <button className={styles.fabBtn} onClick={() => {
                                     const minVal = globalSettings?.citaConfig?.minPhotosSpontaneous || 5;
-                                    setCitaContext({ type: 'spontaneous', minPhotos: minVal });
+                                    if (onCitaContextChange) onCitaContextChange({ type: 'spontaneous', minPhotos: minVal });
                                 }}>
                                     <span className="material-symbols-outlined">camera_alt</span>
                                 </button>
@@ -403,15 +403,6 @@ export default function MapView({
                         pendingDate={selectedPendingDate}
                         onClose={() => setSelectedPendingDate(null)}
                         onSave={handleSavePendingDate}
-                    />
-                )}
-                {citaContext && (
-                    <CitaOverlay
-                        citaContext={citaContext}
-                        onClose={() => {
-                            setCitaContext(null);
-                            if (onPlaceSelected) onPlaceSelected(false);
-                        }}
                     />
                 )}
             </AnimatePresence>

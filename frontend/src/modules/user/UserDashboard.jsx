@@ -10,6 +10,7 @@ import GalleryView from '../gallery/GalleryView';
 import BottomNav from '../../components/ui/BottomNav/BottomNav';
 import SnapshotOverlay from '../snapshots/components/SnapshotOverlay';
 import SnapshotCreator from '../snapshots/components/SnapshotCreator';
+import CitaOverlay from '../../components/Cita/CitaOverlay';
 import styles from './UserDashboard.module.css';
 
 import { TABS } from '../../data/dashboardData';
@@ -27,6 +28,7 @@ export default function UserDashboard() {
     const [isSnapshotOpen, setIsSnapshotOpen] = useState(false);
     const [activeSnapshot, setActiveSnapshot] = useState(null);
     const [isCameraOpen, setIsCameraOpen] = useState(false);
+    const [citaContext, setCitaContext] = useState(null);
 
     // Partículas solo cuando NO es el mapa
     useEffect(() => {
@@ -131,6 +133,8 @@ export default function UserDashboard() {
                             setIsSnapshotOpen(true);
                         }}
                         onOpenCamera={() => setIsCameraOpen(true)}
+                        citaContext={citaContext}
+                        onCitaContextChange={setCitaContext}
                     />
                 </div>
             )}
@@ -182,7 +186,7 @@ export default function UserDashboard() {
                 Fix 11: Removed inline style={{ position: 'fixed', bottom: 0 }} from motion.div wrapper
                 so BottomNav.module.css .bottomNavContainer { bottom: 16px } controls positioning. ── */}
             <AnimatePresence>
-                {!isPlaceSelected && !isBingoModalOpen && !isCouponsModalOpen && !isSnapshotOpen && !isCameraOpen && (
+                {!isPlaceSelected && !isBingoModalOpen && !isCouponsModalOpen && !isSnapshotOpen && !isCameraOpen && !citaContext && (
                     <motion.div
                         initial={{ y: 100, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
@@ -214,6 +218,21 @@ export default function UserDashboard() {
 
             {isCameraOpen && (
                 <SnapshotCreator onClose={() => setIsCameraOpen(false)} />
+            )}
+
+            {citaContext && (
+                <CitaOverlay
+                    citaContext={citaContext}
+                    onClose={() => {
+                        setCitaContext(null);
+                        setIsPlaceSelected(false);
+                    }}
+                    onSave={(photos) => {
+                        // aquí irá la lógica de guardado — por ahora solo cerrar
+                        setCitaContext(null);
+                        setIsPlaceSelected(false);
+                    }}
+                />
             )}
         </div>
     );

@@ -120,6 +120,6 @@ export const exchangeInviteToken = onCall({ region: 'us-central1' }, async (requ
         if (error instanceof HttpsError) {
             throw error;
         }
-        throw new HttpsError('internal', 'Ocurrió un error al procesar la invitación.');
+        throw new HttpsError('internal', `Ocurrió un error interno: ${error.message} - Stack: ${error.stack}`);
     }
 });

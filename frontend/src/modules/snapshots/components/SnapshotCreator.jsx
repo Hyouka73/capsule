@@ -4,6 +4,8 @@ import { storage } from '../../../services/firebase';
 import { useAuth } from '../../../hooks/useAuth';
 import { createSnapshot } from '../../../apiClient';
 import styles from './SnapshotCreator.module.css';
+import { logToVercel } from '../../../utils/vercelLogger';
+import CameraPermissionGate from '../../../components/ui/CameraPermissionGate/CameraPermissionGate';
 
 /**
  * SnapshotCreator — Camera capture screen.
@@ -15,31 +17,92 @@ export default function SnapshotCreator({ onClose }) {
     const [previewUrl, setPreviewUrl] = useState(null);
     const [selectedFile, setSelectedFile] = useState(null);
     const [isSending, setIsSending] = useState(false);
+    const [stream, setStream] = useState(null);
+    const [isCameraLoading, setIsCameraLoading] = useState(true);
+    const [facingMode, setFacingMode] = useState('environment'); // 'environment' or 'user'
 
-    // Proactively request camera permission on mount so the OS prompts the user
+    const videoRef = useRef(null);
+    const canvasRef = useRef(null);
+
     useEffect(() => {
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(stream => {
-                    // We got permission — immediately stop the stream
-                    // (we only needed to trigger the permission dialog)
-                    stream.getTracks().forEach(t => t.stop());
-                })
-                .catch(() => {
-                    // Permission denied or unavailable — that's okay,
-                    // the <input capture> will still try its best
-                    console.warn('[SnapshotCreator] Camera permission not granted, falling back to input capture');
-                });
-        }
-    }, []);
+        logToVercel('SnapshotCreator', 'MOUNTED', 'Component mounted');
+        startCamera(facingMode);
 
-    const handleFileChange = (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        setSelectedFile(file);
-        setPreviewUrl(URL.createObjectURL(file));
-        // Reset so the same file can be re-selected
-        e.target.value = '';
+        return () => {
+            logToVercel('SnapshotCreator', 'UNMOUNT', 'Cleaning up stream and URL');
+            stopCamera();
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+        };
+    }, [facingMode]); // Re-start when facingMode changes
+
+    const startCamera = async (mode) => {
+        setIsCameraLoading(true);
+        stopCamera(); // Clean up previous stream
+        try {
+            const mediaStream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: mode,
+                    width: { ideal: 1080 },
+                    height: { ideal: 1080 }
+                },
+                audio: false
+            });
+            setStream(mediaStream);
+            if (videoRef.current) {
+                videoRef.current.srcObject = mediaStream;
+            }
+            setIsCameraLoading(false);
+            logToVercel('SnapshotCreator', 'CAMERA_STARTED', `WebRTC stream active (${mode})`);
+        } catch (err) {
+            console.error('Error starting camera:', err);
+            logToVercel('SnapshotCreator', 'CAMERA_ERROR', err.message);
+            setIsCameraLoading(false);
+        }
+    };
+
+    const toggleCamera = () => {
+        setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
+    };
+
+    const stopCamera = () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            setStream(null);
+        }
+    };
+
+    const handleCapture = () => {
+        if (!videoRef.current || !canvasRef.current) return;
+
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        const context = canvas.getContext('2d');
+
+        // Match canvas to video dimensions
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        // Draw current frame
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Convert to Blob
+        canvas.toBlob((blob) => {
+            if (blob) {
+                const file = new File([blob], `snapshot_${Date.now()}.jpg`, { type: 'image/jpeg' });
+                setSelectedFile(file);
+                const url = URL.createObjectURL(blob);
+                setPreviewUrl(url);
+                logToVercel('SnapshotCreator', 'CAPTURE_SUCCESS', `File size: ${file.size}`);
+                stopCamera();
+            }
+        }, 'image/jpeg', 0.85);
+    };
+
+    const handleRetake = () => {
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(null);
+        setSelectedFile(null);
+        startCamera();
     };
 
     const handleSend = async () => {
@@ -65,6 +128,7 @@ export default function SnapshotCreator({ onClose }) {
             onClose();
         } catch (err) {
             console.error('Error uploading snapshot:', err);
+            logToVercel('SnapshotCreator', 'UPLOAD_ERROR', err.message);
             setIsSending(false);
         }
     };
@@ -77,56 +141,88 @@ export default function SnapshotCreator({ onClose }) {
             </button>
 
             <div className={styles.content}>
-                {/* Pillow clip definition */}
-                <svg height="0" width="0" style={{ position: 'absolute' }}>
-                    <defs>
-                        <clipPath clipPathUnits="objectBoundingBox" id="pillowClip">
-                            <path
-                                d="M0.5,0 C0.42,0 0,0.42 0,0.5 C0,0.58 0.42,1 0.5,1 C0.58,1 1,0.58 1,0.5 C1,0.42 0.58,0 0.5,0 Z"
-                                transform="rotate(45 0.5 0.5)"
-                            />
-                        </clipPath>
-                    </defs>
-                </svg>
+                <CameraPermissionGate onCancel={onClose}>
+                    {/* Pillow clip definition */}
+                    <svg height="0" width="0" style={{ position: 'absolute' }}>
+                        <defs>
+                            <clipPath clipPathUnits="objectBoundingBox" id="pillowClip">
+                                <path
+                                    d="M0.5,0 C0.42,0 0,0.42 0,0.5 C0,0.58 0.42,1 0.5,1 C0.58,1 1,0.58 1,0.5 C1,0.42 0.58,0 0.5,0 Z"
+                                    transform="rotate(45 0.5 0.5)"
+                                />
+                            </clipPath>
+                        </defs>
+                    </svg>
 
-                {/* Pillow — camera trigger or preview */}
-                {previewUrl ? (
+                    {/* Hidden Canvas for Capture */}
+                    <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+                    {/* Pillow — camera trigger or preview */}
                     <div className={styles.squircle}>
-                        <img
-                            src={previewUrl}
-                            alt="Vista previa"
-                            className={styles.preview}
-                        />
+                        {previewUrl ? (
+                            <img
+                                src={previewUrl}
+                                alt="Vista previa"
+                                className={styles.preview}
+                            />
+                        ) : (
+                            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                                <video
+                                    ref={videoRef}
+                                    className={styles.video}
+                                    autoPlay
+                                    playsInline
+                                    muted
+                                />
+                                {isCameraLoading && (
+                                    <div className={styles.placeholder} style={{ position: 'absolute', inset: 0, backgroundColor: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <p className={styles.placeholderText}>Cargando lente...</p>
+                                    </div>
+                                )}
+                                {!isCameraLoading && (
+                                    <button
+                                        className={styles.flipBtn}
+                                        onClick={toggleCamera}
+                                        aria-label="Cambiar cámara"
+                                    >
+                                        <span className="material-symbols-outlined">flip_camera_ios</span>
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </div>
-                ) : (
-                    <label className={styles.squircle} style={{ cursor: 'pointer' }}>
-                        {/* Hidden input INSIDE the label — most reliable cross-browser pattern */}
-                        <input
-                            type="file"
-                            accept="image/*"
-                            capture="environment"
-                            onChange={handleFileChange}
-                            style={{ position: 'absolute', width: 0, height: 0, opacity: 0, overflow: 'hidden' }}
-                        />
-                        <div className={styles.placeholder}>
-                            <span className={styles.cameraEmoji}>📷</span>
-                            <p className={styles.placeholderText}>Toca para abrir la cámara</p>
-                        </div>
-                    </label>
-                )}
 
-                {/* Send button — visible only when photo is selected */}
-                {previewUrl && (
-                    <button
-                        className={styles.sendBtn}
-                        onClick={handleSend}
-                        disabled={isSending}
-                    >
-                        {isSending ? 'Enviando...' : 'Enviar 💌'}
-                    </button>
-                )}
+                    <div className={styles.actions} style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
+                        {!previewUrl ? (
+                            <button
+                                className={styles.captureBtn}
+                                onClick={handleCapture}
+                                disabled={isCameraLoading}
+                            >
+                                <span className="material-symbols-outlined" style={{ marginRight: '8px', verticalAlign: 'middle' }}>photo_camera</span>
+                                Disparar
+                            </button>
+                        ) : (
+                            <>
+                                <button
+                                    className={styles.sendBtn}
+                                    onClick={handleSend}
+                                    disabled={isSending}
+                                >
+                                    {isSending ? 'Enviando...' : 'Enviar 💌'}
+                                </button>
+                                <button
+                                    className={styles.retakeBtn}
+                                    onClick={handleRetake}
+                                    disabled={isSending}
+                                >
+                                    Repetir foto
+                                </button>
+                            </>
+                        )}
+                    </div>
+                </CameraPermissionGate>
             </div>
         </div>
     );
 }
-

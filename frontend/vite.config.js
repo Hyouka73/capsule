@@ -4,6 +4,20 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  build: {
+    chunkSizeWarningLimit: 800,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'firebase-vendor': ['firebase/app', 'firebase/firestore', 'firebase/auth', 'firebase/storage', 'firebase/functions'],
+          'framer-motion': ['framer-motion'],
+          'map-vendor': ['leaflet', 'react-leaflet'],
+          'exif-vendor': ['exifr'],
+        }
+      }
+    }
+  },
   plugins: [
     react(),
     VitePWA({
