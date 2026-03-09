@@ -166,6 +166,7 @@ export default function MapView({
                     onViewportChange={setViewport}
                     className={styles.map}
                     attributionControl={false}
+                    theme="light"
                     onClick={handleMapClick}
                 >
                     <MapControls position="bottom-right" showZoom={true} />

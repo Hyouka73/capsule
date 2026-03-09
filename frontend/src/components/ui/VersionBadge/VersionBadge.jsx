@@ -1,7 +1,7 @@
 import React from 'react';
 import './VersionBadge.css';
 
-const VERSION = 'v1.2.2-mapcn-final';
+const VERSION = 'v1.2.3-mapcn-white';
 // Storage Opt & LatLng Fix
 
 export default function VersionBadge() {

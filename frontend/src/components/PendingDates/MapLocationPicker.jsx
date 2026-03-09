@@ -99,6 +99,7 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
                     className={styles.map}
                     onClick={handleMapClick}
                     attributionControl={false}
+                    theme="light"
                 >
                     {position && (
                         <MapMarker
