@@ -171,9 +171,9 @@ export default function MapView({
                 >
                     <MapControls position="bottom-right" showZoom={true} />
 
-                    {filteredPlaces.filter(p => p.coordinates?.lat && p.coordinates?.lng).map(place => {
+                    {filteredPlaces.filter(p => (p.coordinates?.lat || p.coordinates?.latitude) && (p.coordinates?.lng || p.coordinates?.longitude)).map(place => {
                         const isSelected = selectedPlace?.id === place.id;
-                        const zoom = viewport.zoom;
+                        const zoom = viewport?.zoom || 13;
 
                         // Icon size logic
                         let size = 'small';

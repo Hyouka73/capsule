@@ -23,7 +23,20 @@ export function usePlaces() {
             unsubscribe = subscribeToCollection(
                 COLLECTIONS.PLACES,
                 (docs) => {
-                    setPlaces(docs || []);
+                    // Normalize coordinates (lat/lng or latitude/longitude)
+                    const normalizedDocs = (docs || []).map(doc => {
+                        if (doc.coordinates) {
+                            return {
+                                ...doc,
+                                coordinates: {
+                                    lat: doc.coordinates.lat || doc.coordinates.latitude,
+                                    lng: doc.coordinates.lng || doc.coordinates.longitude
+                                }
+                            };
+                        }
+                        return doc;
+                    });
+                    setPlaces(normalizedDocs);
                     setLoading(false);
                     setError(null);
                 },
