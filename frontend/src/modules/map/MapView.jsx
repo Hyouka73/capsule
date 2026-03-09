@@ -1,115 +1,18 @@
-import { useState, useEffect } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
-import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Map, MapMarker, MarkerContent, MapControls } from '@/components/ui/map';
 import PhotoViewer from '../../components/ui/PhotoViewer/PhotoViewer';
 import MapPin from '../../components/ui/MapPin/MapPin';
 import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
 import PendingDatesList from '../../components/PendingDates/PendingDatesList';
 import PendingDateForm from '../../components/PendingDates/PendingDateForm';
-import MemoryForm from '../memories/MemoryForm';
 import { subscribeToGlobalSettings } from '../../services/settingsService';
-// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import SnapshotButton from '../snapshots/components/SnapshotButton';
 import { toast } from '../../components/ui/PastelToast/PastelToast';
 import { useAuth } from '../../hooks/useAuth';
 import { useOfflineQueue } from '../../hooks/useOfflineQueue';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import styles from './MapView.module.css';
-
-// Fix leaflet default icon paths broken by bundlers
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
-
 import { usePlaces } from './hooks/usePlaces';
-
-// Fly to a selected place
-function FlyToPlace({ place }) {
-    const map = useMap();
-    if (place && place.coordinates && typeof place.coordinates.lat !== 'undefined' && typeof place.coordinates.lng !== 'undefined') {
-        map.flyTo([place.coordinates.lat - 0.005, place.coordinates.lng], 15, { duration: 1.2, easeLinearity: 0.25 });
-    }
-    return null;
-}
-
-// Track map events
-function MapEvents({ setMapZoom, onMapClick }) {
-    useMapEvents({
-        zoomend(e) {
-            setMapZoom(e.target.getZoom());
-        },
-        click() {
-            if (onMapClick) onMapClick();
-        }
-    });
-    return null;
-}
-
-// Build custom Leaflet div icon
-function buildIcon(place, isSelected, zoom) {
-    let size = 'small';
-    if (place.visitCount >= 5) size = 'large';
-    else if (place.visitCount >= 2) size = 'medium';
-
-    const scale = zoom >= 14 ? 1 : zoom >= 12 ? 0.7 : zoom >= 10 ? 0.45 : 0.25;
-    const isLowZoom = zoom < 10;
-    const hideIcon = zoom < 12;
-    const hidePulse = zoom < 13;
-
-    if (isLowZoom) size = 'micro';
-
-    let iconSize, iconAnchor, popupAnchor;
-    if (size === 'large') {
-        iconSize = [70 * scale, 70 * scale];
-        iconAnchor = [35 * scale, 62 * scale];
-        popupAnchor = [0, -60 * scale];
-    } else if (size === 'medium') {
-        iconSize = [46 * scale, 46 * scale];
-        iconAnchor = [23 * scale, 40 * scale];
-        popupAnchor = [0, -35 * scale];
-    } else if (size === 'small') {
-        iconSize = [30 * scale, 30 * scale];
-        iconAnchor = [15 * scale, 26 * scale];
-        popupAnchor = [0, -22 * scale];
-    } else {
-        iconSize = [20, 20];
-        iconAnchor = [10, 10];
-        popupAnchor = [0, -10];
-    }
-
-    const html = renderToStaticMarkup(
-        <div style={{
-            width: `${iconSize[0]}px`,
-            height: `${iconSize[1]}px`,
-            display: 'flex',
-            alignItems: size === 'micro' ? 'center' : 'flex-end',
-            justifyContent: 'center',
-            position: 'relative'
-        }}>
-            <div style={{ transform: `scale(${scale})`, transformOrigin: 'bottom center', display: 'flex' }}>
-                <MapPin
-                    size={size}
-                    selected={isSelected}
-                    hideIcon={hideIcon}
-                    hidePulse={hidePulse}
-                />
-            </div>
-        </div>
-    );
-
-    return L.divIcon({
-        className: '',
-        html: html,
-        iconSize: iconSize,
-        iconAnchor: iconAnchor,
-        popupAnchor: popupAnchor,
-    });
-}
 
 export default function MapView({
     onPlaceSelected,
@@ -129,7 +32,12 @@ export default function MapView({
     const [selectedPlace, setSelectedPlace] = useState(null);
     const [activeFilter, setActiveFilter] = useState('todos');
     const [globalSettings, setGlobalSettings] = useState(null);
-    const [mapZoom, setMapZoom] = useState(13);
+
+    // Tuxtla Gutiérrez, Chiapas
+    const [viewport, setViewport] = useState({
+        center: [-93.1152, 16.7521], // MapLibre uses [lng, lat]
+        zoom: 13,
+    });
 
     useEffect(() => {
         const unsub = subscribeToGlobalSettings(data => {
@@ -155,19 +63,17 @@ export default function MapView({
 
     const handleSavePendingDate = async (data) => {
         try {
-            // Transform classification data to the payload format expected by queueMemory
             const payload = {
                 title: data.title,
                 description: data.comments || '',
                 eventDate: data.eventDate,
                 tags: data.tags || [],
                 placeId: data.placeId === 'custom_map' ? null : data.placeId,
-                placeName: data.placeId === 'custom_map' ? null : null, // Backend can handle this
+                placeName: data.placeId === 'custom_map' ? null : null,
                 placeLat: data.customLocation?.lat || null,
                 placeLng: data.customLocation?.lng || null,
             };
 
-            // Get the photos from the pending date
             const files = (data.photos || []).map(p => p.file);
 
             if (files.length > 0) {
@@ -185,7 +91,6 @@ export default function MapView({
         }
     };
 
-    // Handle quick access signal from Navbar
     useEffect(() => {
         if (openPendingSignal) {
             setIsPendingListOpen(true);
@@ -198,11 +103,13 @@ export default function MapView({
         if (onPlaceSelected) onPlaceSelected(isAnyOverlayOpen);
     }, [citaContext, isPendingListOpen, selectedPendingDate, selectedPlace, isSearchActive, onPlaceSelected]);
 
-    const filteredPlaces = places.filter(p => {
-        const matchesFilter = activeFilter === 'todos' || p.tags?.includes(activeFilter);
-        const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesFilter && matchesSearch;
-    });
+    const filteredPlaces = useMemo(() => {
+        return places.filter(p => {
+            const matchesFilter = activeFilter === 'todos' || p.tags?.includes(activeFilter);
+            const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+            return matchesFilter && matchesSearch;
+        });
+    }, [places, activeFilter, searchQuery]);
 
     const uniqueTags = [...new Set(places.flatMap(p => p.tags ?? []))];
 
@@ -226,49 +133,85 @@ export default function MapView({
         }))
     ];
 
+    const handleMarkerClick = useCallback((place) => {
+        const newPlace = selectedPlace?.id === place.id ? null : place;
+        setSelectedPlace(newPlace);
+        if (onPlaceSelected) onPlaceSelected(!!newPlace);
+    }, [selectedPlace, onPlaceSelected]);
+
+    const handleMapClick = useCallback(() => {
+        if (isSearchActive) setIsSearchActive(false);
+        if (selectedPlace) {
+            setSelectedPlace(null);
+            if (onPlaceSelected) onPlaceSelected(false);
+        }
+    }, [isSearchActive, selectedPlace, onPlaceSelected]);
+
+    useEffect(() => {
+        if (selectedPlace && selectedPlace.coordinates) {
+            setViewport(prev => ({
+                ...prev,
+                center: [selectedPlace.coordinates.lng, selectedPlace.coordinates.lat],
+                zoom: 15
+            }));
+        }
+    }, [selectedPlace]);
+
     return (
         <div className={styles.screen}>
             {/* ── THE MAP ── */}
             <div className={styles.mapLayer}>
-                <MapContainer
-                    center={[16.7521, -93.1152]}
-                    zoom={13}
-                    style={{ width: '100%', height: '100%' }}
-                    zoomControl={false}
-                    attributionControl={false}
+                <Map
+                    viewport={viewport}
+                    onViewportChange={setViewport}
                     className={styles.map}
+                    attributionControl={false}
+                    onClick={handleMapClick}
                 >
-                    <MapEvents
-                        setMapZoom={setMapZoom}
-                        onMapClick={() => {
-                            if (isSearchActive) setIsSearchActive(false);
-                            if (selectedPlace) {
-                                setSelectedPlace(null);
-                                if (onPlaceSelected) onPlaceSelected(false);
-                            }
-                        }}
-                    />
-                    <TileLayer
-                        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-                        subdomains="abcd"
-                        maxZoom={19}
-                    />
-                    <FlyToPlace place={selectedPlace} />
-                    {filteredPlaces.filter(p => p.coordinates && typeof p.coordinates.lat !== 'undefined' && typeof p.coordinates.lng !== 'undefined').map(place => (
-                        <Marker
-                            key={place.id}
-                            position={[place.coordinates.lat, place.coordinates.lng]}
-                            icon={buildIcon(place, selectedPlace?.id === place.id, mapZoom)}
-                            eventHandlers={{
-                                click: () => {
-                                    const newPlace = selectedPlace?.id === place.id ? null : place;
-                                    setSelectedPlace(newPlace);
-                                    if (onPlaceSelected) onPlaceSelected(!!newPlace);
-                                }
-                            }}
-                        />
-                    ))}
-                </MapContainer>
+                    <MapControls position="bottom-right" showZoom={true} />
+
+                    {filteredPlaces.filter(p => p.coordinates?.lat && p.coordinates?.lng).map(place => {
+                        const isSelected = selectedPlace?.id === place.id;
+                        const zoom = viewport.zoom;
+
+                        // Icon size logic
+                        let size = 'small';
+                        if (place.visitCount >= 5) size = 'large';
+                        else if (place.visitCount >= 2) size = 'medium';
+                        if (zoom < 10) size = 'micro';
+
+                        const scale = zoom >= 14 ? 1 : zoom >= 12 ? 0.7 : zoom >= 10 ? 0.45 : 0.25;
+                        const hideIcon = zoom < 12;
+                        const hidePulse = zoom < 13;
+
+                        return (
+                            <MapMarker
+                                key={place.id}
+                                longitude={place.coordinates.lng}
+                                latitude={place.coordinates.lat}
+                                onClick={() => handleMarkerClick(place)}
+                            >
+                                <MarkerContent>
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: size === 'micro' ? 'center' : 'flex-end',
+                                        justifyContent: 'center',
+                                        position: 'relative'
+                                    }}>
+                                        <div style={{ transform: `scale(${scale})`, transformOrigin: 'bottom center', display: 'flex' }}>
+                                            <MapPin
+                                                size={size}
+                                                selected={isSelected}
+                                                hideIcon={hideIcon}
+                                                hidePulse={hidePulse}
+                                            />
+                                        </div>
+                                    </div>
+                                </MarkerContent>
+                            </MapMarker>
+                        );
+                    })}
+                </Map>
             </div>
 
             {/* ── OVERLAY LAYER ── */}

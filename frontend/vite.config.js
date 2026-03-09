@@ -1,9 +1,16 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import tailwindcss from '@tailwindcss/vite'
+import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
   build: {
     chunkSizeWarningLimit: 800,
     rollupOptions: {
@@ -12,7 +19,7 @@ export default defineConfig({
           'react-vendor': ['react', 'react-dom'],
           'firebase-vendor': ['firebase/app', 'firebase/firestore', 'firebase/auth', 'firebase/storage', 'firebase/functions'],
           'framer-motion': ['framer-motion'],
-          'map-vendor': ['leaflet', 'react-leaflet'],
+          'map-vendor': ['maplibre-gl'],
           'exif-vendor': ['exifr'],
         }
       }
@@ -77,5 +84,6 @@ export default defineConfig({
         ],
       },
     }),
+    tailwindcss(),
   ],
 })

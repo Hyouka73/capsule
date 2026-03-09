@@ -1,76 +1,27 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
-import L from 'leaflet';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Map, MapMarker, MarkerContent } from '@/components/ui/map';
 import Button from '../ui/Button/Button';
 import { toast } from '../ui/PastelToast/PastelToast';
 import styles from './MapLocationPicker.module.css';
 
-// Fix leaflet default icon
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
-
-const DEFAULT_CENTER = [16.7521, -93.1152];
-
-// Component to handle map clicks to move the marker
-function LocationMarker({ position, setPosition }) {
-    const markerRef = useRef(null);
-
-    useMapEvents({
-        click(e) {
-            setPosition(e.latlng);
-        },
-    });
-
-    const eventHandlers = {
-        dragend() {
-            const marker = markerRef.current;
-            if (marker != null) {
-                setPosition(marker.getLatLng());
-            }
-        },
-    };
-
-    return position === null ? null : (
-        <Marker
-            draggable={true}
-            eventHandlers={eventHandlers}
-            position={position}
-            ref={markerRef}
-        >
-        </Marker>
-    );
-}
-
-// Component to handle flying to location securely
-function FlyToLocation({ targetPos }) {
-    const map = useMap();
-    useEffect(() => {
-        if (targetPos) {
-            map.flyTo(targetPos, 15, { duration: 1.5, easeLinearity: 0.25 });
-        }
-    }, [map, targetPos]);
-    return null;
-}
+const DEFAULT_CENTER = [-93.1152, 16.7521]; // [lng, lat] for MapLibre
 
 export default function MapLocationPicker({ onConfirm, onCancel, initialCoordinates }) {
     const defaultPos = initialCoordinates && initialCoordinates.lat && initialCoordinates.lng
         ? { lat: initialCoordinates.lat, lng: initialCoordinates.lng }
-        : { lat: DEFAULT_CENTER[0], lng: DEFAULT_CENTER[1] };
+        : { lat: DEFAULT_CENTER[1], lng: DEFAULT_CENTER[0] };
 
     const [position, setPosition] = useState(defaultPos);
-    const [mapCenter] = useState(defaultPos); // initial map center, doesn't change
+    const [viewport, setViewport] = useState({
+        center: [defaultPos.lng, defaultPos.lat],
+        zoom: 15,
+    });
     const [isLocating, setIsLocating] = useState(false);
-    const [targetFlyPos, setTargetFlyPos] = useState(null);
     const [showConfirmBadge, setShowConfirmBadge] = useState(false);
     const hasAttemptedGeo = useRef(false);
 
     useEffect(() => {
         if (initialCoordinates && initialCoordinates.lat && initialCoordinates.lng) {
-            // No geo needed if we already have initial coordinates
             return;
         }
 
@@ -82,10 +33,11 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                    // Set position to update marker
                     setPosition(newPos);
-                    // trigger flyTo
-                    setTargetFlyPos(newPos);
+                    setViewport({
+                        center: [newPos.lng, newPos.lat],
+                        zoom: 15,
+                    });
                     setIsLocating(false);
                 },
                 (err) => {
@@ -110,6 +62,16 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
         }
     };
 
+    const handleMapClick = useCallback((e) => {
+        if (e.lngLat) {
+            setPosition({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+        }
+    }, []);
+
+    const handleDragEnd = useCallback((lngLat) => {
+        setPosition({ lat: lngLat.lat, lng: lngLat.lng });
+    }, []);
+
     return (
         <div className={styles.container}>
             <div className={styles.header}>
@@ -131,19 +93,24 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
                     </div>
                 )}
 
-                <MapContainer
-                    center={mapCenter}
-                    zoom={15}
+                <Map
+                    viewport={viewport}
+                    onViewportChange={setViewport}
                     className={styles.map}
-                    zoomControl={false}
+                    onClick={handleMapClick}
                     attributionControl={false}
                 >
-                    <TileLayer
-                        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-                    />
-                    <LocationMarker position={position} setPosition={setPosition} />
-                    <FlyToLocation targetPos={targetFlyPos} />
-                </MapContainer>
+                    {position && (
+                        <MapMarker
+                            longitude={position.lng}
+                            latitude={position.lat}
+                            draggable={true}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <MarkerContent />
+                        </MapMarker>
+                    )}
+                </Map>
 
                 <div className={styles.hintOverlay}>
                     <span className="material-symbols-outlined">touch_app</span>
