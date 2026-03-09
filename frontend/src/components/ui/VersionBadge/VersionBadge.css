@@ -1,0 +1,14 @@
+.version-badge {
+    position: fixed;
+    bottom: 8px;
+    right: 8px;
+    background-color: rgba(0, 0, 0, 0.2);
+    color: rgba(255, 255, 255, 0.6);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-family: monospace;
+    pointer-events: none;
+    z-index: 9999;
+    backdrop-filter: blur(2px);
+}

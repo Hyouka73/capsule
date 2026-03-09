@@ -1,0 +1,54 @@
+=== PROJECT CAPSULE - ESTADO Y AUDITORÍA ===
+VERSIÓN: 2.0 | FECHA: 2026-02-27
+
+[ESTADO MVP]
+✅ Deploy: Production (Vercel) - capsule-sooty.vercel.app
+✅ Auth: Admin + Partner Custom Token
+✅ Cloud Functions: 10 desplegadas (us-central1)
+✅ Config: AppConfigContext sync Firestore
+✅ Teaser 14 Feb: Entregado
+
+[DEUDA TÉCNICA CRÍTICA]
+❌ Offline Queue: Pendiente (IndexedDB + SW)
+❌ Cupones Backend: Solo UI mocks
+❌ Bingo Autodetección: Pendiente
+❌ FCM Push: No configurado
+❌ Wrapped: Tier Final (Abril 2027)
+
+[BUGS CRÍTICOS DEL DIAGNÓSTICO]
+BUG-01: onPhotoUploaded — imports faltantes (path, os, fs, sharp, firestore)
+BUG-02: apiClient — success-gate bloquea createSnapshot
+BUG-03: CapsuleManager — accede a result.capsules pero backend retorna result.docs
+BUG-04: UserCapsules — espera campos status/type que no existen
+BUG-05: SnapshotCreator — no envía photoUrl al backend
+BUG-06: auth.js — usa doc/updateDoc sin importarlos
+BUG-07: getMemories — query Firestore inválido (índice compuesto faltante)
+
+[COMPONENTES FRONTEND - ESTADO]
+| Componente | Estado | Cambios Necesarios |
+|------------|--------|-------------------|
+| MemoryForm.jsx | ✅ Existe | Agregar prop role |
+| PhotoUploader.jsx | ✅ Existe | Integrar EXIF GPS |
+| useOfflineQueue.js | ✅ 201 líneas | Ampliar para memory/snapshot |
+| UserCoupons.jsx | ⚠️ Mock data | Readaptar a Pools+Picks |
+| UserBingo.jsx | ✅ Existe | Modal sugerencias |
+| UserCapsules.jsx | ✅ Existe | Animación apertura + badge |
+| SnapshotCreator.jsx | ✅ Funcional | Input mensaje corto |
+| GalleryView.jsx | ✅ Básico | Incluir snapshots archivados |
+
+[CLOUD FUNCTIONS - ESTADO]
+| Function | Estado | Cambios |
+|----------|--------|---------|
+| createMemory.js | ✅ Desplegada | Agregar lógica bingo |
+| createSnapshot.js | ✅ Desplegada | Agregar FCM push |
+| createCapsule.js | ✅ Desplegada | Sin cambios |
+| getCapsules.js | ✅ Desplegada | Sin cambios |
+| openCapsule.js | ✅ Desplegada | Serializar timestamps |
+| taskUnlockCapsule.js | ✅ Desplegada | Agregar FCM push |
+| onPhotoUploaded.js | ✅ Desplegada | Fix imports |
+| exchangeInviteToken.js | ✅ Desplegada | Eliminar uuid muerto |
+
+[ISSUES CONOCIDOS]
+- Cámara iOS: capture="environment" no siempre abre cámara trasera
+- AppConfig: Documento /appConfig/main debe existir manualmente en Firestore
+- FCM: Pendiente configuración completa

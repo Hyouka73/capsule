@@ -1,3 +1,14 @@
+.root {
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+    background: var(--bg-card);
+    border-radius: var(--radius-card);
+    overflow-y: auto;
+    max-height: 85vh;
+    box-sizing: border-box;
+}
+
 .steps {
     display: flex;
     align-items: center;

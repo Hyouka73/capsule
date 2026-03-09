@@ -20,6 +20,7 @@ export default function SnapshotCreator({ onClose }) {
     const [stream, setStream] = useState(null);
     const [isCameraLoading, setIsCameraLoading] = useState(true);
     const [facingMode, setFacingMode] = useState('environment'); // 'environment' or 'user'
+    const [message, setMessage] = useState('');
 
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
@@ -122,7 +123,7 @@ export default function SnapshotCreator({ onClose }) {
             await createSnapshot({
                 storagePath: path,
                 photoUrl,
-                message: '',
+                message,
             });
 
             onClose();
@@ -204,6 +205,17 @@ export default function SnapshotCreator({ onClose }) {
                             </button>
                         ) : (
                             <>
+                                <div className={styles.messageContainer}>
+                                    <input
+                                        type="text"
+                                        placeholder="Añade un mensaje..."
+                                        value={message}
+                                        onChange={(e) => setMessage(e.target.value)}
+                                        className={styles.messageInput}
+                                        maxLength={80}
+                                        disabled={isSending}
+                                    />
+                                </div>
                                 <button
                                     className={styles.sendBtn}
                                     onClick={handleSend}

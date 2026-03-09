@@ -2,16 +2,19 @@ import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 // En lugar de llamar servicios de DB, delegamos al Backend (Serverless BFF)
 import { createMemory, findOrCreatePlace, updateMemory } from '../../apiClient';
+import { useOfflineQueue } from '../../hooks/useOfflineQueue';
 import PhotoUploader from './PhotoUploader';
 import { MEMORY_TAGS_OPTIONS, PLACE_CATEGORIES } from '../../config/constants';
+import exifr from 'exifr';
 
 import Input from '../../components/ui/Input/Input';
 import Button from '../../components/ui/Button/Button';
 import styles from './MemoryForm.module.css';
 
-export default function MemoryForm({ initialData = null, onSuccess, onCancel, role = 'admin', bingoContext = null }) {
+export default function MemoryForm({ initialData = null, onSuccess, onCancel, role = 'admin', bingoContext = null, initialPhotos = [] }) {
     const isPartner = role === 'partner';
     const { user } = useAuth();
+    const { queueMemory } = useOfflineQueue();
     const isEditing = !!initialData;
 
     const [form, setForm] = useState({
@@ -25,7 +28,6 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
             )
             : toInputDate(new Date()),
         tags: initialData?.tags ?? [],
-        adminNotes: isPartner ? '' : (initialData?.adminNotes ?? ''),
         // Place fields
         placeName: bingoContext?.placeName ?? initialData?.placeName ?? '',
         placeCity: '',
@@ -37,7 +39,7 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
     const [memoryId, setMemoryId] = useState(initialData?.id ?? null);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState(null);
-    const [step, setStep] = useState('details'); // 'details' | 'photos'
+    const [step, setStep] = useState(isPartner ? 'details' : 'unified'); // 'details' | 'photos' | 'unified'
 
     function toInputDate(date) {
         return date.toISOString().split('T')[0];
@@ -53,9 +55,23 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
     }
 
     async function handleSaveDetails(e) {
-        e.preventDefault();
+        if (e) e.preventDefault();
         setError(null);
         setIsSaving(true);
+
+        // Lazy GPS Extraction before saving
+        let coords = null;
+        if (!form.placeLat && initialPhotos?.length > 0) {
+            try {
+                // Try extracting from the first file in initialPhotos
+                const rawCoords = await exifr.gps(initialPhotos[0]);
+                if (rawCoords) {
+                    coords = { lat: rawCoords.latitude, lng: rawCoords.longitude };
+                }
+            } catch (err) {
+                console.warn('[GPS Extraction] Failed to read EXIF:', err);
+            }
+        }
 
         try {
             let finalPlaceId = initialData?.placeId ?? null;
@@ -74,17 +90,26 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
                 finalPlaceId = result.placeId;
             }
 
-            // Payload limpio. Todo el mapeo y metadatos (photoCount, createdAt, uid auth) lo hace el backend.
+            // Payload limpio.
             const memoryPayload = {
                 title: form.title,
                 description: form.description,
                 eventDate: form.eventDate, // String YYYY-MM-DD
                 tags: form.tags,
-                ...(isPartner ? {} : { adminNotes: form.adminNotes }),
                 placeId: finalPlaceId,
                 placeName: finalPlaceName,
+                placeLat: form.placeLat || coords?.lat,
+                placeLng: form.placeLng || coords?.lng,
                 ...(bingoContext ? { bingoContext } : {}),
             };
+
+            if (initialPhotos?.length > 0 && !isEditing) {
+                // Si ya tenemos fotos (flujo Partner/Pending), usamos la cola offline
+                // que garantiza subida robusta y creación del registro.
+                await queueMemory(memoryPayload, initialPhotos);
+                onSuccess?.();
+                return;
+            }
 
             if (isEditing) {
                 await updateMemory({ memoryId: initialData.id, ...memoryPayload });
@@ -94,7 +119,7 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
                 setMemoryId(response.memoryId);
             }
 
-            if (!isEditing) {
+            if (!isEditing && isPartner) {
                 setStep('photos');
             } else {
                 onSuccess?.();
@@ -109,18 +134,20 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
 
     return (
         <div className={styles.root}>
-            {/* Step indicator */}
-            <div className={styles.steps}>
-                <div className={`${styles.step} ${step === 'details' ? styles.stepActive : styles.stepDone}`}>
-                    1. Detalles
+            {/* Step indicator (Partner only) */}
+            {isPartner && (
+                <div className={styles.steps}>
+                    <div className={`${styles.step} ${step === 'details' ? styles.stepActive : styles.stepDone}`}>
+                        1. Detalles
+                    </div>
+                    <div className={styles.stepDivider} />
+                    <div className={`${styles.step} ${step === 'photos' ? styles.stepActive : ''}`}>
+                        2. Fotos
+                    </div>
                 </div>
-                <div className={styles.stepDivider} />
-                <div className={`${styles.step} ${step === 'photos' ? styles.stepActive : ''}`}>
-                    2. Fotos
-                </div>
-            </div>
+            )}
 
-            {step === 'details' && (
+            {(step === 'details' || step === 'unified') && (
                 <form onSubmit={handleSaveDetails} className={styles.form}>
                     <div className={styles.row}>
                         <Input
@@ -165,6 +192,7 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
                             onChange={e => setForm(f => ({ ...f, placeCity: e.target.value }))}
                         />
                     </div>
+
                     <div className={styles.row}>
                         <Input
                             label="Latitud"
@@ -206,44 +234,46 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
                         ))}
                     </div>
 
-                    {!isPartner && (
-                        <div className={styles.field}>
-                            <label className={styles.label}>Notas privadas</label>
-                            <textarea
-                                className={styles.textarea}
-                                placeholder="Contexto interno..."
-                                value={form.adminNotes}
-                                onChange={e => setForm(f => ({ ...f, adminNotes: e.target.value }))}
-                                rows={2}
-                            />
-                        </div>
-                    )}
 
                     {error && <p className={styles.error}>{error}</p>}
 
                     <div className={styles.actions}>
                         <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
                         <Button type="submit" isLoading={isSaving}>
-                            {isEditing ? 'Guardar cambios' : 'Siguiente →'}
+                            {isEditing ? 'Guardar cambios' : (isPartner ? 'Siguiente →' : 'Guardar Info y Generar ID')}
                         </Button>
                     </div>
                 </form>
             )}
 
-            {step === 'photos' && memoryId && (
-                <PhotoUploader
-                    memoryId={memoryId}
-                    onDone={onSuccess}
-                    onGpsDetected={(coords) => {
-                        if (coords && !form.placeLat) {
-                            setForm(f => ({
-                                ...f,
-                                placeLat: String(coords.lat),
-                                placeLng: String(coords.lng),
-                            }));
-                        }
-                    }}
-                />
+            {(step === 'photos' || (step === 'unified' && !isEditing)) && (
+                <div className={styles.photoSection}>
+                    {!isPartner && <div className={styles.sectionLabel}>📸 Fotos del momento</div>}
+                    <PhotoUploader
+                        memoryId={memoryId}
+                        initialFiles={initialPhotos}
+                        onDone={() => {
+                            if (step === 'unified') {
+                                // For admin unified, we might wait for manual "Finish" or auto-close
+                            }
+                            onSuccess();
+                        }}
+                        onGpsDetected={(coords) => {
+                            if (coords && !form.placeLat) {
+                                setForm(f => ({
+                                    ...f,
+                                    placeLat: String(coords.lat),
+                                    placeLng: String(coords.lng),
+                                }));
+                            }
+                        }}
+                    />
+                    {step === 'unified' && (
+                        <div className={styles.unifiedActions}>
+                            <Button onClick={onSuccess}>Finalizar y Guardar Recuerdo ✨</Button>
+                        </div>
+                    )}
+                </div>
             )}
         </div>
     );

@@ -9,8 +9,10 @@ import { getCapsules } from '../../apiClient';
  */
 function normalizeCapsule(raw) {
     const now = Date.now();
-    const opensAt = raw.opensAt ? new Date(raw.opensAt).getTime() : null;
-    const destructsAt = raw.destructsAt ? new Date(raw.destructsAt).getTime() : null;
+    const opensAtRaw = raw.unlockDate || raw.opensAt;
+    const opensAt = opensAtRaw ? new Date(opensAtRaw).getTime() : null;
+    const destructsAtRaw = raw.destructAt || raw.destructsAt;
+    const destructsAt = destructsAtRaw ? new Date(destructsAtRaw).getTime() : null;
 
     let status = 'locked';
     if (raw.isDestructed) status = 'destructed';

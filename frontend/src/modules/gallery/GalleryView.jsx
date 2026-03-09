@@ -84,7 +84,7 @@ export default function GalleryView() {
                             transition={{ delay: (index % 12) * 0.05 }}
                         >
                             <img
-                                src={photo.url || photo.storagePath}
+                                src={photo.thumbnailUrl || photo.url || photo.storagePath}
                                 alt={photo.caption || ''}
                                 loading="lazy"
                             />

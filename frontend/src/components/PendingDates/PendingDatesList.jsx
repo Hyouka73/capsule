@@ -40,20 +40,17 @@ export default function PendingDatesList({ pendingDates = [], onClose, onSelectD
                                 whileTap={{ scale: 0.98 }}
                             >
                                 <div className={styles.thumbWrapper}>
-                                    {pd.coverPhoto ? (
+                                    {pd.photos?.[0]?.objectUrl ? (
                                         <img
-                                            src={pd.coverPhoto}
+                                            src={pd.photos[0].objectUrl}
                                             alt="Recuerdo"
                                             className={styles.thumb}
-                                            onError={(e) => {
-                                                e.target.style.display = 'none';
-                                                e.target.nextSibling.style.display = 'flex';
-                                            }}
                                         />
-                                    ) : null}
-                                    <div className={styles.thumbFallback} style={{ display: pd.coverPhoto ? 'none' : 'flex' }}>
-                                        <span className="material-symbols-outlined">photo_camera</span>
-                                    </div>
+                                    ) : (
+                                        <div className={styles.thumbFallback}>
+                                            <span className="material-symbols-outlined">photo_camera</span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className={styles.info}>

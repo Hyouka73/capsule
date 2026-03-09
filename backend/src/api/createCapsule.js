@@ -26,7 +26,11 @@ export const createCapsule = onCall({ region: 'us-central1' }, async (request) =
     // Convertir fecha de apertura de string a Timestamp
     let parsedUnlockDate = null;
     if (unlockTrigger === 'date' && unlockDate) {
-        parsedUnlockDate = Timestamp.fromDate(new Date(unlockDate));
+        const d = new Date(unlockDate);
+        if (isNaN(d.getTime())) {
+            throw new HttpsError('invalid-argument', 'La fecha de desbloqueo proporcionada no es válida.');
+        }
+        parsedUnlockDate = Timestamp.fromDate(d);
     }
 
     // Si es desbloqueo manual (por acertijo o GPS futuramente), se queda sin task

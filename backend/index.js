@@ -22,8 +22,10 @@ export { openCapsule } from './src/api/openCapsule.js';
 export { unlockScheduledCapsules } from './src/api/unlockScheduledCapsules.js';
 export { updateMemory } from './src/api/updateMemory.js';
 export { deleteMemory } from './src/api/deleteMemory.js';
+export { getGallery } from './src/api/getGallery.js';
 
 // --- Triggers ---
+export { archiveExpiredSnapshots } from './src/api/archiveExpiredSnapshots.js';
 export { onPhotoUploaded } from './src/triggers/onPhotoUploaded.js';
 export { taskUnlockCapsule } from './src/triggers/taskUnlockCapsule.js';
 export { taskArchiveSnapshot } from './src/triggers/taskArchiveSnapshot.js';

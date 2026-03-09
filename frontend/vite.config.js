@@ -29,22 +29,7 @@ export default defineConfig({
         globIgnores: ['firebase-messaging-sw.js'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
-          {
-            urlPattern: ({ url }) => {
-              return url.href.includes('firestore.googleapis.com') ||
-                url.href.includes('firebase') ||
-                url.href.includes('identitytoolkit') ||
-                url.href.includes('securetoken')
-            },
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'firebase-apis',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
-              },
-            },
-          },
+          // Static assets (CacheFirst)
           {
             urlPattern: /\.(?:js|css|png|jpg|svg|ico|woff|woff2)$/,
             handler: 'CacheFirst',

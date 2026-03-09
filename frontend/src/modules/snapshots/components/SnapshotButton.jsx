@@ -63,6 +63,7 @@ export default function SnapshotButton({ onOpenSnapshot, onOpenCamera }) {
                     </span>
                 )}
             </div>
+            {hasUnseen && <div className={styles.glowContainer} />}
         </button>
     );
 }

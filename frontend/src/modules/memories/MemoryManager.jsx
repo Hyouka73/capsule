@@ -153,6 +153,7 @@ export default function MemoryManager() {
                         initialData={editingMemory}
                         onSuccess={handleCreated}
                         onCancel={() => setShowForm(false)}
+                        role="admin"
                     />
                 </Card>
             )}

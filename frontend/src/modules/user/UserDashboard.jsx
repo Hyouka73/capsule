@@ -14,10 +14,21 @@ import CitaOverlay from '../../components/Cita/CitaOverlay';
 import styles from './UserDashboard.module.css';
 
 import { TABS } from '../../data/dashboardData';
-import { MOCK_PENDING_DATES } from '../../data/mapData';
+import { usePendingCitas } from '../../hooks/usePendingCitas';
 
 export default function UserDashboard() {
     const { isPartner, isAdmin } = useAuth();
+    const { pendingCount, pendingCitas, removePendingCita, addPendingCita } = usePendingCitas();
+
+    // Filter TABS based on role
+    const filteredTabs = TABS.filter(tab => {
+        if (isAdmin) {
+            // Admin only sees Map and Gallery in the user view
+            return ['lugares', 'galeria'].includes(tab.id);
+        }
+        return true; // Partner sees everything
+    });
+
     const [activeTab, setActiveTab] = useState('lugares');
     const [prevTab, setPrevTab] = useState('lugares');
     const [isPlaceSelected, setIsPlaceSelected] = useState(false);
@@ -58,7 +69,7 @@ export default function UserDashboard() {
     const handleTabChange = (newTab) => {
         if (newTab === activeTab) {
             // Si ya estamos en lugares y hay citas pendientes, mandamos señal para abrir lista
-            if (newTab === 'lugares' && MOCK_PENDING_DATES.length > 0) {
+            if (newTab === 'lugares' && pendingCount > 0) {
                 setOpenPendingSignal(true);
             }
             return;
@@ -135,6 +146,8 @@ export default function UserDashboard() {
                         onOpenCamera={() => setIsCameraOpen(true)}
                         citaContext={citaContext}
                         onCitaContextChange={setCitaContext}
+                        pendingDates={pendingCitas}
+                        removePendingDate={removePendingCita}
                     />
                 </div>
             )}
@@ -196,8 +209,8 @@ export default function UserDashboard() {
                         <BottomNav
                             activeTab={activeTab}
                             setActiveTab={handleTabChange}
-                            tabs={TABS}
-                            pendingCount={MOCK_PENDING_DATES.length}
+                            tabs={filteredTabs}
+                            pendingCount={pendingCount}
                         />
                     </motion.div>
                 )}
@@ -227,8 +240,8 @@ export default function UserDashboard() {
                         setCitaContext(null);
                         setIsPlaceSelected(false);
                     }}
-                    onSave={(photos) => {
-                        // aquí irá la lógica de guardado — por ahora solo cerrar
+                    onSave={async (files) => {
+                        await addPendingCita(files, citaContext);
                         setCitaContext(null);
                         setIsPlaceSelected(false);
                     }}

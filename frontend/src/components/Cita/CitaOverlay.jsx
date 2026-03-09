@@ -8,16 +8,16 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
         logToVercel('CitaOverlay', 'MOUNTED', `Cita type: ${citaContext?.type}`);
     }, []);
 
-    const [sessionPhotos, setSessionPhotos] = useState([]);
+    const [sessionPhotos, setSessionPhotos] = useState([]); // Array of { file, previewUrl }
     const [warningOpen, setWarningOpen] = useState(false);
 
     const handleFileAdded = (e) => {
-        logToVercel('CitaOverlay', 'INPUT_ONCHANGE', `Target files type: ${typeof e.target.files}, length: ${e.target.files?.length}`);
+        logToVercel('CitaOverlay', 'INPUT_ONCHANGE', `Target files length: ${e.target.files?.length}`);
         const file = e.target.files?.[0];
         if (file) {
-            logToVercel('CitaOverlay', 'FILE_SELECTED', `Name: ${file.name}, Size: ${file.size}, Type: ${file.type}`);
-            const objectUrl = URL.createObjectURL(file);
-            setSessionPhotos(prev => [...prev, objectUrl]);
+            logToVercel('CitaOverlay', 'FILE_SELECTED', `Name: ${file.name}, Size: ${file.size}`);
+            const previewUrl = URL.createObjectURL(file);
+            setSessionPhotos(prev => [...prev, { file, previewUrl }]);
         }
         e.target.value = '';
     };
@@ -136,10 +136,10 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
 
                     {sessionPhotos.length > 0 && (
                         <div className={styles.sessionPhotosStrip}>
-                            {sessionPhotos.map((url, i) => (
+                            {sessionPhotos.map((item, i) => (
                                 <img
                                     key={i}
-                                    src={url}
+                                    src={item.previewUrl}
                                     alt=""
                                     className={styles.sessionPhotoThumb}
                                     onError={handleImageError}
@@ -151,7 +151,12 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                     {isComplete && (
                         <button
                             className={styles.saveBtn}
-                            onClick={() => { if (onSave) onSave(sessionPhotos); }}
+                            onClick={() => {
+                                if (onSave) {
+                                    const files = sessionPhotos.map(p => p.file);
+                                    onSave(files);
+                                }
+                            }}
                         >
                             <span className="material-symbols-outlined">check_circle</span>
                             Guardar Cita

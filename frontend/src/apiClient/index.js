@@ -79,3 +79,7 @@ export function createSnapshot(payload) {
 export function generateInviteToken(payload) {
     return callBackendApi('generateInviteToken', payload);
 }
+
+export function getGallery(payload) {
+    return callBackendApi('getGallery', payload);
+}

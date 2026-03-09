@@ -107,6 +107,20 @@
             ]
         },
         {
+            "collectionGroup": "capsules",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "isUnlocked",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
             "collectionGroup": "activityLog",
             "queryScope": "COLLECTION",
             "fields": [
@@ -168,6 +182,20 @@
         },
         {
             "collectionGroup": "instantaneas",
+            "queryScope": "COLLECTION_GROUP",
+            "fields": [
+                {
+                    "fieldPath": "isSeen",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "ASCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "instantaneas",
             "queryScope": "COLLECTION",
             "fields": [
                 {
@@ -176,7 +204,7 @@
                 },
                 {
                     "fieldPath": "createdAt",
-                    "order": "DESCENDING"
+                    "order": "ASCENDING"
                 }
             ]
         },
@@ -250,6 +278,20 @@
                 },
                 {
                     "fieldPath": "eventDate",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "instantaneas",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "isArchived",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
                     "order": "DESCENDING"
                 }
             ]

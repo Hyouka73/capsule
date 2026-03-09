@@ -14,7 +14,7 @@ export const getMemories = onCall({ region: 'us-central1' }, async (request) => 
     const resolvedLimit = limit ?? pageSize ?? 20;
 
     const db = getFirestore();
-    const isAdmin = request.auth.uid === process.env.ADMIN_UID;
+    const isAdmin = request.auth.token.role === 'admin';
 
     let query = db.collection(COLLECTIONS.MEMORIES);
 
@@ -36,14 +36,22 @@ export const getMemories = onCall({ region: 'us-central1' }, async (request) => 
 
     try {
         const snapshot = await query.get();
-        const memories = snapshot.docs.map(doc => ({
-            id: doc.id,
-            // Convertimos Timestamp a ISO String para que pase limpio por la red
-            ...doc.data(),
-            eventDate: doc.data().eventDate?.toDate()?.toISOString(),
-            createdAt: doc.data().createdAt?.toDate()?.toISOString(),
-            updatedAt: doc.data().updatedAt?.toDate()?.toISOString(),
-        }));
+        const memories = snapshot.docs.map(doc => {
+            const data = doc.data();
+            // Handle GeoPoint to plain object conversion for places/location
+            if (data.location && typeof data.location.toDate !== 'function' && data.location.latitude) {
+                data.location = { lat: data.location.latitude, lng: data.location.longitude };
+            }
+
+            return {
+                id: doc.id,
+                ...data,
+                // Convertimos Timestamp a ISO String para que pase limpio por la red
+                eventDate: data.eventDate?.toDate()?.toISOString(),
+                createdAt: data.createdAt?.toDate()?.toISOString(),
+                updatedAt: data.updatedAt?.toDate()?.toISOString(),
+            };
+        });
 
         return {
             success: true,

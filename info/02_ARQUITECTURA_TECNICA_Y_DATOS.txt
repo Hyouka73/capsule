@@ -1,0 +1,119 @@
+=== PROJECT CAPSULE - ARQUITECTURA Y DATOS ===
+
+[1] SCHEMA FIRESTORE (COLECCIONES PRINCIPALES)
+
+// users/{userId}
+{ uid, role: "admin"|"partner", displayName, deviceId, deviceInfo, isRevoked, preferences, fcmTokens[], createdAt, lastActiveAt }
+
+// inviteTokens/{tokenId}
+{ token, createdBy, createdAt, expiresAt, isClaimed, claimedBy, claimedDeviceId, isRevoked }
+
+// memories/{memoryId}
+{ id, title, description, uploadedBy, eventDate, createdAt, updatedAt, placeId, placeName, tags[], isSpecial, bingoCategory, bingoCompletedAt, movieData, adminNotes, photoCount, mainPhotoUrl, isHidden }
+
+// memories/{memoryId}/photos/{photoId} (SUBCOLLECTION)
+{ id, uploadedBy, storagePath, thumbnailPath, url, mimeType, sizeBytes, width, height, isMain, capturedAt, gpsCoordinates, filter, caption, isSpecial, partnerNote, uploadStatus }
+
+// places/{placeId}
+{ id, name, address, city, country, coordinates:{lat,lng}, category, coverPhotoUrl, visitCount, photoCount, firstVisitDate, lastVisitDate, tags[] }
+
+// capsules/{capsuleId}
+{ id, createdBy, type, content, unlockTrigger, unlockDate, isUnlocked, unlockedAt, openedByPartner, openedAt, teaserMessage, autoDestruct, destructAt, relatedMemoryId, notifyOnUnlock }
+
+// instantaneas/{snapshotId}
+{ id, photoUrl, storagePath, message, isSeen, seenAt, createdBy, createdAt, viewedBy[], viewedAt, expiresAt, isArchived, filter }
+
+// bingoBoard/{current} (SINGLETON)
+{ categories:[{id, label, emoji, suggestedTags[], isEnabled, completedMemoryId, completedAt}], completedCount, totalCount:20 }
+
+// couponPools/{tier}
+{ tier:1-4, displayName, coupons:[{id, title, description, emoji, totalUses, usesRemaining}] }
+
+// users/{userId}/earnedPicks (SUBCOLLECTION)
+{ id, tier, earnedAt, source, used, selectedCouponId, redeemedAt }
+
+// exerciseTracking/{userId}
+{ currentStreak, longestStreak, totalDays, lastWorkoutDate, unlockedTiers[], workoutLog:[] }
+
+// gameRooms/{id}
+{ id, gameType, players, state, currentTurn, board, winner, rewardTier, createdAt, lastMoveAt }
+
+// wrappedData/{year}
+{ year, generatedAt, stats:{}, mapJourney:[], scenes:[], hasBeenOpened }
+
+// activityLog/{logId}
+{ id, userId, action, targetType, targetId, metadata, displayText, isReadByAdmin, createdAt }
+
+// appConfig/main (SINGLETON)
+{ features:{}, wrapped:{}, map:{}, visibility:{}, notifications:{}, snapshotConfig:{} }
+
+[2] SECURITY RULES (RESUMEN LÓGICA CRÍTICA)
+
+- isAdmin(): request.auth.token.role == "admin"
+- isPartner(): request.auth.token.role == "partner"
+- isValidDevice(): request.auth.token.deviceId == user.deviceId
+- isNotRevoked(): !user.isRevoked
+
+- memories: Partner lee todo EXCEPTO adminNotes (filtrado client + rules). Partner solo update isSpecial/partnerNote. Admin update todo.
+- capsules: Partner solo lee si isUnlocked==true && isDestructed==false.
+- bingoBoard: Partner solo puede marcar completado (no desmarcar). Admin control total.
+- coupons: Partner lee activos. Admin CRUD total.
+- activityLog: Partner crea (sus acciones). Admin lee todo.
+
+[3] FIREBASE STORAGE STRUCTURE
+
+gs://capsule-valentins-day.appspot.com/
+├── memories/{memoryId}/photos/{photoId}/(original.jpg|thumb_400.jpg)
+├── instantaneas/{uuid}/original.jpg
+├── artifacts/{artifactId}/(original.jpg|pdf)
+├── capsules/{capsuleId}/content.jpg|pdf
+├── wrapped/{year}/cover.jpg
+└── backups/latest/(metadata.json|manifest.json)
+
+[4] CLOUD FUNCTIONS LISTADO
+
+- exchangeInviteToken (HTTPS): Canjea invite por Custom Token.
+- generateInviteToken (HTTPS): Admin crea invite.
+- createMemory (HTTPS): Crea memory + place + bingo logic.
+- getMemories (HTTPS): Fetch memories con filtros.
+- createSnapshot (HTTPS): Sube snapshot + set expiresAt.
+- getCapsules (HTTPS): Fetch capsules filtradas.
+- openCapsule (HTTPS): Marca como abierta + log.
+- createCapsule (HTTPS): Admin crea cápsula.
+- onPhotoUploaded (Trigger Storage): Genera thumb + update counters.
+- taskUnlockCapsule (Scheduled): Desbloquea por fecha.
+- generateWrapped (HTTPS+Scheduled): Stats + MapJourney.
+- archiveExpiredSnapshots (Scheduled): Marca isArchived=true.
+- logActivity (HTTPS): Guarda en activityLog.
+
+[5] AUTH FLOW (PARTNER)
+
+1. Admin genera inviteToken -> URL con token.
+2. Partner abre URL -> App genera deviceFingerprint (localStorage).
+3. App llama exchangeInviteToken(token, fingerprint).
+4. CF valida -> Crea user en Firestore -> Genera Custom Token con claims {role, deviceId}.
+5. App signInWithCustomToken -> Persistencia en IndexedDB.
+6. Revocación: Admin set isRevoked=true -> Security Rules bloquean acceso.
+
+[6] OFFLINE-FIRST ARCHITECTURE
+
+- Hook: useOfflineQueue (gestiona estado local).
+- Storage: IndexedDB (AppDB) -> Store: uploadQueue.
+- Sync: Service Worker (background sync event).
+- Logic: Queue FIFO -> Sube 1 foto cada 3s -> Retry 3x con backoff -> Notificación éxito/fallo.
+- Limites: Max 100MB o 50 items en queue.
+
+[7] ÍNDICES COMPUESTOS REQUERIDOS
+
+- memories: isHidden + eventDate (DESC)
+- memories: isHidden + createdAt (DESC)
+- memories: tags (CONTAINS) + eventDate (DESC)
+- memories: placeId + eventDate (DESC)
+- memories: isSpecial + eventDate (DESC)
+- capsules: isUnlocked + unlockDate (ASC)
+- capsules: isUnlocked + openedByPartner + unlockedAt (DESC)
+- capsules: isDestructed + createdAt (DESC)
+- activityLog: isReadByAdmin + createdAt (DESC)
+- artifacts: memoryId + createdAt (DESC)
+- photos: isSpecial + createdAt (DESC)
+- coupons: isActive + isUsed + createdAt (DESC)

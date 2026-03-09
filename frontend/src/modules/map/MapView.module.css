@@ -67,7 +67,7 @@
    ========================================================================= */
 .topControls {
     position: absolute;
-    top: 24px;
+    top: calc(24px + env(safe-area-inset-top, 0px));
     left: 16px;
     right: 16px;
     display: flex;
@@ -728,4 +728,16 @@
         opacity: 1;
         transform: translate(-50%, 0) scale(1);
     }
+}
+
+.memoryFormOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
 }

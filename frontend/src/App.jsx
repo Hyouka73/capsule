@@ -7,6 +7,7 @@ import JoinInvite from './modules/auth/JoinInvite';
 import LoadingScreen from './components/ui/LoadingScreen/LoadingScreen';
 import { PastelToastProvider } from './components/ui/PastelToast/PastelToast';
 import './App.css';
+import VersionBadge from './components/ui/VersionBadge/VersionBadge';
 
 /**
  * App — top-level routing
@@ -36,6 +37,7 @@ export default function App() {
     return (
       <PastelToastProvider>
         <JoinInvite />
+        <VersionBadge />
       </PastelToastProvider>
     );
   }
@@ -45,6 +47,7 @@ export default function App() {
     return (
       <PastelToastProvider>
         {isAdmin ? <AdminDashboard /> : <AdminLogin />}
+        <VersionBadge />
       </PastelToastProvider>
     );
   }
@@ -59,10 +62,16 @@ export default function App() {
     return (
       <PastelToastProvider>
         <UserDashboard />
+        <VersionBadge />
       </PastelToastProvider>
     );
   }
 
   // Default: teaser
-  return <Teaser />;
+  return (
+    <>
+      <Teaser />
+      <VersionBadge />
+    </>
+  );
 }

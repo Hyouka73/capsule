@@ -1,0 +1,46 @@
+=== PROJECT CAPSULE - CONTEXTO Y VISIÓN ===
+VERSIÓN: 2.0 | FECHA: 2026-02-27 | DEPLOY: https://capsule-sooty.vercel.app
+
+[1] PROPÓSITO
+Crear un espacio digital privado para documentar momentos de pareja, recibir sorpresas programadas, celebrar la relación con un "wrapped" anual y visualizar la historia geográfica.
+Objetivo emocional: Que ella se sienta amada y reconectar a pesar del distanciamiento físico.
+
+[2] HITOS CLAVE
+- 14 Feb 2026: Teaser (carta digital) ✅ ENTREGADO
+- 4 Abr 2026: Lanzamiento completo con Wrapped del Año 4
+- 4 Abr 2027: Anniversary Wrapped (requiere 1 año de datos)
+
+[3] STACK TÉCNICO
+- Frontend: React 19 + Vite + PWA (vite-plugin-pwa)
+- Backend: Firebase (Firestore, Storage, Auth, Functions) - Plan Blaze
+- Hosting: Vercel
+- Mapas: Leaflet (OpenStreetMap) → Mapbox GL JS (para Wrapped)
+- Animaciones: Framer Motion
+- Offline: IndexedDB + Service Worker Background Sync
+- APIs Externas: TMDb (películas), exifr (EXIF parsing)
+
+[4] MÓDULOS DE LA APLICACIÓN
+1. Mapa Interactivo (CORE): Lugares visitados con pins.
+2. Galería Completa: Cronológica tipo Google Photos.
+3. Caja de Zapatos 3D: Recuerdos por lugar específico.
+4. Scrapbook: Álbum de fotos "especiales".
+5. Bingo de Citas: 20 casillas de citas para completar.
+6. Tracking Películas: Registro de cine con TMDb.
+7. Cápsulas del Tiempo: Sorpresas programadas (fecha/manual).
+8. Cupones (Gamificación): Sistema Pools + Picks por logros.
+9. Wrapped Anual: Resumen cinematográfico (Abril 2027).
+10. Panel Admin: Gestión total (tuyo).
+11. Snapshots: Fotos efímeras tipo "Polaroid".
+12. Juegos en Pareja: Turnos semi-online (Gato, Conecta 4).
+13. Exercise Streaks: Rachas de ejercicio para premios.
+
+[5] ROLES DE USUARIO
+- ADMIN (Tú): Email/Password + 2FA. Acceso total. PC principalmente.
+- PARTNER (Ella): Custom Token + Device Binding. Sin login recurrente. Móvil principalmente. Offline-first.
+
+[6] REGLAS DE ORO PARA CÓDIGO
+- No romper Auth existente (Custom Tokens).
+- Mantener compatibilidad Offline (IndexedDB).
+- Usar Cloud Functions para lógica sensible (validaciones, premios).
+- Security Rules siempre activas y restrictivas.
+- Ahorrar tokens: Enviar solo snippets relevantes, no archivos completos.

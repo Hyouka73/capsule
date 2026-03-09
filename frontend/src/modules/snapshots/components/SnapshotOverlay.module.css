@@ -69,13 +69,17 @@
 
 .progressRingConic {
     position: absolute;
-    inset: -4px;
-    width: calc(100% + 8px);
-    height: calc(100% + 8px);
+    inset: -6px;
+    width: calc(100% + 12px);
+    height: calc(100% + 12px);
     pointer-events: none;
     clip-path: url(#pillowClip);
     -webkit-clip-path: url(#pillowClip);
     border-radius: 0;
+
+    /* Create ring effect by masking the center */
+    mask: radial-gradient(transparent 68%, black 69%);
+    -webkit-mask: radial-gradient(transparent 68%, black 69%);
 }
 
 .photoWrapper {

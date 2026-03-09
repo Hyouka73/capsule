@@ -1,0 +1,59 @@
+=== PROJECT CAPSULE - PLAN DE SPRINTS ===
+VERSIÓN: 2.0 | FECHA: 2026-02-27
+
+[SPRINT 1] CORE FOUNDATION, MEDIA Y OFFLINE-FIRST
+Meta: Subida de recuerdos infalible (Offline + GPS).
+
+Tareas:
+1.1 MemoryForm: Prop 'role' para ocultar adminNotes a partner.
+1.2 PhotoUploader: Integrar exifr (GPS auto) + fallback geolocation.
+1.3 useOfflineQueue: Soporte memory completo + snapshot (actualmente solo photos sueltas).
+1.4 Service Worker: Background sync config en vite-pwa.
+1.5 Snapshots: Queue múltiples + Archivado 24hrs (CF scheduled).
+1.6 Galería: Incluir snapshots archivados en feed.
+
+[SPRINT 2] GAMIFICACIÓN
+Meta: Ecosistema de incentivos (Picks -> Cupones).
+
+Tareas:
+2.1 Cupones Backend: CFs (createCouponPool, earnPick, redeemPick).
+2.2 Cupones UI Partner: Adaptar mocks a Pools + Picks.
+2.3 Cupones UI Admin: Gestión de Pools por Tier.
+2.4 Exercise Tracking: UI registro manual + foto.
+2.5 Streaks Backend: CF calcula racha + otorga Picks.
+2.6 Bingo Autodetección: CF analiza tags en createMemory.
+2.7 Bingo Modal: BottomSheet sugerencias frontend.
+2.8 Bingo Admin: Toggle enable/disable casillas.
+
+[SPRINT 3] NOTIFICACIONES Y MANTENIMIENTO
+Meta: Vida asíncrona (Push) y limpieza.
+
+Tareas:
+3.1 FCM Push: Setup App + SW + Tokens.
+3.2 Push Cápsulas: Integrar en taskUnlockCapsule.
+3.3 Push Snapshots: Integrar en createSnapshot.
+3.4 Push Cupones: Integrar en approveRedemption.
+3.5 Badge Cápsulas: Contador no abiertas en BottomNav.
+3.6 Animación Cápsulas: Framer Motion apertura.
+3.7 Activity Log: Conectar a datos reales.
+3.8 Archivado Logs: CF scheduled mensual.
+3.9 Destruct Capsules: CF scheduled auto-destrucción.
+
+[SPRINT 4] JUEGOS Y ENGAGEMENT
+Meta: Interacción profunda.
+
+Tareas:
+4.1 Juegos Gato: UI + Lógica turnos + Firestore realtime.
+4.2 Juegos Conecta 4: UI + Lógica.
+4.3 Recompensas Juegos: Validar ganador -> Otorgar Pick.
+4.4 Movie Tracking: Wizard TMDb API.
+4.5 Vista Cine: Grid posters vistos.
+4.6 Scrapbook: Álbum fotos especiales.
+4.7 Artifacts: Upload tickets/PDFs sueltos.
+
+[TIER FINAL] WRAPPED (ABRIL 2027)
+- generateWrapped CF (Stats + MapJourney).
+- WrappedPlayer (Viaje cinematográfico).
+- Mapbox GL JS animado.
+- html2canvas export.
+- Cloud Scheduler anual.

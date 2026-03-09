@@ -12,6 +12,18 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
     const [selectedPlaceId, setSelectedPlaceId] = useState('');
     const [customLocation, setCustomLocation] = useState(null);
     const [isPlacePickerOpen, setIsPlacePickerOpen] = useState(false);
+    const [title, setTitle] = useState(pendingDate?.title || '');
+    const [eventDate, setEventDate] = useState(() => {
+        try {
+            if (pendingDate?.createdAt) {
+                const d = new Date(pendingDate.createdAt);
+                if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+            }
+        } catch (e) {
+            console.error('Error parsing date:', e);
+        }
+        return new Date().toISOString().split('T')[0];
+    });
     const [selectedTags, setSelectedTags] = useState(pendingDate?.suggestedTags || []);
     const [comments, setComments] = useState('');
     const [locationError, setLocationError] = useState(false);
@@ -32,6 +44,8 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
 
         onSave({
             ...pendingDate,
+            title: title || 'Recuerdo sin título',
+            eventDate: eventDate,
             placeId: selectedPlaceId,
             customLocation: customLocation,
             tags: selectedTags,
@@ -68,6 +82,26 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
                             ))}
                         </div>
                     )}
+                </div>
+
+                <div className={styles.formGroup}>
+                    <KawaiiInput
+                        label="Título de nuestro recuerdo"
+                        iconLeft="edit"
+                        placeholder="Ej. Nuestra cena especial"
+                        value={title}
+                        onChange={e => setTitle(e.target.value)}
+                    />
+                </div>
+
+                <div className={styles.formGroup}>
+                    <KawaiiInput
+                        type="date"
+                        label="¿Cuándo fue?"
+                        iconLeft="calendar_today"
+                        value={eventDate}
+                        onChange={e => setEventDate(e.target.value)}
+                    />
                 </div>
 
                 <div className={styles.formGroup}>
