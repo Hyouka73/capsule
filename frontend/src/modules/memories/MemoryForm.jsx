@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { createMemory, findOrCreatePlace, updateMemory } from '../../apiClient';
 import { useOfflineQueue } from '../../hooks/useOfflineQueue';
 import PhotoUploader from './PhotoUploader';
+import { reverseGeocode } from '../../services/mapService';
 import { MEMORY_TAGS_OPTIONS, PLACE_CATEGORIES } from '../../config/constants';
 import exifr from 'exifr';
 
@@ -38,8 +39,28 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
 
     const [memoryId, setMemoryId] = useState(initialData?.id ?? null);
     const [isSaving, setIsSaving] = useState(false);
+    const [isGeocoding, setIsGeocoding] = useState(false);
     const [error, setError] = useState(null);
     const [step, setStep] = useState(isPartner ? 'details' : 'unified'); // 'details' | 'photos' | 'unified'
+
+    // Auto-Geocode when coords change and name is empty
+    useEffect(() => {
+        if (form.placeLat && form.placeLng && !form.placeName && !isGeocoding) {
+            const timer = setTimeout(async () => {
+                setIsGeocoding(true);
+                const result = await reverseGeocode(form.placeLat, form.placeLng);
+                if (result && !form.placeName) { // Double check name is still empty
+                    setForm(f => ({
+                        ...f,
+                        placeName: result.name,
+                        placeCity: result.city || f.placeCity
+                    }));
+                }
+                setIsGeocoding(false);
+            }, 800);
+            return () => clearTimeout(timer);
+        }
+    }, [form.placeLat, form.placeLng, form.placeName, isGeocoding]);
 
     function toInputDate(date) {
         return date.toISOString().split('T')[0];
@@ -177,7 +198,10 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
                         />
                     </div>
 
-                    <div className={styles.sectionLabel}>📍 Lugar (opcional)</div>
+                    <div className={styles.sectionLabel}>
+                        📍 Lugar (opcional)
+                        {isGeocoding && <span className={styles.miniLoader}> (Buscando nombre...)</span>}
+                    </div>
                     <div className={styles.row}>
                         <Input
                             label="Nombre"

@@ -1,7 +1,7 @@
 import React from 'react';
 import './VersionBadge.css';
 
-const VERSION = 'v1.2.4-mapcn-pins-fix';
+const VERSION = 'v1.2.5-geocoding-voyager';
 // Storage Opt & LatLng Fix
 
 export default function VersionBadge() {
