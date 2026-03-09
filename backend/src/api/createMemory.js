@@ -14,7 +14,7 @@ export const createMemory = onCall({ region: 'us-central1' }, async (request) =>
     }
 
     const { uid } = request.auth;
-    const { title, description, eventDate, tags, adminNotes, placeId, placeName } = request.data;
+    const { title, description, eventDate, tags, adminNotes, placeId, placeName, placeLat, placeLng } = request.data;
 
     // 2. Validación básica de Payload
     if (!eventDate) {
@@ -32,6 +32,8 @@ export const createMemory = onCall({ region: 'us-central1' }, async (request) =>
         adminNotes: adminNotes || null,
         placeId: placeId || null,
         placeName: placeName || null,
+        placeLat: placeLat ? parseFloat(placeLat) : null,
+        placeLng: placeLng ? parseFloat(placeLng) : null,
         uploadedBy: uid,
         photoCount: 0,
         mainPhotoUrl: null,
@@ -43,12 +45,44 @@ export const createMemory = onCall({ region: 'us-central1' }, async (request) =>
 
     try {
         // 4. Escribir a DB desde el lado del servidor
-        const memoryRef = await db.collection(COLLECTIONS.MEMORIES).add(memoryData);
+        const memoryRef = db.collection(COLLECTIONS.MEMORIES).doc();
+        const memoryId = memoryRef.id;
+
+        const { offlinePhotoUrls = [] } = request.data;
+        let photoCount = 0;
+        let mainPhotoUrl = null;
+
+        if (offlinePhotoUrls.length > 0) {
+            const batch = db.batch();
+            offlinePhotoUrls.forEach((p, index) => {
+                const photoId = p.photoId || db.collection('dummy').doc().id;
+                const photoRef = memoryRef.collection(COLLECTIONS.PHOTOS).doc(photoId);
+
+                batch.set(photoRef, {
+                    url: p.url,
+                    storagePath: p.storagePath,
+                    uploadStatus: 'completed', // Already uploaded by client
+                    isSnapshot: false,
+                    createdAt: FieldValue.serverTimestamp(),
+                    updatedAt: FieldValue.serverTimestamp(),
+                });
+
+                if (index === 0) mainPhotoUrl = p.url;
+                photoCount++;
+            });
+            await batch.commit();
+        }
+
+        await memoryRef.set({
+            ...memoryData,
+            photoCount,
+            mainPhotoUrl,
+        });
 
         // 5. Retornar solo lo que el Frontend necesita saber
         return {
             success: true,
-            memoryId: memoryRef.id,
+            memoryId: memoryId,
             message: 'Recuerdo creado correctamente.'
         };
     } catch (error) {

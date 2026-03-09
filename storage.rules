@@ -17,9 +17,9 @@ service firebase.storage {
     }
 
     // Fotos de memories (original + thumb generado por Cloud Function)
-    match /memories/{memoryId}/photos/{photoId}/{fileName} {
+    match /memories/{memoryId}/{folder}/{fileName} {
       allow read: if request.auth != null;
-      allow write: if (isAdmin() || isPartner()) && isValidFile();
+      allow write: if (isAdmin() || isPartner()) && isValidFile() && (folder == 'originals' || folder == 'thumbs');
       allow delete: if isAdmin();
     }
 

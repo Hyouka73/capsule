@@ -13,7 +13,7 @@ export const updateMemory = onCall({ region: 'us-central1' }, async (request) =>
         throw new HttpsError('unauthenticated', 'Debes iniciar sesión para actualizar un recuerdo.');
     }
 
-    const { memoryId, title, description, eventDate, tags, adminNotes, placeId, placeName, isHidden } = request.data || {};
+    const { memoryId, title, description, eventDate, tags, adminNotes, placeId, placeName, placeLat, placeLng, isHidden } = request.data || {};
 
     // 2. Validación de memoryId
     if (!memoryId) {
@@ -31,6 +31,8 @@ export const updateMemory = onCall({ region: 'us-central1' }, async (request) =>
     if (adminNotes !== undefined) updates.adminNotes = adminNotes;
     if (placeId !== undefined) updates.placeId = placeId;
     if (placeName !== undefined) updates.placeName = placeName;
+    if (placeLat !== undefined) updates.placeLat = placeLat ? parseFloat(placeLat) : null;
+    if (placeLng !== undefined) updates.placeLng = placeLng ? parseFloat(placeLng) : null;
     if (isHidden !== undefined) updates.isHidden = isHidden;
 
     // Agregar fecha de actualización

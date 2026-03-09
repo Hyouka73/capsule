@@ -25,10 +25,8 @@ export const COLLECTIONS = {
 export const PARTNER_SINGLETON_ID = 'partner_main';
 
 export const STORAGE_PATHS = {
-    PHOTO_ORIGINAL: (memoryId, photoId) =>
-        `memories/${memoryId}/photos/${photoId}/original.jpg`,
-    PHOTO_THUMB: (memoryId, photoId) =>
-        `memories/${memoryId}/photos/${photoId}/thumb_400.jpg`
+    PHOTO_ORIGINAL: (memoryId, photoId) => `memories/${memoryId}/originals/${photoId}.jpg`,
+    PHOTO_THUMB: (memoryId, photoId) => `memories/${memoryId}/thumbs/${photoId}.jpg`
 };
 
 export const CAPSULE_TYPES = {

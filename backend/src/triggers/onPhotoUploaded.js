@@ -14,16 +14,17 @@ export const onPhotoUploaded = onObjectFinalized({ region: 'us-central1' }, asyn
 
     // 1. Only process original photos — skip thumbnails
     if (!filePath) return;
-    if (!filePath.includes('/photos/')) return;
+    if (!filePath.includes('/originals/')) return;
     if (path.basename(filePath).startsWith('thumb_')) return;
     if (!contentType?.startsWith('image/') && contentType !== 'application/octet-stream') return;
 
-    // Parse the path: memories/{memoryId}/photos/{photoId}/original.jpg
+    // Parse the path: memories/{memoryId}/originals/{photoId}.jpg
     const parts = filePath.split('/');
-    if (parts.length < 5 || parts[0] !== 'memories' || parts[2] !== 'photos') return;
+    if (parts.length < 4 || parts[0] !== 'memories' || parts[2] !== 'originals') return;
 
     const memoryId = parts[1];
-    const photoId = parts[3];
+    const photoFileName = parts[3]; // e.g. "photoId.jpg"
+    const photoId = path.parse(photoFileName).name; // e.g. "photoId"
 
     const db = getFirestore();
     const storageBucket = getStorage().bucket(bucket);
@@ -44,7 +45,7 @@ export const onPhotoUploaded = onObjectFinalized({ region: 'us-central1' }, asyn
             .toFile(thumbTmpPath);
 
         // 5. Upload thumbnail
-        const thumbStoragePath = filePath.replace('original.jpg', 'thumb_400.jpg');
+        const thumbStoragePath = `memories/${memoryId}/thumbs/${photoId}.jpg`;
         await storageBucket.upload(thumbTmpPath, {
             destination: thumbStoragePath,
             metadata: {
@@ -58,16 +59,18 @@ export const onPhotoUploaded = onObjectFinalized({ region: 'us-central1' }, asyn
         await thumbFile.makePublic();
         const thumbUrl = `https://storage.googleapis.com/${bucket}/${thumbStoragePath}`;
 
-        // 6. Update the photo doc in the subcollection
+        // 6. Update/Create the photo doc in the subcollection
         const photoRef = db
             .collection(COLLECTIONS.MEMORIES).doc(memoryId)
             .collection(COLLECTIONS.PHOTOS).doc(photoId);
 
-        await photoRef.update({
+        await photoRef.set({
             thumbnailPath: thumbStoragePath,
             thumbnailUrl: thumbUrl,
             uploadStatus: 'completed',
-        });
+            isSnapshot: false, // Ensure it's not a snapshot for collectionGroup filtering
+            updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
 
         // 7. Update the parent memory
         const memoryRef = db.collection(COLLECTIONS.MEMORIES).doc(memoryId);
