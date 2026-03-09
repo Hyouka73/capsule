@@ -1,7 +1,7 @@
 import React from 'react';
 import './VersionBadge.css';
 
-const VERSION = 'v1.2.1-fix-cita-persistence';
+const VERSION = 'v1.2.2-mapcn-final';
 // Storage Opt & LatLng Fix
 
 export default function VersionBadge() {
