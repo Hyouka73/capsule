@@ -6,12 +6,14 @@ import MapPin from '../../components/ui/MapPin/MapPin';
 import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
 import PendingDatesList from '../../components/PendingDates/PendingDatesList';
 import PendingDateForm from '../../components/PendingDates/PendingDateForm';
+import MemoryForm from '../memories/MemoryForm';
 import { subscribeToGlobalSettings } from '../../services/settingsService';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import SnapshotButton from '../snapshots/components/SnapshotButton';
 import { toast } from '../../components/ui/PastelToast/PastelToast';
 import { useAuth } from '../../hooks/useAuth';
+import { useOfflineQueue } from '../../hooks/useOfflineQueue';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import styles from './MapView.module.css';
@@ -118,9 +120,12 @@ export default function MapView({
     onOpenSnapshot,
     onOpenCamera,
     citaContext,
-    onCitaContextChange
+    onCitaContextChange,
+    pendingDates = [],
+    removePendingDate
 }) {
     const { isPartner, isAdmin } = useAuth();
+    const { queueMemory } = useOfflineQueue();
     const [selectedPlace, setSelectedPlace] = useState(null);
     const [activeFilter, setActiveFilter] = useState('todos');
     const [globalSettings, setGlobalSettings] = useState(null);
@@ -142,17 +147,42 @@ export default function MapView({
     }, [bingoContextToMap, clearBingoContext, onPlaceSelected, onCitaContextChange]);
 
     const { places, loading: placesLoading } = usePlaces();
-    const [pendingDates] = useState([]);
     const [isPendingListOpen, setIsPendingListOpen] = useState(false);
     const [selectedPendingDate, setSelectedPendingDate] = useState(null);
     const [viewerPhotos, setViewerPhotos] = useState(null);
     const [isSearchActive, setIsSearchActive] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
-    const handleSavePendingDate = (data) => {
-        console.log('[PendingDate] Guardado (pendiente Firestore):', data);
-        toast.success('¡Cita guardada! 💾', 'Pronto la verás en el mapa ✨');
-        setSelectedPendingDate(null);
+    const handleSavePendingDate = async (data) => {
+        try {
+            // Transform classification data to the payload format expected by queueMemory
+            const payload = {
+                title: data.title,
+                description: data.comments || '',
+                eventDate: data.eventDate,
+                tags: data.tags || [],
+                placeId: data.placeId === 'custom_map' ? null : data.placeId,
+                placeName: data.placeId === 'custom_map' ? null : null, // Backend can handle this
+                placeLat: data.customLocation?.lat || null,
+                placeLng: data.customLocation?.lng || null,
+            };
+
+            // Get the photos from the pending date
+            const files = (data.photos || []).map(p => p.file);
+
+            if (files.length > 0) {
+                await queueMemory(payload, files);
+            }
+
+            if (removePendingDate && data.id) {
+                await removePendingDate(data.id);
+            }
+            setSelectedPendingDate(null);
+            toast.success('¡Cita guardada! 💾', 'Se está subiendo en segundo plano ✨');
+        } catch (err) {
+            console.error('[MapView] Error saving pending date:', err);
+            toast.error('Error al guardar', 'Inténtalo de nuevo más tarde');
+        }
     };
 
     // Handle quick access signal from Navbar
@@ -309,7 +339,7 @@ export default function MapView({
                         </div>
                     )}
 
-                    {/* Snapshot Button — Residencia original */}
+                    {/* Botón de Instantáneas (Tulip) — Residencia original top right */}
                     {(isPartner || isAdmin) && !isSearchActive && (
                         <SnapshotButton
                             onOpenSnapshot={onOpenSnapshot}
@@ -319,10 +349,10 @@ export default function MapView({
                 </div>
 
 
-                {/* Actions Stack: Bottom Right */}
+                {/* CITA INSTANTÁNEA (FAB bottom right) — Mantenemos la lógica pero con label correcto */}
                 <div className={styles.actionsStack}>
                     <AnimatePresence>
-                        {!isSearchActive && !citaContext && !selectedPlace && !isPendingListOpen && !selectedPendingDate && (
+                        {isPartner && !isSearchActive && !citaContext && !selectedPlace && !isPendingListOpen && !selectedPendingDate && (
                             <motion.div
                                 className={styles.fab}
                                 initial={{ opacity: 0, scale: 0.5, y: 50 }}
@@ -336,7 +366,7 @@ export default function MapView({
                                 }}>
                                     <span className="material-symbols-outlined">camera_alt</span>
                                 </button>
-                                <span className={styles.fabLabel}>Estamos de cita ✨</span>
+                                <span className={styles.fabLabel}>Cita Instantánea ✨</span>
                             </motion.div>
                         )}
                     </AnimatePresence>

@@ -99,7 +99,8 @@ export const PLACE_CATEGORIES = {
 };
 
 export const STORAGE_PATHS = {
-    PHOTO_ORIGINAL: (memoryId, photoId) => `memories/${memoryId}/photos/${photoId}/original.jpg`,
+    PHOTO_ORIGINAL: (memoryId, photoId) => `memories/${memoryId}/originals/${photoId}.jpg`,
+    PHOTO_THUMB: (memoryId, photoId) => `memories/${memoryId}/thumbs/${photoId}.jpg`,
     SNAPSHOT_ORIGINAL: (snapshotId) => `instantaneas/${snapshotId}/original.jpg`,
 };
 

@@ -8,7 +8,7 @@ import { STORAGE_PATHS } from '../config/constants';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const DB_NAME = 'capsule_offline_queue';
-const DB_VERSION = 1;
+const DB_VERSION = 3; // Version 3: Ensure status index exists
 const STORE_NAME = 'upload_queue';
 
 function openDB() {
@@ -16,9 +16,23 @@ function openDB() {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
         request.onupgradeneeded = (e) => {
             const db = e.target.result;
+
+            // 1. Upload Queue Store
+            let uploadStore;
             if (!db.objectStoreNames.contains(STORE_NAME)) {
-                const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-                store.createIndex('status', 'status', { unique: false });
+                uploadStore = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+            } else {
+                uploadStore = e.target.transaction.objectStore(STORE_NAME);
+            }
+
+            // Ensure status index exists
+            if (!uploadStore.indexNames.contains('status')) {
+                uploadStore.createIndex('status', 'status', { unique: false });
+            }
+
+            // 2. Pending Citas Store
+            if (!db.objectStoreNames.contains('pending_citas')) {
+                db.createObjectStore('pending_citas', { keyPath: 'id' });
             }
         };
         request.onsuccess = () => resolve(request.result);

@@ -10,10 +10,13 @@ import styles from './PhotoUploader.module.css';
 import { logToVercel } from '../../utils/vercelLogger';
 import CameraPermissionGate from '../../components/ui/CameraPermissionGate/CameraPermissionGate';
 
-export default function PhotoUploader({ memoryId, onDone, onGpsDetected }) {
+export default function PhotoUploader({ memoryId, onDone, onGpsDetected, initialFiles = [] }) {
     useEffect(() => {
-        logToVercel('PhotoUploader', 'MOUNTED', `Memory ID: ${memoryId}`);
-    }, [memoryId]);
+        logToVercel('PhotoUploader', 'MOUNTED', `Memory ID: ${memoryId}, Initial Files: ${initialFiles?.length}`);
+        if (initialFiles && initialFiles.length > 0) {
+            processFiles(initialFiles);
+        }
+    }, [memoryId]); // Only on mount/memoryId change
     const { user } = useAuth();
     const [uploads, setUploads] = useState([]);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -34,44 +37,64 @@ export default function PhotoUploader({ memoryId, onDone, onGpsDetected }) {
             status: 'pending',
         }));
         setUploads(prev => [...prev, ...newUploads]);
+
         if (onGpsDetected && files.length > 0) {
             autoDetectGps(files[0]).then(coords => {
                 if (coords) onGpsDetected(coords);
             }).catch(() => { });
         }
+    }, [onGpsDetected]);
+
+    // Effect: Trigger uploads when memoryId becomes available
+    useEffect(() => {
+        if (!memoryId || memoryId === 'null') return;
+
+        const pendingUploads = uploads.filter(u => u.status === 'pending');
+        if (pendingUploads.length === 0) return;
+
         const storage = getStorage(app);
-        for (const upload of newUploads) {
-            try {
-                updateUploadStatus(upload.id, { status: 'uploading', progress: 10 });
-                const storageRef = ref(storage, `memories/${memoryId}/photos/${upload.id}/original.jpg`);
-                const uploadTask = uploadBytesResumable(storageRef, upload.file, {
-                    customMetadata: { uploadedBy: user.uid }
-                });
-                await new Promise((resolve, reject) => {
-                    uploadTask.on('state_changed',
-                        (snapshot) => {
-                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                            updateUploadStatus(upload.id, { progress: 10 + (progress * 0.8) });
-                        },
-                        (error) => reject(error),
-                        () => resolve()
-                    );
-                });
-                await logActivity({
-                    action: ACTIVITY_ACTIONS.PHOTO_UPLOADED,
-                    targetType: ARTIFACT_TYPES.PHOTO,
-                    targetId: memoryId,
-                    metadata: { fileName: upload.file.name },
-                    displayText: `Subió una foto al recuerdo: ${upload.file.name}`
-                }).catch(() => { });
-                updateUploadStatus(upload.id, { status: 'success', progress: 100 });
-            } catch (err) {
-                console.error('Upload failed:', err);
-                updateUploadStatus(upload.id, { status: 'error', error: 'Fallo al subir' });
+
+        const runUploads = async () => {
+            setIsProcessing(true);
+            for (const upload of pendingUploads) {
+                try {
+                    updateUploadStatus(upload.id, { status: 'uploading', progress: 10 });
+                    // Standardized path: memories/{memoryId}/originals/{photoId}.jpg
+                    const storageRef = ref(storage, `memories/${memoryId}/originals/${upload.id}.jpg`);
+                    const uploadTask = uploadBytesResumable(storageRef, upload.file, {
+                        customMetadata: { uploadedBy: user.uid }
+                    });
+
+                    await new Promise((resolve, reject) => {
+                        uploadTask.on('state_changed',
+                            (snapshot) => {
+                                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                                updateUploadStatus(upload.id, { progress: 10 + (progress * 0.8) });
+                            },
+                            (error) => reject(error),
+                            () => resolve()
+                        );
+                    });
+
+                    await logActivity({
+                        action: ACTIVITY_ACTIONS.PHOTO_UPLOADED,
+                        targetType: ARTIFACT_TYPES.PHOTO,
+                        targetId: memoryId,
+                        metadata: { fileName: upload.file.name },
+                        displayText: `Subió una foto al recuerdo: ${upload.file.name}`
+                    }).catch(() => { });
+
+                    updateUploadStatus(upload.id, { status: 'success', progress: 100 });
+                } catch (err) {
+                    console.error('Upload failed:', err);
+                    updateUploadStatus(upload.id, { status: 'error', error: 'Fallo al subir' });
+                }
             }
-        }
-        setIsProcessing(false);
-    }, [memoryId, user.uid, onGpsDetected]);
+            setIsProcessing(false);
+        };
+
+        runUploads();
+    }, [memoryId, uploads, user.uid]);
 
     const onDrop = useCallback((e) => {
         e.preventDefault();
