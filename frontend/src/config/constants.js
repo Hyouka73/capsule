@@ -101,7 +101,8 @@ export const PLACE_CATEGORIES = {
 export const STORAGE_PATHS = {
     PHOTO_ORIGINAL: (memoryId, photoId) => `memories/${memoryId}/originals/${photoId}.jpg`,
     PHOTO_THUMB: (memoryId, photoId) => `memories/${memoryId}/thumbs/${photoId}.jpg`,
-    SNAPSHOT_ORIGINAL: (snapshotId) => `instantaneas/${snapshotId}/original.jpg`,
+    SNAPSHOT_ORIGINAL: (snapshotId) => `snapshots/${snapshotId}/originals/photo.jpg`,
+    SNAPSHOT_THUMB: (snapshotId) => `snapshots/${snapshotId}/thumbs/photo.jpg`
 };
 
 export const SINGLETON_DOCS = {

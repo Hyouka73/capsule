@@ -5,6 +5,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import { createSnapshot } from '../../../apiClient';
 import styles from './SnapshotCreator.module.css';
 import { logToVercel } from '../../../utils/vercelLogger';
+import { STORAGE_PATHS } from '../../../config/constants';
 import CameraPermissionGate from '../../../components/ui/CameraPermissionGate/CameraPermissionGate';
 
 /**
@@ -112,7 +113,7 @@ export default function SnapshotCreator({ onClose }) {
 
         try {
             const uuid = crypto.randomUUID();
-            const path = `instantaneas/${uuid}/original.jpg`;
+            const path = STORAGE_PATHS.SNAPSHOT_ORIGINAL(uuid);
             const fileRef = storageRef(storage, path);
 
             // Upload direct to Storage
