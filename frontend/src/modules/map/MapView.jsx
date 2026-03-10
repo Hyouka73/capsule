@@ -13,6 +13,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useOfflineQueue } from '../../hooks/useOfflineQueue';
 import styles from './MapView.module.css';
 import { usePlaces } from './hooks/usePlaces';
+import { getMemories } from '../../apiClient';
 
 export default function MapView({
     onPlaceSelected,
@@ -32,6 +33,8 @@ export default function MapView({
     const [selectedPlace, setSelectedPlace] = useState(null);
     const [activeFilter, setActiveFilter] = useState('todos');
     const [globalSettings, setGlobalSettings] = useState(null);
+    const [placeMemories, setPlaceMemories] = useState([]);
+    const [loadingMemories, setLoadingMemories] = useState(false);
 
     // Tuxtla Gutiérrez, Chiapas
     const [viewport, setViewport] = useState({
@@ -43,6 +46,23 @@ export default function MapView({
         const unsub = subscribeToGlobalSettings(data => {
             if (data) setGlobalSettings(data);
         });
+
+        // Intentar geolocalización inicial si el usuario no tiene recuerdos aún
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    setViewport(prev => ({
+                        ...prev,
+                        center: [pos.coords.longitude, pos.coords.latitude],
+                        zoom: 14
+                    }));
+                    toast.info('Ubicación encontrada ✨', 'Centrando el mapa en ti');
+                },
+                (err) => console.log('[MapView] Geolocation error:', err),
+                { enableHighAccuracy: true, timeout: 5000 }
+            );
+        }
+
         return unsub;
     }, []);
 
@@ -187,7 +207,29 @@ export default function MapView({
         if (!placesLoading && filteredPlaces.length > 0) {
             handleFitAll();
         }
-    }, [filteredPlaces.length, placesLoading, handleFitAll]);
+    }, [activeFilter, placesLoading, handleFitAll]);
+
+    useEffect(() => {
+        if (selectedPlace && selectedPlace.id) {
+            const fetchMemories = async () => {
+                setLoadingMemories(true);
+                setPlaceMemories([]); // Clear previous
+                try {
+                    const result = await getMemories({ placeId: selectedPlace.id, limit: 10 });
+                    if (result.success) {
+                        setPlaceMemories(result.docs || []);
+                    }
+                } catch (err) {
+                    console.error('[MapView] Error fetching memories for place:', err);
+                } finally {
+                    setLoadingMemories(false);
+                }
+            };
+            fetchMemories();
+        } else {
+            setPlaceMemories([]);
+        }
+    }, [selectedPlace]);
 
     useEffect(() => {
         if (selectedPlace && selectedPlace.coordinates) {
@@ -385,16 +427,59 @@ export default function MapView({
                                     <span className="material-symbols-outlined">close</span>
                                 </button>
                             </div>
-                            {selectedPlace?.photos?.length > 0 && (
-                                <div className={styles.photosGrid}>
-                                    {selectedPlace.photos.slice(0, 4).map((img, idx) => (
-                                        <div key={idx} className={styles.photoWrapGridItem} onClick={() => setViewerPhotos(selectedPlace.photos)}>
-                                            <img src={img} className={styles.photoGridImg} alt="" />
-                                            {idx === 3 && selectedPlace.photos.length > 4 && (
-                                                <div className={styles.photoMoreOverlay}>+{selectedPlace.photos.length - 4}</div>
-                                            )}
+
+                            {loadingMemories ? (
+                                <div className={styles.drawerLoading}>
+                                    <div className={styles.miniSpinner} />
+                                    <span>Buscando recuerdos... ✨</span>
+                                </div>
+                            ) : (
+                                <div className={styles.memoriesScroll}>
+                                    {placeMemories.map(memory => (
+                                        <div
+                                            key={memory.id}
+                                            className={styles.memoryCard}
+                                            onClick={() => {
+                                                if (memory.photos?.length > 0) {
+                                                    setViewerPhotos(memory.photos);
+                                                }
+                                            }}
+                                        >
+                                            <div className={styles.memoryPhotoWrap}>
+                                                {memory.mainPhotoUrl ? (
+                                                    <img src={memory.mainPhotoUrl} className={styles.memoryPhoto} alt="" />
+                                                ) : (
+                                                    <div className={styles.memoryPhotoPlaceholder}>📸</div>
+                                                )}
+                                                {memory.photoCount > 1 && (
+                                                    <div className={styles.photoCountBadge}>
+                                                        {memory.photoCount} fotos
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className={styles.memoryInfo}>
+                                                <div className={styles.memoryHeader}>
+                                                    <h3 className={styles.memoryTitle}>{memory.title || 'Sin título'}</h3>
+                                                    <span className={styles.memoryDate}>
+                                                        {memory.eventDate ? new Date(memory.eventDate).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) : ''}
+                                                    </span>
+                                                </div>
+                                                <p className={styles.memoryDesc}>{memory.description}</p>
+                                                {memory.tags?.length > 0 && (
+                                                    <div className={styles.memoryTags}>
+                                                        {memory.tags.slice(0, 2).map(t => (
+                                                            <span key={t} className={styles.miniTag}>#{t}</span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
+                                    {placeMemories.length === 0 && !loadingMemories && (
+                                        <div className={styles.noMemories}>
+                                            <p>Aún no hay fotos guardadas aquí. 📸</p>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>

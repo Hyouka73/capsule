@@ -1,7 +1,7 @@
 import React from 'react';
 import './VersionBadge.css';
 
-const VERSION = 'v1.2.7-cyber-mint-auto';
+const VERSION = 'v1.2.8-multi-memory';
 // Storage Opt & LatLng Fix
 
 export default function VersionBadge() {

@@ -381,133 +381,165 @@
     background: rgba(183, 228, 199, 0.4);
 }
 
-.photosGrid {
-    width: 100%;
-    height: 140px;
-    display: flex;
-    gap: 6px;
-    margin-bottom: 10px;
-}
-
-.photoWrapHorizontal {
-    flex: 1;
-    height: 100%;
-    border-radius: 12px;
-    overflow: hidden;
-    position: relative;
-}
-
-.photoWrapLargeLeft {
-    flex: 1;
-    height: 100%;
-    border-radius: 12px;
-    overflow: hidden;
-    position: relative;
-}
-
-.photoWrapStackedRight {
-    flex: 1;
+/* =========================================================================
+   MEMORIES SCROLL & CARDS
+   ========================================================================= */
+.memoriesScroll {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    height: 100%;
+    gap: 12px;
+    max-height: 380px;
+    overflow-y: auto;
+    padding-right: 4px;
+    margin-top: 4px;
 }
 
-.photoWrapSmall {
-    flex: 1;
+.memoryCard {
+    display: flex;
+    gap: 12px;
+    background: white;
+    padding: 10px;
     border-radius: 12px;
+    border: 1px solid rgba(136, 216, 176, 0.2);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.memoryCard:active {
+    transform: scale(0.98);
+    background: var(--bg-main);
+}
+
+.memoryPhotoWrap {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
     overflow: hidden;
     position: relative;
+    flex-shrink: 0;
 }
 
-/* 4+ photos: 2x2 Grid within photosGrid */
-.photosGrid:has(.photoWrapGridItem),
-.photosGrid>.photoWrapGridItem {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    gap: 6px;
-    width: 100%;
-    height: 140px;
-}
-
-.photoWrapGridItem {
-    border-radius: 12px;
-    overflow: hidden;
-    position: relative;
-    /* Reset display since the container itself became grid */
-    display: block;
-}
-
-/* If the parent is grid, make sure items span correctly */
-.photosGrid:has(.photoWrapGridItem) {
-    display: grid;
-}
-
-.photoGridImg {
+.memoryPhoto {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    display: block;
 }
 
-.photoMoreOverlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(136, 216, 176, 0.85);
-    /* mint green overlay */
-    color: white;
+.memoryPhotoPlaceholder {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-main);
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 24px;
+}
+
+.photoCountBadge {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    font-size: 9px;
+    padding: 2px 5px;
+    border-radius: 4px;
+}
+
+.memoryInfo {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+}
+
+.memoryHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 2px;
+}
+
+.memoryTitle {
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: 20px;
+    font-size: 15px;
+    color: var(--text-primary);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.visitDateBadge {
-    position: absolute;
-    bottom: 8px;
-    left: 8px;
-    background: var(--bg-overlay-strong);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    padding: 4px 8px;
-    border-radius: var(--radius-pill);
+.memoryDate {
     font-family: var(--font-body);
     font-size: 11px;
-    color: var(--text-primary);
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    z-index: 2;
+    color: var(--pastel-sage-dark);
+    flex-shrink: 0;
+    margin-left: 8px;
 }
 
-.visitDateBadge span {
-    font-size: 13px;
-    color: var(--pastel-green-btn);
-}
-
-.visitDateBadgeSmall {
-    position: absolute;
-    bottom: 6px;
-    left: 6px;
-    background: var(--bg-overlay-strong);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    padding: 3px 6px;
-    border-radius: var(--radius-pill);
+.memoryDesc {
     font-family: var(--font-body);
-    font-size: 9.5px;
-    color: var(--text-primary);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    z-index: 2;
-    white-space: nowrap;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 0 0 6px 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.3;
+}
+
+.memoryTags {
+    display: flex;
+    gap: 6px;
+}
+
+.miniTag {
+    font-size: 10px;
+    color: var(--pastel-green-btn);
+    font-weight: 600;
+}
+
+.noMemories {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.drawerLoading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 0;
+    gap: 12px;
+    color: var(--pastel-green-btn);
+    font-family: var(--font-display);
+    font-weight: 600;
+}
+
+.miniSpinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(136, 216, 176, 0.2);
+    border-top: 3px solid var(--pastel-green-btn);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* =========================================================================
-   STATS ROW
+   STATS ROW (Deprecated/Legacy)
    ========================================================================= */
 .statsRow {
     display: flex;
