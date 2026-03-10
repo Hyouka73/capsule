@@ -38,24 +38,25 @@
 .size-large {
     width: 44px;
     height: 44px;
-    background: var(--gradient-rose);
-    box-shadow: 0 6px 20px rgba(255, 143, 171, 0.5);
-    border: 3px solid white;
+    background: linear-gradient(135deg, #00f5a0, #00d9e1);
+    box-shadow: 0 0 20px rgba(0, 245, 160, 0.6), 0 6px 20px rgba(0, 0, 0, 0.2);
+    border: 3px solid #004d40;
 }
 
 .size-medium {
     width: 32px;
     height: 32px;
     background: white;
-    border: 3px solid #ff8fa3;
-    box-shadow: 0 4px 12px rgba(255, 143, 171, 0.35);
+    border: 3px solid #00f5a0;
+    box-shadow: 0 4px 15px rgba(0, 245, 160, 0.4);
 }
 
 .size-small {
-    width: 22px;
-    height: 22px;
-    background: rgba(255, 183, 178, 0.4);
-    border: 2px solid #ffb7b2;
+    width: 24px;
+    height: 24px;
+    background: #00f5a0;
+    border: 2.5px solid #004d40;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .smallDot {
@@ -67,27 +68,27 @@
 
 /* Micro Dot for very low zoom */
 .microDot {
-    width: 8px;
-    height: 8px;
-    background: #ff8fa3;
+    width: 10px;
+    height: 10px;
+    background: #00f5a0;
     border-radius: 50%;
-    /* Added slight shadow to make it pop */
-    box-shadow: 0 2px 6px rgba(255, 143, 171, 0.4);
+    border: 1.5px solid #004d40;
+    box-shadow: 0 0 10px rgba(0, 245, 160, 0.8);
 }
 
 /* Selected State Override */
 /* Escala 1.2 con transform, el borde cambia a 3px solid #74c69d, sombra más intensa */
 .selected .pin {
-    transform: rotate(-45deg) scale(1.2);
-    border: 3px solid #e87a8e;
-    box-shadow: 0 8px 24px rgba(232, 122, 142, 0.6);
+    transform: rotate(-45deg) scale(1.25);
+    border: 3px solid white;
+    box-shadow: 0 0 25px rgba(0, 245, 160, 0.9), 0 8px 30px rgba(0, 0, 0, 0.3);
 }
 
 /* Pulse Ring Animation (Inside .pin) */
 .pulseRing {
     position: absolute;
     box-sizing: border-box;
-    border: 2px solid rgba(255, 143, 171, 0.6);
+    border: 2px solid rgba(0, 245, 160, 0.8);
     border-radius: 50%;
     animation: pulseLoop 2.5s infinite cubic-bezier(0.21, 0.53, 0.56, 1);
     pointer-events: none;

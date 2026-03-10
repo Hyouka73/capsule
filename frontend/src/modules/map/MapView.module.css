@@ -106,34 +106,6 @@
     font-size: 20px;
 }
 
-.fitAllBtn {
-    width: 42px;
-    height: 42px;
-    flex-shrink: 0;
-    border-radius: 50%;
-    background: var(--bg-overlay-light);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: var(--border-mint);
-    color: var(--pastel-rose);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    transition: transform 0.2s, background 0.2s;
-}
-
-.fitAllBtn:active {
-    transform: scale(0.9) translateY(2px);
-}
-
-.fitAllBtn span {
-    font-size: 22px;
-}
-
-
-
 .filtersScroll {
     display: flex;
     gap: 8px;

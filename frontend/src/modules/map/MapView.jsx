@@ -184,6 +184,12 @@ export default function MapView({
     }, [places]);
 
     useEffect(() => {
+        if (!placesLoading && filteredPlaces.length > 0) {
+            handleFitAll();
+        }
+    }, [filteredPlaces.length, placesLoading, handleFitAll]);
+
+    useEffect(() => {
         if (selectedPlace && selectedPlace.coordinates) {
             setViewport(prev => ({
                 ...prev,
@@ -317,16 +323,6 @@ export default function MapView({
                                 </div>
                             )}
                         </div>
-                    )}
-
-                    {!isSearchActive && (
-                        <button
-                            className={styles.fitAllBtn}
-                            onClick={handleFitAll}
-                            title="Ver todo"
-                        >
-                            <span className="material-symbols-outlined">explore</span>
-                        </button>
                     )}
 
                     {/* Botón de Instantáneas (Tulip) — Residencia original top right */}
