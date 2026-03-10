@@ -41,13 +41,20 @@ function openDB() {
     });
 }
 
+// Global lock to prevent multiple hook instances from running sync concurrently
+let isProcessingGlobal = false;
+
 async function getAllPending() {
     const db = await openDB();
     return new Promise((resolve, reject) => {
         const tx = db.transaction(STORE_NAME, 'readonly');
-        const index = tx.objectStore(STORE_NAME).index('status');
-        const req = index.getAll('pending');
-        req.onsuccess = () => resolve(req.result);
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.getAll();
+        req.onsuccess = () => {
+            const results = req.result || [];
+            // Filter for items that are either 'pending' or 'failed' (to allow retries)
+            resolve(results.filter(item => item.status === 'pending' || item.status === 'failed'));
+        };
         req.onerror = () => reject(req.error);
     });
 }
@@ -69,6 +76,7 @@ async function updateQueueItem(id, updates) {
         const store = tx.objectStore(STORE_NAME);
         const getReq = store.get(id);
         getReq.onsuccess = () => {
+            if (!getReq.result) return;
             const item = { ...getReq.result, ...updates };
             store.put(item);
         };
@@ -87,19 +95,8 @@ async function removeFromQueue(id) {
     });
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Hook
-// ─────────────────────────────────────────────────────────────────────────────
-
 /**
  * Offline-capable photo upload queue using IndexedDB.
- *
- * When online: uploads immediately.
- * When offline: saves to IndexedDB and processes when back online.
- *
- * Usage:
- *   const { queueUpload, pendingCount, isProcessing } = useOfflineQueue();
- *   await queueUpload(file, memoryId, { uploadedBy, caption, ... });
  */
 export function useOfflineQueue() {
     const [pendingCount, setPendingCount] = useState(0);
@@ -118,32 +115,48 @@ export function useOfflineQueue() {
 
     // Process all pending uploads
     const processQueue = useCallback(async () => {
-        if (processingRef.current) return;
+        if (processingRef.current || isProcessingGlobal) return;
+
+        // Check connectivity before starting
+        if (!navigator.onLine) {
+            refreshCount();
+            return;
+        }
+
+        const pending = await getAllPending();
+        if (pending.length === 0) {
+            refreshCount();
+            return;
+        }
+
         processingRef.current = true;
+        isProcessingGlobal = true;
         setIsProcessing(true);
 
         const DELAY_BETWEEN_UPLOADS = 3000;
 
         try {
-            const pending = await getAllPending();
             // Sort FIFO (oldest first)
             pending.sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
 
             for (const item of pending) {
+                // If we lost connection mid-process, stop
+                if (!navigator.onLine) break;
+
                 try {
-                    await updateQueueItem(item.id, { status: 'uploading', retryCount: (item.retryCount ?? 0) + 1 });
+                    // Reset retry count if it was marked as failed before
+                    const currentRetries = item.status === 'failed' ? 0 : (item.retryCount ?? 0);
+                    await updateQueueItem(item.id, { status: 'uploading', retryCount: currentRetries + 1 });
 
                     if (item.type === 'photo') {
-                        // Original photo-only upload
                         await uploadFile(item.compressedBlob, item.targetStoragePath);
                     } else if (item.type === 'memory') {
-                        toast.info('Subiendo recuerdo...', 'Estamos guardando tus fotos en la nube ✨');
-                        // Upload all photos, then create memory via Cloud Function
+                        toast.info('Sincronizando recuerdo...', 'Guardando tus momentos pendientes ✨');
                         const photoUrls = [];
                         for (let i = 0; i < (item.photos?.length ?? 0); i++) {
                             const photo = item.photos[i];
                             const photoId = crypto.randomUUID();
-                            const tempMemoryId = item.id; // Use queue item id as temp memory id
+                            const tempMemoryId = item.id;
                             const storagePath = STORAGE_PATHS.PHOTO_ORIGINAL(tempMemoryId, photoId);
                             const url = await uploadFile(photo.blob, storagePath);
                             photoUrls.push({ url, storagePath, photoId });
@@ -153,24 +166,18 @@ export function useOfflineQueue() {
                             }
                         }
 
-                        // Call createMemory with the form data
                         await createMemory({
                             ...item.data,
                             offlinePhotoUrls: photoUrls,
                         });
 
-                        // If it came from a pending cita, remove it now that it's successfully in Firestore
                         if (item.originalCitaId) {
-                            // We need to call removePendingCita. 
-                            // Since we don't have the hook here, we do it directly via DB.
                             const db = await openDB();
                             const tx = db.transaction('pending_citas', 'readwrite');
                             tx.objectStore('pending_citas').delete(item.originalCitaId);
                         }
-                        toast.success('¡Recuerdo guardado!', 'Tu cita ya está en el mapa 📍');
+                        toast.success('¡Recuerdo sincronizado!', 'Ya está disponible en tu mapa 📍');
                     } else if (item.type === 'snapshot') {
-                        toast.info('Enviando instantánea...', 'Compartiendo tu momento 📸');
-                        // Upload single photo, then create snapshot doc
                         const snapshotId = item.id;
                         const storagePath = STORAGE_PATHS.SNAPSHOT_ORIGINAL(snapshotId);
                         const blob = item.photos?.[0]?.blob ?? item.compressedBlob;
@@ -181,7 +188,7 @@ export function useOfflineQueue() {
                             photoUrl: url,
                             message: item.data?.message ?? '',
                         });
-                        toast.success('Instantánea enviada', '¡Listo! ✨');
+                        toast.success('Instantánea sincronizada ✨');
                     }
 
                     await removeFromQueue(item.id);
@@ -203,32 +210,56 @@ export function useOfflineQueue() {
                                 store.put(cita);
                             }
                         }
-                        toast.error('Error al subir', 'No pudimos guardar el recuerdo. Intenta de nuevo más tarde.');
                     } else {
                         await updateQueueItem(item.id, { status: 'pending', retryCount: newRetryCount });
                     }
                 }
 
-                // Rate limit between items
                 await new Promise(r => setTimeout(r, DELAY_BETWEEN_UPLOADS));
             }
         } finally {
             processingRef.current = false;
+            isProcessingGlobal = false;
             setIsProcessing(false);
             refreshCount();
         }
     }, [refreshCount]);
 
-    // Listen to online/offline events
+    // Intelligent Sync Triggers
     useEffect(() => {
         refreshCount();
 
+        // 1. Sync on mount if online
+        if (navigator.onLine) {
+            processQueue();
+        }
+
+        // 2. Sync on connectivity change
         const handleOnline = () => {
+            toast.info('Conexión restaurada', 'Sincronizando recuerdos pendientes...');
             processQueue();
         };
 
+        // 3. Sync on tab becoming visible (returning to app)
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible' && navigator.onLine) {
+                processQueue();
+            }
+        };
+
+        // 4. Periodic heartbeat (every 2 minutes)
+        const heartbeat = setInterval(() => {
+            if (navigator.onLine) processQueue();
+        }, 120000);
+
         window.addEventListener('online', handleOnline);
-        return () => window.removeEventListener('online', handleOnline);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            clearInterval(heartbeat);
+        };
     }, [processQueue, refreshCount]);
 
     /**
