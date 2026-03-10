@@ -38,8 +38,8 @@
 .size-large {
     width: 44px;
     height: 44px;
-    background: var(--gradient-mint);
-    box-shadow: 0 6px 20px rgba(136, 216, 176, 0.5);
+    background: var(--gradient-rose);
+    box-shadow: 0 6px 20px rgba(255, 143, 171, 0.5);
     border: 3px solid white;
 }
 
@@ -47,15 +47,15 @@
     width: 32px;
     height: 32px;
     background: white;
-    border: 3px solid #88d8b0;
-    box-shadow: 0 4px 12px rgba(136, 216, 176, 0.35);
+    border: 3px solid #ff8fa3;
+    box-shadow: 0 4px 12px rgba(255, 143, 171, 0.35);
 }
 
 .size-small {
     width: 22px;
     height: 22px;
-    background: rgba(183, 228, 199, 0.4);
-    border: 2px solid #b7e4c7;
+    background: rgba(255, 183, 178, 0.4);
+    border: 2px solid #ffb7b2;
 }
 
 .smallDot {
@@ -69,25 +69,25 @@
 .microDot {
     width: 8px;
     height: 8px;
-    background: #88d8b0;
+    background: #ff8fa3;
     border-radius: 50%;
     /* Added slight shadow to make it pop */
-    box-shadow: 0 2px 6px rgba(136, 216, 176, 0.4);
+    box-shadow: 0 2px 6px rgba(255, 143, 171, 0.4);
 }
 
 /* Selected State Override */
 /* Escala 1.2 con transform, el borde cambia a 3px solid #74c69d, sombra más intensa */
 .selected .pin {
     transform: rotate(-45deg) scale(1.2);
-    border: 3px solid #74c69d;
-    box-shadow: 0 8px 24px rgba(116, 198, 157, 0.6);
+    border: 3px solid #e87a8e;
+    box-shadow: 0 8px 24px rgba(232, 122, 142, 0.6);
 }
 
 /* Pulse Ring Animation (Inside .pin) */
 .pulseRing {
     position: absolute;
     box-sizing: border-box;
-    border: 2px solid rgba(136, 216, 176, 0.6);
+    border: 2px solid rgba(255, 143, 171, 0.6);
     border-radius: 50%;
     animation: pulseLoop 2.5s infinite cubic-bezier(0.21, 0.53, 0.56, 1);
     pointer-events: none;

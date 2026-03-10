@@ -147,12 +147,48 @@ export default function MapView({
         }
     }, [isSearchActive, selectedPlace, onPlaceSelected]);
 
+    const handleFitAll = useCallback(() => {
+        if (places.length === 0) return;
+
+        const validPlaces = places.filter(p => (p.coordinates?.lat || p.coordinates?.latitude) && (p.coordinates?.lng || p.coordinates?.longitude));
+        if (validPlaces.length === 0) return;
+
+        // Calculate bounds
+        let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
+        validPlaces.forEach(p => {
+            const lng = p.coordinates.lng;
+            const lat = p.coordinates.lat;
+            if (lng < minLng) minLng = lng;
+            if (lng > maxLng) maxLng = lng;
+            if (lat < minLat) minLat = lat;
+            if (lat > maxLat) maxLat = lat;
+        });
+
+        const center = [(minLng + maxLng) / 2, (minLat + maxLat) / 2];
+
+        // Simple heuristic for zoom level based on spread
+        const lngDiff = maxLng - minLng;
+        const latDiff = maxLat - minLat;
+        const maxDiff = Math.max(lngDiff, latDiff);
+
+        let zoom = 14;
+        if (maxDiff > 0.5) zoom = 10;
+        else if (maxDiff > 0.1) zoom = 12;
+        else if (maxDiff > 0.05) zoom = 13;
+
+        setViewport({
+            center,
+            zoom
+        });
+        toast.info('Mostrando todo ✨', 'Encontramos todos tus recuerdos');
+    }, [places]);
+
     useEffect(() => {
         if (selectedPlace && selectedPlace.coordinates) {
             setViewport(prev => ({
                 ...prev,
                 center: [selectedPlace.coordinates.lng, selectedPlace.coordinates.lat],
-                zoom: 15
+                zoom: 16
             }));
         }
     }, [selectedPlace]);
@@ -281,6 +317,16 @@ export default function MapView({
                                 </div>
                             )}
                         </div>
+                    )}
+
+                    {!isSearchActive && (
+                        <button
+                            className={styles.fitAllBtn}
+                            onClick={handleFitAll}
+                            title="Ver todo"
+                        >
+                            <span className="material-symbols-outlined">explore</span>
+                        </button>
                     )}
 
                     {/* Botón de Instantáneas (Tulip) — Residencia original top right */}

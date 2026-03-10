@@ -233,7 +233,11 @@ const Map = forwardRef(function Map(
     }
 
     internalUpdateRef.current = true;
-    mapInstance.jumpTo(next);
+    mapInstance.flyTo({
+      ...next,
+      duration: 1500,
+      essential: true
+    });
     internalUpdateRef.current = false;
   }, [mapInstance, isControlled, viewport]);
 
