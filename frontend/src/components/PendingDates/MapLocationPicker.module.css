@@ -189,3 +189,31 @@
         transform: translateY(-4px) scale(0.95);
     }
 }
+
+.existingPlaceMarker {
+    background: var(--bg-card);
+    border: 2px solid var(--pastel-text-muted);
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    cursor: pointer;
+    box-shadow: 0 3px 0 var(--pastel-text-muted);
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 15;
+}
+
+.existingPlaceMarker:hover {
+    transform: scale(1.15) translateY(-2px);
+    box-shadow: 0 5px 0 var(--pastel-text-muted);
+    background: var(--pastel-green-bg);
+    border-color: var(--pastel-green-btn);
+}
+
+.existingPlaceMarker:active {
+    transform: scale(0.95);
+    box-shadow: 0 1px 0 var(--pastel-text-muted);
+}

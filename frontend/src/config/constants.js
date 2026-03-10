@@ -99,6 +99,11 @@ export const PLACE_CATEGORIES = {
 };
 
 export const STORAGE_PATHS = {
+    // Standardized: [type]/[entityId]/[size]/[fileId].jpg
+    ORIGINAL: (type, entityId, fileId) => `${type}/${entityId}/originals/${fileId}.jpg`,
+    THUMB: (type, entityId, fileId) => `${type}/${entityId}/thumbs/${fileId}.jpg`,
+
+    // Legacy support (to be phased out)
     PHOTO_ORIGINAL: (memoryId, photoId) => `memories/${memoryId}/originals/${photoId}.jpg`,
     PHOTO_THUMB: (memoryId, photoId) => `memories/${memoryId}/thumbs/${photoId}.jpg`,
     SNAPSHOT_ORIGINAL: (snapshotId) => `snapshots/${snapshotId}/originals/photo.jpg`,

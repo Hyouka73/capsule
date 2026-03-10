@@ -119,6 +119,9 @@ const Map = forwardRef(function Map(
     projection,
     viewport,
     onViewportChange,
+    onClick,
+    onDblClick,
+    onContextMenu,
     ...props
   },
   ref
@@ -136,6 +139,9 @@ const Map = forwardRef(function Map(
 
   const onViewportChangeRef = useRef(onViewportChange);
   onViewportChangeRef.current = onViewportChange;
+
+  const callbacksRef = useRef({ onClick, onDblClick, onContextMenu });
+  callbacksRef.current = { onClick, onDblClick, onContextMenu };
 
   const mapStyles = useMemo(() => ({
     dark: styles?.dark ?? defaultStyles.dark,
@@ -191,9 +197,18 @@ const Map = forwardRef(function Map(
       onViewportChangeRef.current?.(getViewport(map));
     };
 
+    // Event handlers
+    const handleClick = (e) => callbacksRef.current.onClick?.(e);
+    const handleDblClick = (e) => callbacksRef.current.onDblClick?.(e);
+    const handleContextMenu = (e) => callbacksRef.current.onContextMenu?.(e);
+
     map.on("load", loadHandler);
     map.on("styledata", styleDataHandler);
     map.on("move", handleMove);
+    map.on("click", handleClick);
+    map.on("dblclick", handleDblClick);
+    map.on("contextmenu", handleContextMenu);
+
     setMapInstance(map);
 
     return () => {
@@ -201,6 +216,9 @@ const Map = forwardRef(function Map(
       map.off("load", loadHandler);
       map.off("styledata", styleDataHandler);
       map.off("move", handleMove);
+      map.off("click", handleClick);
+      map.off("dblclick", handleDblClick);
+      map.off("contextmenu", handleContextMenu);
       map.remove();
       setIsLoaded(false);
       setIsStyleLoaded(false);

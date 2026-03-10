@@ -504,6 +504,7 @@ export default function MapView({
                         pendingDate={selectedPendingDate}
                         onClose={() => setSelectedPendingDate(null)}
                         onSave={handleSavePendingDate}
+                        defaultPlaces={places}
                     />
                 )}
             </AnimatePresence>

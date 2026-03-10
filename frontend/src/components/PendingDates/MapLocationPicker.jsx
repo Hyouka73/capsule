@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Map, MapMarker, MarkerContent } from '@/components/ui/map';
+import MapPin from '@/components/ui/MapPin/MapPin';
 import Button from '../ui/Button/Button';
 import { toast } from '../ui/PastelToast/PastelToast';
+import { usePlaces } from '../../hooks/usePlaces';
 import styles from './MapLocationPicker.module.css';
 
 const DEFAULT_CENTER = [-93.1152, 16.7521]; // [lng, lat] for MapLibre
@@ -19,6 +21,9 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
     const [isLocating, setIsLocating] = useState(false);
     const [showConfirmBadge, setShowConfirmBadge] = useState(false);
     const hasAttemptedGeo = useRef(false);
+
+    // Fetch existing places
+    const { places } = usePlaces();
 
     useEffect(() => {
         if (initialCoordinates && initialCoordinates.lat && initialCoordinates.lng) {
@@ -63,13 +68,23 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
     };
 
     const handleMapClick = useCallback((e) => {
-        if (e.lngLat) {
-            setPosition({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+        // MapLibre event object has lngLat. Sometimes it's deep depending on version/layer
+        const lngLat = e.lngLat || (e.point && e.target?.unproject(e.point));
+        if (lngLat) {
+            setPosition({ lat: lngLat.lat, lng: lngLat.lng });
         }
     }, []);
 
     const handleDragEnd = useCallback((lngLat) => {
         setPosition({ lat: lngLat.lat, lng: lngLat.lng });
+    }, []);
+
+    const handlePlaceClick = useCallback((place) => {
+        setPosition({ lat: place.lat, lng: place.lng });
+        setViewport(prev => ({
+            ...prev,
+            center: [place.lng, place.lat]
+        }));
     }, []);
 
     return (
@@ -80,7 +95,7 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
                 </button>
                 <div className={styles.headerTitle}>
                     <h3>Elegir ubicación</h3>
-                    <p>Mueve el pin al lugar exacto</p>
+                    <p>Toca el mapa o elige un lugar existente</p>
                 </div>
                 <div style={{ width: 40 }} /> {/* Spacer */}
             </div>
@@ -101,6 +116,21 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
                     attributionControl={false}
                     theme="light"
                 >
+                    {/* Existing Places */}
+                    {places?.map((place) => (
+                        <MapMarker
+                            key={place.id}
+                            longitude={place.lng}
+                            latitude={place.lat}
+                            onClick={() => handlePlaceClick(place)}
+                        >
+                            <div className={styles.existingPlaceMarker}>
+                                {place.emoji || '📍'}
+                            </div>
+                        </MapMarker>
+                    ))}
+
+                    {/* Main Selection Pin */}
                     {position && (
                         <MapMarker
                             longitude={position.lng}
@@ -108,14 +138,16 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
                             draggable={true}
                             onDragEnd={handleDragEnd}
                         >
-                            <MarkerContent />
+                            <MarkerContent>
+                                <MapPin size="large" selected={true} />
+                            </MarkerContent>
                         </MapMarker>
                     )}
                 </Map>
 
                 <div className={styles.hintOverlay}>
                     <span className="material-symbols-outlined">touch_app</span>
-                    Arrastra el pin o toca el mapa para ajustar
+                    Toca cualquier lugar para marcarlo ✨
                 </div>
             </div>
 
