@@ -31,8 +31,8 @@ export default function PlacePickerBottomSheet({
         p.tags?.some(t => t.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
-    const handleMapConfirm = (locationData) => {
-        onLocationSelected(locationData);
+    const handleMapConfirm = (locationData, placeId) => {
+        onLocationSelected(locationData, placeId);
         setIsMapOpen(false);
         onClose();
     };

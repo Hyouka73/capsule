@@ -97,11 +97,15 @@ export default function MapView({
             const files = (data.photos || []).map(p => p.file);
 
             if (files.length > 0) {
-                await queueMemory(payload, files);
+                await queueMemory(payload, files, data.id);
             }
 
-            if (removePendingDate && data.id) {
-                await removePendingDate(data.id);
+            if (updatePendingDate && data.id) {
+                await updatePendingDate(data.id, {
+                    title: data.title,
+                    suggestedTags: data.tags,
+                    status: 'uploading'
+                });
             }
             setSelectedPendingDate(null);
             toast.success('¡Cita guardada! 💾', 'Se está subiendo en segundo plano ✨');

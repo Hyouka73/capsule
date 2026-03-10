@@ -117,11 +117,55 @@ export function usePendingCitas() {
         });
     };
 
+    const updatePendingCitaStatus = async (id, status) => {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            const getReq = store.get(id);
+            getReq.onsuccess = () => {
+                const item = getReq.result;
+                if (item) {
+                    item.status = status;
+                    store.put(item);
+                }
+            };
+            tx.oncomplete = () => {
+                refreshPending();
+                resolve();
+            };
+            tx.onerror = () => reject(tx.error);
+        });
+    };
+
+    const updatePendingCita = async (id, updates) => {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            const getReq = store.get(id);
+            getReq.onsuccess = () => {
+                const item = getReq.result;
+                if (item) {
+                    const updated = { ...item, ...updates };
+                    store.put(updated);
+                }
+            };
+            tx.oncomplete = () => {
+                refreshPending();
+                resolve();
+            };
+            tx.onerror = () => reject(tx.error);
+        });
+    };
+
     return {
         pendingCitas,
         pendingCount,
         addPendingCita,
         removePendingCita,
+        updatePendingCitaStatus,
+        updatePendingCita,
         refreshPending
     };
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { uploadFile, compressImage } from '../services/storage';
 import { createMemory, createSnapshot } from '../apiClient';
 import { STORAGE_PATHS } from '../config/constants';
+import { toast } from '../components/ui/PastelToast/PastelToast';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // IndexedDB helpers
@@ -134,12 +135,9 @@ export function useOfflineQueue() {
 
                     if (item.type === 'photo') {
                         // Original photo-only upload
-                        const url = await uploadFile(item.compressedBlob, item.targetStoragePath);
-                        if (item.firestoreUpdates && item.targetMemoryId) {
-                            // Photo-only items don't call createMemory, they update an existing one
-                            // This path is kept for backwards compatibility
-                        }
+                        await uploadFile(item.compressedBlob, item.targetStoragePath);
                     } else if (item.type === 'memory') {
+                        toast.info('Subiendo recuerdo...', 'Estamos guardando tus fotos en la nube ✨');
                         // Upload all photos, then create memory via Cloud Function
                         const photoUrls = [];
                         for (let i = 0; i < (item.photos?.length ?? 0); i++) {
@@ -160,7 +158,18 @@ export function useOfflineQueue() {
                             ...item.data,
                             offlinePhotoUrls: photoUrls,
                         });
+
+                        // If it came from a pending cita, remove it now that it's successfully in Firestore
+                        if (item.originalCitaId) {
+                            // We need to call removePendingCita. 
+                            // Since we don't have the hook here, we do it directly via DB.
+                            const db = await openDB();
+                            const tx = db.transaction('pending_citas', 'readwrite');
+                            tx.objectStore('pending_citas').delete(item.originalCitaId);
+                        }
+                        toast.success('¡Recuerdo guardado!', 'Tu cita ya está en el mapa 📍');
                     } else if (item.type === 'snapshot') {
+                        toast.info('Enviando instantánea...', 'Compartiendo tu momento 📸');
                         // Upload single photo, then create snapshot doc
                         const snapshotId = item.id;
                         const storagePath = STORAGE_PATHS.SNAPSHOT_ORIGINAL(snapshotId);
@@ -172,16 +181,32 @@ export function useOfflineQueue() {
                             photoUrl: url,
                             message: item.data?.message ?? '',
                         });
+                        toast.success('Instantánea enviada', '¡Listo! ✨');
                     }
 
                     await removeFromQueue(item.id);
                 } catch (err) {
-                    if ((item.retryCount ?? 0) >= 3) {
+                    console.error('[offlineQueue] Item failed:', err);
+                    const newRetryCount = (item.retryCount ?? 0) + 1;
+                    if (newRetryCount >= 3) {
                         await updateQueueItem(item.id, { status: 'failed' });
+                        if (item.originalCitaId) {
+                            const db = await openDB();
+                            const tx = db.transaction('pending_citas', 'readwrite');
+                            const store = tx.objectStore('pending_citas');
+                            const cita = await new Promise(r => {
+                                const req = store.get(item.originalCitaId);
+                                req.onsuccess = () => r(req.result);
+                            });
+                            if (cita) {
+                                cita.status = 'failed';
+                                store.put(cita);
+                            }
+                        }
+                        toast.error('Error al subir', 'No pudimos guardar el recuerdo. Intenta de nuevo más tarde.');
                     } else {
-                        await updateQueueItem(item.id, { status: 'pending' });
+                        await updateQueueItem(item.id, { status: 'pending', retryCount: newRetryCount });
                     }
-                    console.warn('[offlineQueue] Upload failed, will retry:', err.message);
                 }
 
                 // Rate limit between items
@@ -249,9 +274,10 @@ export function useOfflineQueue() {
      *
      * @param {object} formData - Memory form fields (title, eventDate, tags, etc.)
      * @param {File[]} photoFiles - Array of raw photo files
+     * @param {string} originalCitaId - Optional ID of the pending cita this came from
      * @returns {Promise<{queued: boolean}>}
      */
-    const queueMemory = useCallback(async (formData, photoFiles) => {
+    const queueMemory = useCallback(async (formData, photoFiles, originalCitaId = null) => {
         const compressedPhotos = await Promise.all(
             photoFiles.map(async (file) => {
                 const blob = await compressImage(file, 1200, 0.8);
@@ -264,6 +290,7 @@ export function useOfflineQueue() {
             type: 'memory',
             data: formData,
             photos: compressedPhotos,
+            originalCitaId,
             status: 'pending',
             retryCount: 0,
             createdAt: Date.now(),

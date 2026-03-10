@@ -32,37 +32,60 @@ export default function PendingDatesList({ pendingDates = [], onClose, onSelectD
                     </div>
                 ) : (
                     <div className={styles.list}>
-                        {pendingDates.map((pd, idx) => (
-                            <motion.div
-                                key={idx}
-                                className={styles.listItem}
-                                onClick={() => onSelectDate(pd)}
-                                whileTap={{ scale: 0.98 }}
-                            >
-                                <div className={styles.thumbWrapper}>
-                                    {pd.photos?.[0]?.objectUrl ? (
-                                        <img
-                                            src={pd.photos[0].objectUrl}
-                                            alt="Recuerdo"
-                                            className={styles.thumb}
-                                        />
-                                    ) : (
-                                        <div className={styles.thumbFallback}>
-                                            <span className="material-symbols-outlined">photo_camera</span>
-                                        </div>
-                                    )}
-                                </div>
+                        {pendingDates.map((pd, idx) => {
+                            const isUploading = pd.status === 'uploading';
+                            const isFailed = pd.status === 'failed';
 
-                                <div className={styles.info}>
-                                    <span className={styles.date}>{pd.originalDate}</span>
-                                    <span className={styles.photoCount}>
-                                        <span className={`material-symbols-outlined ${styles.photoCountIcon}`}>photo_library</span>
-                                        {pd.photos.length} {pd.photos.length === 1 ? 'foto' : 'fotos'}
-                                    </span>
-                                </div>
-                                <span className={`material-symbols-outlined ${styles.arrow}`}>chevron_right</span>
-                            </motion.div>
-                        ))}
+                            return (
+                                <motion.div
+                                    key={idx}
+                                    className={`${styles.listItem} ${isUploading ? styles.listItemUploading : ''} ${isFailed ? styles.listItemFailed : ''}`}
+                                    onClick={() => !isUploading && onSelectDate(pd)}
+                                    whileTap={!isUploading ? { scale: 0.98 } : {}}
+                                >
+                                    <div className={styles.thumbWrapper}>
+                                        {pd.photos?.[0]?.objectUrl ? (
+                                            <img
+                                                src={pd.photos[0].objectUrl}
+                                                alt="Recuerdo"
+                                                className={styles.thumb}
+                                            />
+                                        ) : (
+                                            <div className={styles.thumbFallback}>
+                                                <span className="material-symbols-outlined">photo_camera</span>
+                                            </div>
+                                        )}
+                                        {isUploading && (
+                                            <div className={styles.statusOverlay}>
+                                                <div className={styles.miniSpinner}></div>
+                                            </div>
+                                        )}
+                                        {isFailed && (
+                                            <div className={`${styles.statusOverlay} ${styles.failedOverlay}`}>
+                                                <span className="material-symbols-outlined">error</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className={styles.info}>
+                                        <div className={styles.dateRow}>
+                                            <span className={styles.date}>{pd.originalDate}</span>
+                                            {isUploading && <span className={styles.statusBadge}>Subiendo...</span>}
+                                            {isFailed && <span className={`${styles.statusBadge} ${styles.failedBadge}`}>Error</span>}
+                                        </div>
+                                        <span className={styles.photoCount}>
+                                            <span className={`material-symbols-outlined ${styles.photoCountIcon}`}>photo_library</span>
+                                            {pd.photos.length} {pd.photos.length === 1 ? 'foto' : 'fotos'}
+                                        </span>
+                                    </div>
+                                    {!isUploading && (
+                                        <span className={`material-symbols-outlined ${styles.arrow}`}>
+                                            {isFailed ? 'refresh' : 'chevron_right'}
+                                        </span>
+                                    )}
+                                </motion.div>
+                            );
+                        })}
                     </div>
                 )}
             </div>

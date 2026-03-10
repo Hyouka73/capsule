@@ -19,8 +19,7 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
         zoom: 15,
     });
     const [isLocating, setIsLocating] = useState(false);
-    const [showConfirmBadge, setShowConfirmBadge] = useState(false);
-    const hasAttemptedGeo = useRef(false);
+    const [selectedPlaceId, setSelectedPlaceId] = useState(null);
 
     // Fetch existing places
     const { places } = usePlaces();
@@ -62,7 +61,7 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
             toast.success('Ubicación Capturada', 'Hemos guardado el lugar de este recuerdo ✨');
             setTimeout(() => {
                 setShowConfirmBadge(false);
-                onConfirm(position);
+                onConfirm(position, selectedPlaceId);
             }, 2000);
         }
     };
@@ -72,15 +71,18 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
         const lngLat = e.lngLat || (e.point && e.target?.unproject(e.point));
         if (lngLat) {
             setPosition({ lat: lngLat.lat, lng: lngLat.lng });
+            setSelectedPlaceId(null); // Clear place id if manually clicking map
         }
     }, []);
 
     const handleDragEnd = useCallback((lngLat) => {
         setPosition({ lat: lngLat.lat, lng: lngLat.lng });
+        setSelectedPlaceId(null);
     }, []);
 
     const handlePlaceClick = useCallback((place) => {
         setPosition({ lat: place.lat, lng: place.lng });
+        setSelectedPlaceId(place.id);
         setViewport(prev => ({
             ...prev,
             center: [place.lng, place.lat]
@@ -124,8 +126,13 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
                             latitude={place.lat}
                             onClick={() => handlePlaceClick(place)}
                         >
-                            <div className={styles.existingPlaceMarker}>
+                            <div
+                                className={`${styles.existingPlaceMarker} ${selectedPlaceId === place.id ? styles.selectedPlace : ''}`}
+                            >
                                 {place.emoji || '📍'}
+                                {selectedPlaceId === place.id && (
+                                    <div className={styles.selectionPulse}></div>
+                                )}
                             </div>
                         </MapMarker>
                     ))}
@@ -139,7 +146,7 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
                             onDragEnd={handleDragEnd}
                         >
                             <MarkerContent>
-                                <MapPin size="large" selected={true} />
+                                <MapPin size="medium" selected={true} />
                             </MarkerContent>
                         </MapMarker>
                     )}

@@ -119,6 +119,21 @@
     -webkit-tap-highlight-color: transparent;
 }
 
+.listItemFailed {
+    border-color: var(--pastel-rose);
+    background: rgba(255, 235, 238, 0.5);
+}
+
+.listItemUploading {
+    cursor: default;
+    opacity: 0.8;
+}
+
+.listItemUploading .thumb {
+    filter: grayscale(1);
+    opacity: 0.5;
+}
+
 .thumbWrapper {
     width: 56px;
     height: 56px;
@@ -126,6 +141,62 @@
     border-radius: var(--radius-photo);
     overflow: hidden;
     position: relative;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.statusOverlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2;
+}
+
+.failedOverlay {
+    background: rgba(255, 107, 107, 0.4);
+    color: white;
+}
+
+.failedOverlay span {
+    font-size: 24px;
+}
+
+.miniSpinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top: 3px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.dateRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.statusBadge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: var(--radius-pill);
+    background: var(--pastel-sage);
+    color: white;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.failedBadge {
+    background: var(--pastel-rose);
 }
 
 .thumb {

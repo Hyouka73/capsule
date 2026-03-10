@@ -18,7 +18,7 @@ import { usePendingCitas } from '../../hooks/usePendingCitas';
 
 export default function UserDashboard() {
     const { isPartner, isAdmin } = useAuth();
-    const { pendingCount, pendingCitas, removePendingCita, addPendingCita } = usePendingCitas();
+    const { pendingCount, pendingCitas, removePendingCita, addPendingCita, updatePendingCitaStatus, updatePendingCita } = usePendingCitas();
 
     // Filter TABS based on role
     const filteredTabs = TABS.filter(tab => {
@@ -148,6 +148,8 @@ export default function UserDashboard() {
                         onCitaContextChange={setCitaContext}
                         pendingDates={pendingCitas}
                         removePendingDate={removePendingCita}
+                        updatePendingDateStatus={updatePendingCitaStatus}
+                        updatePendingDate={updatePendingCita}
                     />
                 </div>
             )}

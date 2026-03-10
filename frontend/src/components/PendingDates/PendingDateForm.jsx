@@ -202,9 +202,14 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
                     setSelectedPlaceId(placeId);
                     setCustomLocation(null);
                 }}
-                onLocationSelected={(locationData) => {
-                    setCustomLocation(locationData);
-                    setSelectedPlaceId('custom_map');
+                onLocationSelected={(locationData, placeId) => {
+                    if (placeId) {
+                        setSelectedPlaceId(placeId);
+                        setCustomLocation(null);
+                    } else {
+                        setCustomLocation(locationData);
+                        setSelectedPlaceId('custom_map');
+                    }
                 }}
                 initialCoordinates={pendingDate.coordinates}
             />
