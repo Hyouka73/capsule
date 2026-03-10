@@ -3,7 +3,7 @@ import { Map, MapMarker, MarkerContent } from '@/components/ui/map';
 import MapPin from '@/components/ui/MapPin/MapPin';
 import Button from '../ui/Button/Button';
 import { toast } from '../ui/PastelToast/PastelToast';
-import { usePlaces } from '../../hooks/usePlaces';
+import { usePlaces } from '../../modules/map/hooks/usePlaces';
 import styles from './MapLocationPicker.module.css';
 
 const DEFAULT_CENTER = [-93.1152, 16.7521]; // [lng, lat] for MapLibre
