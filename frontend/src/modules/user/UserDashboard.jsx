@@ -11,6 +11,7 @@ import BottomNav from '../../components/ui/BottomNav/BottomNav';
 import SnapshotOverlay from '../snapshots/components/SnapshotOverlay';
 import SnapshotCreator from '../snapshots/components/SnapshotCreator';
 import CitaOverlay from '../../components/Cita/CitaOverlay';
+import DashboardSummaryWidget from '../../components/DashboardSummaryWidget/DashboardSummaryWidget';
 import styles from './UserDashboard.module.css';
 
 import { TABS } from '../../data/dashboardData';
@@ -23,13 +24,16 @@ export default function UserDashboard() {
     // Filter TABS based on role
     const filteredTabs = TABS.filter(tab => {
         if (isAdmin) {
-            // Admin only sees Map and Gallery in the user view
-            return ['lugares', 'galeria'].includes(tab.id);
+            // Admin only sees Home, Map and Gallery in the user view
+            return ['inicio', 'lugares', 'galeria'].includes(tab.id);
         }
         return true; // Partner sees everything
     });
 
-    const [activeTab, setActiveTab] = useState('lugares');
+    const mainTabs = filteredTabs.filter(t => !t.inMore);
+    const moreTabs = filteredTabs.filter(t => t.inMore);
+
+    const [activeTab, setActiveTab] = useState('inicio');
     const [prevTab, setPrevTab] = useState('lugares');
     const [isPlaceSelected, setIsPlaceSelected] = useState(false);
     const [bingoContextToMap, setBingoContextToMap] = useState(null);
@@ -117,11 +121,26 @@ export default function UserDashboard() {
                     setIsModalOpen={setIsBingoModalOpen}
                 />
             );
+            case 'ejercicio': return (
+                <div className={styles.placeholderModule}>
+                    <h1>Módulo de Ejercicio</h1>
+                    <p>¡Tus rachas se están sincronizando! 🔥</p>
+                    <button onClick={() => setActiveTab('lugares')}>Volver al inicio</button>
+                </div>
+            );
+            case 'movies': return (
+                <div className={styles.placeholderModule}>
+                    <h1>Módulo de Películas</h1>
+                    <p>Prepara las palomitas... 🍿</p>
+                    <button onClick={() => setActiveTab('lugares')}>Volver al inicio</button>
+                </div>
+            );
             default: return (
                 <div className={styles.homeWelcome}>
                     <div className={styles.homeHeart}>💖</div>
                     <h1>Hola, hermosa</h1>
                     <p>Cada recuerdo es un regalo.</p>
+                    <DashboardSummaryWidget onNavigate={(module) => handleTabChange(module)} />
                 </div>
             );
         }
@@ -211,7 +230,8 @@ export default function UserDashboard() {
                         <BottomNav
                             activeTab={activeTab}
                             setActiveTab={handleTabChange}
-                            tabs={filteredTabs}
+                            tabs={mainTabs}
+                            moreTabs={moreTabs}
                             pendingCount={pendingCount}
                         />
                     </motion.div>
