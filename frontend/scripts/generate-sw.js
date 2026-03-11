@@ -5,9 +5,11 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const envPath = path.resolve(__dirname, '../.env');
+const envLocalPath = path.resolve(__dirname, '../.env.local');
 
-// Load environment variables from .env
-dotenv.config({ path: envPath });
+// Load environment variables
+if (fs.existsSync(envPath)) dotenv.config({ path: envPath });
+if (fs.existsSync(envLocalPath)) dotenv.config({ path: envLocalPath, override: true });
 
 const template = `// Import the scripts for the messaging service worker
 importScripts('https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js');
