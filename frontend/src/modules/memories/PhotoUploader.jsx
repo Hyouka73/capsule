@@ -1,9 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { logActivity } from '../../apiClient';
-import { getStorage, ref, uploadBytesResumable } from 'firebase/storage';
-import { app } from '../../services/firebase';
-import { ACTIVITY_ACTIONS, ARTIFACT_TYPES } from '../../config/constants';
+import { useOfflineQueue } from '../../hooks/useOfflineQueue';
 import { autoDetectGps } from '../../utils/extractGpsFromFile';
 import Button from '../../components/ui/Button/Button';
 import styles from './PhotoUploader.module.css';
@@ -11,18 +8,21 @@ import { logToVercel } from '../../utils/vercelLogger';
 import CameraPermissionGate from '../../components/ui/CameraPermissionGate/CameraPermissionGate';
 
 export default function PhotoUploader({ memoryId, onDone, onGpsDetected, initialFiles = [] }) {
+    const { user } = useAuth();
+    const { queueUpload } = useOfflineQueue();
+    const [uploads, setUploads] = useState([]);
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    const fileInputRef = useRef(null);
+    const cameraInputRef = useRef(null);
+    const galleryInputRef = useRef(null);
+
     useEffect(() => {
         logToVercel('PhotoUploader', 'MOUNTED', `Memory ID: ${memoryId}, Initial Files: ${initialFiles?.length}`);
         if (initialFiles && initialFiles.length > 0) {
             processFiles(initialFiles);
         }
-    }, [memoryId]); // Only on mount/memoryId change
-    const { user } = useAuth();
-    const [uploads, setUploads] = useState([]);
-    const [isProcessing, setIsProcessing] = useState(false);
-    const fileInputRef = useRef(null);
-    const cameraInputRef = useRef(null);
-    const galleryInputRef = useRef(null);
+    }, [memoryId]);
 
     function updateUploadStatus(id, delta) {
         setUploads(current => current.map(u => u.id === id ? { ...u, ...delta } : u));
@@ -52,49 +52,31 @@ export default function PhotoUploader({ memoryId, onDone, onGpsDetected, initial
         const pendingUploads = uploads.filter(u => u.status === 'pending');
         if (pendingUploads.length === 0) return;
 
-        const storage = getStorage(app);
-
         const runUploads = async () => {
             setIsProcessing(true);
             for (const upload of pendingUploads) {
                 try {
                     updateUploadStatus(upload.id, { status: 'uploading', progress: 10 });
-                    // Standardized path: memories/{memoryId}/originals/{photoId}.jpg
-                    const storageRef = ref(storage, `memories/${memoryId}/originals/${upload.id}.jpg`);
-                    const uploadTask = uploadBytesResumable(storageRef, upload.file, {
-                        customMetadata: { uploadedBy: user.uid }
-                    });
 
-                    await new Promise((resolve, reject) => {
-                        uploadTask.on('state_changed',
-                            (snapshot) => {
-                                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                                updateUploadStatus(upload.id, { progress: 10 + (progress * 0.8) });
-                            },
-                            (error) => reject(error),
-                            () => resolve()
-                        );
-                    });
+                    const result = await queueUpload(upload.file, memoryId);
 
-                    await logActivity({
-                        action: ACTIVITY_ACTIONS.PHOTO_UPLOADED,
-                        targetType: ARTIFACT_TYPES.PHOTO,
-                        targetId: memoryId,
-                        metadata: { fileName: upload.file.name },
-                        displayText: `Subió una foto al recuerdo: ${upload.file.name}`
-                    }).catch(() => { });
-
-                    updateUploadStatus(upload.id, { status: 'success', progress: 100 });
+                    if (result.queued) {
+                        updateUploadStatus(upload.id, {
+                            status: 'success',
+                            progress: 100,
+                            photoId: result.photoId
+                        });
+                    }
                 } catch (err) {
-                    console.error('Upload failed:', err);
-                    updateUploadStatus(upload.id, { status: 'error', error: 'Fallo al subir' });
+                    console.error('Upload queuing failed:', err);
+                    updateUploadStatus(upload.id, { status: 'error', error: 'Fallo al encolar' });
                 }
             }
             setIsProcessing(false);
         };
 
         runUploads();
-    }, [memoryId, uploads, user.uid]);
+    }, [memoryId, uploads, queueUpload]);
 
     const onDrop = useCallback((e) => {
         e.preventDefault();
@@ -144,10 +126,35 @@ export default function PhotoUploader({ memoryId, onDone, onGpsDetected, initial
                 </CameraPermissionGate>
 
                 <label
-                    style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '10px 20px', backgroundColor: '#eef2f5', borderRadius: '8px', fontWeight: '500', border: 'none', overflow: 'hidden' }}
-                    onClick={() => logToVercel('Photo_Label_Gallery', 'CLICK', 'Label was clicked')}
-                    onTouchStart={() => logToVercel('Photo_Label_Gallery', 'TOUCHSTART', 'Label touch start')}
+                    style={{ 
+                        position: 'relative', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '8px', 
+                        cursor: uploads.length === 0 ? 'not-allowed' : 'pointer', 
+                        padding: '10px 20px', 
+                        backgroundColor: '#eef2f5', 
+                        borderRadius: '8px', 
+                        fontWeight: '500', 
+                        border: 'none', 
+                        overflow: 'hidden',
+                        opacity: uploads.length === 0 ? 0.6 : 1
+                    }}
+                    onClick={() => {
+                        if (uploads.length === 0) {
+                            logToVercel('Photo_Label_Gallery', 'BLOCKED', 'Gallery blocked - first photo must be from camera');
+                            return;
+                        }
+                        logToVercel('Photo_Label_Gallery', 'CLICK', 'Label was clicked');
+                    }}
+                    onTouchStart={() => {
+                        if (uploads.length > 0) logToVercel('Photo_Label_Gallery', 'TOUCHSTART', 'Label touch start');
+                    }}
                     onTouchEnd={(e) => {
+                        if (uploads.length === 0) {
+                            e.preventDefault();
+                            return;
+                        }
                         logToVercel('Photo_Label_Gallery', 'TOUCHEND', 'Label touch end');
                         e.stopPropagation();
                     }}
@@ -156,12 +163,10 @@ export default function PhotoUploader({ memoryId, onDone, onGpsDetected, initial
                         ref={galleryInputRef}
                         type="file"
                         multiple
+                        disabled={uploads.length === 0}
                         accept="image/*"
                         onChange={handleFileChange}
-                        onClick={(e) => logToVercel('Photo_Input_Gallery', 'CLICK', `Input was directly clicked. Cancelable: ${e.cancelable}`)}
-                        onTouchStart={() => logToVercel('Photo_Input_Gallery', 'TOUCHSTART', 'Direct tap on input began')}
-                        onTouchEnd={() => logToVercel('Photo_Input_Gallery', 'TOUCHEND', 'Direct tap on input ended')}
-                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, zIndex: 100, cursor: 'pointer', touchAction: 'manipulation' }}
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, zIndex: 100, cursor: uploads.length === 0 ? 'not-allowed' : 'pointer', touchAction: 'manipulation' }}
                     />
                     <span className="material-symbols-outlined">photo_library</span>
                     Galería

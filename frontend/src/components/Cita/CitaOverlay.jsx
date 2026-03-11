@@ -12,12 +12,18 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
     const [warningOpen, setWarningOpen] = useState(false);
 
     const handleFileAdded = (e) => {
-        logToVercel('CitaOverlay', 'INPUT_ONCHANGE', `Target files length: ${e.target.files?.length}`);
-        const file = e.target.files?.[0];
-        if (file) {
-            logToVercel('CitaOverlay', 'FILE_SELECTED', `Name: ${file.name}, Size: ${file.size}`);
-            const previewUrl = URL.createObjectURL(file);
-            setSessionPhotos(prev => [...prev, { file, previewUrl }]);
+        const files = Array.from(e.target.files || []);
+        logToVercel('CitaOverlay', 'INPUT_ONCHANGE', `Target files length: ${files.length}`);
+        
+        if (files.length > 0) {
+            const newPhotos = files.map(file => {
+                logToVercel('CitaOverlay', 'FILE_SELECTED', `Name: ${file.name}, Size: ${file.size}`);
+                return {
+                    file,
+                    previewUrl: URL.createObjectURL(file)
+                };
+            });
+            setSessionPhotos(prev => [...prev, ...newPhotos]);
         }
         e.target.value = '';
     };
@@ -103,11 +109,28 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
 
                     <div className={styles.citaActions}>
                         <label
-                            className={styles.citaAction}
-                            style={{ cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
-                            onClick={() => logToVercel('Cita_Label_Gallery', 'CLICK', 'Label was clicked')}
-                            onTouchStart={() => logToVercel('Cita_Label_Gallery', 'TOUCHSTART', 'Label touch start')}
+                            className={`${styles.citaAction} ${sessionPhotos.length === 0 ? styles.citaActionDisabled : ''}`}
+                            style={{ 
+                                cursor: sessionPhotos.length === 0 ? 'not-allowed' : 'pointer', 
+                                position: 'relative', 
+                                overflow: 'hidden',
+                                opacity: sessionPhotos.length === 0 ? 0.6 : 1
+                            }}
+                            onClick={() => {
+                                if (sessionPhotos.length === 0) {
+                                    logToVercel('Cita_Label_Gallery', 'BLOCKED', 'Gallery blocked - first photo must be from camera');
+                                    return;
+                                }
+                                logToVercel('Cita_Label_Gallery', 'CLICK', 'Label was clicked');
+                            }}
+                            onTouchStart={() => {
+                                if (sessionPhotos.length > 0) logToVercel('Cita_Label_Gallery', 'TOUCHSTART', 'Label touch start');
+                            }}
                             onTouchEnd={(e) => {
+                                if (sessionPhotos.length === 0) {
+                                    e.preventDefault();
+                                    return;
+                                }
                                 logToVercel('Cita_Label_Gallery', 'TOUCHEND', 'Label touch end');
                                 e.stopPropagation();
                             }}
@@ -115,11 +138,10 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                             <input
                                 type="file"
                                 accept="image/*"
+                                multiple
+                                disabled={sessionPhotos.length === 0}
                                 onChange={handleFileAdded}
-                                onClick={(e) => logToVercel('Cita_Input_Gallery', 'CLICK', `Input was directly clicked. Cancelable: ${e.cancelable}`)}
-                                onTouchStart={() => logToVercel('Cita_Input_Gallery', 'TOUCHSTART', 'Direct tap on input began')}
-                                onTouchEnd={() => logToVercel('Cita_Input_Gallery', 'TOUCHEND', 'Direct tap on input ended')}
-                                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, zIndex: 100, cursor: 'pointer', touchAction: 'manipulation' }}
+                                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, zIndex: 100, cursor: sessionPhotos.length === 0 ? 'not-allowed' : 'pointer', touchAction: 'manipulation' }}
                             />
                             <span className="material-symbols-outlined">photo_library</span>
                             Galería
