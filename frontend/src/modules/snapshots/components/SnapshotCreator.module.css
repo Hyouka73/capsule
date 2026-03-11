@@ -98,11 +98,10 @@
 /* ── Flying thumbnail (Framer Motion sets transform via style) ── */
 .flyImg {
     position: fixed;
-    /* Centered horizontally so motion x/y are offsets from center */
     top: 50%;
     left: 50%;
-    width: min(88vmin, 380px);
-    height: min(88vmin, 380px);
+    width: min(92vw, 400px);
+    height: min(92vw, 400px);
     translate: -50% -50%;
     object-fit: cover;
     pointer-events: none;
@@ -122,8 +121,8 @@
 
 /* ── Squircle viewfinder ── */
 .squircle {
-    width: min(88vmin, 380px);
-    height: min(88vmin, 380px);
+    width: min(92vw, 400px);
+    height: min(92vw, 400px);
     background: #111;
     cursor: pointer;
     display: flex;

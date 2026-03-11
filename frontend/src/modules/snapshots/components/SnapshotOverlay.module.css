@@ -63,13 +63,11 @@
 /* ── Deck stage — centered, provides the stacking context ── */
 .stage {
     position: relative;
-    /* Large enough for the biggest card + offset of background cards */
-    width: min(78vmin, 340px);
-    height: min(78vmin, 340px);
+    width: min(86vmin, 370px);
+    height: min(86vmin, 370px);
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Allow background cards to overflow the stage bounds visually */
     overflow: visible;
 }
 
@@ -129,18 +127,13 @@
 ─────────────────────────────────────────────────────── */
 .progressRingConic {
     position: absolute;
-    /* Extend 7px outside the card on all sides */
     inset: -7px;
     width: calc(100% + 14px);
     height: calc(100% + 14px);
     pointer-events: none;
     z-index: 5;
-
-    /* Apply the same pillow clip */
     clip-path: url(#pillowClip);
     -webkit-clip-path: url(#pillowClip);
-
-    /* Punch a hole in the center to create the ring effect */
     mask: radial-gradient(transparent 67%, black 68.5%);
     -webkit-mask: radial-gradient(transparent 67%, black 68.5%);
 }

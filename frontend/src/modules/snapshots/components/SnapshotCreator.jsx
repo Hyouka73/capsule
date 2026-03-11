@@ -152,19 +152,21 @@ export default function SnapshotCreator({ onClose }) {
                 )}
             </AnimatePresence>
 
+            {/* Hidden SVG clip path for camera squircle (outside content for stability) */}
+            <svg height="0" width="0" style={{ position: 'absolute' }}>
+                <defs>
+                    <clipPath clipPathUnits="objectBoundingBox" id="pillowClipCreator">
+                        <path
+                            d="M0.5,0 C0.42,0 0,0.42 0,0.5 C0,0.58 0.42,1 0.5,1 C0.58,1 1,0.58 1,0.5 C1,0.42 0.58,0 0.5,0 Z"
+                            transform="rotate(45 0.5 0.5)"
+                        />
+                    </clipPath>
+                </defs>
+            </svg>
+
             <div className={styles.content}>
                 <CameraPermissionGate onCancel={onClose}>
-                    {/* Pillow clip definition */}
-                    <svg height="0" width="0" style={{ position: 'absolute' }}>
-                        <defs>
-                            <clipPath clipPathUnits="objectBoundingBox" id="pillowClipCreator">
-                                <path
-                                    d="M0.5,0 C0.42,0 0,0.42 0,0.5 C0,0.58 0.42,1 0.5,1 C0.58,1 1,0.58 1,0.5 C1,0.42 0.58,0 0.5,0 Z"
-                                    transform="rotate(45 0.5 0.5)"
-                                />
-                            </clipPath>
-                        </defs>
-                    </svg>
+
 
                     {/* Hidden canvas */}
                     <canvas ref={canvasRef} style={{ display: 'none' }} />
@@ -184,16 +186,7 @@ export default function SnapshotCreator({ onClose }) {
                                     <p className={styles.loaderText}>Cargando lente...</p>
                                 </div>
                             )}
-                            {/* Flip camera button */}
-                            {!isCameraLoading && (
-                                <button
-                                    className={styles.flipBtn}
-                                    onClick={toggleCamera}
-                                    aria-label="Cambiar cámara"
-                                >
-                                    <span className="material-symbols-outlined">flip_camera_ios</span>
-                                </button>
-                            )}
+
                             {/* Optional message chip inside viewfinder */}
                             {message && (
                                 <div className={styles.messageChip}>
@@ -227,8 +220,15 @@ export default function SnapshotCreator({ onClose }) {
                             <div className={styles.shutterInner} />
                         </button>
 
-                        {/* Spacer (mirrors msgToggle) */}
-                        <div style={{ width: 44 }} />
+                        {/* Flip camera — ahora aquí, reemplaza el spacer */}
+                        <button
+                            className={styles.msgToggle}
+                            onClick={toggleCamera}
+                            disabled={isCameraLoading}
+                            aria-label="Cambiar cámara"
+                        >
+                            <span className="material-symbols-outlined">flip_camera_ios</span>
+                        </button>
                     </div>
 
                     {/* ── Optional message input ── */}

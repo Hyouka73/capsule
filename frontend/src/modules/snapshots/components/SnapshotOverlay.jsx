@@ -144,20 +144,20 @@ export default function SnapshotOverlay({ snapshots = [], onClose }) {
                 ✕
             </button>
 
+            {/* Hidden SVG clip path shared by all cards (Placed outside .stage for stability) */}
+            <svg height="0" width="0" style={{ position: 'absolute' }}>
+                <defs>
+                    <clipPath clipPathUnits="objectBoundingBox" id="pillowClip">
+                        <path
+                            d="M0.5,0 C0.42,0 0,0.42 0,0.5 C0,0.58 0.42,1 0.5,1 C0.58,1 1,0.58 1,0.5 C1,0.42 0.58,0 0.5,0 Z"
+                            transform="rotate(45 0.5 0.5)"
+                        />
+                    </clipPath>
+                </defs>
+            </svg>
+
             {/* ── Deck stage ── */}
             <div className={styles.stage}>
-                {/* Hidden SVG clip path shared by all cards */}
-                <svg height="0" width="0" style={{ position: 'absolute', pointerEvents: 'none' }}>
-                    <defs>
-                        <clipPath clipPathUnits="objectBoundingBox" id="pillowClip">
-                            <path
-                                d="M0.5,0 C0.42,0 0,0.42 0,0.5 C0,0.58 0.42,1 0.5,1 C0.58,1 1,0.58 1,0.5 C1,0.42 0.58,0 0.5,0 Z"
-                                transform="rotate(45 0.5 0.5)"
-                            />
-                        </clipPath>
-                    </defs>
-                </svg>
-
                 <AnimatePresence>
                     {deckSlotsReversed.map(({ slot, snap }) => {
                         const isActive = slot === 0;
@@ -173,7 +173,8 @@ export default function SnapshotOverlay({ snapshots = [], onClose }) {
                             <motion.div
                                 key={snap.id}
                                 className={styles.cardSlot}
-                                style={{ zIndex }}
+                                style={{ zIndex, cursor: isActive ? 'pointer' : 'default' }}
+                                onClick={isActive ? markAsSeenAndAdvance : undefined}
                                 initial={isActive
                                     ? { x: tx, y: ty, scale: sc, opacity: 0 }
                                     : { x: tx, y: ty, scale: sc, opacity }
