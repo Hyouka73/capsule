@@ -1,9 +1,7 @@
 import React from 'react';
 import './VersionBadge.css';
 
-const VERSION = 'v1.3.4';
-const RELEASE_DATE = 'Mar 9, 2026';
-// Final Map Polish & Storage Standards
+const VERSION = 'v1.4.8-super-mega-update'; // Map Filter (Only visited places)
 
 export default function VersionBadge() {
     return (
