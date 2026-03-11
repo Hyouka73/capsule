@@ -1,37 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const DB_NAME = 'capsule_offline_queue';
-const DB_VERSION = 3; // Version 3: Ensure status index exists
+import { openDB } from '../config/dbConfig';
 const STORE_NAME = 'pending_citas';
-
-function openDB() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
-        request.onupgradeneeded = (e) => {
-            const db = e.target.result;
-
-            // 1. Upload Queue Store
-            let uploadStore;
-            if (!db.objectStoreNames.contains('upload_queue')) {
-                uploadStore = db.createObjectStore('upload_queue', { keyPath: 'id' });
-            } else {
-                uploadStore = e.target.transaction.objectStore('upload_queue');
-            }
-
-            // Ensure status index exists (Critical for useOfflineQueue)
-            if (!uploadStore.indexNames.contains('status')) {
-                uploadStore.createIndex('status', 'status', { unique: false });
-            }
-
-            // 2. Pending Citas Store
-            if (!db.objectStoreNames.contains(STORE_NAME)) {
-                db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-            }
-        };
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-    });
-}
 
 export function usePendingCitas() {
     const [pendingCitas, setPendingCitas] = useState([]);

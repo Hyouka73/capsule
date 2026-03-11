@@ -1,45 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { uploadFile, compressImage } from '../services/storage';
-import { createMemory, createSnapshot } from '../apiClient';
+import { createMemory, createSnapshot, findOrCreatePlace } from '../apiClient';
 import { STORAGE_PATHS } from '../config/constants';
+import Memory from '../models/Memory';
 import { toast } from '../components/ui/PastelToast/PastelToast';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // IndexedDB helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-const DB_NAME = 'capsule_offline_queue';
-const DB_VERSION = 3; // Version 3: Ensure status index exists
+import { openDB } from '../config/dbConfig';
 const STORE_NAME = 'upload_queue';
-
-function openDB() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
-        request.onupgradeneeded = (e) => {
-            const db = e.target.result;
-
-            // 1. Upload Queue Store
-            let uploadStore;
-            if (!db.objectStoreNames.contains(STORE_NAME)) {
-                uploadStore = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-            } else {
-                uploadStore = e.target.transaction.objectStore(STORE_NAME);
-            }
-
-            // Ensure status index exists
-            if (!uploadStore.indexNames.contains('status')) {
-                uploadStore.createIndex('status', 'status', { unique: false });
-            }
-
-            // 2. Pending Citas Store
-            if (!db.objectStoreNames.contains('pending_citas')) {
-                db.createObjectStore('pending_citas', { keyPath: 'id' });
-            }
-        };
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-    });
-}
 
 // Global lock to prevent multiple hook instances from running sync concurrently
 let isProcessingGlobal = false;
@@ -52,8 +23,12 @@ async function getAllPending() {
         const req = store.getAll();
         req.onsuccess = () => {
             const results = req.result || [];
-            // Filter for items that are either 'pending' or 'failed' (to allow retries)
-            resolve(results.filter(item => item.status === 'pending' || item.status === 'failed'));
+            // Filter for items that are 'pending' or 'uploading' 
+            // We EXCLUDE 'failed' items from the automatic background sync
+            resolve(results.filter(item =>
+                item.status === 'pending' ||
+                item.status === 'uploading'
+            ));
         };
         req.onerror = () => reject(req.error);
     });
@@ -61,6 +36,23 @@ async function getAllPending() {
 
 async function saveToQueue(item) {
     const db = await openDB();
+
+    // If this item is associated with a citation, clean up existing queue items for that citation
+    if (item.originalCitaId) {
+        const txSync = db.transaction(STORE_NAME, 'readwrite');
+        const storeSync = txSync.objectStore(STORE_NAME);
+        const allItems = await new Promise(r => {
+            const req = storeSync.getAll();
+            req.onsuccess = () => r(req.result || []);
+        });
+
+        for (const existing of allItems) {
+            if (existing.originalCitaId === item.originalCitaId && existing.id !== item.id) {
+                storeSync.delete(existing.id);
+            }
+        }
+    }
+
     return new Promise((resolve, reject) => {
         const tx = db.transaction(STORE_NAME, 'readwrite');
         tx.objectStore(STORE_NAME).put(item);
@@ -77,8 +69,13 @@ async function updateQueueItem(id, updates) {
         const getReq = store.get(id);
         getReq.onsuccess = () => {
             if (!getReq.result) return;
-            const item = { ...getReq.result, ...updates };
-            store.put(item);
+            const updatedItem = { ...getReq.result, ...updates };
+            store.put(updatedItem);
+
+            // If status is updating, sync with pending citations
+            if (updates.status && updatedItem.originalCitaId) {
+                syncCitaStatus(updatedItem.originalCitaId, updates.status);
+            }
         };
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
@@ -93,6 +90,32 @@ async function removeFromQueue(id) {
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
     });
+}
+
+/**
+ * Synchronize the status of a citation in the pending_citas store.
+ */
+async function syncCitaStatus(citaId, status) {
+    if (!citaId) return;
+    try {
+        const db = await openDB();
+        const tx = db.transaction('pending_citas', 'readwrite');
+        const store = tx.objectStore('pending_citas');
+        const getReq = store.get(citaId);
+        getReq.onsuccess = () => {
+            const item = getReq.result;
+            if (item) {
+                item.status = status;
+                store.put(item);
+            }
+        };
+        await new Promise((resolve, reject) => {
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    } catch (err) {
+        console.error('[offlineQueue] Error syncing cita status:', err);
+    }
 }
 
 /**
@@ -166,9 +189,37 @@ export function useOfflineQueue() {
                             }
                         }
 
+                        const memoryModel = Memory.fromForm(item.data);
+                        memoryModel.offlinePhotoUrls = photoUrls;
+
+                        // CRITICAL: If no placeId but we have coordinates, find or create the place first
+                        // so it appears on the map as a pin.
+                        if (!memoryModel.placeId && memoryModel.placeLat && memoryModel.placeLng) {
+                            try {
+                                console.log('[offlineQueue] Creating missing place for memory...');
+                                const placeResult = await findOrCreatePlace({
+                                    lat: memoryModel.placeLat,
+                                    lng: memoryModel.placeLng,
+                                    name: memoryModel.placeName,
+                                });
+
+                                if (placeResult?.success && placeResult?.placeId) {
+                                    memoryModel.placeId = placeResult.placeId;
+                                    console.log('[offlineQueue] Place created/found:', placeResult.placeId);
+                                }
+                            } catch (placeErr) {
+                                console.error('[offlineQueue] findOrCreatePlace failed:', placeErr);
+                                // CRITICAL: coordinates remain in the payload even if place creation fails
+                            }
+                        }
+
                         await createMemory({
-                            ...item.data,
+                            ...memoryModel.toApiPayload(),
                             offlinePhotoUrls: photoUrls,
+                            // Ensure coordinates always reach the backend as fallback
+                            placeLat: memoryModel.placeLat,
+                            placeLng: memoryModel.placeLng,
+                            placeName: memoryModel.placeName,
                         });
 
                         if (item.originalCitaId) {
@@ -229,10 +280,27 @@ export function useOfflineQueue() {
     useEffect(() => {
         refreshCount();
 
-        // 1. Sync on mount if online
-        if (navigator.onLine) {
-            processQueue();
-        }
+        // 0. Cleanup stuck uploading items on mount
+        const cleanupStuck = async () => {
+            const current = await getAllPending();
+            const stuck = current.filter(i => i.status === 'uploading');
+
+            if (stuck.length > 0) {
+                console.log('[offlineQueue] Cleaning up stuck items:', stuck.map(s => s.id));
+                for (const item of stuck) {
+                    await updateQueueItem(item.id, { status: 'pending' });
+                }
+                refreshCount();
+            }
+        };
+
+        cleanupStuck().then(() => {
+            // After initial cleanup, also check for any item that might have been 
+            // stuck during this session (rare, but possible if a throw happens)
+            if (navigator.onLine) {
+                processQueue();
+            }
+        });
 
         // 2. Sync on connectivity change
         const handleOnline = () => {
@@ -276,13 +344,7 @@ export function useOfflineQueue() {
         const photoId = crypto.randomUUID();
         const storagePath = STORAGE_PATHS.PHOTO_ORIGINAL(memoryId, photoId);
 
-        if (navigator.onLine) {
-            // Upload immediately
-            const url = await uploadFile(compressed, storagePath, onProgress);
-            return { queued: false, url, photoId, storagePath };
-        }
-
-        // Save to IndexedDB queue for later
+        // ALWAYS save to IndexedDB queue first for persistence
         await saveToQueue({
             id: photoId,
             type: 'photo',
@@ -297,6 +359,12 @@ export function useOfflineQueue() {
         });
 
         await refreshCount();
+
+        // If online, trigger processing
+        if (navigator.onLine) {
+            processQueue();
+        }
+
         return { queued: true, photoId, storagePath };
     }, [refreshCount]);
 
@@ -366,6 +434,15 @@ export function useOfflineQueue() {
         return { queued: true };
     }, [refreshCount, processQueue]);
 
+    /**
+     * Resets a failed item to pending status so it can be retried.
+     */
+    const retryItem = useCallback(async (id) => {
+        await updateQueueItem(id, { status: 'pending', retryCount: 0 });
+        await refreshCount();
+        if (navigator.onLine) processQueue();
+    }, [refreshCount, processQueue]);
+
     return {
         queueUpload,
         queueMemory,
@@ -373,5 +450,6 @@ export function useOfflineQueue() {
         pendingCount,
         isProcessing,
         processQueue,
+        retryItem,
     };
 }
