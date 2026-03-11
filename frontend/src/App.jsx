@@ -1,3 +1,4 @@
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import Teaser from './components/Teaser/Teaser';
 import AdminLogin from './modules/admin/AdminLogin';
@@ -10,68 +11,63 @@ import './App.css';
 import VersionBadge from './components/ui/VersionBadge/VersionBadge';
 
 /**
- * App — top-level routing
+ * App — top-level routing (React Router)
  *
  * Routes:
+ *   /             → Teaser (unauthenticated) | redirect to /app (authenticated)
  *   /join         → JoinInvite (public, partner onboarding)
  *   /admin/login  → AdminLogin (public)
- *   /admin        → AdminDashboard (admin only)
- *   /app          → UserDashboard (partner view)
- *   /*            → Teaser (partner / unauthenticated)
- *
- * No router library needed — path-based routing with window.location.
+ *   /admin/*      → AdminDashboard (admin only) | AdminLogin (fallback)
+ *   /app/*        → UserDashboard (authenticated) | redirect to /join (fallback)
+ *   /*            → Teaser (fallback)
  */
 export default function App() {
   const { isAdmin, isAuthenticated, isLoading } = useAuth();
-  const path = window.location.pathname;
-
-  const isJoinRoute = path.startsWith('/join');
-  const isAdminRoute = path.startsWith('/admin');
-  const isAppRoute = path.startsWith('/app');
 
   // While resolving Firebase auth, show nothing (prevents flash)
   if (isLoading) return <LoadingScreen />;
 
-  // Invitation flow
-  if (isJoinRoute) {
-    return (
-      <PastelToastProvider>
-        <JoinInvite />
-        <VersionBadge />
-      </PastelToastProvider>
-    );
-  }
-
-  // Admin routes
-  if (isAdminRoute) {
-    return (
-      <PastelToastProvider>
-        {isAdmin ? <AdminDashboard /> : <AdminLogin />}
-        <VersionBadge />
-      </PastelToastProvider>
-    );
-  }
-
-  // Partner routes (Dashboard) — require authentication
-  if (isAppRoute) {
-    if (!isAuthenticated) {
-      // User landed on /app without a session → send to join flow
-      window.location.replace('/join');
-      return <LoadingScreen />;
-    }
-    return (
-      <PastelToastProvider>
-        <UserDashboard />
-        <VersionBadge />
-      </PastelToastProvider>
-    );
-  }
-
-  // Default: teaser
   return (
-    <>
-      <Teaser />
-      <VersionBadge />
-    </>
+    <PastelToastProvider>
+      <Routes>
+        {/* Raíz: sesión activa → /app, sin sesión → Teaser */}
+        <Route path="/" element={
+          isAuthenticated
+            ? <Navigate to="/app" replace />
+            : <><Teaser /><VersionBadge /></>
+        } />
+
+        {/* Flujo de invitación (público) */}
+        <Route path="/join" element={
+          <><JoinInvite /><VersionBadge /></>
+        } />
+
+        {/* Admin: login público + dashboard protegido */}
+        <Route path="/admin/login" element={
+          isAdmin
+            ? <Navigate to="/admin" replace />
+            : <><AdminLogin /><VersionBadge /></>
+        } />
+        <Route path="/admin/*" element={
+          isAdmin
+            ? <><AdminDashboard /><VersionBadge /></>
+            : <><AdminLogin /><VersionBadge /></>
+        } />
+
+        {/* Dashboard de usuario (protegido) */}
+        <Route path="/app/*" element={
+          isAuthenticated
+            ? <><UserDashboard /><VersionBadge /></>
+            : <Navigate to="/join" replace />
+        } />
+
+        {/* Fallback: cualquier otra ruta → Teaser */}
+        <Route path="*" element={
+          isAuthenticated
+            ? <Navigate to="/app" replace />
+            : <><Teaser /><VersionBadge /></>
+        } />
+      </Routes>
+    </PastelToastProvider>
   );
 }

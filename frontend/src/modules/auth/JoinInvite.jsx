@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '../../services/firebase';
 import {
@@ -18,13 +19,14 @@ import styles from './JoinInvite.module.css';
  * 5. Redirect to /app
  */
 export default function JoinInvite() {
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [status, setStatus] = useState('procesando'); // 'procesando' | 'manual' | 'exito' | 'error'
     const [errorMsg, setErrorMsg] = useState('');
     const [manualToken, setManualToken] = useState('');
 
     const processInvite = async (tokenOverride = null) => {
-        const params = new URLSearchParams(window.location.search);
-        const token = tokenOverride || params.get('t');
+        const token = tokenOverride || searchParams.get('t');
 
         if (!token) {
             setStatus('manual');
@@ -45,7 +47,7 @@ export default function JoinInvite() {
             // 4. Success! Redirect to /app
             setStatus('exito');
             setTimeout(() => {
-                window.location.href = '/app';
+                navigate('/app');
             }, 1500);
 
         } catch (err) {
@@ -121,7 +123,7 @@ export default function JoinInvite() {
                     <button className={styles.btn} onClick={() => setStatus('manual')}>
                         Intentar con otro código
                     </button>
-                    <button className={styles.btnGhost} onClick={() => window.location.href = '/'}>
+                    <button className={styles.btnGhost} onClick={() => navigate('/')}>
                         Volver al inicio
                     </button>
                 </div>

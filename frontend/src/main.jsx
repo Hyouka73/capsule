@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { AppConfigProvider } from './context/AppConfigContext.jsx'
+import { BrowserRouter } from 'react-router-dom'
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -13,11 +14,13 @@ if ('serviceWorker' in navigator) {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <AuthProvider>
-      <AppConfigProvider>
-        <App />
-      </AppConfigProvider>
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppConfigProvider>
+          <App />
+        </AppConfigProvider>
+      </AuthProvider>
+    </BrowserRouter>
   </StrictMode>,
 )
 
