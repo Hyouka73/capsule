@@ -24,14 +24,14 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
  * Backend Service: Mapea la lógica transaccional de lugares.
  */
 export const findOrCreatePlace = onCall({ region: 'us-central1' }, async (request) => {
-    // 1. Verificación básica (solo autenticados)
-    if (!request.auth) return { success: false, error: 'Unauthorized' };
-
-    const { lat, lng, name, city, category, tags } = request.data;
-    if (!lat || !lng) return { success: false, error: 'Coordenadas incompletas.' };
-
     const db = getFirestore();
     const placesRef = db.collection(COLLECTIONS.PLACES);
+
+    if (!request.auth) return { success: false, error: 'Unauthorized' };
+
+    const { lat, lng, name, city, category, tags } = request.data || {};
+
+    if (!lat || !lng) return { success: false, error: 'Coordenadas incompletas.' };
 
     try {
         // 1. Intentar buscar por cercanía primero (Lógica más robusta que nombre exacto)
@@ -58,10 +58,17 @@ export const findOrCreatePlace = onCall({ region: 'us-central1' }, async (reques
         });
 
         if (existingPlaceId) {
-            await placesRef.doc(existingPlaceId).update({
+            const updateData = {
                 visitCount: FieldValue.increment(1),
                 updatedAt: FieldValue.serverTimestamp()
-            });
+            };
+
+            // Si el nombre viene del front (geocodificado), lo actualizamos
+            if (name) {
+                updateData.name = name;
+            }
+
+            await placesRef.doc(existingPlaceId).update(updateData);
             return { success: true, placeId: existingPlaceId };
         }
 

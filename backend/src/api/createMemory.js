@@ -14,7 +14,9 @@ export const createMemory = onCall({ region: 'us-central1' }, async (request) =>
     }
 
     const { uid } = request.auth;
-    const { title, description, eventDate, tags, adminNotes, placeId, placeName, placeLat, placeLng } = request.data;
+    const rawPlaceId = request.data.placeId;
+    const placeId = (rawPlaceId && rawPlaceId !== 'custom_map') ? rawPlaceId : null;
+    const { title, description, eventDate, tags, adminNotes, placeName, placeLat, placeLng } = request.data;
 
     // 2. Validación básica de Payload
     if (!eventDate) {
@@ -53,33 +55,55 @@ export const createMemory = onCall({ region: 'us-central1' }, async (request) =>
         let mainPhotoUrl = null;
 
         if (offlinePhotoUrls.length > 0) {
-            const batch = db.batch();
             offlinePhotoUrls.forEach((p, index) => {
                 const photoId = p.photoId || db.collection('dummy').doc().id;
-                const photoRef = memoryRef.collection(COLLECTIONS.PHOTOS).doc(photoId);
-
-                batch.set(photoRef, {
-                    url: p.url,
-                    storagePath: p.storagePath,
-                    uploadStatus: 'completed', // Already uploaded by client
-                    isSnapshot: false,
-                    createdAt: FieldValue.serverTimestamp(),
-                    updatedAt: FieldValue.serverTimestamp(),
-                });
-
                 if (index === 0) mainPhotoUrl = p.url;
                 photoCount++;
             });
-            await batch.commit();
         }
 
+        // SEGUNDO: Crear el documento padre (Memory)
+        // Esto asegura que cuando los documentos de fotos se creen abajo, 
+        // el padre ya existe para los triggers de Storage/Firestore.
         await memoryRef.set({
             ...memoryData,
             photoCount,
             mainPhotoUrl,
         });
 
-        // 5. Retornar solo lo que el Frontend necesita saber
+        // TERCERO: Crear los documentos de fotos en Batch
+        if (offlinePhotoUrls.length > 0) {
+            const batch = db.batch();
+            offlinePhotoUrls.forEach((p) => {
+                const photoId = p.photoId || db.collection('dummy').doc().id;
+                const photoRef = memoryRef.collection(COLLECTIONS.PHOTOS).doc(photoId);
+
+                batch.set(photoRef, {
+                    url: p.url,
+                    storagePath: p.storagePath,
+                    uploadStatus: 'completed',
+                    isSnapshot: false,
+                    createdAt: FieldValue.serverTimestamp(),
+                    updatedAt: FieldValue.serverTimestamp(),
+                });
+            });
+            await batch.commit();
+        }
+
+        // 5. Incrementar visitCount del lugar si existe
+        if (memoryData.placeId) {
+            try {
+                const placeRef = db.collection(COLLECTIONS.PLACES).doc(memoryData.placeId);
+                await placeRef.update({
+                    visitCount: FieldValue.increment(1),
+                    updatedAt: FieldValue.serverTimestamp()
+                });
+            } catch (placeErr) {
+                logger.warn(`Could not update visitCount for place ${memoryData.placeId}:`, placeErr);
+            }
+        }
+
+        // 6. Retornar solo lo que el Frontend necesita saber
         return {
             success: true,
             memoryId: memoryId,

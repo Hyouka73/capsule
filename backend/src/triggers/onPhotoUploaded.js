@@ -84,11 +84,22 @@ export const onPhotoUploaded = onObjectFinalized({ region: 'us-central1' }, asyn
 
             // 7. Update the parent memory
             const memoryRef = db.collection(COLLECTIONS.MEMORIES).doc(parentId);
-            const memorySnap = await memoryRef.get();
+            
+            // Retry hasta 3 veces por si el doc aún no fue creado (race condition safety)
+            let memorySnap;
+            for (let attempt = 0; attempt < 3; attempt++) {
+                memorySnap = await memoryRef.get();
+                if (memorySnap.exists) break;
+                if (attempt < 2) await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
+            }
 
-            if (memorySnap.exists) {
-                const memoryData = memorySnap.data();
-                const isFirstPhoto = (memoryData.photoCount || 0) === 0;
+            if (!memorySnap?.exists) {
+                console.warn(`[onPhotoUploaded] Memory ${parentId} not found after 3 attempts, skipping.`);
+                return;
+            }
+
+            const memoryData = memorySnap.data();
+            const isFirstPhoto = (memoryData.photoCount || 0) === 0;
 
                 const originalFile = storageBucket.file(filePath);
                 await originalFile.makePublic();
@@ -112,16 +123,15 @@ export const onPhotoUploaded = onObjectFinalized({ region: 'us-central1' }, asyn
                         updatedAt: FieldValue.serverTimestamp(),
                     });
                 }
+            } else if (isSnapshot) {
+                // Update the snapshot document with the thumbnail
+                const snapshotRef = db.collection(COLLECTIONS.INSTANTANEAS).doc(parentId);
+                await snapshotRef.update({
+                    thumbnailUrl: thumbUrl,
+                    thumbnailStoragePath: thumbStoragePath,
+                    updatedAt: FieldValue.serverTimestamp(),
+                });
             }
-        } else if (isSnapshot) {
-            // Update the snapshot document with the thumbnail
-            const snapshotRef = db.collection(COLLECTIONS.INSTANTANEAS).doc(parentId);
-            await snapshotRef.update({
-                thumbnailUrl: thumbUrl,
-                thumbnailStoragePath: thumbStoragePath,
-                updatedAt: FieldValue.serverTimestamp(),
-            });
-        }
     } finally {
         for (const tmpFile of [originalTmpPath, thumbTmpPath]) {
             try { if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile); } catch { /* ignore */ }
