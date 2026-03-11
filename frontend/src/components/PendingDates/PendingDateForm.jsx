@@ -11,6 +11,7 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
     // If pendingDate has a suggested place logic, we would set it here.
     const [selectedPlaceId, setSelectedPlaceId] = useState('');
     const [customLocation, setCustomLocation] = useState(null);
+    const [customPlaceName, setCustomPlaceName] = useState('');
     const [isPlacePickerOpen, setIsPlacePickerOpen] = useState(false);
     const [title, setTitle] = useState(pendingDate?.title || '');
     const [eventDate, setEventDate] = useState(() => {
@@ -47,6 +48,7 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
             title: title || 'Recuerdo sin título',
             eventDate: eventDate,
             placeId: selectedPlaceId,
+            placeName: selectedPlaceId === 'custom_map' ? customPlaceName : null,
             customLocation: customLocation,
             tags: selectedTags,
             comments: comments
@@ -112,7 +114,9 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
                                     <span className="material-symbols-outlined">check</span>
                                 </div>
                                 <div className={styles.locationMeta}>
-                                    <span className={styles.locationLabel}>Ubicación confirmada</span>
+                                    <span className={styles.locationLabel}>
+                                        {customPlaceName || 'Ubicación confirmada'}
+                                    </span>
                                     <span className={styles.locationCoords}>
                                         {customLocation.lat.toFixed(4)}, {customLocation.lng.toFixed(4)}
                                     </span>
@@ -202,12 +206,14 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
                     setSelectedPlaceId(placeId);
                     setCustomLocation(null);
                 }}
-                onLocationSelected={(locationData, placeId) => {
+                onLocationSelected={(locationData, placeId, placeName) => {
                     if (placeId) {
                         setSelectedPlaceId(placeId);
                         setCustomLocation(null);
+                        setCustomPlaceName('');
                     } else {
                         setCustomLocation(locationData);
+                        setCustomPlaceName(placeName || '');
                         setSelectedPlaceId('custom_map');
                     }
                 }}

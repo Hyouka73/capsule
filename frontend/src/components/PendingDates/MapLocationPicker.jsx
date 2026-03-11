@@ -4,6 +4,7 @@ import MapPin from '@/components/ui/MapPin/MapPin';
 import Button from '../ui/Button/Button';
 import { toast } from '../ui/PastelToast/PastelToast';
 import { usePlaces } from '../../modules/map/hooks/usePlaces';
+import { reverseGeocode } from '../../services/mapService';
 import styles from './MapLocationPicker.module.css';
 
 const DEFAULT_CENTER = [-93.1152, 16.7521]; // [lng, lat] for MapLibre
@@ -20,6 +21,11 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
     });
     const [isLocating, setIsLocating] = useState(false);
     const [selectedPlaceId, setSelectedPlaceId] = useState(null);
+    const [showConfirmBadge, setShowConfirmBadge] = useState(false);
+    const [resolvedName, setResolvedName] = useState('');
+    const [isGeocoding, setIsGeocoding] = useState(false);
+    const hasAttemptedGeo = useRef(false);
+    const geocodeTimer = useRef(null);
 
     // Fetch existing places
     const { places } = usePlaces();
@@ -55,13 +61,36 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
         }
     }, [initialCoordinates]);
 
+    // Reverse Geocode when position changes (Debounced)
+    useEffect(() => {
+        if (!position || selectedPlaceId) {
+            setResolvedName('');
+            return;
+        }
+
+        if (geocodeTimer.current) clearTimeout(geocodeTimer.current);
+
+        geocodeTimer.current = setTimeout(async () => {
+            setIsGeocoding(true);
+            const result = await reverseGeocode(position.lat, position.lng);
+            if (result) {
+                setResolvedName(result.name);
+            }
+            setIsGeocoding(false);
+        }, 1000);
+
+        return () => {
+            if (geocodeTimer.current) clearTimeout(geocodeTimer.current);
+        };
+    }, [position, selectedPlaceId]);
+
     const handleConfirm = () => {
         if (position) {
             setShowConfirmBadge(true);
             toast.success('Ubicación Capturada', 'Hemos guardado el lugar de este recuerdo ✨');
             setTimeout(() => {
                 setShowConfirmBadge(false);
-                onConfirm(position, selectedPlaceId);
+                onConfirm(position, selectedPlaceId, resolvedName);
             }, 2000);
         }
     };
@@ -159,6 +188,15 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
             </div>
 
             <div className={styles.footer}>
+                {position && !selectedPlaceId && (
+                    <div className={styles.resolvedNamePreview}>
+                        {isGeocoding ? (
+                            <span className={styles.miniLoader}>Buscando nombre...</span>
+                        ) : (
+                            <span>📍 {resolvedName || 'Lugar sin nombre'}</span>
+                        )}
+                    </div>
+                )}
                 <Button
                     className={styles.confirmBtn}
                     onClick={handleConfirm}
@@ -174,6 +212,6 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 }

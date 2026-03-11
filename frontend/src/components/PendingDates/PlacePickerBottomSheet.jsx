@@ -31,8 +31,8 @@ export default function PlacePickerBottomSheet({
         p.tags?.some(t => t.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
-    const handleMapConfirm = (locationData, placeId) => {
-        onLocationSelected(locationData, placeId);
+    const handleMapConfirm = (locationData, placeId, placeName) => {
+        onLocationSelected(locationData, placeId, placeName);
         setIsMapOpen(false);
         onClose();
     };
@@ -112,6 +112,13 @@ export default function PlacePickerBottomSheet({
                                         key={place.id}
                                         className={`${styles.placeItem} ${selectedId === place.id ? styles.placeItemActive : ''}`}
                                         onClick={() => setSelectedId(place.id)}
+                                        onDoubleClick={() => {
+                                            onSelectPlace(place.id);
+                                            onClose();
+                                        }}
+                                        role="button"
+                                        aria-pressed={selectedId === place.id}
+                                        tabIndex={0}
                                     >
                                         <div className={styles.placeEmoji}>{place.emoji}</div>
                                         <div className={styles.placeInfo}>

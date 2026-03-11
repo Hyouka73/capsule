@@ -7,7 +7,7 @@ import PhotoViewer from '../../components/ui/PhotoViewer/PhotoViewer';
 import { subscribeToGlobalSettings } from '../../services/settingsService';
 import styles from './UserBingo.module.css';
 
-import { BINGO_SQUARES } from '../../data/bingoData';
+import { useBingo } from '../../hooks/useBingo';
 
 export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsModalOpen }) {
     const [selectedSquare, setSelectedSquare] = useState(null);
@@ -21,8 +21,7 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
         });
         return unsub;
     }, []);
-    const completedCount = BINGO_SQUARES.filter(s => s.isCompleted).length;
-    const progressPerc = (completedCount / 20) * 100;
+    const { categories, completedCount, progressPercent, isLoading } = useBingo();
 
     return (
         <div className={styles.root}>
@@ -37,50 +36,58 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
                     <motion.div
                         className={styles.progressBarFill}
                         initial={{ width: 0 }}
-                        animate={{ width: `${progressPerc}%` }}
+                        animate={{ width: `${progressPercent}%` }}
                         transition={{ duration: 0.8, ease: 'easeOut' }}
                     />
                 </div>
                 <div className={styles.progressBadge}>
-                    {completedCount}/{BINGO_SQUARES.length}
+                    {completedCount}/{categories.length || 20}
                 </div>
             </div>
 
             {/* Tablero 4x5 */}
             <div className={styles.boardCard}>
                 <div className={styles.grid}>
-                    {BINGO_SQUARES.map((square) => (
-                        <motion.div
-                            key={square.id}
-                            className={`${styles.square} ${square.isCompleted ? styles.completed : styles.empty}`}
-                            whileTap={square.isCompleted ? { scale: 1.05 } : { scale: 0.95, boxShadow: "0 4px 12px rgba(97,218,190,0.4)" }}
-                            transition={square.isCompleted ? { type: "spring", stiffness: 400, damping: 20 } : { duration: 0.15 }}
-                            onClick={() => {
-                                if (square.isCompleted) {
-                                    setSelectedSquare(square);
-                                    if (setIsModalOpen) setIsModalOpen(true);
-                                } else {
-                                    setSelectedStartSquare(square);
-                                    if (setIsModalOpen) setIsModalOpen(true);
-                                }
-                            }}
-                        >
-                            {square.isCompleted ? (
-                                <div className={styles.completedContent}>
-                                    <span className={`material-symbols-outlined ${styles.checkIcon}`}>check_circle</span>
-                                    <span className={styles.dateBadge}>
-                                        {new Date(square.completedAt)
-                                            .toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
-                                            .replace('.', '')}
-                                    </span>
-                                </div>
-                            ) : (
-                                <div className={styles.emptyContent}>
-                                    <span className={`material-symbols-outlined ${styles.emptyIcon}`}>help_outline</span>
-                                </div>
-                            )}
-                        </motion.div>
-                    ))}
+                    {isLoading && categories.length === 0 ? (
+                        <div className={styles.loading}>Cargando tablero...</div>
+                    ) : (
+                        categories.map((square) => (
+                            <motion.div
+                                key={square.id}
+                                className={`${styles.square} ${square.completedMemoryId ? styles.completed : styles.empty}`}
+                                whileTap={square.completedMemoryId ? { scale: 1.05 } : { scale: 0.95, boxShadow: "0 4px 12px rgba(97,218,190,0.4)" }}
+                                transition={square.completedMemoryId ? { type: "spring", stiffness: 400, damping: 20 } : { duration: 0.15 }}
+                                onClick={() => {
+                                    if (square.completedMemoryId) {
+                                        setSelectedSquare(square);
+                                        if (setIsModalOpen) setIsModalOpen(true);
+                                    } else {
+                                        setSelectedStartSquare(square);
+                                        if (setIsModalOpen) setIsModalOpen(true);
+                                    }
+                                }}
+                            >
+                                {square.completedMemoryId ? (
+                                    <div className={styles.completedContent}>
+                                        <span className={`material-symbols-outlined ${styles.checkIcon}`}>check_circle</span>
+                                        <span className={styles.dateBadge}>
+                                            {new Date(square.completedAt)
+                                                .toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+                                                .replace('.', '')}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <div className={styles.emptyContent}>
+                                        {square.emoji ? (
+                                             <span className={styles.emojiIcon}>{square.emoji}</span>
+                                        ) : (
+                                            <span className={`material-symbols-outlined ${styles.emptyIcon}`}>help_outline</span>
+                                        )}
+                                    </div>
+                                )}
+                            </motion.div>
+                        ))
+                    )}
                 </div>
             </div>
 

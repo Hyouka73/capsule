@@ -124,16 +124,24 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start; /* Fix: Empieza arriba en pantallas pequeñas */
     align-items: center;
     text-align: center;
-    padding: 2rem;
+    padding: 2rem 1rem;
     background: rgba(255, 255, 255, 0.4);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--glass-border);
     border-radius: 32px;
     box-shadow: 0 16px 32px rgba(0, 0, 0, 0.03);
+    margin-top: 1rem;
+}
+
+@media (min-height: 700px) {
+    .homeWelcome {
+        justify-content: center; /* Vuelve al centro en pantallas largas */
+        margin-top: 0;
+    }
 }
 
 .homeHeart {
@@ -209,4 +217,30 @@
 
 .cameraFab:active {
     box-shadow: none;
+}
+
+/* Placeholder Modules */
+.placeholderModule {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    height: 100%;
+}
+
+.placeholderModule h1 {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.placeholderModule button {
+    margin-top: 1.5rem;
+    padding: 10px 20px;
+    border-radius: 12px;
+    background: var(--pastel-rose);
+    border: none;
+    color: white;
+    font-weight: 600;
 }
