@@ -340,7 +340,10 @@ function MapMarker({
       draggable,
     }).setLngLat([longitude, latitude]);
 
-    const handleClick = (e) => callbacksRef.current.onClick?.(e);
+    const handleClick = (e) => {
+      e.stopPropagation();
+      callbacksRef.current.onClick?.(e);
+    };
     const handleMouseEnter = (e) =>
       callbacksRef.current.onMouseEnter?.(e);
     const handleMouseLeave = (e) =>
@@ -445,12 +448,15 @@ function DefaultMarkerIcon() {
 function MarkerPopup({
   children,
   className,
+  onClose,
   closeButton = false,
   ...popupOptions
 }) {
   const { marker, map } = useMarkerContext();
   const container = useMemo(() => document.createElement("div"), []);
   const prevPopupOptions = useRef(popupOptions);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   const popup = useMemo(() => {
     const popupInstance = new MapLibreGL.Popup({
@@ -468,11 +474,21 @@ function MarkerPopup({
   useEffect(() => {
     if (!map) return;
 
+    const onCloseProp = () => onCloseRef.current?.();
+    popup.on("close", onCloseProp);
+
     popup.setDOMContent(container);
     marker.setPopup(popup);
 
+    // Open immediately if not already open (e.g. when selected programmatically)
+    if (!popup.isOpen()) {
+      popup.setLngLat(marker.getLngLat()).addTo(map);
+    }
+
     return () => {
+      popup.off("close", onCloseProp);
       marker.setPopup(null);
+      popup.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map]);

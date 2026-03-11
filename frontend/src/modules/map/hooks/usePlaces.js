@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { subscribeToCollection } from '../../../services/firestore';
 import { COLLECTIONS } from '../../../config/constants';
+import Place from '../../../models/Place';
 
 /**
  * Hook to manage real-time subscription to Places collection.
@@ -23,19 +24,7 @@ export function usePlaces() {
             unsubscribe = subscribeToCollection(
                 COLLECTIONS.PLACES,
                 (docs) => {
-                    // Normalize coordinates (lat/lng or latitude/longitude)
-                    const normalizedDocs = (docs || []).map(doc => {
-                        if (doc.coordinates) {
-                            return {
-                                ...doc,
-                                coordinates: {
-                                    lat: doc.coordinates.lat || doc.coordinates.latitude,
-                                    lng: doc.coordinates.lng || doc.coordinates.longitude
-                                }
-                            };
-                        }
-                        return doc;
-                    });
+                    const normalizedDocs = (docs || []).map(doc => Place.fromFirestore(doc.id, doc));
                     setPlaces(normalizedDocs);
                     setLoading(false);
                     setError(null);

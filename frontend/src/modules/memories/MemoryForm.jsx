@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { createMemory, findOrCreatePlace, updateMemory } from '../../apiClient';
 import { useOfflineQueue } from '../../hooks/useOfflineQueue';
 import PhotoUploader from './PhotoUploader';
+import Memory from '../../models/Memory';
 import { reverseGeocode } from '../../services/mapService';
 import { MEMORY_TAGS_OPTIONS, PLACE_CATEGORIES } from '../../config/constants';
 import exifr from 'exifr';
@@ -111,16 +112,16 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
                 finalPlaceId = result.placeId;
             }
 
-            // Payload limpio.
-            const memoryPayload = {
-                title: form.title,
-                description: form.description,
-                eventDate: form.eventDate, // String YYYY-MM-DD
-                tags: form.tags,
+            // Use model for data sanitization and standardization
+            const memoryModel = Memory.fromForm({
+                ...form,
+                id: memoryId || initialData?.id,
                 placeId: finalPlaceId,
                 placeName: finalPlaceName,
-                placeLat: form.placeLat || coords?.lat,
-                placeLng: form.placeLng || coords?.lng,
+            });
+
+            const memoryPayload = {
+                ...memoryModel.toApiPayload(),
                 ...(bingoContext ? { bingoContext } : {}),
             };
 

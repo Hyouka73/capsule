@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../../services/firebase';
 import { useAuth } from '../../../hooks/useAuth';
+import { useOfflineQueue } from '../../../hooks/useOfflineQueue';
 import { createSnapshot } from '../../../apiClient';
 import styles from './SnapshotCreator.module.css';
 import { logToVercel } from '../../../utils/vercelLogger';
@@ -107,30 +108,18 @@ export default function SnapshotCreator({ onClose }) {
         startCamera();
     };
 
+    const { queueSnapshot } = useOfflineQueue();
+
     const handleSend = async () => {
         if (!selectedFile || isSending) return;
         setIsSending(true);
 
         try {
-            const uuid = crypto.randomUUID();
-            const path = STORAGE_PATHS.SNAPSHOT_ORIGINAL(uuid);
-            const fileRef = storageRef(storage, path);
-
-            // Upload direct to Storage
-            await uploadBytes(fileRef, selectedFile);
-            const photoUrl = await getDownloadURL(fileRef);
-
-            // Save to DB via Cloud Function
-            await createSnapshot({
-                storagePath: path,
-                photoUrl,
-                message,
-            });
-
+            await queueSnapshot(selectedFile, message);
             onClose();
         } catch (err) {
-            console.error('Error uploading snapshot:', err);
-            logToVercel('SnapshotCreator', 'UPLOAD_ERROR', err.message);
+            console.error('Error queuing snapshot:', err);
+            logToVercel('SnapshotCreator', 'QUEUE_ERROR', err.message);
             setIsSending(false);
         }
     };

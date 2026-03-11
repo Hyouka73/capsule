@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Map, MapMarker, MarkerContent, MapControls } from '@/components/ui/map';
+import { Map, MapMarker, MarkerContent, MarkerPopup, MarkerLabel, MapControls } from '@/components/ui/map';
 import PhotoViewer from '../../components/ui/PhotoViewer/PhotoViewer';
 import MapPin from '../../components/ui/MapPin/MapPin';
 import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
@@ -14,6 +14,7 @@ import { useOfflineQueue } from '../../hooks/useOfflineQueue';
 import styles from './MapView.module.css';
 import { usePlaces } from './hooks/usePlaces';
 import { getMemories } from '../../apiClient';
+import Memory from '../../models/Memory';
 
 export default function MapView({
     onPlaceSelected,
@@ -26,7 +27,9 @@ export default function MapView({
     citaContext,
     onCitaContextChange,
     pendingDates = [],
-    removePendingDate
+    removePendingDate,
+    updatePendingDate,
+    updatePendingDateStatus
 }) {
     const { isPartner, isAdmin } = useAuth();
     const { queueMemory } = useOfflineQueue();
@@ -59,7 +62,7 @@ export default function MapView({
                     toast.info('Ubicación encontrada ✨', 'Centrando el mapa en ti');
                 },
                 (err) => console.log('[MapView] Geolocation error:', err),
-                { enableHighAccuracy: true, timeout: 5000 }
+                { enableHighAccuracy: true, timeout: 10000 }
             );
         }
 
@@ -83,29 +86,25 @@ export default function MapView({
 
     const handleSavePendingDate = async (data) => {
         try {
-            const payload = {
-                title: data.title,
-                description: data.comments || '',
-                eventDate: data.eventDate,
-                tags: data.tags || [],
-                placeId: data.placeId === 'custom_map' ? null : data.placeId,
-                placeName: data.placeId === 'custom_map' ? null : null,
-                placeLat: data.customLocation?.lat || null,
-                placeLng: data.customLocation?.lng || null,
-            };
+            // Use model for data sanitization and standardization
+            const memory = Memory.fromForm(data);
+            const payload = memory.toApiPayload();
+
+            if (updatePendingDate && data.id) {
+                // Set status to uploading immediately so the list locks it
+                await updatePendingDate(data.id, {
+                    title: memory.title,
+                    suggestedTags: memory.tags,
+                    placeName: memory.placeName,
+                    status: 'uploading'
+                });
+            }
 
             const files = (data.photos || []).map(p => p.file);
 
             if (files.length > 0) {
+                // queueMemory also handles status sync internally now
                 await queueMemory(payload, files, data.id);
-            }
-
-            if (updatePendingDate && data.id) {
-                await updatePendingDate(data.id, {
-                    title: data.title,
-                    suggestedTags: data.tags,
-                    status: 'uploading'
-                });
             }
             setSelectedPendingDate(null);
             toast.success('¡Cita guardada! 💾', 'Se está subiendo en segundo plano ✨');
@@ -129,13 +128,17 @@ export default function MapView({
 
     const filteredPlaces = useMemo(() => {
         return places.filter(p => {
+            const hasCitas = (p.visitCount || 0) > 0;
             const matchesFilter = activeFilter === 'todos' || p.tags?.includes(activeFilter);
             const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-            return matchesFilter && matchesSearch;
+            return hasCitas && matchesFilter && matchesSearch;
         });
     }, [places, activeFilter, searchQuery]);
 
-    const uniqueTags = [...new Set(places.flatMap(p => p.tags ?? []))];
+    const uniqueTags = useMemo(() => {
+        const visiblePlaces = places.filter(p => (p.visitCount || 0) > 0);
+        return [...new Set(visiblePlaces.flatMap(p => p.tags ?? []))];
+    }, [places]);
 
     const TAG_ICONS = {
         'cine': 'movie',
@@ -297,6 +300,9 @@ export default function MapView({
                                         </div>
                                     </div>
                                 </MarkerContent>
+                                <MarkerLabel className={styles.pinLabel} position="top">
+                                    {place.name}
+                                </MarkerLabel>
                             </MapMarker>
                         );
                     })}

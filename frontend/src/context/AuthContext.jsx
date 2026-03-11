@@ -20,9 +20,20 @@ export function AuthProvider({ children }) {
 
     // Register FCM Token for partners
     const registerFCM = useCallback(async (userId) => {
-        if (!messaging) return;
         try {
-            const token = await getToken(messaging, {
+            // Wait for messaging to be initialized (it's lazy in firebase.js)
+            let messagingInstance = messaging;
+            if (!messagingInstance) {
+                const { isSupported, getMessaging } = await import('firebase/messaging');
+                if (await isSupported()) {
+                    const { app } = await import('../services/firebase');
+                    messagingInstance = getMessaging(app);
+                }
+            }
+
+            if (!messagingInstance) return;
+
+            const token = await getToken(messagingInstance, {
                 vapidKey: firebaseConfig.vapidKey
             });
             if (token) {
@@ -62,12 +73,26 @@ export function AuthProvider({ children }) {
 
         // Listen for foreground messages
         let unsubscribeMessaging = () => { };
-        if (messaging) {
-            unsubscribeMessaging = onMessage(messaging, (payload) => {
-                console.log('Message received in foreground: ', payload);
-                // Trigger global toast or similar
-            });
-        }
+
+        const setupMessagingListener = async () => {
+            let messagingInstance = messaging;
+            if (!messagingInstance) {
+                const { isSupported, getMessaging } = await import('firebase/messaging');
+                if (await isSupported()) {
+                    const { app } = await import('../services/firebase');
+                    messagingInstance = getMessaging(app);
+                }
+            }
+
+            if (messagingInstance) {
+                unsubscribeMessaging = onMessage(messagingInstance, (payload) => {
+                    console.log('Message received in foreground: ', payload);
+                    // Trigger global toast or similar
+                });
+            }
+        };
+
+        setupMessagingListener();
 
         return () => {
             unsubscribe();

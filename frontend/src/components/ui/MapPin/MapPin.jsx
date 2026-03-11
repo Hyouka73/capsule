@@ -22,7 +22,7 @@ export default function MapPin({ size = 'medium', selected = false, hideIcon = f
                             </span>
                         )}
                         {size === 'medium' && (
-                            <span className="material-symbols-outlined material-icons-filled" style={{ fontSize: '14px', color: '#88d8b0' }}>
+                            <span className="material-symbols-outlined material-icons-filled" style={{ fontSize: '14px', color: 'white' }}>
                                 favorite
                             </span>
                         )}

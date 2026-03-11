@@ -38,25 +38,25 @@
 .size-large {
     width: 44px;
     height: 44px;
-    background: linear-gradient(135deg, #00f5a0, #00d9e1);
-    box-shadow: 0 0 20px rgba(0, 245, 160, 0.6), 0 6px 20px rgba(0, 0, 0, 0.2);
-    border: 3px solid #004d40;
+    background: var(--gradient-amber);
+    box-shadow: 0 0 20px rgba(245, 166, 35, 0.6), 0 6px 20px rgba(0, 0, 0, 0.2);
+    border: 3px solid #D4891A;
 }
 
 .size-medium {
     width: 32px;
     height: 32px;
-    background: white;
-    border: 3px solid #00f5a0;
-    box-shadow: 0 4px 15px rgba(0, 245, 160, 0.4);
+    background: var(--gradient-rose);
+    border: 3px solid white;
+    box-shadow: 0 4px 15px rgba(255, 183, 178, 0.6);
 }
 
 .size-small {
     width: 24px;
     height: 24px;
-    background: #00f5a0;
-    border: 2.5px solid #004d40;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    background: linear-gradient(135deg, #c3b1e1, #a78bca);
+    border: 2.5px solid white;
+    box-shadow: 0 2px 8px rgba(167, 139, 202, 0.4);
 }
 
 .smallDot {
@@ -70,10 +70,10 @@
 .microDot {
     width: 10px;
     height: 10px;
-    background: #00f5a0;
+    background: #ffb7b2;
     border-radius: 50%;
-    border: 2.5px solid #004d40;
-    box-shadow: 0 0 10px rgba(0, 245, 160, 0.8);
+    border: 2.5px solid white;
+    box-shadow: 0 0 10px rgba(255, 183, 178, 0.8);
 }
 
 /* Selected State Override */
@@ -81,14 +81,14 @@
 .selected .pin {
     transform: rotate(-45deg) scale(1.25);
     border: 3px solid white;
-    box-shadow: 0 0 25px rgba(0, 245, 160, 0.9), 0 8px 30px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 25px rgba(255, 154, 158, 1), 0 8px 30px rgba(0, 0, 0, 0.3);
 }
 
 /* Pulse Ring Animation (Inside .pin) */
 .pulseRing {
     position: absolute;
     box-sizing: border-box;
-    border: 2px solid rgba(0, 245, 160, 0.8);
+    border: 2px solid rgba(255, 154, 158, 0.8);
     border-radius: 50%;
     animation: pulseLoop 2.5s infinite cubic-bezier(0.21, 0.53, 0.56, 1);
     pointer-events: none;
