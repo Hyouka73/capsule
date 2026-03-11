@@ -1,7 +1,7 @@
 import React from 'react';
 import './VersionBadge.css';
 
-const VERSION = 'v1.5.0-spa-routing'; // SPA Routing + Auto-Redirect
+const VERSION = 'v1.5.6-sw-fix';
 
 export default function VersionBadge() {
     return (

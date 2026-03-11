@@ -34,7 +34,7 @@ import { openDB } from '../config/dbConfig';
 const ACTION_STORE = 'pending_actions';
 
 async function saveAction(action) {
-    const db = await openActionsDB();
+    const db = await openDB();
     return new Promise((resolve, reject) => {
         const tx = db.transaction(ACTION_STORE, 'readwrite');
         tx.objectStore(ACTION_STORE).put(action);
@@ -44,7 +44,7 @@ async function saveAction(action) {
 }
 
 async function getPendingActions() {
-    const db = await openActionsDB();
+    const db = await openDB();
     return new Promise((resolve, reject) => {
         const tx = db.transaction(ACTION_STORE, 'readonly');
         const req = tx.objectStore(ACTION_STORE).getAll();
@@ -57,7 +57,7 @@ async function getPendingActions() {
 }
 
 async function updateAction(id, updates) {
-    const db = await openActionsDB();
+    const db = await openDB();
     return new Promise((resolve, reject) => {
         const tx = db.transaction(ACTION_STORE, 'readwrite');
         const store = tx.objectStore(ACTION_STORE);

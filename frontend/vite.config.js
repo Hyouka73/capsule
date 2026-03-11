@@ -3,9 +3,45 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
+import fs from 'fs'
+
+// ── Build timestamp injected into public/version.json at build time ──────────
+// This file is served with no-store headers (vercel.json) and fetched by
+// main.jsx to detect when the app is stale — bypassing SW caching entirely.
+const BUILD_TIMESTAMP = Date.now().toString();
+
+function viteVersionPlugin() {
+  return {
+    name: 'version-json',
+    // runs after bundle is written
+    closeBundle() {
+      const outDir = path.resolve(__dirname, 'dist');
+      fs.mkdirSync(outDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(outDir, 'version.json'),
+        JSON.stringify({ buildTime: BUILD_TIMESTAMP }),
+        'utf-8'
+      );
+    },
+    // also copy to public/ so `vite dev` works
+    buildStart() {
+      const publicDir = path.resolve(__dirname, 'public');
+      fs.mkdirSync(publicDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(publicDir, 'version.json'),
+        JSON.stringify({ buildTime: BUILD_TIMESTAMP }),
+        'utf-8'
+      );
+    },
+  };
+}
 
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    // Injected at build time — compared against /version.json at runtime
+    __BUILD_TIMESTAMP__: JSON.stringify(BUILD_TIMESTAMP),
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -27,42 +63,31 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    viteVersionPlugin(),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       workbox: {
         skipWaiting: true,
         clientsClaim: true,
-        cleanupOutdatedCaches: true,   // ← borra cachés de versiones anteriores del SW
+        cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        // Exclude firebase-messaging-sw.js from precaching
         globIgnores: ['firebase-messaging-sw.js'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
-          // 1. Navegaciones HTML — NetworkFirst para recibir siempre la shell nueva
-          //    Si la red falla, sirve el index.html cacheado (offline support)
           {
-            urlPattern: ({ request }) => request.mode === 'navigate',
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'html-navigation',
-              networkTimeoutSeconds: 5,
-              expiration: {
-                maxEntries: 5,
-                maxAgeSeconds: 60 * 60 * 24, // 1 day
-              },
-            },
+            urlPattern: /\/version\.json/,  // ← cubre /version.json?_=123 también
+            handler: 'NetworkOnly',
           },
-          // 2. APIs de Firebase — NetworkFirst, sin caché persistente
+          // APIs de Firebase — NetworkFirst, sin caché persistente
           {
             urlPattern: ({ url }) =>
               url.hostname.includes('firestore.googleapis.com') ||
               url.hostname.includes('firebase.googleapis.com') ||
               url.hostname.includes('identitytoolkit.googleapis.com'),
-            handler: 'NetworkFirst',
+            handler: 'NetworkOnly',
             options: {
               cacheName: 'firebase-api',
-              networkTimeoutSeconds: 10,
             },
           },
           // 3. Imágenes de Firebase Storage — CacheFirst con expiración razonable

@@ -41,7 +41,7 @@ export default function UserDashboard() {
     const [isCouponsModalOpen, setIsCouponsModalOpen] = useState(false);
     const [openPendingSignal, setOpenPendingSignal] = useState(false);
     const [isSnapshotOpen, setIsSnapshotOpen] = useState(false);
-    const [activeSnapshot, setActiveSnapshot] = useState(null);
+    const [activeSnapshots, setActiveSnapshots] = useState([]);
     const [isCameraOpen, setIsCameraOpen] = useState(false);
     const [citaContext, setCitaContext] = useState(null);
 
@@ -158,8 +158,8 @@ export default function UserDashboard() {
                         clearBingoContext={() => setBingoContextToMap(null)}
                         openPendingSignal={openPendingSignal}
                         onPendingSignalHandled={() => setOpenPendingSignal(false)}
-                        onOpenSnapshot={(snapshot) => {
-                            setActiveSnapshot(snapshot);
+                        onOpenSnapshot={(snapshotsArray) => {
+                            setActiveSnapshots(snapshotsArray);
                             setIsSnapshotOpen(true);
                         }}
                         onOpenCamera={() => setIsCameraOpen(true)}
@@ -239,13 +239,13 @@ export default function UserDashboard() {
             </AnimatePresence>
 
             <AnimatePresence>
-                {isSnapshotOpen && activeSnapshot && (
+                {isSnapshotOpen && activeSnapshots.length > 0 && (
                     <SnapshotOverlay
                         key="snapshot-overlay"
-                        snapshot={activeSnapshot}
+                        snapshots={activeSnapshots}
                         onClose={() => {
                             setIsSnapshotOpen(false);
-                            setActiveSnapshot(null);
+                            setActiveSnapshots([]);
                         }}
                     />
                 )}

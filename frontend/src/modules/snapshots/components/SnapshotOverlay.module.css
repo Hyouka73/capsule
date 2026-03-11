@@ -1,95 +1,98 @@
+/* ─────────────────────────────────────────────────
+   SnapshotOverlay — full-screen snapshot viewer
+   with stacked-deck visual (max 3 cards visible).
+───────────────────────────────────────────────── */
+
 .overlay {
     position: fixed;
     inset: 0;
     z-index: 2100;
-    background: #000000;
+    background: #000000e6;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
 }
 
+/* ── Counter badge (top-right) ── */
 .counter {
     position: fixed;
-    top: 24px;
+    top: 22px;
     right: 20px;
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(8px);
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border-radius: 999px;
-    padding: 0.35rem 0.9rem;
-    color: rgba(255, 255, 255, 0.9);
+    padding: 0.3rem 0.85rem;
+    color: rgba(255, 255, 255, 0.92);
     font-size: 0.78rem;
     font-weight: 600;
     font-family: var(--font-body, 'Inter', sans-serif);
-    z-index: 10;
-    letter-spacing: 0.03em;
+    z-index: 2110;
+    letter-spacing: 0.04em;
 }
 
+/* ── Close button (top-left) ── */
 .closeBtn {
     position: fixed;
-    top: 20px;
-    left: 20px;
+    top: 16px;
+    left: 16px;
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.15);
-    border: 2px solid rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.14);
+    border: 2px solid rgba(255, 255, 255, 0.35);
     color: white;
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     font-weight: 800;
     cursor: pointer;
-    z-index: 10;
+    z-index: 2110;
     display: flex;
     align-items: center;
     justify-content: center;
     line-height: 1;
-    transition: transform 0.15s ease;
+    transition: transform 0.15s ease, background 0.15s ease;
 }
 
 .closeBtn:active {
-    transform: scale(0.9);
+    transform: scale(0.88);
+    background: rgba(255, 255, 255, 0.22);
 }
 
-.content {
+/* ── Deck stage — centered, provides the stacking context ── */
+.stage {
     position: relative;
+    /* Large enough for the biggest card + offset of background cards */
+    width: min(78vmin, 340px);
+    height: min(78vmin, 340px);
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-}
-
-.photoRing {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    /* Allow background cards to overflow the stage bounds visually */
     overflow: visible;
 }
 
-.progressRingConic {
+/* ── Individual card slot — absolutely positioned in the stage ── */
+.cardSlot {
     position: absolute;
-    inset: -6px;
-    width: calc(100% + 12px);
-    height: calc(100% + 12px);
-    pointer-events: none;
-    clip-path: url(#pillowClip);
-    -webkit-clip-path: url(#pillowClip);
-    border-radius: 0;
-
-    /* Create ring effect by masking the center */
-    mask: radial-gradient(transparent 68%, black 69%);
-    -webkit-mask: radial-gradient(transparent 68%, black 69%);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* transform-origin center so scale keeps card centered */
+    transform-origin: center center;
+    will-change: transform, opacity;
 }
 
+/* ── Squircle photo wrapper ── */
 .photoWrapper {
     position: relative;
-    width: min(78vmin, 340px);
-    height: min(78vmin, 340px);
+    width: 100%;
+    height: 100%;
     clip-path: url(#pillowClip);
     -webkit-clip-path: url(#pillowClip);
-    display: flex;
-    flex-direction: column;
+    overflow: hidden;
 }
 
 .photo {
@@ -99,23 +102,45 @@
     display: block;
 }
 
+/* ── Message overlay (active card only) ── */
 .messageOverlay {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.35) 0%, transparent 100%);
-    border-radius: 0 0 44px 44px;
-    padding: 28px 16px 14px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.45) 0%, transparent 100%);
+    padding: 32px 18px 16px;
     pointer-events: none;
 }
 
 .messageText {
-    font-family: var(--font-body);
+    font-family: var(--font-body, 'Inter', sans-serif);
     font-size: 0.95rem;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.92);
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6), 0 0 2px rgba(0, 0, 0, 0.3);
+    color: rgba(255, 255, 255, 0.94);
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.65), 0 0 2px rgba(0, 0, 0, 0.4);
     margin: 0;
     letter-spacing: 0.01em;
+}
+
+/* ── Conic-gradient progress ring (active card only) ──
+   Sits outside .photoWrapper so it appears OVER the squircle edge.
+   Uses the same pillowClip but is larger (inset: -7px).
+─────────────────────────────────────────────────────── */
+.progressRingConic {
+    position: absolute;
+    /* Extend 7px outside the card on all sides */
+    inset: -7px;
+    width: calc(100% + 14px);
+    height: calc(100% + 14px);
+    pointer-events: none;
+    z-index: 5;
+
+    /* Apply the same pillow clip */
+    clip-path: url(#pillowClip);
+    -webkit-clip-path: url(#pillowClip);
+
+    /* Punch a hole in the center to create the ring effect */
+    mask: radial-gradient(transparent 67%, black 68.5%);
+    -webkit-mask: radial-gradient(transparent 67%, black 68.5%);
 }

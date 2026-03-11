@@ -55,10 +55,13 @@ export default function App() {
         } />
 
         {/* Dashboard de usuario (protegido) */}
+        {/* Admin should never be in /app → redirect to their panel */}
         <Route path="/app/*" element={
-          isAuthenticated
-            ? <><UserDashboard /><VersionBadge /></>
-            : <Navigate to="/join" replace />
+          !isAuthenticated
+            ? <Navigate to="/join" replace />
+            : isAdmin
+              ? <Navigate to="/admin" replace />
+              : <><UserDashboard /><VersionBadge /></>
         } />
 
         {/* Fallback: cualquier otra ruta → Teaser */}

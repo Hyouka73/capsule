@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import { AnimatePresence } from 'framer-motion';
 import MemoryManager from '../memories/MemoryManager';
 import CapsuleManager from '../capsules/CapsuleManager';
 import CouponManager from '../coupons/CouponManager';
@@ -7,6 +8,8 @@ import BingoManager from '../bingo/BingoManager';
 import ActivityPanel from '../activity/ActivityPanel';
 import WrappedManager from '../wrapped/WrappedManager';
 import GlobalSettings from '../settings/GlobalSettings';
+import SnapshotButton from '../snapshots/components/SnapshotButton';
+import SnapshotOverlay from '../snapshots/components/SnapshotOverlay';
 import SnapshotCreator from '../snapshots/components/SnapshotCreator';
 import Button from '../../components/ui/Button/Button';
 import styles from './AdminDashboard.module.css';
@@ -24,10 +27,13 @@ const SECTIONS = [
 export default function AdminDashboard() {
     const { signOut, user } = useAuth();
     const [activeSection, setActiveSection] = useState('activity');
-    const [isSnapshotModalOpen, setIsSnapshotModalOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
-    // Track responsiveness
+    // Snapshot state — mirrors UserDashboard
+    const [isSnapshotOpen, setIsSnapshotOpen] = useState(false);
+    const [activeSnapshots, setActiveSnapshots] = useState([]);
+    const [isCameraOpen, setIsCameraOpen] = useState(false);
+
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth <= 768);
         window.addEventListener('resize', handleResize);
@@ -99,37 +105,48 @@ export default function AdminDashboard() {
                 </div>
             </main>
 
-            {/* ── Instantánea FAB (Fixed) ── */}
-            <button
-                className={styles.fab}
-                onClick={() => setIsSnapshotModalOpen(true)}
-                title="Nueva Instantánea"
-            >
-                <span className="material-symbols-outlined">add_a_photo</span>
-            </button>
-
-            {/* ── Modal ── */}
-            {isSnapshotModalOpen && (
-                <SnapshotCreator
-                    onClose={() => setIsSnapshotModalOpen(false)}
-                    onSuccess={() => {
-                        // Optional: Refresh activity or show toast
-                        setActiveSection('activity');
-                    }}
-                />
+            {/* ── Snapshot button (top-right) — ver fotos que envió el partner ── */}
+            {!isSnapshotOpen && !isCameraOpen && (
+                <div className={styles.snapshotBtnWrapper}>
+                    <SnapshotButton
+                        onOpenSnapshot={(snapshotsArray) => {
+                            setActiveSnapshots(snapshotsArray);
+                            setIsSnapshotOpen(true);
+                        }}
+                        onOpenCamera={() => setIsCameraOpen(true)}
+                    />
+                </div>
             )}
-        </div>
-    );
-}
 
-function ComingSoon({ label, icon }) {
-    return (
-        <div className={styles.comingSoon}>
-            <div className={styles.comingSoonGlass}>
-                <p className={styles.comingSoonIcon}>{icon}</p>
-                <h2>{label}</h2>
-                <p>Módulo en desarrollo para el Bloque C.</p>
-            </div>
+            {/* ── Camera FAB — tomar nueva instantánea para el partner ── */}
+            {!isSnapshotOpen && !isCameraOpen && (
+                <button
+                    className={styles.fab}
+                    onClick={() => setIsCameraOpen(true)}
+                    title="Nueva Instantánea"
+                >
+                    <span className="material-symbols-outlined">add_a_photo</span>
+                </button>
+            )}
+
+            {/* ── SnapshotOverlay — ver fotos recibidas ── */}
+            <AnimatePresence>
+                {isSnapshotOpen && activeSnapshots.length > 0 && (
+                    <SnapshotOverlay
+                        key="admin-snapshot-overlay"
+                        snapshots={activeSnapshots}
+                        onClose={() => {
+                            setIsSnapshotOpen(false);
+                            setActiveSnapshots([]);
+                        }}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* ── SnapshotCreator — tomar foto ── */}
+            {isCameraOpen && (
+                <SnapshotCreator onClose={() => setIsCameraOpen(false)} />
+            )}
         </div>
     );
 }

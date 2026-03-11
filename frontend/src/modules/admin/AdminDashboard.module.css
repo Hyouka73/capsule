@@ -351,6 +351,21 @@
     }
 }
 
+/* ── SnapshotButton wrapper — top-right corner ── */
+.snapshotBtnWrapper {
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    z-index: 200;
+}
+
+@media (max-width: 768px) {
+    .snapshotBtnWrapper {
+        top: 14px;
+        right: 14px;
+    }
+}
+
 .fab {
     position: fixed;
     bottom: 100px;

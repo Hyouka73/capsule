@@ -105,10 +105,14 @@
     height: 100%;
 }
 
-/* FIX CRÍTICO: El mapa ocupa TODO el appContainer sin padding */
+/* FIX: El mapa ocupa TODO el viewport — fixed en lugar de absolute
+   para evitar que cualquier flex parent lo recorte en móvil */
 .mapWrapper {
-    position: absolute;
-    inset: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     z-index: 1;
 }
 

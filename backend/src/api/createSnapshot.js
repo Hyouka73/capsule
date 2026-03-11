@@ -6,19 +6,21 @@ import { sendNotificationToTokens } from '../utils/notifications.js';
 import { COLLECTIONS, PARTNER_SINGLETON_ID } from '../config/constants.js';
 
 /**
- * createSnapshot — Admin API to share a quick photo
- * 
+ * createSnapshot — Shared API: both admin AND partner can send quick snapshots.
+ *
  * Flow:
- * 1. Frontend uploads to Storage
+ * 1. Frontend uploads the file to Storage (path: snapshots/{uuid}/originals/photo.jpg)
  * 2. Frontend calls this function with { photoUrl, storagePath, message }
- * 3. We create the doc in /instantaneas
- * 4. We create a subdoc in /instantaneas/{id}/photos/{photoId} so it appears in Gallery
- * 5. We notify the partner via FCM
+ * 3. Creates /instantaneas/{id} doc with isSeen=false, expiresAt=+24h
+ * 4. Creates a subcollection photo doc so Gallery collectionGroup picks it up
+ * 5. Enqueues Cloud Task to archive exactly 24 h from now
+ * 6. Sends FCM to the OTHER party (admin → partner, partner → admin)
  */
 export const createSnapshot = onCall({ region: 'us-central1' }, async (request) => {
-    // 1. Security Check
-    if (!request.auth || request.auth.token.role !== 'admin') {
-        throw new HttpsError('permission-denied', 'Only admins can create snapshots.');
+    // ── 1. Auth: both roles can create snapshots ──
+    const role = request.auth?.token?.role;
+    if (!request.auth || (role !== 'admin' && role !== 'partner')) {
+        throw new HttpsError('permission-denied', 'Must be authenticated to create snapshots.');
     }
 
     const { photoUrl, storagePath, message } = request.data;
@@ -29,9 +31,8 @@ export const createSnapshot = onCall({ region: 'us-central1' }, async (request) 
     const db = getFirestore();
     const batch = db.batch();
 
-    // 2. Create the Snapshot document
+    // ── 2. Build snapshot document ──
     const snapshotRef = db.collection(COLLECTIONS.INSTANTANEAS).doc();
-    // 2. Snapshot TTL: 24 hours after creation
     const now = Timestamp.now();
     const expiresAt = Timestamp.fromMillis(now.toMillis() + 24 * 60 * 60 * 1000);
 
@@ -45,58 +46,70 @@ export const createSnapshot = onCall({ region: 'us-central1' }, async (request) 
         isArchived: false,
         archivedAt: null,
         expiresAt,
-        createdBy: request.auth.uid
+        createdBy: request.auth.uid,
+        createdByRole: role,   // 'admin' | 'partner'
     };
     batch.set(snapshotRef, snapshotData);
 
-    // 3. Create a photo sub-document for Gallery integration
-    // This ensures collectionGroup('photos') picks it up
-    const photoId = snapshotRef.id; // reuse id or random
-    const photoRef = snapshotRef.collection(COLLECTIONS.PHOTOS).doc(photoId);
+    // ── 3. Gallery integration — photos subcollection ──
+    const photoRef = snapshotRef.collection(COLLECTIONS.PHOTOS).doc(snapshotRef.id);
     batch.set(photoRef, {
         url: photoUrl,
         storagePath,
         caption: message || 'Instantánea ✨',
-        createdAt: Timestamp.now(),
-        isSnapshot: true
+        createdAt: now,
+        isSnapshot: true,
+        createdByRole: role,
     });
 
     await batch.commit();
+    logger.info(`[createSnapshot] Created ${snapshotRef.id} by ${role}`);
 
-    // 3. Enqueue Cloud Task to archive exactly 24h from now
+    // ── 4. Enqueue Cloud Task to archive at expiresAt ──
     try {
         const queue = getFunctions().taskQueue('taskArchiveSnapshot');
         await queue.enqueue(
             { snapshotId: snapshotRef.id },
             { scheduleTime: expiresAt.toDate() }
         );
-        logger.info(`Cloud Task programada para archivar snapshot ${snapshotRef.id} en ${expiresAt.toDate()}`);
+        logger.info(`[createSnapshot] Archive task enqueued for ${snapshotRef.id}`);
     } catch (taskErr) {
-        // Non-fatal: the snapshot was created successfully. Archiving may be delayed.
         logger.error('[createSnapshot] Failed to enqueue archive task:', taskErr.message);
+        // Non-fatal — snapshot was created successfully
     }
 
-    // 4. Send Notification to Partner
+    // ── 5. Notify the OTHER party via FCM ──
     try {
-        const partnerRef = db.collection(COLLECTIONS.USERS).doc(PARTNER_SINGLETON_ID);
-        const partnerSnap = await partnerRef.get();
+        // Admin sends → notify partner. Partner sends → notify admin.
+        const recipientId = PARTNER_SINGLETON_ID; // 'partner_main' is always the partner doc
 
-        if (partnerSnap.exists) {
-            const tokens = partnerSnap.data().fcmTokens || [];
-            if (tokens.length > 0) {
-                await sendNotificationToTokens(tokens, {
-                    title: '✨ Tienes una instantánea',
-                    body: message || '¡Mira lo que te acabo de enviar!',
-                    data: {
-                        type: 'snapshot',
-                        snapshotId: snapshotRef.id
-                    }
-                });
-            }
+        // For partner→admin we look up the admin user by role in the users collection
+        let tokens = [];
+
+        if (role === 'admin') {
+            // Admin sent → notify partner
+            const partnerDoc = await db.collection(COLLECTIONS.USERS).doc(PARTNER_SINGLETON_ID).get();
+            if (partnerDoc.exists) tokens = partnerDoc.data().fcmTokens || [];
+        } else {
+            // Partner sent → notify all admins
+            const adminQuery = await db.collection(COLLECTIONS.USERS)
+                .where('role', '==', 'admin')
+                .limit(5)
+                .get();
+            adminQuery.forEach(doc => {
+                tokens.push(...(doc.data().fcmTokens || []));
+            });
+        }
+
+        if (tokens.length > 0) {
+            await sendNotificationToTokens(tokens, {
+                title: '✨ Tienes una instantánea',
+                body: message || '¡Mira lo que te acabo de enviar!',
+                data: { type: 'snapshot', snapshotId: snapshotRef.id },
+            });
         }
     } catch (err) {
-        logger.error('Error sending snapshot notification:', err);
-        // We don't fail the whole request if only notification fails
+        logger.error('[createSnapshot] FCM failed (non-fatal):', err.message);
     }
 
     return { success: true, id: snapshotRef.id };

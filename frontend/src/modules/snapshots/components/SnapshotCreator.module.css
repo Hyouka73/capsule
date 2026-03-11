@@ -1,14 +1,19 @@
+/* ─────────────────────────────────────────────────
+   SnapshotCreator — Instagram-style camera overlay
+───────────────────────────────────────────────── */
+
 .overlay {
     position: fixed;
     inset: 0;
     z-index: 2100;
-    background: #000000;
+    background: #000;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
 }
 
+/* ── Close button ── */
 .closeBtn {
     position: fixed;
     top: 20px;
@@ -26,7 +31,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    line-height: 1;
     transition: transform 0.15s ease;
 }
 
@@ -34,102 +38,148 @@
     transform: scale(0.9);
 }
 
+/* ── Corner clock badge (top-right) ── */
+.clockBadge {
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.18);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    z-index: 20;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    /* Subtle animation to acknowledge new sends */
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.clockBadge:has(.clockThumb) {
+    /* Pop when a thumb arrives */
+    animation: badgePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes badgePop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.25); }
+    100% { transform: scale(1); }
+}
+
+.clockIcon {
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.clockThumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.clockCount {
+    position: absolute;
+    bottom: 2px;
+    right: 4px;
+    background: rgba(255, 77, 109, 0.9);
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 1px 4px;
+    line-height: 1.4;
+}
+
+/* ── Flying thumbnail (Framer Motion sets transform via style) ── */
+.flyImg {
+    position: fixed;
+    /* Centered horizontally so motion x/y are offsets from center */
+    top: 50%;
+    left: 50%;
+    width: min(88vmin, 380px);
+    height: min(88vmin, 380px);
+    translate: -50% -50%;
+    object-fit: cover;
+    pointer-events: none;
+    z-index: 2200;
+    will-change: transform, opacity;
+    clip-path: url(#pillowClipCreator);
+    -webkit-clip-path: url(#pillowClipCreator);
+}
+
+/* ── Main content column ── */
 .content {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 28px;
+    gap: 24px;
 }
 
+/* ── Squircle viewfinder ── */
 .squircle {
-    width: min(92vmin, 440px);
-    /* Increased size */
-    height: min(92vmin, 440px);
-    /* Increased size */
-    background: #000000;
+    width: min(88vmin, 380px);
+    height: min(88vmin, 380px);
+    background: #111;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.15s ease;
-    clip-path: url(#pillowClip);
-    -webkit-clip-path: url(#pillowClip);
+    clip-path: url(#pillowClipCreator);
+    -webkit-clip-path: url(#pillowClipCreator);
+    overflow: hidden;
+    position: relative;
+    transition: opacity 0.15s ease;
 }
 
-.squircle:active {
-    transform: scale(0.97);
+.squircleSending {
+    opacity: 0.7;
 }
 
-.placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    user-select: none;
-}
-
-.cameraEmoji {
-    font-size: 3rem;
-}
-
-.placeholderText {
-    font-family: var(--font-display);
-    font-size: 1rem;
-    color: rgba(255, 255, 255, 0.55);
-    margin: 0;
-    text-align: center;
-}
-
-.preview,
 .video {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
-    clip-path: url(#pillowClip);
-    -webkit-clip-path: url(#pillowClip);
+}
+
+/* Camera loading */
+.loader {
+    position: absolute;
+    inset: 0;
     background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.captureBtn {
-    background: white;
-    color: #000;
-    border: none;
-    padding: 14px 40px;
-    border-radius: var(--radius-pill);
-    font-family: var(--font-display);
-    font-weight: 800;
-    font-size: 1rem;
-    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3);
-    cursor: pointer;
-    transition: all 0.2s ease;
+.loaderText {
+    font-family: var(--font-display, 'Playfair Display', serif);
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin: 0;
 }
 
-.captureBtn:active {
-    transform: scale(0.95);
-    box-shadow: none;
-}
-
-.captureBtn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
+/* Flip button — inside viewfinder */
 .flipBtn {
     position: absolute;
-    bottom: 20px;
-    right: 20px;
-    width: 50px;
-    height: 50px;
+    bottom: 18px;
+    right: 18px;
+    width: 46px;
+    height: 46px;
     border-radius: 50%;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.45);
     border: 2px solid rgba(255, 255, 255, 0.4);
     color: white;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 10;
+    z-index: 5;
     transition: transform 0.2s;
 }
 
@@ -137,48 +187,119 @@
     transform: scale(0.9) rotate(45deg);
 }
 
-.sendBtn {
-    background: var(--gradient-mint);
+/* Message chip overlay on viewfinder */
+.messageChip {
+    position: absolute;
+    bottom: 18px;
+    left: 18px;
+    right: 70px;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border-radius: 999px;
+    padding: 6px 14px;
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 0.82rem;
+    font-family: var(--font-body, 'Inter', sans-serif);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+}
+
+/* ── Controls row (message toggle | shutter | spacer) ── */
+.controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    width: 100%;
+}
+
+/* Message toggle button */
+.msgToggle {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.35);
     color: white;
-    border: none;
-    padding: 14px 40px;
-    border-radius: var(--radius-pill);
-    font-family: var(--font-display);
-    font-weight: 800;
-    font-size: 1rem;
-    box-shadow: var(--shadow-chunky-mint);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background 0.15s ease;
 }
 
-.sendBtn:active {
-    transform: translateY(4px);
-    box-shadow: none;
+.msgToggle:active {
+    background: rgba(255, 255, 255, 0.28);
 }
 
-.sendBtn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.retakeBtn {
-    background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.7);
-    font-family: var(--font-body);
-    font-size: 0.9rem;
-    text-decoration: underline;
+/* ── Shutter button ── */
+.shutterBtn {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    border: 3px solid rgba(255, 255, 255, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    padding: 8px;
-    transition: color 0.2s ease;
+    transition: transform 0.12s ease, background 0.12s ease;
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.15);
 }
 
-.retakeBtn:hover {
-    color: white;
+.shutterBtn:active:not(:disabled) {
+    transform: scale(0.9);
+    background: rgba(255, 255, 255, 0.5);
 }
 
-.retakeBtn:disabled {
+.shutterBtn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.shutterInner {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: white;
+    transition: transform 0.12s ease;
+}
+
+.shutterBtn:active:not(:disabled) .shutterInner {
+    transform: scale(0.85);
+}
+
+/* ── Optional message input row ── */
+.messageRow {
+    width: min(88vmin, 380px);
+    overflow: hidden;
+}
+
+.messageInput {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 18px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    font-family: var(--font-body, 'Inter', sans-serif);
+    font-size: 0.9rem;
+    outline: none;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    /* placeholder styled via ::placeholder below */
+}
+
+.messageInput::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.messageInput:focus {
+    border-color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.2);
 }
