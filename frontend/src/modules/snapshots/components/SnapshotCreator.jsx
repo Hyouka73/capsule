@@ -1,21 +1,25 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { 
+    collection, 
+    query, 
+    where, 
+    onSnapshot, 
+    orderBy, 
+    limit, 
+    Timestamp 
+} from 'firebase/firestore';
+import { db } from '../../../services/firebase';
+import { useAuth } from '../../../hooks/useAuth';
 import { useOfflineQueue } from '../../../hooks/useOfflineQueue';
 import { logToVercel } from '../../../utils/vercelLogger';
 import CameraPermissionGate from '../../../components/ui/CameraPermissionGate/CameraPermissionGate';
 import styles from './SnapshotCreator.module.css';
 
-/**
- * SnapshotCreator — Instagram-style camera.
- *
- * Flow:
- *   1. Camera viewfinder is always open.
- *   2. Tap shutter → photo captured immediately, queued for upload.
- *   3. A tiny thumbnail animates from the viewfinder to the corner clock badge.
- *   4. No preview/retake screen — keep shooting or close with ✕.
- *   5. Corner badge shows the last N sent photos (not yet seen by partner).
- */
-export default function SnapshotCreator({ onClose }) {
+const TWENTY_FOUR_H_MS = 24 * 60 * 60 * 1000;
+
+export default function SnapshotCreator({ onClose, onOpenOwnSnapshots }) {
+    const { user } = useAuth();
     const [stream, setStream] = useState(null);
     const [isCameraLoading, setIsCameraLoading] = useState(true);
     const [facingMode, setFacingMode] = useState('environment');
@@ -23,9 +27,12 @@ export default function SnapshotCreator({ onClose }) {
     const [isMessageOpen, setIsMessageOpen] = useState(false);
     const [isSending, setIsSending] = useState(false);
 
-    // Sent thumbnails: { id, url }[] — shown in corner clock badge
+    // Thumbs for the "land" animation (local state)
     const [sentThumbs, setSentThumbs] = useState([]);
-    // The URL of the most-recently-sent photo (for the "fly" animation)
+    
+    // Remote "own" snapshots (actually in DB)
+    const [ownUnseenSnapshots, setOwnUnseenSnapshots] = useState([]);
+
     const [flyThumb, setFlyThumb] = useState(null);
     const [isFlying, setIsFlying] = useState(false);
 
@@ -34,39 +41,144 @@ export default function SnapshotCreator({ onClose }) {
     const shutterRef = useRef(null);
     const clockRef = useRef(null);
 
-    const { queueSnapshot } = useOfflineQueue();
+    const { queueSnapshot, getPendingSnapshots } = useOfflineQueue();
+    const [localPending, setLocalPending] = useState([]);
+
+    const refreshLocalHistory = useCallback(async () => {
+        const pending = await getPendingSnapshots();
+        setLocalPending(pending || []);
+    }, [getPendingSnapshots]);
+
+    useEffect(() => {
+        refreshLocalHistory();
+    }, [refreshLocalHistory]);
+
+    /* ─── Real-time listener for OWN snapshots ─── */
+    useEffect(() => {
+        if (!user) return;
+
+        // Query simpler to avoid missing composite index errors
+        const q = query(
+            collection(db, 'instantaneas'),
+            where('createdBy', '==', user.uid),
+            limit(15)
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const now = Date.now();
+            const snaps = snapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .filter(snap => {
+                    // Solo ver instantáneas que envié YO (esto es para el historial del botón de arriba)
+                    // (isSeen se ignora en el historial para mostrar algo siempre)
+                    const createdMs = snap.createdAt instanceof Timestamp
+                        ? snap.createdAt.toMillis()
+                        : (snap.createdAt?.seconds ? snap.createdAt.seconds * 1000 : 0);
+                    return createdMs > 0 && (now - createdMs) <= TWENTY_FOUR_H_MS;
+                })
+                .sort((a, b) => {
+                    const timeA = a.createdAt?.toMillis?.() || a.createdAt?.seconds * 1000 || 0;
+                    const timeB = b.createdAt?.toMillis?.() || b.createdAt?.seconds * 1000 || 0;
+                    return timeB - timeA; // Más recientes arriba
+                });
+
+            setOwnUnseenSnapshots(snaps);
+            // Cada vez que el servidor se actualiza, refrescamos lo local por si ya subió
+            refreshLocalHistory();
+        });
+
+        return () => unsubscribe();
+    }, [user, refreshLocalHistory]);
+
+    /* ─── Combine Remote + Local ─── */
+    const allHistory = useMemo(() => {
+        const local = localPending.map(item => ({
+            id: item.id,
+            photoUrl: URL.createObjectURL(item.photos[0].blob), // WARNING: We must manage revoking
+            createdAt: item.createdAt,
+            message: item.data?.message,
+            isLocal: true
+        }));
+
+        // Combinar, evitar duplicados si ID coincide, y ordenar
+        const combined = [...local, ...ownUnseenSnapshots];
+        return combined.sort((a, b) => {
+            const timeA = a.createdAt?.toMillis?.() || a.createdAt?.seconds * 1000 || a.createdAt || 0;
+            const timeB = b.createdAt?.toMillis?.() || b.createdAt?.seconds * 1000 || b.createdAt || 0;
+            return timeB - timeA;
+        });
+    }, [localPending, ownUnseenSnapshots]);
 
     /* ─── Camera lifecycle ─── */
-    const startCamera = useCallback(async (mode) => {
-        setIsCameraLoading(true);
-        try {
-            const mediaStream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: mode, width: { ideal: 1080 }, height: { ideal: 1080 } },
-                audio: false,
-            });
-            setStream(mediaStream);
-            if (videoRef.current) videoRef.current.srcObject = mediaStream;
-            setIsCameraLoading(false);
-            logToVercel('SnapshotCreator', 'CAMERA_STARTED', mode);
-        } catch (err) {
-            console.error('Camera error:', err);
-            logToVercel('SnapshotCreator', 'CAMERA_ERROR', err.message);
-            setIsCameraLoading(false);
-        }
-    }, []);
-
     const stopCamera = useCallback(() => {
+        if (videoRef.current && videoRef.current.srcObject) {
+            const tracks = videoRef.current.srcObject.getTracks();
+            tracks.forEach(t => t.stop());
+            videoRef.current.srcObject = null;
+        }
         if (stream) {
             stream.getTracks().forEach(t => t.stop());
             setStream(null);
         }
     }, [stream]);
 
+    const startCamera = useCallback(async (mode) => {
+        setIsCameraLoading(true);
+        
+        // Parada limpia inmediata
+        if (videoRef.current && videoRef.current.srcObject) {
+            const tracks = videoRef.current.srcObject.getTracks();
+            tracks.forEach(t => t.stop());
+            videoRef.current.srcObject = null;
+        }
+
+        try {
+            const constraints = {
+                video: { 
+                    facingMode: mode,
+                    width: { ideal: 720 },
+                    aspectRatio: 1
+                },
+                audio: false,
+            };
+
+            const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+            
+            if (videoRef.current) {
+                videoRef.current.srcObject = mediaStream;
+                videoRef.current.onloadedmetadata = () => {
+                    setIsCameraLoading(false);
+                    setStream(mediaStream);
+                };
+            }
+            logToVercel('SnapshotCreator', 'CAMERA_STARTED', mode);
+        } catch (err) {
+            console.error('Camera fallback...', err);
+            try {
+                const fallbackStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: mode },
+                    audio: false
+                });
+                if (videoRef.current) {
+                    videoRef.current.srcObject = fallbackStream;
+                    setIsCameraLoading(false);
+                    setStream(fallbackStream);
+                }
+            } catch (fallbackErr) {
+                logToVercel('SnapshotCreator', 'CAMERA_ERROR', fallbackErr.message);
+                setIsCameraLoading(false);
+            }
+        }
+    }, []);
+
     useEffect(() => {
         startCamera(facingMode);
-        return stopCamera;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [facingMode]);
+        return () => {
+            if (videoRef.current && videoRef.current.srcObject) {
+                videoRef.current.srcObject.getTracks().forEach(t => t.stop());
+            }
+        };
+    }, [facingMode, startCamera]);
 
     /* ─── Capture + instant send ─── */
     const handleCapture = async () => {
@@ -86,23 +198,20 @@ export default function SnapshotCreator({ onClose }) {
             const thumbUrl = URL.createObjectURL(blob);
             const file = new File([blob], `snapshot_${Date.now()}.jpg`, { type: 'image/jpeg' });
 
-            // Start fly animation
             setFlyThumb(thumbUrl);
             setIsFlying(true);
 
-            // After animation lands → add to corner thumbs
             setTimeout(() => {
                 setIsFlying(false);
                 setSentThumbs(prev => [{ id: Date.now(), url: thumbUrl }, ...prev].slice(0, 5));
-                // Revoke after a bit (keep URL alive while shown)
                 setTimeout(() => URL.revokeObjectURL(thumbUrl), 30_000);
             }, 600);
 
-            // Queue upload in parallel
             setIsSending(true);
             try {
                 await queueSnapshot(file, message.trim());
                 logToVercel('SnapshotCreator', 'QUEUED', `size=${file.size}`);
+                await refreshLocalHistory();
             } catch (err) {
                 console.error('Queue error:', err);
                 logToVercel('SnapshotCreator', 'QUEUE_ERROR', err.message);
@@ -116,6 +225,8 @@ export default function SnapshotCreator({ onClose }) {
 
     const toggleCamera = () => setFacingMode(m => m === 'environment' ? 'user' : 'environment');
 
+    const hasHistory = allHistory.length > 0;
+
     return (
         <div className={styles.overlay}>
             {/* ── Close ── */}
@@ -123,17 +234,20 @@ export default function SnapshotCreator({ onClose }) {
                 ✕
             </button>
 
-            {/* ── Hidden clock badge (target of fly animation) ── */}
-            <div ref={clockRef} className={styles.clockBadge} aria-label="Enviadas recientemente">
-                {sentThumbs.length > 0 ? (
-                    <>
-                        <img src={sentThumbs[0].url} className={styles.clockThumb} alt="" />
-                        {sentThumbs.length > 1 && (
-                            <span className={styles.clockCount}>{sentThumbs.length}</span>
-                        )}
-                    </>
+            {/* ── History toggle ── */}
+            <div 
+                ref={clockRef} 
+                className={styles.clockBadge} 
+                aria-label="Mis enviadas recientemente"
+                style={{ cursor: hasHistory ? 'pointer' : 'default' }}
+                onClick={() => hasHistory && onOpenOwnSnapshots?.(allHistory)}
+            >
+                {hasHistory ? (
+                    <img src={allHistory[0].photoUrl} className={styles.clockThumb} alt="" />
                 ) : (
-                    <span className={styles.clockIcon}>🕐</span>
+                    <span className={styles.clockIcon}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>history</span>
+                    </span>
                 )}
             </div>
 
@@ -176,7 +290,7 @@ export default function SnapshotCreator({ onClose }) {
                         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
                             <video
                                 ref={videoRef}
-                                className={styles.video}
+                                className={`${styles.video} ${facingMode === 'user' ? styles.videoMirrored : ''}`}
                                 autoPlay
                                 playsInline
                                 muted

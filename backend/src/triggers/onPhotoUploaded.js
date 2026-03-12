@@ -13,47 +13,59 @@ export const onPhotoUploaded = onObjectFinalized({ region: 'us-central1' }, asyn
     const bucket = event.data.bucket;
 
     // 1. Only process original photos — skip thumbnails
-    if (!filePath || !filePath.includes('/originals/')) return;
+    const fileName = path.basename(filePath);
+    if (!filePath || fileName.startsWith('thumb_')) return;
     if (!contentType?.startsWith('image/') && contentType !== 'application/octet-stream') return;
 
     // Parse the path:
-    // - memories/{memoryId}/originals/{photoId}.jpg
-    // - snapshots/{snapshotId}/originals/photo.jpg
+    // - memories/{memoryId}/{photoId}.jpg
+    // - snapshots/{snapshotId}.jpg
     const parts = filePath.split('/');
-    if (parts.length < 4 || parts[2] !== 'originals') return;
+    if (parts.length < 2) return;
 
     const rootFolder = parts[0]; // 'memories' or 'snapshots'
-    const parentId = parts[1];   // memoryId or snapshotId
-    const photoFileName = parts[3];
-    const photoId = path.parse(photoFileName).name;
+    const parentId = parts[1];   // {memoryId} or {snapshotId}.jpg
+    
+    let photoId;
+    let memoryId = null;
+    let snapshotId = null;
 
-    const isSnapshot = rootFolder === 'snapshots';
-    const isMemory = rootFolder === 'memories';
+    if (rootFolder === 'memories') {
+        if (parts.length < 3) return; // memories/{memoryId}/{photoId}.jpg
+        memoryId = parts[1];
+        photoId = path.parse(parts[2]).name;
+    } else if (rootFolder === 'snapshots') {
+        snapshotId = path.parse(parts[1]).name;
+        photoId = snapshotId;
+    } else {
+        return;
+    }
 
-    if (!isSnapshot && !isMemory) return;
+    const isSnapshot = !!snapshotId;
+    const isMemory = !!memoryId;
 
     const db = getFirestore();
     const storageBucket = getStorage().bucket(bucket);
 
     // 2. Download original to /tmp
     const tmpDir = os.tmpdir();
-    const originalTmpPath = path.join(tmpDir, `${parentId}_${photoId}_original`);
-    const thumbTmpPath = path.join(tmpDir, `${parentId}_${photoId}_thumb.jpg`);
+    const originalTmpPath = path.join(tmpDir, `${photoId}_original`);
+    const thumbTmpPath = path.join(tmpDir, `${photoId}_thumb.jpg`);
 
     try {
         await storageBucket.file(filePath).download({ destination: originalTmpPath });
 
-        // 3 + 4. Convert to JPEG if HEIC + generate 400px thumbnail
+        // 3 + 4. Resize + generate 400px thumbnail
         await sharp(originalTmpPath)
             .rotate()
-            .resize({ width: 400, withoutEnlargement: true })
+            .resize({ width: 400, transform: true, withoutEnlargement: true })
             .jpeg({ quality: 80 })
             .toFile(thumbTmpPath);
 
         // 5. Upload thumbnail
         const thumbStoragePath = isMemory
-            ? `memories/${parentId}/thumbs/${photoId}.jpg`
-            : `snapshots/${parentId}/thumbs/photo.jpg`;
+            ? `memories/${memoryId}/thumb_${photoId}.jpg`
+            : `snapshots/thumb_${snapshotId}.jpg`;
 
         await storageBucket.upload(thumbTmpPath, {
             destination: thumbStoragePath,
@@ -71,7 +83,7 @@ export const onPhotoUploaded = onObjectFinalized({ region: 'us-central1' }, asyn
         if (isMemory) {
             // 6. Update/Create the photo doc in the subcollection
             const photoRef = db
-                .collection(COLLECTIONS.MEMORIES).doc(parentId)
+                .collection(COLLECTIONS.MEMORIES).doc(memoryId)
                 .collection(COLLECTIONS.PHOTOS).doc(photoId);
 
             await photoRef.set({
@@ -83,7 +95,7 @@ export const onPhotoUploaded = onObjectFinalized({ region: 'us-central1' }, asyn
             }, { merge: true });
 
             // 7. Update the parent memory
-            const memoryRef = db.collection(COLLECTIONS.MEMORIES).doc(parentId);
+            const memoryRef = db.collection(COLLECTIONS.MEMORIES).doc(memoryId);
             
             // Retry hasta 3 veces por si el doc aún no fue creado (race condition safety)
             let memorySnap;
@@ -94,7 +106,7 @@ export const onPhotoUploaded = onObjectFinalized({ region: 'us-central1' }, asyn
             }
 
             if (!memorySnap?.exists) {
-                console.warn(`[onPhotoUploaded] Memory ${parentId} not found after 3 attempts, skipping.`);
+                console.warn(`[onPhotoUploaded] Memory ${memoryId} not found after 3 attempts, skipping.`);
                 return;
             }
 
@@ -125,7 +137,7 @@ export const onPhotoUploaded = onObjectFinalized({ region: 'us-central1' }, asyn
                 }
             } else if (isSnapshot) {
                 // Update the snapshot document with the thumbnail
-                const snapshotRef = db.collection(COLLECTIONS.INSTANTANEAS).doc(parentId);
+                const snapshotRef = db.collection(COLLECTIONS.INSTANTANEAS).doc(snapshotId);
                 await snapshotRef.update({
                     thumbnailUrl: thumbUrl,
                     thumbnailStoragePath: thumbStoragePath,

@@ -10,6 +10,7 @@ import GalleryView from '../gallery/GalleryView';
 import BottomNav from '../../components/ui/BottomNav/BottomNav';
 import SnapshotOverlay from '../snapshots/components/SnapshotOverlay';
 import SnapshotCreator from '../snapshots/components/SnapshotCreator';
+import SnapshotHistory from '../snapshots/components/SnapshotHistory';
 import CitaOverlay from '../../components/Cita/CitaOverlay';
 import DashboardSummaryWidget from '../../components/DashboardSummaryWidget/DashboardSummaryWidget';
 import styles from './UserDashboard.module.css';
@@ -41,6 +42,7 @@ export default function UserDashboard() {
     const [isCouponsModalOpen, setIsCouponsModalOpen] = useState(false);
     const [openPendingSignal, setOpenPendingSignal] = useState(false);
     const [isSnapshotOpen, setIsSnapshotOpen] = useState(false);
+    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [activeSnapshots, setActiveSnapshots] = useState([]);
     const [isCameraOpen, setIsCameraOpen] = useState(false);
     const [citaContext, setCitaContext] = useState(null);
@@ -252,8 +254,27 @@ export default function UserDashboard() {
             </AnimatePresence>
 
             {isCameraOpen && (
-                <SnapshotCreator onClose={() => setIsCameraOpen(false)} />
+                <SnapshotCreator 
+                    onClose={() => setIsCameraOpen(false)} 
+                    onOpenOwnSnapshots={(ownSnaps) => {
+                        setActiveSnapshots(ownSnaps);
+                        setIsHistoryOpen(true);
+                        setIsCameraOpen(false);
+                    }}
+                />
             )}
+
+            <AnimatePresence>
+                {isHistoryOpen && (
+                    <SnapshotHistory 
+                        snapshots={activeSnapshots}
+                        onClose={() => {
+                            setIsHistoryOpen(false);
+                            setActiveSnapshots([]);
+                        }}
+                    />
+                )}
+            </AnimatePresence>
 
             {citaContext && (
                 <CitaOverlay

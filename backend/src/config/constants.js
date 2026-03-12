@@ -22,13 +22,13 @@ export const COLLECTIONS = {
     APP_CONFIG: 'appConfig',
 };
 
-export const PARTNER_SINGLETON_ID = 'partner_main';
+// export const PARTNER_SINGLETON_ID = 'partner_main'; // Deprecated: Use role-based search instead
 
 export const STORAGE_PATHS = {
-    PHOTO_ORIGINAL: (memoryId, photoId) => `memories/${memoryId}/originals/${photoId}.jpg`,
-    PHOTO_THUMB: (memoryId, photoId) => `memories/${memoryId}/thumbs/${photoId}.jpg`,
-    SNAPSHOT_ORIGINAL: (snapshotId) => `snapshots/${snapshotId}/originals/photo.jpg`,
-    SNAPSHOT_THUMB: (snapshotId) => `snapshots/${snapshotId}/thumbs/photo.jpg`
+    PHOTO_ORIGINAL: (memoryId, photoId) => `memories/${memoryId}/${photoId}.jpg`,
+    PHOTO_THUMB: (memoryId, photoId) => `memories/${memoryId}/thumb_${photoId}.jpg`,
+    SNAPSHOT_ORIGINAL: (snapshotId) => `snapshots/${snapshotId}.jpg`,
+    SNAPSHOT_THUMB: (snapshotId) => `snapshots/thumb_${snapshotId}.jpg`
 };
 
 export const CAPSULE_TYPES = {

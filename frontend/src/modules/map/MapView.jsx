@@ -379,10 +379,12 @@ export default function MapView({
 
                     {/* Botón de Instantáneas (Tulip) — Residencia original top right */}
                     {(isPartner || isAdmin) && !isSearchActive && (
-                        <SnapshotButton
-                            onOpenSnapshot={onOpenSnapshot}
-                            onOpenCamera={onOpenCamera}
-                        />
+                        <div className={styles.snapshotMapBtn}>
+                            <SnapshotButton
+                                onOpenSnapshot={onOpenSnapshot}
+                                onOpenCamera={onOpenCamera}
+                            />
+                        </div>
                     )}
                 </div>
 

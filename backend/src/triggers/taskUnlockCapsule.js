@@ -1,7 +1,7 @@
 import { onTaskDispatched } from 'firebase-functions/v2/tasks';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
-import { COLLECTIONS, PARTNER_SINGLETON_ID } from '../config/constants.js';
+import { COLLECTIONS } from '../config/constants.js';
 
 /**
  * taskUnlockCapsule — Cloud Task Handler
@@ -59,22 +59,30 @@ export const taskUnlockCapsule = onTaskDispatched(
 
             // Fallback outside transaction to avoid messaging limits
             if (notifyData) {
-                const partnerDoc = await db.collection(COLLECTIONS.USERS).doc(PARTNER_SINGLETON_ID).get();
-                if (partnerDoc.exists && partnerDoc.data().fcmTokens?.length) {
-                    const { fcmTokens } = partnerDoc.data();
-                    const messaging = getMessaging();
-                    const message = {
-                        notification: {
-                            title: '✨ Tienes una sorpresa',
-                            body: notifyData.teaserMessage ?? '¡Alguien pensó en ti hoy! Abre tu cápsula.',
-                        },
-                        data: {
-                            capsuleId: capsuleId,
-                            type: 'capsule_unlocked',
-                        },
-                        tokens: fcmTokens,
-                    };
-                    await messaging.sendEachForMulticast(message);
+                const partnerQuery = await db.collection(COLLECTIONS.USERS)
+                    .where('role', '==', 'partner')
+                    .limit(1)
+                    .get();
+
+                if (!partnerQuery.empty) {
+                    const partnerData = partnerQuery.docs[0].data();
+                    const fcmTokens = partnerData.fcmTokens || [];
+                    
+                    if (fcmTokens.length > 0) {
+                        const messaging = getMessaging();
+                        const message = {
+                            notification: {
+                                title: '✨ Tienes una sorpresa',
+                                body: notifyData.teaserMessage ?? '¡Alguien pensó en ti hoy! Abre tu cápsula.',
+                            },
+                            data: {
+                                capsuleId: capsuleId,
+                                type: 'capsule_unlocked',
+                            },
+                            tokens: fcmTokens,
+                        };
+                        await messaging.sendEachForMulticast(message);
+                    }
                 }
             }
 

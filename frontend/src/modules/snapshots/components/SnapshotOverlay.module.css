@@ -34,30 +34,30 @@
 }
 
 /* ── Close button (top-left) ── */
-.closeBtn {
+.closeBtn, .closeBtnOverlay {
     position: fixed;
     top: 16px;
-    left: 16px;
+    right: 16px;
     width: 44px;
     height: 44px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.14);
-    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-radius: 22px; /* Smoother squircle-like circle */
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     color: white;
-    font-size: 1.15rem;
-    font-weight: 800;
+    font-size: 1.2rem;
     cursor: pointer;
-    z-index: 2110;
+    z-index: 2200;
     display: flex;
     align-items: center;
     justify-content: center;
-    line-height: 1;
-    transition: transform 0.15s ease, background 0.15s ease;
+    transition: all 0.2s ease;
 }
 
-.closeBtn:active {
-    transform: scale(0.88);
-    background: rgba(255, 255, 255, 0.22);
+.closeBtn:active, .closeBtnOverlay:active {
+    transform: scale(0.9);
+    background: rgba(255, 255, 255, 0.2);
 }
 
 /* ── Deck stage — centered, provides the stacking context ── */
@@ -125,15 +125,26 @@
    Sits outside .photoWrapper so it appears OVER the squircle edge.
    Uses the same pillowClip but is larger (inset: -7px).
 ─────────────────────────────────────────────────────── */
-.progressRingConic {
+.progressRingSvg {
     position: absolute;
-    inset: -7px;
-    width: calc(100% + 14px);
-    height: calc(100% + 14px);
+    inset: 1px; /* Movido adentro */
+    width: calc(100% - 2px); /* Ajustado para estar dentro */
+    height: calc(100% - 2px);
     pointer-events: none;
     z-index: 5;
-    clip-path: url(#pillowClip);
-    -webkit-clip-path: url(#pillowClip);
-    mask: radial-gradient(transparent 67%, black 68.5%);
-    -webkit-mask: radial-gradient(transparent 67%, black 68.5%);
+    overflow: visible;
+}
+
+.timerTrack {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.15); /* Se mantiene tenue */
+    stroke-width: 0.01; /* Más delgado */
+}
+
+.timerFill {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.4); /* 40% de traslucidez */
+    stroke-width: 0.01;
+    stroke-linecap: round;
+    /* stroke-dasharray y stroke-dashoffset se manejan desde el componente */
 }

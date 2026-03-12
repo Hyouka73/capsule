@@ -31,9 +31,7 @@ export default function SnapshotOverlay({ snapshots = [], onClose }) {
     const { snapshotConfig } = useAppConfig();
     const timerSeconds = snapshotConfig?.timerSeconds ?? 9;
 
-    // Index into `snapshots` of the currently-active (front) card
     const [currentIndex, setCurrentIndex] = useState(0);
-    // 0 → 1 progress for the circular timer
     const [progress, setProgress] = useState(0);
 
     const totalCount = snapshots.length;
@@ -100,13 +98,11 @@ export default function SnapshotOverlay({ snapshots = [], onClose }) {
             markAsSeenAndAdvance();
         }, timerSeconds * 1000);
         return () => clearTimeout(timeout);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [timerSeconds, currentIndex]);
+    }, [timerSeconds, currentIndex, markAsSeenAndAdvance]);
 
     if (!currentSnapshot) return null;
 
-    /* ─── build the visible deck (front + up to 2 behind) ─── */
-    // remaining = snapshots not yet shown (currentIndex + 1, +2, …)
+    /* ─── build the visible deck ─── */
     const deckSlots = [];
     for (let slot = 0; slot < DECK_VISIBLE; slot++) {
         const snapIdx = currentIndex + slot;
@@ -114,16 +110,8 @@ export default function SnapshotOverlay({ snapshots = [], onClose }) {
             deckSlots.push({ slot, snap: snapshots[snapIdx] });
         }
     }
-    // Render back-to-front so z-index works (render highest slot first = lowest z)
     const deckSlotsReversed = [...deckSlots].reverse();
-
-    /* ─── conic-gradient ring ─── */
-    const angle = progress * 360;
-    const ringGradient = `conic-gradient(
-        from -90deg,
-        rgba(255,255,255,0.90) ${angle}deg,
-        rgba(255,255,255,0.15) ${angle}deg
-    )`;
+    const squirclePath = "M0.5,0 C0.42,0 0,0.42 0,0.5 C0,0.58 0.42,1 0.5,1 C0.58,1 1,0.58 1,0.5 C1,0.42 0.58,0 0.5,0 Z";
 
     return (
         <motion.div
@@ -132,37 +120,26 @@ export default function SnapshotOverlay({ snapshots = [], onClose }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
         >
-            {/* ── Counter badge (top-right) ── */}
             {totalCount > 1 && (
                 <div className={styles.counter}>
                     {currentIndex + 1} de {totalCount}
                 </div>
             )}
 
-            {/* ── Close button (top-left) ── */}
-            <button className={styles.closeBtn} onClick={handleClose} aria-label="Cerrar">
-                ✕
-            </button>
+            <button className={styles.closeBtn} onClick={handleClose}>✕</button>
 
-            {/* Hidden SVG clip path shared by all cards (Placed outside .stage for stability) */}
             <svg height="0" width="0" style={{ position: 'absolute' }}>
                 <defs>
                     <clipPath clipPathUnits="objectBoundingBox" id="pillowClip">
-                        <path
-                            d="M0.5,0 C0.42,0 0,0.42 0,0.5 C0,0.58 0.42,1 0.5,1 C0.58,1 1,0.58 1,0.5 C1,0.42 0.58,0 0.5,0 Z"
-                            transform="rotate(45 0.5 0.5)"
-                        />
+                        <path d={squirclePath} transform="rotate(45 0.5 0.5)" />
                     </clipPath>
                 </defs>
             </svg>
 
-            {/* ── Deck stage ── */}
             <div className={styles.stage}>
-                <AnimatePresence>
+                <AnimatePresence mode="popLayout">
                     {deckSlotsReversed.map(({ slot, snap }) => {
                         const isActive = slot === 0;
-
-                        // Position & scale for each slot
                         const tx = slot * SLOT_OFFSET_X;
                         const ty = slot * SLOT_OFFSET_Y;
                         const sc = 1 - slot * SLOT_SCALE;
@@ -173,25 +150,15 @@ export default function SnapshotOverlay({ snapshots = [], onClose }) {
                             <motion.div
                                 key={snap.id}
                                 className={styles.cardSlot}
-                                style={{ zIndex, cursor: isActive ? 'pointer' : 'default' }}
+                                style={{ zIndex }}
                                 onClick={isActive ? markAsSeenAndAdvance : undefined}
-                                initial={isActive
-                                    ? { x: tx, y: ty, scale: sc, opacity: 0 }
-                                    : { x: tx, y: ty, scale: sc, opacity }
-                                }
+                                initial={{ x: tx, y: ty, scale: sc, opacity: 0 }}
                                 animate={{ x: tx, y: ty, scale: sc, opacity }}
-                                exit={{ x: tx - 30, y: ty + 20, scale: sc * 0.88, opacity: 0 }}
-                                transition={{ type: 'spring', stiffness: 260, damping: 24 }}
+                                exit={{ x: tx - 40, y: ty + 40, scale: sc * 0.8, opacity: 0 }}
+                                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                             >
-                                {/* The squircle photo */}
                                 <div className={styles.photoWrapper}>
-                                    <img
-                                        src={snap.photoUrl}
-                                        alt="Instantánea"
-                                        className={styles.photo}
-                                    />
-
-                                    {/* Message only on active card */}
+                                    <img src={snap.photoUrl} alt="" className={styles.photo} />
                                     {isActive && snap.message && (
                                         <div className={styles.messageOverlay}>
                                             <p className={styles.messageText}>{snap.message}</p>
@@ -199,12 +166,11 @@ export default function SnapshotOverlay({ snapshots = [], onClose }) {
                                     )}
                                 </div>
 
-                                {/* Progress ring — only on active card */}
                                 {isActive && (
-                                    <div
-                                        className={styles.progressRingConic}
-                                        style={{ background: ringGradient }}
-                                    />
+                                    <svg className={styles.progressRingSvg} viewBox="0 0 1 1">
+                                        <path d={squirclePath} className={styles.timerTrack} transform="rotate(45 0.5 0.5)" />
+                                        <path d={squirclePath} className={styles.timerFill} transform="rotate(45 0.5 0.5)" pathLength="1" strokeDasharray="1" strokeDashoffset={1 - progress} />
+                                    </svg>
                                 )}
                             </motion.div>
                         );

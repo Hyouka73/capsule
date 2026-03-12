@@ -99,15 +99,15 @@ export const PLACE_CATEGORIES = {
 };
 
 export const STORAGE_PATHS = {
-    // Standardized: [type]/[entityId]/[size]/[fileId].jpg
-    ORIGINAL: (type, entityId, fileId) => `${type}/${entityId}/originals/${fileId}.jpg`,
-    THUMB: (type, entityId, fileId) => `${type}/${entityId}/thumbs/${fileId}.jpg`,
+    // Standardized: [type]/[entityId]/[fileId].jpg
+    ORIGINAL: (type, entityId, fileId) => `${type}/${entityId}/${fileId}.jpg`,
+    THUMB: (type, entityId, fileId) => `${type}/${entityId}/thumb_${fileId}.jpg`,
 
-    // Legacy support (to be phased out)
-    PHOTO_ORIGINAL: (memoryId, photoId) => `memories/${memoryId}/originals/${photoId}.jpg`,
-    PHOTO_THUMB: (memoryId, photoId) => `memories/${memoryId}/thumbs/${photoId}.jpg`,
-    SNAPSHOT_ORIGINAL: (snapshotId) => `snapshots/${snapshotId}/originals/photo.jpg`,
-    SNAPSHOT_THUMB: (snapshotId) => `snapshots/${snapshotId}/thumbs/photo.jpg`
+    // New optimized paths
+    PHOTO_ORIGINAL: (memoryId, photoId) => `memories/${memoryId}/${photoId}.jpg`,
+    PHOTO_THUMB: (memoryId, photoId) => `memories/${memoryId}/thumb_${photoId}.jpg`,
+    SNAPSHOT_ORIGINAL: (snapshotId) => `snapshots/${snapshotId}.jpg`,
+    SNAPSHOT_THUMB: (snapshotId) => `snapshots/thumb_${snapshotId}.jpg`
 };
 
 export const SINGLETON_DOCS = {

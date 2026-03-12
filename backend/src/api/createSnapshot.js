@@ -3,7 +3,7 @@ import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { getFunctions } from 'firebase-admin/functions';
 import { logger } from 'firebase-functions';
 import { sendNotificationToTokens } from '../utils/notifications.js';
-import { COLLECTIONS, PARTNER_SINGLETON_ID } from '../config/constants.js';
+import { COLLECTIONS } from '../config/constants.js';
 
 /**
  * createSnapshot — Shared API: both admin AND partner can send quick snapshots.
@@ -81,15 +81,19 @@ export const createSnapshot = onCall({ region: 'us-central1' }, async (request) 
     // ── 5. Notify the OTHER party via FCM ──
     try {
         // Admin sends → notify partner. Partner sends → notify admin.
-        const recipientId = PARTNER_SINGLETON_ID; // 'partner_main' is always the partner doc
-
-        // For partner→admin we look up the admin user by role in the users collection
         let tokens = [];
 
         if (role === 'admin') {
-            // Admin sent → notify partner
-            const partnerDoc = await db.collection(COLLECTIONS.USERS).doc(PARTNER_SINGLETON_ID).get();
-            if (partnerDoc.exists) tokens = partnerDoc.data().fcmTokens || [];
+            // Admin sent → notify partner(s)
+            // Since there's only one couple, we look for any user with role 'partner'
+            const partnerQuery = await db.collection(COLLECTIONS.USERS)
+                .where('role', '==', 'partner')
+                .limit(1)
+                .get();
+            
+            if (!partnerQuery.empty) {
+                tokens = partnerQuery.docs[0].data().fcmTokens || [];
+            }
         } else {
             // Partner sent → notify all admins
             const adminQuery = await db.collection(COLLECTIONS.USERS)

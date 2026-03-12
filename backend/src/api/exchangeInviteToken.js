@@ -2,7 +2,7 @@ import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions';
-import { COLLECTIONS, PARTNER_SINGLETON_ID } from '../config/constants.js';
+import { COLLECTIONS } from '../config/constants.js';
 
 /**
  * exchangeInviteToken — HTTPS Callable
@@ -46,25 +46,16 @@ export const exchangeInviteToken = onCall({ region: 'us-central1' }, async (requ
         }
 
         // 2. Find or create the partner user in Firebase Auth
-        const partnerId = PARTNER_SINGLETON_ID; // Single partner — fixed UID for simplicity
-        let userRecord;
+        // 2. Find or create the partner user in Firebase Auth
+        // No fixed UID — let Firebase generate a real one
+        let userRecord = await auth.createUser({
+            displayName: 'Partner'
+        });
 
-        try {
-            userRecord = await auth.getUser(partnerId);
-        } catch (getUserError) {
-            if (getUserError.code === 'auth/user-not-found') {
-                // User doesn't exist yet — create it
-                userRecord = await auth.createUser({
-                    uid: partnerId,
-                    displayName: 'Partner',
-                });
-            } else {
-                throw getUserError; // Rethrow other errors
-            }
-        }
+        const realPartnerUid = userRecord.uid;
 
         // 3. Set custom claims: { role, deviceId }
-        await auth.setCustomUserClaims(partnerId, {
+        await auth.setCustomUserClaims(realPartnerUid, {
             role: 'partner',
             deviceId: deviceFingerprint,
         });
@@ -72,15 +63,15 @@ export const exchangeInviteToken = onCall({ region: 'us-central1' }, async (requ
         // 4. Update invite token: mark as claimed
         await tokenRef.update({
             isClaimed: true,
-            claimedBy: partnerId,
+            claimedBy: realPartnerUid,
             claimedAt: Timestamp.now(),
             claimedDeviceId: deviceFingerprint,
         });
 
         // 5. Update/create user doc in Firestore
-        const userRef = db.collection(COLLECTIONS.USERS).doc(partnerId);
+        const userRef = db.collection(COLLECTIONS.USERS).doc(realPartnerUid);
         await userRef.set({
-            uid: partnerId,
+            uid: realPartnerUid,
             role: 'partner',
             displayName: 'Partner',
             deviceId: deviceFingerprint,
@@ -103,17 +94,17 @@ export const exchangeInviteToken = onCall({ region: 'us-central1' }, async (requ
         }, { merge: true });
 
         // 6. Generate and return the custom token
-        const customToken = await auth.createCustomToken(partnerId, {
+        const customToken = await auth.createCustomToken(realPartnerUid, {
             role: 'partner',
             deviceId: deviceFingerprint,
         });
 
-        logger.info(`Invite token ${token} successfully exchanged. User ${partnerId} authenticated on device ${deviceFingerprint}.`);
+        logger.info(`Invite token ${token} successfully exchanged. User ${realPartnerUid} authenticated on device ${deviceFingerprint}.`);
 
         return {
             success: true,
             customToken,
-            userId: partnerId
+            userId: realPartnerUid
         };
     } catch (error) {
         logger.error('Error in exchangeInviteToken:', error);

@@ -26,26 +26,22 @@ service firebase.storage {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Memories: photos/memories/{memoryId}/originals|thumbs/{fileName}
-    // Both admin and partner can upload originals; thumbs are written by CF.
+    // Memories: memories/{memoryId}/{allPaths=**}
+    //   Allows both flat paths and legacy originals/thumbs subfolders
     // ─────────────────────────────────────────────────────────────────────────
-    match /memories/{memoryId}/{folder}/{fileName} {
+    match /memories/{memoryId}/{allPaths=**} {
       allow read:   if isAuthenticated();
-      allow write:  if isAuthenticated() && isValidFile()
-                    && (folder == 'originals' || folder == 'thumbs');
+      allow write:  if isAuthenticated() && isValidFile();
       allow delete: if isAdmin();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Snapshots (instantáneas): snapshots/{snapshotId}/originals/{fileName}
-    //   — Both admin AND partner can upload (either can send a snapshot).
-    //   — Reading allowed for both (to display the photo when received).
-    //   — Thumbnails folder reserved for Cloud Functions.
+    // Snapshots: snapshots/{allPaths=**}
+    //   Allows both flat paths and legacy originals/thumbs subfolders
     // ─────────────────────────────────────────────────────────────────────────
-    match /snapshots/{snapshotId}/{folder}/{fileName} {
+    match /snapshots/{allPaths=**} {
       allow read:   if isAuthenticated();
-      allow write:  if isAuthenticated() && isValidImage()
-                    && (folder == 'originals' || folder == 'thumbs');
+      allow write:  if isAuthenticated() && isValidImage();
       allow delete: if isAdmin();
     }
 

@@ -9,6 +9,7 @@ import {
     Timestamp,
 } from 'firebase/firestore';
 import { db } from '../../../services/firebase';
+import { useAuth } from '../../../hooks/useAuth';
 import styles from './SnapshotButton.module.css';
 import TulipIcon from '../../../components/ui/TulipIcon';
 
@@ -27,15 +28,17 @@ const TWENTY_FOUR_H_MS = 24 * 60 * 60 * 1000;
  */
 export default function SnapshotButton({ onOpenSnapshot, onOpenCamera }) {
     const [unseenSnapshots, setUnseenSnapshots] = useState([]);
+    const { user } = useAuth();
 
     useEffect(() => {
-        // We query isSeen == false and 24-h filter client-side
-        // (Firestore composite index would be needed for server-side date range + isSeen)
+        if (!user) return;
+
+        // Quitamos el orderBy de la consulta de Firestore para evitar errores de índices compuestos
+        // Ordenaremos manualmente en memoria.
         const q = query(
             collection(db, 'instantaneas'),
             where('isSeen', '==', false),
-            orderBy('createdAt', 'asc'),
-            limit(20)
+            limit(50)
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -43,17 +46,33 @@ export default function SnapshotButton({ onOpenSnapshot, onOpenCamera }) {
             const snaps = snapshot.docs
                 .map(doc => ({ id: doc.id, ...doc.data() }))
                 .filter(snap => {
-                    // Keep only snapshots created within the last 24 h
+                    // Filter out own snapshots
+                    if (snap.createdBy === user.uid) return false;
+
                     const createdMs = snap.createdAt instanceof Timestamp
                         ? snap.createdAt.toMillis()
                         : (snap.createdAt?.seconds ? snap.createdAt.seconds * 1000 : 0);
                     return createdMs > 0 && (now - createdMs) <= TWENTY_FOUR_H_MS;
+                })
+                .sort((a, b) => {
+                    const timeA = a.createdAt?.toMillis?.() || a.createdAt?.seconds * 1000 || 0;
+                    const timeB = b.createdAt?.toMillis?.() || b.createdAt?.seconds * 1000 || 0;
+                    return timeA - timeB; 
                 });
+
+            // Pre-cache photos for instant viewing
+            snaps.forEach(s => {
+                if (s.photoUrl) {
+                    const img = new Image();
+                    img.src = s.photoUrl;
+                }
+            });
+
             setUnseenSnapshots(snaps);
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [user]);
 
     const hasUnseen = unseenSnapshots.length > 0;
 
@@ -67,15 +86,11 @@ export default function SnapshotButton({ onOpenSnapshot, onOpenCamera }) {
                     onOpenCamera();
                 }
             }}
-            title={hasUnseen ? `${unseenSnapshots.length} instantánea${unseenSnapshots.length > 1 ? 's' : ''} nueva${unseenSnapshots.length > 1 ? 's' : ''}` : 'Enviar instantánea'}
+            title={hasUnseen ? `${unseenSnapshots.length} nuevas instantáneas de tu pareja ✨` : 'Enviar instantánea'}
         >
             <div className={styles.iconWrapper}>
                 <TulipIcon size={26} />
-                {hasUnseen && (
-                    <span className={styles.badgeCount}>
-                        {unseenSnapshots.length}
-                    </span>
-                )}
+                {/* Badge retirado por petición del usuario */}
             </div>
             {hasUnseen && <div className={styles.glowContainer} />}
         </button>

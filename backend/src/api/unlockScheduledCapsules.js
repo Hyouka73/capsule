@@ -1,7 +1,7 @@
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
-import { COLLECTIONS, PARTNER_SINGLETON_ID } from '../config/constants.js';
+import { COLLECTIONS } from '../config/constants.js';
 
 /**
  * unlockScheduledCapsules — Scheduled Trigger (Cron)
@@ -30,7 +30,15 @@ export const unlockScheduledCapsules = onSchedule('every 24 hours', async (event
 
         const messaging = getMessaging();
 
-        // 2. Process each capsule
+        // 2. Fetch partner once to reuse tokens in the loop
+        const partnerQuery = await db.collection(COLLECTIONS.USERS)
+            .where('role', '==', 'partner')
+            .limit(1)
+            .get();
+        
+        const fcmTokens = (!partnerQuery.empty) ? (partnerQuery.docs[0].data().fcmTokens || []) : [];
+
+        // 3. Process each capsule
         for (const doc of snapshot.docs) {
             const capsuleId = doc.id;
             const data = doc.data();
@@ -41,27 +49,23 @@ export const unlockScheduledCapsules = onSchedule('every 24 hours', async (event
                 unlockedByTrigger: 'cron_scheduler',
             });
 
-            // 3. Notify partner if needed
-            if (data.notifyOnUnlock) {
-                const partnerDoc = await db.collection(COLLECTIONS.USERS).doc(PARTNER_SINGLETON_ID).get();
-                if (partnerDoc.exists && partnerDoc.data().fcmTokens?.length) {
-                    const { fcmTokens } = partnerDoc.data();
-                    const message = {
-                        notification: {
-                            title: '✨ Tienes una sorpresa',
-                            body: data.teaserMessage ?? '¡Alguien pensó en ti hoy! Abre tu cápsula.',
-                        },
-                        data: {
-                            capsuleId: capsuleId,
-                            type: 'capsule_unlocked',
-                        },
-                        tokens: fcmTokens,
-                    };
-                    try {
-                        await messaging.sendEachForMulticast(message);
-                    } catch (err) {
-                        console.error(`Failed to send notification for capsule ${capsuleId}:`, err);
-                    }
+            // 4. Notify partner if needed
+            if (data.notifyOnUnlock && fcmTokens.length > 0) {
+                const message = {
+                    notification: {
+                        title: '✨ Tienes una sorpresa',
+                        body: data.teaserMessage ?? '¡Alguien pensó en ti hoy! Abre tu cápsula.',
+                    },
+                    data: {
+                        capsuleId: capsuleId,
+                        type: 'capsule_unlocked',
+                    },
+                    tokens: fcmTokens,
+                };
+                try {
+                    await messaging.sendEachForMulticast(message);
+                } catch (err) {
+                    console.error(`Failed to send notification for capsule ${capsuleId}:`, err);
                 }
             }
         }

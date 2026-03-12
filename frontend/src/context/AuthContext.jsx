@@ -58,6 +58,7 @@ export function AuthProvider({ children }) {
                 setUser(firebaseUser);
                 setRole(claims.role);
                 setDeviceId(claims.deviceId);
+                console.log('[Auth] User role identified:', claims.role);
 
                 // If partner, try registering FCM
                 if (claims.role === ROLES.PARTNER) {

@@ -443,6 +443,23 @@ export function useOfflineQueue() {
         if (navigator.onLine) processQueue();
     }, [refreshCount, processQueue]);
 
+    /**
+     * Gets all snapshots currently in the offline queue.
+     */
+    const getPendingSnapshots = useCallback(async () => {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.getAll();
+            req.onsuccess = () => {
+                const results = req.result || [];
+                resolve(results.filter(item => item.type === 'snapshot' && item.status !== 'failed'));
+            };
+            req.onerror = () => reject(req.error);
+        });
+    }, []);
+
     return {
         queueUpload,
         queueMemory,
@@ -451,5 +468,6 @@ export function useOfflineQueue() {
         isProcessing,
         processQueue,
         retryItem,
+        getPendingSnapshots,
     };
 }
