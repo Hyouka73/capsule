@@ -37,11 +37,3 @@ export function subscribeToGlobalSettings(callback) {
         }
     });
 }
-
-/**
- * Save snapshot config to appConfig/main (read by AppConfigContext in real-time)
- */
-export async function saveSnapshotConfig(snapshotConfig) {
-    const docRef = doc(db, 'appConfig', 'main');
-    await setDoc(docRef, { snapshotConfig }, { merge: true });
-}

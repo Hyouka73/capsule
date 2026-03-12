@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import { useAppConfig } from '../../hooks/useAppConfig';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import UserCapsules from '../capsules/UserCapsules';
@@ -12,7 +13,6 @@ import SnapshotOverlay from '../snapshots/components/SnapshotOverlay';
 import SnapshotCreator from '../snapshots/components/SnapshotCreator';
 import SnapshotHistory from '../snapshots/components/SnapshotHistory';
 import CitaOverlay from '../../components/Cita/CitaOverlay';
-import DashboardSummaryWidget from '../../components/DashboardSummaryWidget/DashboardSummaryWidget';
 import styles from './UserDashboard.module.css';
 
 import { TABS } from '../../data/dashboardData';
@@ -20,21 +20,32 @@ import { usePendingCitas } from '../../hooks/usePendingCitas';
 
 export default function UserDashboard() {
     const { isPartner, isAdmin } = useAuth();
+    const { isFeatureOn } = useAppConfig();
     const { pendingCount, pendingCitas, removePendingCita, addPendingCita, updatePendingCitaStatus, updatePendingCita } = usePendingCitas();
 
-    // Filter TABS based on role
+    // Map tab IDs to feature flags
+    const TAB_FLAGS = {
+        lugares: 'memoryMap',
+        galeria: 'photoGallery',
+        sorpresas: 'timeCapsules',
+        caprichos: 'coupons',
+        bingo: 'bingoBoard',
+        ejercicio: 'exercise',
+        movies: 'movieTracking',
+        juegos: 'games'
+    };
+
+    // Filter TABS based on dynamic feature flags
     const filteredTabs = TABS.filter(tab => {
-        if (isAdmin) {
-            // Admin only sees Home, Map and Gallery in the user view
-            return ['inicio', 'lugares', 'galeria'].includes(tab.id);
-        }
-        return true; // Partner sees everything
+        const flag = TAB_FLAGS[tab.id];
+        // If it has a flag, it must be ON to be shown
+        return flag ? isFeatureOn(flag) : true;
     });
 
     const mainTabs = filteredTabs.filter(t => !t.inMore);
     const moreTabs = filteredTabs.filter(t => t.inMore);
 
-    const [activeTab, setActiveTab] = useState('inicio');
+    const [activeTab, setActiveTab] = useState('lugares');
     const [prevTab, setPrevTab] = useState('lugares');
     const [isPlaceSelected, setIsPlaceSelected] = useState(false);
     const [bingoContextToMap, setBingoContextToMap] = useState(null);
@@ -125,26 +136,26 @@ export default function UserDashboard() {
             );
             case 'ejercicio': return (
                 <div className={styles.placeholderModule}>
-                    <h1>Módulo de Ejercicio</h1>
+                    <h1>Ejercicio</h1>
                     <p>¡Tus rachas se están sincronizando! 🔥</p>
                     <button onClick={() => setActiveTab('lugares')}>Volver al inicio</button>
                 </div>
             );
             case 'movies': return (
                 <div className={styles.placeholderModule}>
-                    <h1>Módulo de Películas</h1>
+                    <h1>Películas</h1>
                     <p>Prepara las palomitas... 🍿</p>
                     <button onClick={() => setActiveTab('lugares')}>Volver al inicio</button>
                 </div>
             );
-            default: return (
-                <div className={styles.homeWelcome}>
-                    <div className={styles.homeHeart}>💖</div>
-                    <h1>Hola, hermosa</h1>
-                    <p>Cada recuerdo es un regalo.</p>
-                    <DashboardSummaryWidget onNavigate={(module) => handleTabChange(module)} />
+            case 'juegos': return (
+                <div className={styles.placeholderModule}>
+                    <h1>Secretos y Juegos</h1>
+                    <p>Prepara tus habilidades... 🎮</p>
+                    <button onClick={() => setActiveTab('lugares')}>Volver al inicio</button>
                 </div>
             );
+            default: return null;
         }
     };
 

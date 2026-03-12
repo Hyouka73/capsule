@@ -54,7 +54,7 @@ export default function UserCapsules() {
     if (isLoading) {
         return (
             <div className={styles.root}>
-                <div className={styles.loading}>Cargando sorpresas... ✨</div>
+                <div className={styles.loading}>Cargando cápsulas... ✨</div>
             </div>
         );
     }
@@ -62,7 +62,7 @@ export default function UserCapsules() {
     return (
         <div className={styles.root}>
             <div className={styles.header}>
-                <h1 className={styles.title}>Buzón del Tiempo</h1>
+                <h1 className={styles.title}>Cápsulas</h1>
                 <p className={styles.subtitle}>{capsules.length} sorpresas listas para ti</p>
             </div>
 

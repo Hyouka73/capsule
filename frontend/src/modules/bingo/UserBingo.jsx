@@ -26,7 +26,7 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
     return (
         <div className={styles.root}>
             <div className={styles.header}>
-                <h1 className={styles.title}>Nuestro Bingo</h1>
+                <h1 className={styles.title}>Bingo</h1>
                 <p className={styles.subtitle}>Aventuras juntos por desbloquear.</p>
             </div>
 

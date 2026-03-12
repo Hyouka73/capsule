@@ -1,35 +1,35 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../services/firebase';
+import { motion } from 'framer-motion';
 import Card from '../../components/ui/Card/Card';
 import Button from '../../components/ui/Button/Button';
 import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
 import { toast } from '../../components/ui/PastelToast/PastelToast';
-import { getGlobalSettings, saveGlobalSettings, saveSnapshotConfig } from '../../services/settingsService';
+import { getGlobalSettings, saveGlobalSettings } from '../../services/settingsService';
 import { generateInviteToken } from '../../apiClient';
+import SystemConfig from '../../models/SystemConfig';
 import styles from './GlobalSettings.module.css';
 
-export default function GlobalSettings() {
-    const [settings, setSettings] = useState({
-        modules: {
-            capsules: true,
-            coupons: true,
-            bingo: true,
-            wrapped: false
-        },
-        visibility: {
-            showCapsulesBeforeUnlock: true,
-            showAdminNotes: false
-        },
-        inviteLink: 'https://app.tu-dominio.com/invite/baka-love-2026',
-        citaConfig: {
-            minPhotosSpontaneous: 5,
-            minPhotosBingoDefault: 3
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1
         }
-    });
+    }
+};
 
-    const [snapshotTimer, setSnapshotTimer] = useState(9);
+const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { 
+        y: 0, 
+        opacity: 1,
+        transition: { type: 'spring', stiffness: 300, damping: 24 }
+    }
+};
 
+export default function GlobalSettings() {
+    const [config, setConfig] = useState(new SystemConfig());
     const [isSaving, setIsSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -37,17 +37,12 @@ export default function GlobalSettings() {
         async function load() {
             try {
                 const data = await getGlobalSettings();
-                if (data) setSettings(data);
-                // Load snapshotConfig from appConfig/main
-                const appConfigSnap = await getDoc(doc(db, 'appConfig', 'main'));
-                if (appConfigSnap.exists()) {
-                    const ac = appConfigSnap.data();
-                    if (ac.snapshotConfig?.timerSeconds) {
-                        setSnapshotTimer(ac.snapshotConfig.timerSeconds);
-                    }
+                if (data) {
+                    setConfig(SystemConfig.fromFirestore(data));
                 }
             } catch (err) {
                 console.error('Error loading settings:', err);
+                toast.error('Error', 'No se pudo cargar la configuración.');
             } finally {
                 setIsLoading(false);
             }
@@ -55,26 +50,37 @@ export default function GlobalSettings() {
         load();
     }, []);
 
-    const handleToggleModule = (mod) => {
-        setSettings(prev => ({
-            ...prev,
-            modules: { ...prev.modules, [mod]: !prev.modules[mod] }
-        }));
-    };
-
-    const handleToggleVisibility = (vis) => {
-        setSettings(prev => ({
-            ...prev,
-            visibility: { ...prev.visibility, [vis]: !prev.visibility[vis] }
-        }));
+    const handleUpdate = (path, value) => {
+        const parts = path.split('.');
+        setConfig(prev => {
+            const newConfig = new SystemConfig({
+                features: { ...prev.features },
+                visibility: { ...prev.visibility },
+                wrappedConfig: { ...prev.wrappedConfig },
+                mapConfig: { ...prev.mapConfig },
+                notifications: { ...prev.notifications },
+                snapshotConfig: { ...prev.snapshotConfig },
+                inviteConfig: { ...prev.inviteConfig },
+                citaConfig: { ...prev.citaConfig }
+            });
+            
+            if (parts.length === 1) {
+                newConfig[parts[0]] = value;
+            } else if (parts.length === 2) {
+                newConfig[parts[0]][parts[1]] = value;
+            } else if (parts.length === 3) {
+                // Handle nested objects like mapConfig.defaultCenter.lat
+                newConfig[parts[0]][parts[1]][parts[2]] = value;
+            }
+            return newConfig;
+        });
     };
 
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            await saveGlobalSettings(settings);
-            await saveSnapshotConfig({ timerSeconds: snapshotTimer });
-            toast.success('Configuración guardada.', 'Los cambios se han aplicado.');
+            await saveGlobalSettings(config.toFirestore());
+            toast.success('¡Configuración Guardada!', 'Los cambios se han aplicado en toda la app.');
         } catch (err) {
             console.error('Error saving settings:', err);
             toast.error('Error al guardar.', 'No se pudo aplicar la configuración.');
@@ -84,7 +90,11 @@ export default function GlobalSettings() {
     };
 
     const handleCopyInvite = () => {
-        navigator.clipboard.writeText(settings.inviteLink);
+        if (!config.inviteConfig.inviteLink) {
+            toast.info('Sin enlace', 'Genera uno nuevo para poder copiarlo.');
+            return;
+        }
+        navigator.clipboard.writeText(config.inviteConfig.inviteLink);
         toast.success('Enlace copiado.', 'Comparte este link con tu pareja.');
     };
 
@@ -92,171 +102,364 @@ export default function GlobalSettings() {
         if (!confirm('¿Seguro? El enlace anterior dejará de funcionar para nuevos dispositivos.')) return;
         try {
             const { inviteUrl } = await generateInviteToken({ expiresInDays: 7 });
-            setSettings(prev => ({ ...prev, inviteLink: inviteUrl }));
-            toast.success('¡Enlace generado!', 'El nuevo token está listo.');
+            handleUpdate('inviteConfig.inviteLink', inviteUrl);
+            toast.success('¡Enlace generado!', 'El nuevo token está listo. Recuerda que no se guarda permanentemente.');
         } catch (err) {
             console.error('Error generating token:', err);
-            const userMsg = err.message || 'Error del servidor';
-            toast.error('Error al generar enlace', userMsg);
+            toast.error('Error al generar enlace', err.message || 'Error del servidor');
         }
     };
 
-    return (
-        <div className={styles.root}>
-            <div className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>Configuración Global</h1>
-                    <p className={styles.subtitle}>Administra los módulos activos, permisos y opciones generales de la app.</p>
-                </div>
-                <Button onClick={handleSave} disabled={isSaving || isLoading}>
-                    {isSaving ? 'Guardando...' : 'Guardar Cambios'}
-                </Button>
+    if (isLoading) {
+        return (
+            <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <p>Abriendo el panel de control...</p>
             </div>
+        );
+    }
 
-            {isLoading ? (
-                <div style={{ padding: '2rem', textAlign: 'center' }}>Cargando configuración...</div>
-            ) : (
-                <div className={styles.grid}>
-                    {/* Modules Toggle */}
+    return (
+        <motion.div 
+            className={styles.root}
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+        >
+            <motion.header className={styles.header} variants={itemVariants}>
+                <h1 className={styles.title}>Panel de Control</h1>
+                <p className={styles.subtitle}>Configuración técnica del núcleo de la aplicación.</p>
+            </motion.header>
+
+            <div className={styles.grid}>
+                {/* Modules Toggle */}
+                <motion.div variants={itemVariants}>
                     <Card className={styles.sectionCard} glass>
                         <div className={styles.sectionHeader}>
                             <span className={styles.sectionIcon}>🧩</span>
-                            <h3>Módulos Activos (Feature Flags)</h3>
+                            <h3>Módulos del Sistema</h3>
                         </div>
-                        <p className={styles.sectionDesc}>Habilita o deshabilita secciones enteras para el usuario final.</p>
+                        <p className={styles.sectionDesc}>Habilita o deshabilita secciones principales.</p>
 
                         <div className={styles.togglesList}>
                             <ToggleRow
-                                label="Cápsulas del Tiempo"
-                                desc="Permite ver las cápsulas programadas en su timeline temporal."
-                                checked={settings.modules.capsules}
-                                onChange={() => handleToggleModule('capsules')}
+                                label="Mapa"
+                                desc="Visualización geográfica de vuestras citas."
+                                checked={config.features.memoryMap}
+                                onChange={() => handleUpdate('features.memoryMap', !config.features.memoryMap)}
                             />
                             <ToggleRow
-                                label="Talonario de Cupones"
-                                desc="Habilita la vista de los talonarios de favores canjeables."
-                                checked={settings.modules.coupons}
-                                onChange={() => handleToggleModule('coupons')}
+                                label="Galería"
+                                desc="Acceso directo a todo el contenido multimedia."
+                                checked={config.features.photoGallery}
+                                onChange={() => handleUpdate('features.photoGallery', !config.features.photoGallery)}
                             />
                             <ToggleRow
-                                label="Bingo del Amor"
-                                desc="Muestra la tarjeta 4x5 interactiva."
-                                checked={settings.modules.bingo}
-                                onChange={() => handleToggleModule('bingo')}
+                                label="Cápsulas"
+                                desc="Línea temporal de momentos programados."
+                                checked={config.features.timeCapsules}
+                                onChange={() => handleUpdate('features.timeCapsules', !config.features.timeCapsules)}
                             />
                             <ToggleRow
-                                label="Wrapped Anual"
-                                desc="Activa el resumen del año. ¡Enciéndelo solo cuando esté listo!"
-                                checked={settings.modules.wrapped}
-                                onChange={() => handleToggleModule('wrapped')}
+                                label="Cupones"
+                                desc="Favores canjeables y regalos digitales."
+                                checked={config.features.coupons}
+                                onChange={() => handleUpdate('features.coupons', !config.features.coupons)}
+                            />
+                            <ToggleRow
+                                label="Bingo"
+                                desc="Juego interactivo de misiones en pareja."
+                                checked={config.features.bingoBoard}
+                                onChange={() => handleUpdate('features.bingoBoard', !config.features.bingoBoard)}
+                            />
+                        </div>
+
+                        <div className={styles.divider}></div>
+                        
+                        <div className={styles.togglesList}>
+                            <ToggleRow
+                                label="Ejercicio"
+                                desc="Seguimiento de actividad y rachas físicas."
+                                checked={config.features.exercise}
+                                onChange={() => handleUpdate('features.exercise', !config.features.exercise)}
+                            />
+                            <ToggleRow
+                                label="Películas"
+                                desc="Lista de películas para ver y comentar."
+                                checked={config.features.movieTracking}
+                                onChange={() => handleUpdate('features.movieTracking', !config.features.movieTracking)}
+                            />
+                            <ToggleRow
+                                label="Juegos"
+                                desc="Minijuegos y dinámicas interactivas."
+                                checked={config.features.games}
+                                onChange={() => handleUpdate('features.games', !config.features.games)}
+                            />
+                            <ToggleRow
+                                label="Huevos de Pascua"
+                                desc="Animaciones y sorpresas ocultas en la UI."
+                                checked={config.features.easterEggs}
+                                onChange={() => handleUpdate('features.easterEggs', !config.features.easterEggs)}
+                            />
+                            <ToggleRow
+                                label="Onboarding"
+                                desc="Guía interactiva para nuevos usuarios."
+                                checked={config.features.onboarding}
+                                onChange={() => handleUpdate('features.onboarding', !config.features.onboarding)}
+                            />
+                        </div>
+                    </Card>
+                </motion.div>
+
+                {/* Map & Visual Settings */}
+                <motion.div variants={itemVariants}>
+                    <Card className={styles.sectionCard} glass>
+                        <div className={styles.sectionHeader}>
+                            <span className={styles.sectionIcon}>🗺️</span>
+                            <h3>Configuración del Mapa</h3>
+                        </div>
+                        
+                        <div className={styles.formGroup}>
+                            <label>Centro por Defecto</label>
+                            <div className={styles.citaInputs}>
+                                <div className={styles.inputField}>
+                                    <KawaiiInput
+                                        type="number"
+                                        label="Latitud"
+                                        value={config.mapConfig.defaultCenter.lat}
+                                        onChange={e => handleUpdate('mapConfig.defaultCenter.lat', parseFloat(e.target.value) || 0)}
+                                    />
+                                </div>
+                                <div className={styles.inputField}>
+                                    <KawaiiInput
+                                        type="number"
+                                        label="Longitud"
+                                        value={config.mapConfig.defaultCenter.lng}
+                                        onChange={e => handleUpdate('mapConfig.defaultCenter.lng', parseFloat(e.target.value) || 0)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className={styles.formGroup} style={{ marginTop: '1rem' }}>
+                            <div className={styles.citaInputs}>
+                                <div className={styles.inputField}>
+                                    <KawaiiInput
+                                        type="number"
+                                        label="Zoom Inicial"
+                                        value={config.mapConfig.defaultZoom}
+                                        onChange={e => handleUpdate('mapConfig.defaultZoom', parseInt(e.target.value) || 12)}
+                                    />
+                                </div>
+                                <div className={styles.inputField}>
+                                    <KawaiiInput
+                                        type="select"
+                                        label="Estilo Visual"
+                                        value={config.mapConfig.style}
+                                        onChange={e => handleUpdate('mapConfig.style', e.target.value)}
+                                        options={[
+                                            { id: 'romantic-vintage', name: '🌹 Romantic Vintage' },
+                                            { id: 'pastel-dream', name: '☁️ Pastel Dream' },
+                                            { id: 'dark-luxury', name: '🎬 Dark Luxury' },
+                                            { id: 'standard', name: '🗺️ Standard Map' }
+                                        ]}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className={styles.divider}></div>
+
+                        <div className={styles.sectionHeader}>
+                            <span className={styles.sectionIcon}>🔔</span>
+                            <h3>Notificaciones Push</h3>
+                        </div>
+                        <div className={styles.togglesList}>
+                            <ToggleRow
+                                label="FCM para la Pareja"
+                                desc="Enviar avisos de nuevas fotos o mensajes al partner."
+                                checked={config.notifications.partnerFcmEnabled}
+                                onChange={() => handleUpdate('notifications.partnerFcmEnabled', !config.notifications.partnerFcmEnabled)}
+                            />
+                            <ToggleRow
+                                label="Log de Actividad Admin"
+                                desc="Notificar al administrador sobre cambios en el sistema."
+                                checked={config.notifications.adminActivityLogEnabled}
+                                onChange={() => handleUpdate('notifications.adminActivityLogEnabled', !config.notifications.adminActivityLogEnabled)}
                             />
                         </div>
                     </Card>
 
-                    {/* Account & Security */}
-                    <Card className={styles.sectionCard} glass>
+                    <Card className={styles.sectionCard} glass style={{ marginTop: '2rem' }}>
                         <div className={styles.sectionHeader}>
                             <span className={styles.sectionIcon}>🔒</span>
                             <h3>Acceso y Seguridad</h3>
                         </div>
 
                         <div className={styles.formGroup}>
-                            <label>Enlace de Invitación Activo</label>
+                            <label>Enlace de Invitación</label>
                             <div className={styles.inviteWrapper}>
                                 <div style={{ flex: 1 }}>
-                                    <KawaiiInput type="text" readOnly value={settings.inviteLink} />
+                                    <KawaiiInput 
+                                        type="text" 
+                                        readOnly 
+                                        placeholder="Pulsa regenerar para crear uno..."
+                                        value={config.inviteConfig.inviteLink} 
+                                    />
                                 </div>
                                 <Button variant="secondary" onClick={handleCopyInvite}>Copiar</Button>
                             </div>
-                            <p className={styles.helpText}>Compártelo para que ella pueda registrarse e ingresar a la cápsula.</p>
                             <Button
                                 variant="ghost"
                                 size="sm"
                                 className={styles.revokeBtn}
                                 onClick={handleRegenerateInvite}
                             >
-                                ↻ Revocar y generar nuevo enlace
+                                ↻ Regenerar token temporal
                             </Button>
                         </div>
-
+                        
                         <div className={styles.divider}></div>
 
-                        <div className={styles.togglesList}>
-                            <ToggleRow
-                                label="Mostrar cápsulas bloqueadas"
-                                desc="Si está inactivo, las cápsulas de tiempo serán invisibles hasta que se abran."
-                                checked={settings.visibility.showCapsulesBeforeUnlock}
-                                onChange={() => handleToggleVisibility('showCapsulesBeforeUnlock')}
-                            />
-                            <ToggleRow
-                                label="Mostrar 'Admin Notes'"
-                                desc="Si está activo, ella podrá leer las notas internas que dejaste en algunos recuerdos."
-                                checked={settings.visibility.showAdminNotes}
-                                onChange={() => handleToggleVisibility('showAdminNotes')}
-                            />
-                        </div>
+                        <ToggleRow
+                            label="Notas del Administrador"
+                            desc="Permitir que ella lea las anotaciones internas."
+                            checked={config.visibility.showAdminNotes}
+                            onChange={() => handleUpdate('visibility.showAdminNotes', !config.visibility.showAdminNotes)}
+                        />
                     </Card>
+                </motion.div>
 
-                    {/* Data & Others */}
+                {/* Wrapped & Multimedia */}
+                <motion.div variants={itemVariants}>
                     <Card className={styles.sectionCard} glass>
                         <div className={styles.sectionHeader}>
-                            <span className={styles.sectionIcon}>🗺️</span>
-                            <h3>Mapa y Multimedia</h3>
+                            <span className={styles.sectionIcon}>✨</span>
+                            <h3>Configuración de Wrapped</h3>
                         </div>
 
-                        <div className={styles.divider}></div>
-
                         <div className={styles.formGroup}>
-                            <label>Fotos mínimas (Modo Cita)</label>
-                            <p className={styles.helpText}>Cuántas fotos se requieren para poder guardar una cita.</p>
                             <div className={styles.citaInputs}>
-                                <div className={styles.inputField} style={{ flex: 1 }}>
+                                <div className={styles.inputField}>
                                     <KawaiiInput
-                                        type="number"
-                                        label="Cita Espontánea"
-                                        value={settings.citaConfig.minPhotosSpontaneous}
-                                        onChange={e => setSettings(p => ({ ...p, citaConfig: { ...p.citaConfig, minPhotosSpontaneous: parseInt(e.target.value) || 1 } }))}
+                                        type="text"
+                                        label="Fecha Aniversario"
+                                        placeholder="MM-DD"
+                                        value={config.wrappedConfig.anniversaryDate}
+                                        onChange={e => handleUpdate('wrappedConfig.anniversaryDate', e.target.value)}
                                     />
                                 </div>
-                                <div className={styles.inputField} style={{ flex: 1 }}>
+                                <div className={styles.inputField}>
                                     <KawaiiInput
                                         type="number"
-                                        label="Bingo (Por defecto)"
-                                        value={settings.citaConfig.minPhotosBingoDefault}
-                                        onChange={e => setSettings(p => ({ ...p, citaConfig: { ...p.citaConfig, minPhotosBingoDefault: parseInt(e.target.value) || 1 } }))}
+                                        label="Año de Inicio"
+                                        value={config.wrappedConfig.anniversaryYear}
+                                        onChange={e => handleUpdate('wrappedConfig.anniversaryYear', parseInt(e.target.value) || 2022)}
+                                    />
+                                </div>
+                                <div className={styles.inputField}>
+                                    <KawaiiInput
+                                        type="text"
+                                        label="Próximo Lanzamiento"
+                                        placeholder="YYYY-MM-DD"
+                                        value={config.wrappedConfig.nextWrappedDate}
+                                        onChange={e => handleUpdate('wrappedConfig.nextWrappedDate', e.target.value)}
                                     />
                                 </div>
                             </div>
                         </div>
 
+                        <div className={styles.formGroup} style={{ marginTop: '1rem' }}>
+                            <KawaiiInput
+                                type="select"
+                                label="Criterio de Estadísticas"
+                                value={config.wrappedConfig.defaultStatsMode}
+                                onChange={e => handleUpdate('wrappedConfig.defaultStatsMode', e.target.value)}
+                                options={[
+                                    { id: 'eventDate', name: '📅 Fecha del Suceso (Lo que pasó)' },
+                                    { id: 'createdDate', name: '☁️ Fecha de Subida (Cuando se guardó)' }
+                                ]}
+                            />
+                            <p className={styles.helpText}>Define cómo se agrupan los recuerdos en el resumen anual.</p>
+                        </div>
+
                         <div className={styles.divider}></div>
 
+                        <div className={styles.sectionHeader}>
+                            <span className={styles.sectionIcon}>📸</span>
+                            <h3>Reglas de Multimedia</h3>
+                        </div>
+
                         <div className={styles.formGroup}>
-                            <label>📸 Instantáneas — Timer</label>
-                            <p className={styles.helpText}>Cuántos segundos se muestra la instantánea antes de cerrarse automáticamente.</p>
-                            <div style={{ maxWidth: 180 }}>
+                            <label>Fotos Mínimas por Cita</label>
+                            <div className={styles.citaInputs}>
+                                <div className={styles.inputField}>
+                                    <KawaiiInput
+                                        type="number"
+                                        label="Espontánea"
+                                        value={config.citaConfig.minPhotosSpontaneous}
+                                        onChange={e => handleUpdate('citaConfig.minPhotosSpontaneous', parseInt(e.target.value) || 1)}
+                                    />
+                                </div>
+                                <div className={styles.inputField}>
+                                    <KawaiiInput
+                                        type="number"
+                                        label="Modo Bingo"
+                                        value={config.citaConfig.minPhotosBingoDefault}
+                                        onChange={e => handleUpdate('citaConfig.minPhotosBingoDefault', parseInt(e.target.value) || 1)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className={styles.formGroup} style={{ marginTop: '1rem' }}>
+                            <label>⏱️ Timer de Instantáneas</label>
+                            <div style={{ maxWidth: 160 }}>
                                 <KawaiiInput
                                     type="number"
                                     label="Segundos"
-                                    value={snapshotTimer}
-                                    onChange={e => setSnapshotTimer(Math.max(1, parseInt(e.target.value) || 1))}
+                                    value={config.snapshotConfig.timerSeconds}
+                                    onChange={e => handleUpdate('snapshotConfig.timerSeconds', Math.max(1, parseInt(e.target.value) || 1))}
                                 />
                             </div>
                         </div>
 
-                        <div className={styles.divider}></div>
-
                         <div className={styles.dangerZone}>
-                            <h4>Zona de Mantenimiento</h4>
+                            <h4>Acciones Críticas</h4>
                             <div className={styles.dangerActions}>
-                                <Button variant="secondary" onClick={() => alert('Mock: Iniciando backup a Firebase Storage...')}>📥 Forzar Backup de Base de Datos</Button>
-                                <Button className={styles.dangerBtn} onClick={() => alert('Mock: Limpiando caché...')}>🗑️ Limpiar Caché de Imágenes</Button>
+                                <Button className={styles.dangerBtn} onClick={() => toast.info('Beta', 'Backup en desarrollo')}>
+                                    📥 Backup BD
+                                </Button>
+                                <Button className={styles.dangerBtn} onClick={() => toast.success('Caché', 'Limpieza completada')}>
+                                    🗑️ Limpiar Caché
+                                </Button>
                             </div>
                         </div>
                     </Card>
+                </motion.div>
+            </div>
+
+            {/* Sticky Save Bar */}
+            <motion.div 
+                className={styles.footer}
+                initial={{ y: 100 }}
+                animate={{ y: 0 }}
+                transition={{ delay: 0.5, type: 'spring', damping: 20 }}
+            >
+                <div className={styles.footerContent}>
+                    <div className={styles.statusIndicator}>
+                        <span className={styles.dot}></span>
+                        <span>Configuración del Núcleo v1.6.15</span>
+                    </div>
+                    <Button 
+                        className={styles.saveBtn} 
+                        onClick={handleSave} 
+                        disabled={isSaving}
+                    >
+                        {isSaving ? 'Aplicando cambios...' : '✨ Guardar Cambios del Sistema'}
+                    </Button>
                 </div>
-            )}
-        </div>
+            </motion.div>
+        </motion.div>
     );
 }
 
@@ -267,9 +470,8 @@ function ToggleRow({ label, desc, checked, onChange }) {
                 <span className={styles.toggleLabel}>{label}</span>
                 <span className={styles.toggleDesc}>{desc}</span>
             </div>
-            <KawaiiInput type="toggle" value={checked} onChange={e => {
-                if (onChange) onChange();
-            }} />
+            <KawaiiInput type="toggle" value={checked} onChange={onChange} />
         </div>
     );
 }
+

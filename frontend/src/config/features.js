@@ -6,26 +6,19 @@
  */
 
 const FEATURES = {
-    // TIER 0 — Always on
-    teaser: true,
-
     // TIER 1 — MVP (launch April 4)
     memoryMap: true,
     photoGallery: true,
-    shoebox: true,
     timeCapsules: true,
-    wrapped: true,
-    adminPanel: true,
+    onboarding: false,
+    coupons: true,
+    bingoBoard: true,
 
     // TIER 2 — Post-launch
-    bingoBoard: false,
     movieTracking: false,
-    scrapbook: false,
-    coupons: false,
-
-    // TIER 3 — Enhancement
-    onboarding: false,
     easterEggs: false,
+    games: false,
+    exercise: false,
 };
 
 /**

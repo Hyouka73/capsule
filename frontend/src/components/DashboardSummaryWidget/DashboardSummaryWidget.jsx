@@ -37,12 +37,12 @@ export default function DashboardSummaryWidget({ onNavigate }) {
                     )}
                 </div>
                 <div className={styles.info}>
-                    <span className={styles.label}>Racha</span>
+                    <span className={styles.label}>Ejercicio</span>
                     <span className={styles.value}>{currentStreak} días</span>
                 </div>
             </motion.div>
 
-            {/* 2. MÓDULO BINGO: Progreso */}
+            {/* 2. MÓDULO BINGO: Progreo */}
             <motion.div 
                 className={styles.card}
                 whileTap={{ scale: 0.95 }}
@@ -74,7 +74,7 @@ export default function DashboardSummaryWidget({ onNavigate }) {
                     {moviePending && <span className={styles.dot} title="Sincronizando..."></span>}
                 </div>
                 <div className={styles.info}>
-                    <span className={styles.label}>Cine</span>
+                    <span className={styles.label}>Películas</span>
                     <span className={styles.value}>
                         {moviesLoading ? '...' : (latestMovie ? latestMovie.title : 'Nada aún')}
                     </span>
