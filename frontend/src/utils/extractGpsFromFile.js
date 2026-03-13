@@ -1,30 +1,58 @@
-/**
- * extractGpsFromFile — Extracts GPS coordinates from a photo's EXIF data.
- * Falls back to browser geolocation if EXIF doesn't contain GPS.
- *
- * Uses `exifr` for lightweight EXIF parsing (GPS-only).
- */
 import exifr from 'exifr';
 
 /**
- * Extract GPS coordinates from a photo file's EXIF metadata.
- * Only parses GPS tags for performance (not full EXIF).
+ * Extract GPS and DateTime from a photo file's EXIF metadata.
  *
  * @param {File} file - Image file from input
- * @returns {Promise<{lat: number, lng: number, source: 'exif'} | null>}
+ * @returns {Promise<{lat?: number, lng?: number, dateTime?: Date, source?: 'exif'} | null>}
  */
-export async function extractGpsFromFile(file) {
+export async function extractMetadataFromFile(file) {
+    console.log(`[EXIF] Scanning file: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
     try {
-        const gps = await exifr.gps(file);
-        if (gps?.latitude && gps?.longitude) {
-            return {
-                lat: gps.latitude,
-                lng: gps.longitude,
-                source: 'exif',
-            };
+        // Parse everything (removing pick for better compatibility)
+        const exif = await exifr.parse(file, {
+            gps: true,
+            timestamp: true,
+            tiff: true, // Habilitar escaneo profundo de TIFF
+            ifd0: true  // Habilitar tags de cabecera estándar
+        });
+
+        if (!exif) {
+            console.log('[EXIF] No metadata segments found in file.');
+            return null;
         }
-    } catch {
-        // File doesn't have EXIF or parsing failed — silently continue
+
+        // Debug: what did we find actually?
+        const keys = Object.keys(exif);
+        console.log('[EXIF] Tags found in this file:', keys.join(', '));
+
+        const result = { source: 'exif' };
+
+        // Support for multiple common GPS property names
+        const lat = exif.latitude || exif.GPSLatitude;
+        const lng = exif.longitude || exif.GPSLongitude;
+
+        if (lat && lng) {
+            console.log(`[EXIF] 📍 GPS detected: ${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+            result.lat = lat;
+            result.lng = lng;
+        } else {
+            console.log('[EXIF] ❌ GPS coordinates missing (lat/lng not found in tags).');
+        }
+
+        const date = exif.DateTimeOriginal || exif.CreateDate || exif.ModifyDate;
+        if (date) {
+            console.log(`[EXIF] 📅 Date detected: ${new Date(date).toLocaleString()}`);
+            result.dateTime = new Date(date);
+        } else {
+            console.log('[EXIF] ❌ Original date missing in metadata.');
+        }
+
+        if (result.lat || result.dateTime) {
+            return result;
+        }
+    } catch (err) {
+        console.warn('[EXIF] ⚠️ Extraction error:', err);
     }
     return null;
 }
@@ -56,17 +84,39 @@ export function getBrowserGeolocation() {
 }
 
 /**
- * Auto-detect GPS: try EXIF first, then browser geolocation.
+ * Auto-detect Metadata: try EXIF first for GPS and Date, 
+ * then browser fallback for GPS and current time.
  *
  * @param {File} file - First photo file from the selection
- * @returns {Promise<{lat: number, lng: number, source: 'exif'|'browser'} | null>}
+ * @returns {Promise<{lat?: number, lng?: number, dateTime?: Date, source: 'exif'|'browser'} | null>}
  */
-export async function autoDetectGps(file) {
+export async function autoDetectMetadata(file) {
     // 1. Try EXIF data from file
-    const exifCoords = await extractGpsFromFile(file);
-    if (exifCoords) return exifCoords;
+    const exifData = await extractMetadataFromFile(file);
+    
+    // If we have both, we are gold
+    if (exifData?.lat && exifData?.dateTime) return exifData;
 
-    // 2. Fallback to browser geolocation
-    const browserCoords = await getBrowserGeolocation();
-    return browserCoords;
+    // 2. Fallback for GPS if not in EXIF
+    if (!exifData?.lat) {
+        const browserCoords = await getBrowserGeolocation();
+        if (browserCoords) {
+            return {
+                ...exifData,
+                lat: browserCoords.lat,
+                lng: browserCoords.lng,
+                dateTime: exifData?.dateTime || new Date(), // Use current time if exif date missing
+                source: browserCoords.source
+            };
+        }
+    }
+
+    // If we have at least something from EXIF (like just date)
+    if (exifData) return exifData;
+
+    // Last resort: current time and no GPS
+    return { dateTime: new Date(), source: 'browser' };
 }
+
+// Keep legacy export for compatibility
+export const autoDetectGps = autoDetectMetadata;

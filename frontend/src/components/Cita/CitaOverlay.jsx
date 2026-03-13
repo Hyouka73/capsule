@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import styles from './CitaOverlay.module.css';
 import { logToVercel } from '../../utils/vercelLogger';
+import { autoDetectMetadata } from '../../utils/extractGpsFromFile';
 import CameraPermissionGate from '../ui/CameraPermissionGate/CameraPermissionGate';
 
 export default function CitaOverlay({ citaContext, onClose, onSave }) {
@@ -10,12 +11,25 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
 
     const [sessionPhotos, setSessionPhotos] = useState([]); // Array of { file, previewUrl }
     const [warningOpen, setWarningOpen] = useState(false);
+    const [metadataStatus, setMetadataStatus] = useState('idle'); // 'idle' | 'detecting' | 'found' | 'not_found'
 
-    const handleFileAdded = (e) => {
+    const handleFileAdded = async (e) => {
         const files = Array.from(e.target.files || []);
         logToVercel('CitaOverlay', 'INPUT_ONCHANGE', `Target files length: ${files.length}`);
         
         if (files.length > 0) {
+            // First photo? Start metadata detection
+            if (sessionPhotos.length === 0) {
+                setMetadataStatus('detecting');
+                autoDetectMetadata(files[0]).then(meta => {
+                    if (meta && (meta.lat || meta.source === 'exif')) {
+                        setMetadataStatus('found');
+                    } else {
+                        setMetadataStatus('not_found');
+                    }
+                }).catch(() => setMetadataStatus('not_found'));
+            }
+
             const newPhotos = files.map(file => {
                 logToVercel('CitaOverlay', 'FILE_SELECTED', `Name: ${file.name}, Size: ${file.size}`);
                 return {
@@ -58,7 +72,12 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                         </button>
                     </div>
 
-                    <p className={styles.citaSub}>Detectando tu ubicación...</p>
+                    <p className={styles.citaSub}>
+                        {metadataStatus === 'idle' && 'Selecciona una foto para empezar ✨'}
+                        {metadataStatus === 'detecting' && 'Detectando tu ubicación... 📍'}
+                        {metadataStatus === 'found' && '📍 ¡Ubicación detectada!'}
+                        {metadataStatus === 'not_found' && 'Ubicación no encontrada en la foto 📸'}
+                    </p>
                     <div className={styles.separator}></div>
 
                     {citaContext?.type === 'bingo' && (

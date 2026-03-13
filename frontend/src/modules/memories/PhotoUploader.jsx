@@ -1,15 +1,18 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { useAuth } from '../../hooks/useAuth';
-import { useOfflineQueue } from '../../hooks/useOfflineQueue';
-import { autoDetectGps } from '../../utils/extractGpsFromFile';
+import { compressImage } from '../../services/storage';
+import { autoDetectMetadata } from '../../utils/extractGpsFromFile';
 import Button from '../../components/ui/Button/Button';
 import styles from './PhotoUploader.module.css';
 import { logToVercel } from '../../utils/vercelLogger';
 import CameraPermissionGate from '../../components/ui/CameraPermissionGate/CameraPermissionGate';
 
-export default function PhotoUploader({ memoryId, onDone, onGpsDetected, initialFiles = [] }) {
+export default function PhotoUploader({ 
+    memoryId, 
+    onDone, 
+    onMetadataDetected, 
+    onPhotosChange,
+    initialFiles = [] 
+}) {
     const { user } = useAuth();
-    const { queueUpload } = useOfflineQueue();
     const [uploads, setUploads] = useState([]);
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -17,66 +20,57 @@ export default function PhotoUploader({ memoryId, onDone, onGpsDetected, initial
     const cameraInputRef = useRef(null);
     const galleryInputRef = useRef(null);
 
+    // Clean up URLs on unmount
     useEffect(() => {
-        logToVercel('PhotoUploader', 'MOUNTED', `Memory ID: ${memoryId}, Initial Files: ${initialFiles?.length}`);
-        if (initialFiles && initialFiles.length > 0) {
-            processFiles(initialFiles);
-        }
-    }, [memoryId]);
-
-    function updateUploadStatus(id, delta) {
-        setUploads(current => current.map(u => u.id === id ? { ...u, ...delta } : u));
-    }
+        return () => {
+            uploads.forEach(u => {
+                if (u.previewUrl) URL.revokeObjectURL(u.previewUrl);
+            });
+        };
+    }, [uploads]);
 
     const processFiles = useCallback(async (files) => {
         setIsProcessing(true);
-        const newUploads = files.map(file => ({
-            id: Math.random().toString(36).substring(7),
-            file,
-            progress: 0,
-            status: 'pending',
-        }));
-        setUploads(prev => [...prev, ...newUploads]);
+        const processedFiles = [];
 
-        if (onGpsDetected && files.length > 0) {
-            autoDetectGps(files[0]).then(coords => {
-                if (coords) onGpsDetected(coords);
-            }).catch(() => { });
-        }
-    }, [onGpsDetected]);
+        for (const file of files) {
+            const id = Math.random().toString(36).substring(7);
+            
+            // 1. Immediate Compression (RAM optimization)
+            const compressedBlob = await compressImage(file);
+            const previewUrl = URL.createObjectURL(compressedBlob);
+            
+            const photoItem = {
+                id,
+                file: compressedBlob,
+                previewUrl,
+                originalName: file.name,
+                status: 'ready'
+            };
 
-    // Effect: Trigger uploads when memoryId becomes available
-    useEffect(() => {
-        if (!memoryId || memoryId === 'null') return;
+            processedFiles.push(photoItem);
+            setUploads(prev => [...prev, photoItem]);
 
-        const pendingUploads = uploads.filter(u => u.status === 'pending');
-        if (pendingUploads.length === 0) return;
-
-        const runUploads = async () => {
-            setIsProcessing(true);
-            for (const upload of pendingUploads) {
-                try {
-                    updateUploadStatus(upload.id, { status: 'uploading', progress: 10 });
-
-                    const result = await queueUpload(upload.file, memoryId);
-
-                    if (result.queued) {
-                        updateUploadStatus(upload.id, {
-                            status: 'success',
-                            progress: 100,
-                            photoId: result.photoId
-                        });
-                    }
-                } catch (err) {
-                    console.error('Upload queuing failed:', err);
-                    updateUploadStatus(upload.id, { status: 'error', error: 'Fallo al encolar' });
-                }
+            // Metadata Detection (first file only)
+            if (onMetadataDetected && processedFiles.length === 1) {
+                // We use the original file for metadata because compression might strip EXIF
+                autoDetectMetadata(file).then(metadata => {
+                    if (metadata) onMetadataDetected(metadata);
+                }).catch((err) => {
+                    console.warn('[PhotoUploader] Metadata extraction failed:', err);
+                });
             }
-            setIsProcessing(false);
-        };
+        }
 
-        runUploads();
-    }, [memoryId, uploads, queueUpload]);
+        // Notify parent to save in Draft
+        if (onPhotosChange) {
+            onPhotosChange(processedFiles.map(p => p.file));
+        }
+
+        setIsProcessing(false);
+    }, [onMetadataDetected, onPhotosChange]);
+
+    // Simplified: No auto-upload here. Parent (MemoryForm) handles final queuing.
 
     const onDrop = useCallback((e) => {
         e.preventDefault();
@@ -197,22 +191,20 @@ export default function PhotoUploader({ memoryId, onDone, onGpsDetected, initial
                     {uploads.map(upload => (
                         <div key={upload.id} className={`${styles.previewItem} ${styles[upload.status]}`}>
                             <div className={styles.previewThumb}>
+                                <img src={upload.previewUrl} alt="Preview" className={styles.thumbImage} />
                                 <div className={styles.statusOverlay}>
-                                    {upload.status === 'uploading' && <span>{Math.round(upload.progress)}%</span>}
-                                    {upload.status === 'success' && <span>✅</span>}
+                                    {upload.status === 'processing' && <span className={styles.spinner}></span>}
+                                    {upload.status === 'ready' && <span>✅</span>}
                                     {upload.status === 'error' && <span>❌</span>}
                                 </div>
-                            </div>
-                            <div className={styles.progressBar}>
-                                <div className={styles.progressFill} style={{ width: `${upload.progress}%` }} />
                             </div>
                         </div>
                     ))}
                 </div>
             )}
             <div className={styles.actions}>
-                <Button variant="primary" size="lg" onClick={onDone} disabled={!allFinished || isProcessing}>
-                    Finalizar
+                <Button variant="primary" size="lg" onClick={onDone} disabled={uploads.length === 0 || isProcessing}>
+                    Siguiente
                 </Button>
             </div>
         </div>

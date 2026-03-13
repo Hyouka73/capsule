@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
 import { openDB } from '../config/dbConfig';
+import { autoDetectMetadata } from '../utils/extractGpsFromFile';
 const STORE_NAME = 'pending_citas';
 
 export function usePendingCitas() {
@@ -16,19 +17,27 @@ export function usePendingCitas() {
 
             request.onsuccess = () => {
                 const results = request.result || [];
-                // Generate object URLs for preview but keep original Blobs
-                const withUrls = results.map(item => {
-                    const photosWithUrls = item.photos.map(p => ({
-                        ...p,
-                        objectUrl: URL.createObjectURL(p.file)
-                    }));
-                    return {
-                        ...item,
-                        photos: photosWithUrls,
-                        coverPhoto: photosWithUrls[0]?.objectUrl
-                    };
+                
+                setPendingCitas(prev => {
+                    // Revoke previous URLs to free RAM
+                    prev.forEach(cita => {
+                        cita.photos?.forEach(p => {
+                            if (p.objectUrl) URL.revokeObjectURL(p.objectUrl);
+                        });
+                    });
+
+                    return results.map(item => {
+                        const photosWithUrls = (item.photos || []).map(p => ({
+                            ...p,
+                            objectUrl: p.file ? URL.createObjectURL(p.file) : null
+                        }));
+                        return {
+                            ...item,
+                            photos: photosWithUrls,
+                            coverPhoto: photosWithUrls[0]?.objectUrl
+                        };
+                    });
                 });
-                setPendingCitas(withUrls);
                 setPendingCount(results.length);
             };
         } catch (err) {
@@ -51,15 +60,47 @@ export function usePendingCitas() {
                 name: file.name,
                 type: file.type
             })),
-            originalDate: new Date().toLocaleDateString('es-MX', {
+            status: 'pending',
+            context
+        };
+
+        // Try to extract metadata from the first photo
+        if (files.length > 0) {
+            try {
+                const metadata = await autoDetectMetadata(files[0]);
+                if (metadata) {
+                    console.log('[usePendingCitas] Metadata detected for new cita:', metadata);
+                    if (metadata.lat && metadata.lng) {
+                        newItem.coordinates = { lat: metadata.lat, lng: metadata.lng };
+                    }
+                    if (metadata.dateTime) {
+                        // Use a readable format for the UI
+                        newItem.originalDate = metadata.dateTime.toLocaleDateString('es-MX', {
+                            weekday: 'long',
+                            day: 'numeric',
+                            month: 'long',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                        // Also store the raw ISO for the form date input
+                        newItem.rawDate = metadata.dateTime.toISOString();
+                    }
+                }
+            } catch (err) {
+                console.warn('[usePendingCitas] Metadata extraction failed:', err);
+            }
+        }
+
+        // Fallback for date if not extracted
+        if (!newItem.originalDate) {
+            newItem.originalDate = new Date().toLocaleDateString('es-MX', {
                 weekday: 'long',
                 day: 'numeric',
                 month: 'long',
                 hour: '2-digit',
                 minute: '2-digit'
-            }),
-            context
-        };
+            });
+        }
 
         return new Promise((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -129,6 +170,55 @@ export function usePendingCitas() {
         });
     };
 
+    /**
+     * Finds the most recent unfinished draft.
+     */
+    const getActiveDraft = useCallback(async () => {
+        const db = await openDB();
+        return new Promise((resolve) => {
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const request = store.getAll();
+            request.onsuccess = () => {
+                const results = request.result || [];
+                // A draft is an item that hasn't been "queued" for upload yet
+                const active = results.find(c => c.status === 'draft');
+                resolve(active || null);
+            };
+        });
+    }, []);
+
+    /**
+     * Creates or updates a draft with current form data and photos.
+     */
+    const saveDraft = async (id, data, photos = []) => {
+        const db = await openDB();
+        const draftId = id || crypto.randomUUID();
+        const draftItem = {
+            id: draftId,
+            status: 'draft',
+            updatedAt: Date.now(),
+            data, // stores title, tags, place info, etc.
+            photos: photos.map(p => ({
+                file: p.file || p.blob, // Blob to be stored in physical memory
+                name: p.name || `photo_${Date.now()}.jpg`,
+                type: p.type || 'image/jpeg'
+            })),
+            isNew: !id
+        };
+
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            store.put(draftItem);
+            tx.oncomplete = () => {
+                refreshPending();
+                resolve(draftId);
+            };
+            tx.onerror = () => reject(tx.error);
+        });
+    };
+
     return {
         pendingCitas,
         pendingCount,
@@ -136,6 +226,8 @@ export function usePendingCitas() {
         removePendingCita,
         updatePendingCitaStatus,
         updatePendingCita,
-        refreshPending
+        refreshPending,
+        getActiveDraft,
+        saveDraft
     };
 }
