@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import KawaiiInput from '../ui/KawaiiInput/KawaiiInput';
 import PlacePickerBottomSheet from './PlacePickerBottomSheet';
+import { reverseGeocode } from '../../services/mapService';
 import styles from './PendingDateForm.module.css';
 
 const MOCK_ALL_TAGS = ['cine', 'comida', 'romántico', 'aventura', 'relajación', 'fiesta', 'misterioso'];
@@ -9,15 +10,20 @@ const MOCK_ALL_TAGS = ['cine', 'comida', 'romántico', 'aventura', 'relajación'
 export default function PendingDateForm({ pendingDate, onClose, onSave, defaultPlaces }) {
     // Determine the default place if one exists.
     // If pendingDate has a suggested place logic, we would set it here.
-    const [selectedPlaceId, setSelectedPlaceId] = useState('');
-    const [customLocation, setCustomLocation] = useState(null);
-    const [customPlaceName, setCustomPlaceName] = useState('');
+    // Determine initial location from metadata if available
+    const [selectedPlaceId, setSelectedPlaceId] = useState(() => 
+        pendingDate?.coordinates ? 'custom_map' : ''
+    );
+    const [customLocation, setCustomLocation] = useState(pendingDate?.coordinates || null);
+    const [customPlaceName, setCustomPlaceName] = useState(pendingDate?.placeName || '');
     const [isPlacePickerOpen, setIsPlacePickerOpen] = useState(false);
     const [title, setTitle] = useState(pendingDate?.title || '');
     const [eventDate, setEventDate] = useState(() => {
         try {
-            if (pendingDate?.createdAt) {
-                const d = new Date(pendingDate.createdAt);
+            // Priority: rawDate from EXIF > createdAt
+            const dateToUse = pendingDate?.rawDate || pendingDate?.createdAt;
+            if (dateToUse) {
+                const d = new Date(dateToUse);
                 if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
             }
         } catch (e) {
@@ -25,6 +31,19 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
         }
         return new Date().toISOString().split('T')[0];
     });
+
+    // Auto-resolve place name if coordinates exist but name doesn't
+    useEffect(() => {
+        if (customLocation && !customPlaceName) {
+            reverseGeocode(customLocation.lat, customLocation.lng)
+                .then(res => {
+                    if (res && res.name) {
+                        setCustomPlaceName(res.name);
+                    }
+                })
+                .catch(err => console.warn('[PendingDateForm] Failed to auto-resolve name:', err));
+        }
+    }, [customLocation, customPlaceName]);
     const [selectedTags, setSelectedTags] = useState(pendingDate?.suggestedTags || []);
     const [comments, setComments] = useState('');
     const [locationError, setLocationError] = useState(false);

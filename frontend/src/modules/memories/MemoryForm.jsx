@@ -1,34 +1,52 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-// En lugar de llamar servicios de DB, delegamos al Backend (Serverless BFF)
 import { createMemory, findOrCreatePlace, updateMemory } from '../../apiClient';
 import { useOfflineQueue } from '../../hooks/useOfflineQueue';
+import { usePendingCitas } from '../../hooks/usePendingCitas';
 import PhotoUploader from './PhotoUploader';
+import PlacePickerBottomSheet from '../../components/PendingDates/PlacePickerBottomSheet';
 import Memory from '../../models/Memory';
 import { reverseGeocode } from '../../services/mapService';
 import { MEMORY_TAGS_OPTIONS, PLACE_CATEGORIES } from '../../config/constants';
+import { extractMetadataFromFile } from '../../utils/extractGpsFromFile';
+import { usePlaces } from '../map/hooks/usePlaces';
 import exifr from 'exifr';
 
 import Input from '../../components/ui/Input/Input';
 import Button from '../../components/ui/Button/Button';
+import ConfirmModal from '../../components/ui/ConfirmModal/ConfirmModal';
 import styles from './MemoryForm.module.css';
+
+// Helper to format date for input type="datetime-local"
+const toInputDateTime = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    const z = (n) => String(n).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const mm = z(d.getMonth() + 1);
+    const dd = z(d.getDate());
+    const hh = z(d.getHours());
+    const min = z(d.getMinutes());
+    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+};
 
 export default function MemoryForm({ initialData = null, onSuccess, onCancel, role = 'admin', bingoContext = null, initialPhotos = [] }) {
     const isPartner = role === 'partner';
     const { user } = useAuth();
     const { queueMemory } = useOfflineQueue();
+    const { getActiveDraft, saveDraft, removePendingCita } = usePendingCitas();
     const isEditing = !!initialData;
 
     const [form, setForm] = useState({
         title: initialData?.title ?? '',
         description: initialData?.description ?? '',
         eventDate: initialData?.eventDate
-            ? toInputDate(
+            ? toInputDateTime(
                 typeof initialData.eventDate.toDate === 'function'
                     ? initialData.eventDate.toDate()
                     : new Date(initialData.eventDate)
             )
-            : toInputDate(new Date()),
+            : toInputDateTime(new Date()),
         tags: initialData?.tags ?? [],
         // Place fields
         placeName: bingoContext?.placeName ?? initialData?.placeName ?? '',
@@ -39,10 +57,67 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
     });
 
     const [memoryId, setMemoryId] = useState(initialData?.id ?? null);
+    const [draftPhotos, setDraftPhotos] = useState(initialPhotos || []);
+    const [isResuming, setIsResuming] = useState(false);
+    const [foundDraft, setFoundDraft] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
     const [isGeocoding, setIsGeocoding] = useState(false);
+    const [isPlacePickerOpen, setIsPlacePickerOpen] = useState(false);
+    const [selectedPlaceId, setSelectedPlaceId] = useState(initialData?.placeId ?? '');
+    const [customLocation, setCustomLocation] = useState(null);
     const [error, setError] = useState(null);
     const [step, setStep] = useState(isPartner ? 'details' : 'unified'); // 'details' | 'photos' | 'unified'
+    const { places } = usePlaces();
+
+    // 1. Check for drafts on mount (only for new memories, not edits)
+    useEffect(() => {
+        if (!isEditing && isPartner) {
+            getActiveDraft().then(draft => {
+                if (draft) setFoundDraft(draft);
+            });
+        }
+    }, [isEditing, isPartner, getActiveDraft]);
+
+    // 2. Auto-save draft when form or photos change
+    useEffect(() => {
+        if (!isEditing && isPartner && !foundDraft && (form.title || draftPhotos.length > 0 || form.description)) {
+            const timer = setTimeout(() => {
+                saveDraft(memoryId, form, draftPhotos).then(id => {
+                    if (!memoryId) setMemoryId(id);
+                });
+            }, 500); // Faster saving for better robustness
+            return () => clearTimeout(timer);
+        }
+    }, [form, draftPhotos, memoryId, isEditing, isPartner, foundDraft, saveDraft]);
+
+    function handleResume() {
+        if (!foundDraft) return;
+        setForm(foundDraft.data || form);
+        setMemoryId(foundDraft.id);
+        // Map stored photo blobs back to fake files for the uploader
+        const photos = (foundDraft.photos || []).map(p => {
+            const file = new File([p.file], p.name, { type: p.type });
+            return file;
+        });
+        setDraftPhotos(photos);
+        
+        // Recover place selection if it was a known place
+        if (foundDraft.data?.placeId) {
+            setSelectedPlaceId(foundDraft.data.placeId);
+        } else if (foundDraft.data?.customLocation) {
+            setCustomLocation(foundDraft.data.customLocation);
+            setSelectedPlaceId('custom_map');
+        }
+
+        setFoundDraft(null);
+    }
+
+    async function handleDiscardDraft() {
+        if (foundDraft) {
+            await removePendingCita(foundDraft.id);
+            setFoundDraft(null);
+        }
+    }
 
     // Auto-Geocode when coords change and name is empty
     useEffect(() => {
@@ -81,17 +156,26 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
         setError(null);
         setIsSaving(true);
 
-        // Lazy GPS Extraction before saving
-        let coords = null;
-        if (!form.placeLat && initialPhotos?.length > 0) {
+        // Lazy Metadata Extraction before saving (Final check)
+        if (draftPhotos?.length > 0) {
             try {
-                // Try extracting from the first file in initialPhotos
-                const rawCoords = await exifr.gps(initialPhotos[0]);
-                if (rawCoords) {
-                    coords = { lat: rawCoords.latitude, lng: rawCoords.longitude };
+                const metadata = await extractMetadataFromFile(draftPhotos[0]);
+                if (metadata) {
+                    setForm(f => {
+                        const updates = {};
+                        if (metadata.lat && !f.placeLat) {
+                            updates.placeLat = String(metadata.lat);
+                            updates.placeLng = String(metadata.lng);
+                        }
+                        if (metadata.dateTime && !f.eventDate) {
+                            updates.eventDate = toInputDateTime(metadata.dateTime);
+                        }
+                        if (Object.keys(updates).length === 0) return f;
+                        return { ...f, ...updates };
+                    });
                 }
             } catch (err) {
-                console.warn('[GPS Extraction] Failed to read EXIF:', err);
+                console.warn('[Metadata Extraction] Final check failed:', err);
             }
         }
 
@@ -99,11 +183,13 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
             let finalPlaceId = initialData?.placeId ?? null;
             let finalPlaceName = form.placeName || null;
 
-            if (form.placeLat && form.placeLng && form.placeName) {
-                // Llamada transparente al backend
+            if (selectedPlaceId && selectedPlaceId !== 'custom_map') {
+                finalPlaceId = selectedPlaceId;
+            } else if (customLocation || (form.placeLat && form.placeLng)) {
+                // If it's a new place or manual coords
                 const result = await findOrCreatePlace({
-                    lat: form.placeLat,
-                    lng: form.placeLng,
+                    lat: customLocation?.lat || form.placeLat,
+                    lng: customLocation?.lng || form.placeLng,
                     name: form.placeName,
                     city: form.placeCity,
                     category: form.placeCategory,
@@ -125,10 +211,14 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
                 ...(bingoContext ? { bingoContext } : {}),
             };
 
-            if (initialPhotos?.length > 0 && !isEditing) {
+            if (draftPhotos?.length > 0 && !isEditing) {
                 // Si ya tenemos fotos (flujo Partner/Pending), usamos la cola offline
                 // que garantiza subida robusta y creación del registro.
-                await queueMemory(memoryPayload, initialPhotos);
+                await queueMemory(memoryPayload, draftPhotos);
+                
+                // IMPORTANTE: Limpiar el borrador local al finalizar con éxito
+                if (memoryId) await removePendingCita(memoryId);
+                
                 onSuccess?.();
                 return;
             }
@@ -156,6 +246,18 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
 
     return (
         <div className={styles.root}>
+            {/* Draft Recovery Prompt */}
+            <ConfirmModal 
+                isOpen={!!foundDraft}
+                emoji="✨"
+                title="¡Cita a medias!"
+                message="Encontramos una cita que no terminaste. ¿Quieres continuar donde te quedaste?"
+                confirmText="Continuar ✨"
+                cancelText="Empezar de cero"
+                onConfirm={handleResume}
+                onCancel={handleDiscardDraft}
+            />
+
             {/* Step indicator (Partner only) */}
             {isPartner && (
                 <div className={styles.steps}>
@@ -180,8 +282,8 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
                         />
 
                         <Input
-                            label="Fecha"
-                            type="date"
+                            label="Fecha y Hora"
+                            type="datetime-local"
                             value={form.eventDate}
                             onChange={e => setForm(f => ({ ...f, eventDate: e.target.value }))}
                             required
@@ -200,50 +302,56 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
                     </div>
 
                     <div className={styles.sectionLabel}>
-                        📍 Lugar (opcional)
+                        📍 {selectedPlaceId ? 'Ubicación seleccionada' : 'Selecciona un lugar'}
                         {isGeocoding && <span className={styles.miniLoader}> (Buscando nombre...)</span>}
                     </div>
-                    <div className={styles.row}>
-                        <Input
-                            label="Nombre"
-                            placeholder="Ej. Cinemex"
-                            value={form.placeName}
-                            onChange={e => setForm(f => ({ ...f, placeName: e.target.value }))}
-                        />
-                        <Input
-                            label="Ciudad"
-                            placeholder="Tuxtla"
-                            value={form.placeCity}
-                            onChange={e => setForm(f => ({ ...f, placeCity: e.target.value }))}
-                        />
+
+                    <div 
+                        className={`${styles.locationInput} ${!selectedPlaceId ? styles.locationPlaceholder : ''}`}
+                        onClick={() => setIsPlacePickerOpen(true)}
+                    >
+                        <span className="material-symbols-outlined">location_on</span>
+                        <div className={styles.locationText}>
+                            <strong>{form.placeName || 'Toca para elegir el lugar...'}</strong>
+                            <span>{form.placeCity || (form.placeLat ? `${form.placeLat}, ${form.placeLng}` : 'Busca en la lista o el mapa')}</span>
+                        </div>
+                        <span className="material-symbols-outlined">chevron_right</span>
                     </div>
 
-                    <div className={styles.row}>
-                        <Input
-                            label="Latitud"
-                            type="number" step="any"
-                            value={form.placeLat}
-                            onChange={e => setForm(f => ({ ...f, placeLat: e.target.value }))}
-                        />
-                        <Input
-                            label="Longitud"
-                            type="number" step="any"
-                            value={form.placeLng}
-                            onChange={e => setForm(f => ({ ...f, placeLng: e.target.value }))}
-                        />
-                        <div className={styles.field}>
-                            <label className={styles.label}>Categoría</label>
-                            <select
-                                className={styles.select}
-                                value={form.placeCategory}
-                                onChange={e => setForm(f => ({ ...f, placeCategory: e.target.value }))}
-                            >
-                                {Object.entries(PLACE_CATEGORIES).map(([key, val]) => (
-                                    <option key={key} value={val}>{val}</option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
+                    <PlacePickerBottomSheet
+                        isOpen={isPlacePickerOpen}
+                        onClose={() => setIsPlacePickerOpen(false)}
+                        places={places || []}
+                        onSelectPlace={(placeId) => {
+                            setSelectedPlaceId(placeId);
+                            setCustomLocation(null);
+                            const p = places.find(x => x.id === placeId);
+                            if (p) {
+                                setForm(f => ({ 
+                                    ...f, 
+                                    placeName: p.name,
+                                    placeCity: p.city || f.placeCity,
+                                    placeCategory: p.category || f.placeCategory
+                                }));
+                            }
+                        }}
+                        onLocationSelected={(loc, placeId, name) => {
+                            if (placeId) {
+                                setSelectedPlaceId(placeId);
+                                setCustomLocation(null);
+                                setForm(f => ({ ...f, placeName: name || f.placeName }));
+                            } else {
+                                setCustomLocation(loc);
+                                setSelectedPlaceId('custom_map');
+                                setForm(f => ({ 
+                                    ...f, 
+                                    placeName: name || f.placeName,
+                                    placeLat: String(loc.lat),
+                                    placeLng: String(loc.lng)
+                                }));
+                            }
+                        }}
+                    />
 
                     <div className={styles.sectionLabel}>🏷️ Tags</div>
                     <div className={styles.tags}>
@@ -276,26 +384,53 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
                     {!isPartner && <div className={styles.sectionLabel}>📸 Fotos del momento</div>}
                     <PhotoUploader
                         memoryId={memoryId}
-                        initialFiles={initialPhotos}
+                        initialFiles={draftPhotos}
+                        onPhotosChange={(newFiles) => {
+                            const updatedPhotos = [...draftPhotos, ...newFiles];
+                            setDraftPhotos(updatedPhotos);
+                            // Immediate persistence for robustness
+                            if (isPartner && !isEditing) {
+                                saveDraft(memoryId, form, updatedPhotos).then(id => {
+                                    if (!memoryId) setMemoryId(id);
+                                });
+                            }
+                        }}
                         onDone={() => {
                             if (step === 'unified') {
-                                // For admin unified, we might wait for manual "Finish" or auto-close
+                                // For admin unified...
                             }
-                            onSuccess();
+                            // Final save/queue happens in handleSaveDetails or via final button
+                            if (isPartner && step === 'photos') {
+                                handleSaveDetails();
+                            } else {
+                                onSuccess();
+                            }
                         }}
-                        onGpsDetected={(coords) => {
-                            if (coords && !form.placeLat) {
-                                setForm(f => ({
-                                    ...f,
-                                    placeLat: String(coords.lat),
-                                    placeLng: String(coords.lng),
-                                }));
-                            }
+                        onMetadataDetected={(metadata) => {
+                            if (!metadata) return;
+
+                            setForm(f => {
+                                const updates = {};
+                                
+                                // 1. Update GPS if we don't have it yet
+                                if (metadata.lat && !f.placeLat) {
+                                    updates.placeLat = String(metadata.lat);
+                                    updates.placeLng = String(metadata.lng);
+                                }
+
+                                // 2. Update Date if photo has it
+                                if (metadata.dateTime) {
+                                    updates.eventDate = toInputDateTime(metadata.dateTime);
+                                }
+
+                                if (Object.keys(updates).length === 0) return f;
+                                return { ...f, ...updates };
+                            });
                         }}
                     />
                     {step === 'unified' && (
                         <div className={styles.unifiedActions}>
-                            <Button onClick={onSuccess}>Finalizar y Guardar Recuerdo ✨</Button>
+                            <Button onClick={handleSaveDetails}>Finalizar y Guardar Recuerdo ✨</Button>
                         </div>
                     )}
                 </div>

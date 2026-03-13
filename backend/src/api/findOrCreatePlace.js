@@ -34,25 +34,38 @@ export const findOrCreatePlace = onCall({ region: 'us-central1' }, async (reques
     if (!lat || !lng) return { success: false, error: 'Coordenadas incompletas.' };
 
     try {
-        // 1. Intentar buscar por cercanía primero (Lógica más robusta que nombre exacto)
-        // Reutilizamos la lógica de placesApi si es posible, o implementamos una simple aquí.
         const allPlacesSnapshot = await placesRef.get();
+        
+        // 1. Refined matching logic: Name + Distance
         const latNum = parseFloat(lat);
         const lngNum = parseFloat(lng);
+        const normalizedName = name ? name.toLowerCase().trim() : null;
 
-        // Radio de 100 metros para considerar que es el mismo lugar
-        const RADIUS_M = 100;
+        const RADIUS_SAME_SPOT = 20; // 20m: Practically the same physical spot
+        const RADIUS_SAME_ESTABLISHMENT = 150; // 150m: For matching by name (covers mall drift/parking)
 
         let existingPlaceId = null;
+        let matchedPlaceData = null;
+
         allPlacesSnapshot.forEach(doc => {
             const data = doc.data();
             const pLat = data.location?.lat || data.coordinates?.lat;
             const pLng = data.location?.lng || data.coordinates?.lng;
+            const pNameNormalized = data.name?.toLowerCase().trim();
 
             if (pLat && pLng) {
                 const dist = haversineDistance(latNum, lngNum, pLat, pLng);
-                if (dist <= RADIUS_M) {
+                
+                // Priority A: It's the same name and it's reasonably close
+                if (normalizedName && normalizedName === pNameNormalized && dist <= RADIUS_SAME_ESTABLISHMENT) {
                     existingPlaceId = doc.id;
+                    matchedPlaceData = data;
+                } 
+                // Priority B: It's VERY close (20m), even if name is generic or differs slightly
+                // (but only if we haven't found a better name match yet)
+                else if (dist <= RADIUS_SAME_SPOT && !existingPlaceId) {
+                    existingPlaceId = doc.id;
+                    matchedPlaceData = data;
                 }
             }
         });
@@ -63,13 +76,23 @@ export const findOrCreatePlace = onCall({ region: 'us-central1' }, async (reques
                 updatedAt: FieldValue.serverTimestamp()
             };
 
-            // Si el nombre viene del front (geocodificado), lo actualizamos
-            if (name) {
+            // Si el nombre viene del front (geocodificado), lo actualizamos 
+            // solo si el lugar actual tiene un nombre genérico (coordenadas)
+            const isGenericName = matchedPlaceData.name?.includes('(') && matchedPlaceData.name?.includes(')');
+            if (name && isGenericName) {
                 updateData.name = name;
             }
 
             await placesRef.doc(existingPlaceId).update(updateData);
-            return { success: true, placeId: existingPlaceId };
+            
+            return { 
+                success: true, 
+                placeId: existingPlaceId,
+                name: updateData.name || matchedPlaceData.name,
+                city: matchedPlaceData.city,
+                category: matchedPlaceData.category,
+                isNew: false
+            };
         }
 
         // 2. Si no hay cercano y no hay nombre, generamos uno genérico
@@ -96,7 +119,14 @@ export const findOrCreatePlace = onCall({ region: 'us-central1' }, async (reques
             updatedAt: FieldValue.serverTimestamp()
         });
 
-        return { success: true, placeId: newPlaceRef.id };
+        return { 
+            success: true, 
+            placeId: newPlaceRef.id,
+            name: finalName,
+            city: city || '',
+            category: category || 'otro',
+            isNew: true
+        };
 
     } catch (err) {
         logger.error('Error finding/creating place:', err);

@@ -80,34 +80,56 @@ export async function listFiles(path) {
  * @param {number} quality - JPEG quality (0-1)
  * @returns {Promise<Blob>}
  */
-export function compressImage(file, maxWidth = 1200, quality = 0.8) {
-    return new Promise((resolve) => {
-        const img = new Image();
-        const reader = new FileReader();
+export async function compressImage(file, maxWidth = 1200, quality = 0.8) {
+    const url = URL.createObjectURL(file);
+    try {
+        const img = await createImageBitmap(file);
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
 
-        reader.onload = (e) => {
-            img.src = e.target.result;
-        };
+        if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+        }
 
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            let width = img.width;
-            let height = img.height;
+        canvas.width = width;
+        canvas.height = height;
 
-            if (width > maxWidth) {
-                height = (height * maxWidth) / width;
-                width = maxWidth;
-            }
+        const ctx = canvas.getContext('2d');
+        // Good practice: clear canvas and use smoothing
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
 
-            canvas.width = width;
-            canvas.height = height;
-
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-
-            canvas.toBlob(resolve, 'image/jpeg', quality);
-        };
-
-        reader.readAsDataURL(file);
-    });
+        return new Promise((resolve) => {
+            canvas.toBlob((blob) => {
+                img.close(); // Important for memory
+                resolve(blob);
+            }, 'image/jpeg', quality);
+        });
+    } catch (err) {
+        // Fallback for older browsers or broken blobs
+        console.warn('[compressImage] ImageBitmap failed, using legacy:', err);
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                if (width > maxWidth) {
+                    height = (height * maxWidth) / width;
+                    width = maxWidth;
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                canvas.toBlob(resolve, 'image/jpeg', quality);
+            };
+            img.src = url;
+        });
+    } finally {
+        URL.revokeObjectURL(url);
+    }
 }

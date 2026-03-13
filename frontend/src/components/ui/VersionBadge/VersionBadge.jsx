@@ -1,7 +1,7 @@
 import React from 'react';
 import './VersionBadge.css';
 
-const VERSION = 'v1.6.16-wrapped-logic-fix';
+const VERSION = 'v1.8.3-import-date-fix';
 
 export default function VersionBadge() {
     return (

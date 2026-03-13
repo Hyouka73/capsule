@@ -6,7 +6,7 @@
  */
 
 const FEATURES = {
-    // TIER 1 — MVP (launch April 4)
+    // TIER 1 — MVP (launch April 4) //ready?
     memoryMap: true,
     photoGallery: true,
     timeCapsules: true,

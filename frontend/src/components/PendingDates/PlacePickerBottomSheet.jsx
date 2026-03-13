@@ -16,6 +16,7 @@ export default function PlacePickerBottomSheet({
     const [searchTerm, setSearchTerm] = useState('');
     const [isMapOpen, setIsMapOpen] = useState(false);
     const [selectedId, setSelectedId] = useState('');
+    const [mapPreviewCoords, setMapPreviewCoords] = useState(null);
 
     // Reset map state when closing the bottom sheet
     useEffect(() => {
@@ -23,6 +24,7 @@ export default function PlacePickerBottomSheet({
             setIsMapOpen(false);
             setSearchTerm('');
             setSelectedId('');
+            setMapPreviewCoords(null);
         }
     }, [isOpen]);
 
@@ -66,8 +68,11 @@ export default function PlacePickerBottomSheet({
                     }}>
                         <MapLocationPicker
                             onConfirm={handleMapConfirm}
-                            onCancel={() => setIsMapOpen(false)}
-                            initialCoordinates={initialCoordinates}
+                            onCancel={() => {
+                                setIsMapOpen(false);
+                                setMapPreviewCoords(null);
+                            }}
+                            initialCoordinates={mapPreviewCoords || initialCoordinates}
                         />
                     </div>
 
@@ -111,7 +116,14 @@ export default function PlacePickerBottomSheet({
                                     <div
                                         key={place.id}
                                         className={`${styles.placeItem} ${selectedId === place.id ? styles.placeItemActive : ''}`}
-                                        onClick={() => setSelectedId(place.id)}
+                                        onClick={() => {
+                                            setSelectedId(place.id);
+                                            // Focus map on this place if coords exist
+                                            if (place.lat && place.lng) {
+                                                setMapPreviewCoords({ lat: place.lat, lng: place.lng });
+                                                setIsMapOpen(true);
+                                            }
+                                        }}
                                         onDoubleClick={() => {
                                             onSelectPlace(place.id);
                                             onClose();
