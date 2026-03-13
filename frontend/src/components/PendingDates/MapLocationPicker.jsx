@@ -1,40 +1,86 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Map, MapMarker, MarkerContent } from '@/components/ui/map';
+import { Map, MapMarker, MarkerContent, MapControls } from '@/components/ui/map';
 import MapPin from '@/components/ui/MapPin/MapPin';
 import Button from '../ui/Button/Button';
 import { toast } from '../ui/PastelToast/PastelToast';
 import { usePlaces } from '../../modules/map/hooks/usePlaces';
+import { useOnlineStatus } from '../../modules/map/hooks/useOnlineStatus';
 import { reverseGeocode } from '../../services/mapService';
 import styles from './MapLocationPicker.module.css';
 
-const DEFAULT_CENTER = [-93.1152, 16.7521]; // [lng, lat] for MapLibre
+const DEFAULT_CENTER = [-93.1152, 16.7521]; // [lng, lat] para MapLibre
+const DETAILED_MAP_STYLE = {
+    light: "https://tiles.openfreemap.org/styles/liberty",
+    dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
+};
 
 export default function MapLocationPicker({ onConfirm, onCancel, initialCoordinates }) {
-    const defaultPos = initialCoordinates && initialCoordinates.lat && initialCoordinates.lng
+    const defaultPos = initialCoordinates?.lat && initialCoordinates?.lng
         ? { lat: initialCoordinates.lat, lng: initialCoordinates.lng }
         : { lat: DEFAULT_CENTER[1], lng: DEFAULT_CENTER[0] };
 
-    const [position, setPosition] = useState(defaultPos);
-    const [viewport, setViewport] = useState({
-        center: [defaultPos.lng, defaultPos.lat],
-        zoom: 15,
-    });
-    const [isLocating, setIsLocating] = useState(false);
+    const [position, setPosition]               = useState(defaultPos);
+    const [viewport, setViewport]               = useState({ center: [defaultPos.lng, defaultPos.lat], zoom: 15 });
+    const [isLocating, setIsLocating]           = useState(false);
     const [selectedPlaceId, setSelectedPlaceId] = useState(null);
     const [showConfirmBadge, setShowConfirmBadge] = useState(false);
-    const [resolvedName, setResolvedName] = useState('');
-    const [isGeocoding, setIsGeocoding] = useState(false);
-    const hasAttemptedGeo = useRef(false);
-    const geocodeTimer = useRef(null);
+    const [resolvedName, setResolvedName]       = useState('');
+    const [isGeocoding, setIsGeocoding]         = useState(false);
+    const [showHint, setShowHint]               = useState(true);
+    const [searchTerm, setSearchTerm]           = useState('');
+    const [isSearching, setIsSearching]         = useState(false);
+    const [searchResults, setSearchResults]     = useState([]);
 
-    // Fetch existing places
+    // Track previous online state to only show the toast on *transition*
+    const wasOnlineRef      = useRef(null);
+    const hasAttemptedGeo   = useRef(false);
+    const geocodeTimer      = useRef(null);
+    const searchTimer       = useRef(null);
+
+    const isOnline  = useOnlineStatus();
     const { places } = usePlaces();
 
+    // ── Ocultar hint tras 4 seg ──────────────────────────────────────────────
     useEffect(() => {
-        if (initialCoordinates && initialCoordinates.lat && initialCoordinates.lng) {
+        const t = setTimeout(() => setShowHint(false), 4000);
+        return () => clearTimeout(t);
+    }, []);
+
+    // ── Notificar cambios de red (solo en transiciones, no en mount) ─────────
+    useEffect(() => {
+        if (wasOnlineRef.current === null) {
+            // Primera ejecución: solo registrar el estado inicial, sin toast
+            wasOnlineRef.current = isOnline;
             return;
         }
 
+        if (!isOnline && wasOnlineRef.current) {
+            toast.error(
+                'Sin conexión',
+                'Puedes elegir un lugar guardado o mover el pin manualmente'
+            );
+        } else if (isOnline && !wasOnlineRef.current) {
+            toast.success(
+                'Conexión restaurada',
+                'La búsqueda y los nombres de lugares ya están disponibles'
+            );
+        }
+
+        wasOnlineRef.current = isOnline;
+    }, [isOnline]);
+
+    // ── Sync con initialCoordinates (preview desde lista) ───────────────────
+    useEffect(() => {
+        if (initialCoordinates?.lat && initialCoordinates?.lng) {
+            const p = { lat: initialCoordinates.lat, lng: initialCoordinates.lng };
+            setPosition(p);
+            setViewport(v => ({ ...v, center: [p.lng, p.lat], zoom: 16 }));
+        }
+    }, [initialCoordinates]);
+
+    // ── Geolocalización inicial (solo si no hay coordenadas previas) ─────────
+    useEffect(() => {
+        if (initialCoordinates?.lat && initialCoordinates?.lng) return;
         if (hasAttemptedGeo.current) return;
         hasAttemptedGeo.current = true;
 
@@ -42,12 +88,9 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
-                    const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                    setPosition(newPos);
-                    setViewport({
-                        center: [newPos.lng, newPos.lat],
-                        zoom: 15,
-                    });
+                    const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                    setPosition(p);
+                    setViewport({ center: [p.lng, p.lat], zoom: 15 });
                     setIsLocating(false);
                 },
                 (err) => {
@@ -61,9 +104,15 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
         }
     }, [initialCoordinates]);
 
-    // Reverse Geocode when position changes (Debounced)
+    // ── Geocodificación inversa (debounced, guarded por isOnline) ────────────
     useEffect(() => {
         if (!position || selectedPlaceId) {
+            setResolvedName('');
+            return;
+        }
+
+        // Sin red: limpiar nombre y salir sin hacer fetch
+        if (!isOnline) {
             setResolvedName('');
             return;
         }
@@ -72,35 +121,89 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
 
         geocodeTimer.current = setTimeout(async () => {
             setIsGeocoding(true);
-            const result = await reverseGeocode(position.lat, position.lng);
-            if (result) {
-                setResolvedName(result.name);
+            try {
+                const result = await reverseGeocode(position.lat, position.lng);
+                if (result) setResolvedName(result.name);
+            } catch {
+                setResolvedName('');
+            } finally {
+                setIsGeocoding(false);
             }
-            setIsGeocoding(false);
         }, 1000);
 
-        return () => {
-            if (geocodeTimer.current) clearTimeout(geocodeTimer.current);
-        };
-    }, [position, selectedPlaceId]);
+        return () => { if (geocodeTimer.current) clearTimeout(geocodeTimer.current); };
+    }, [position, selectedPlaceId, isOnline]);
 
+    // ── Confirmar ubicación ──────────────────────────────────────────────────
     const handleConfirm = () => {
-        if (position) {
-            setShowConfirmBadge(true);
-            toast.success('Ubicación Capturada', 'Hemos guardado el lugar de este recuerdo ✨');
-            setTimeout(() => {
-                setShowConfirmBadge(false);
-                onConfirm(position, selectedPlaceId, resolvedName);
-            }, 2000);
+        if (!position) return;
+
+        setShowConfirmBadge(true);
+        toast.success('Ubicación Capturada', 'Hemos guardado el lugar de este recuerdo ✨');
+        setTimeout(() => {
+            setShowConfirmBadge(false);
+            onConfirm(position, selectedPlaceId, resolvedName);
+        }, 1500);
+    };
+
+    // ── Búsqueda de lugares (Nominatim) ──────────────────────────────────────
+    const searchPlaces = async (val) => {
+        if (!val || val.length < 3) { setSearchResults([]); return; }
+
+        // Sin red: avisar con toast y no intentar el fetch
+        if (!isOnline) {
+            toast.info(
+                'Sin conexión',
+                'La búsqueda no está disponible. Mueve el pin o elige un lugar guardado.'
+            );
+            return;
+        }
+
+        setIsSearching(true);
+        try {
+            // Calcular un área de búsqueda (viewbox) alrededor de donde está mirando el usuario
+            // para priorizar resultados cercanos. [lon1, lat1, lon2, lat2]
+            const lon = viewport.center[0];
+            const lat = viewport.center[1];
+            const delta = 0.5; // ~50km a la redonda para priorizar
+            const viewbox = `${lon - delta},${lat + delta},${lon + delta},${lat - delta}`;
+
+            const res = await fetch(
+                `https://nominatim.openstreetmap.org/search?format=json&q=${val}&limit=6&addressdetails=1&viewbox=${viewbox}`
+            );
+            const data = await res.json();
+            setSearchResults(data);
+        } catch (e) {
+            console.error('Search error', e);
+            toast.error('Error de búsqueda', 'No se pudo conectar al servicio de lugares');
+        } finally {
+            setIsSearching(false);
         }
     };
 
+    const handleSearchChange = (e) => {
+        const val = e.target.value;
+        setSearchTerm(val);
+        if (searchTimer.current) clearTimeout(searchTimer.current);
+        searchTimer.current = setTimeout(() => searchPlaces(val), 800);
+    };
+
+    const handleSearchResultClick = (res) => {
+        const lat = parseFloat(res.lat);
+        const lng = parseFloat(res.lon);
+        setPosition({ lat, lng });
+        setSelectedPlaceId(null);
+        setResolvedName(res.display_name.split(',')[0]);
+        setViewport(v => ({ ...v, center: [lng, lat], zoom: 17 }));
+        setSearchResults([]);
+        setSearchTerm('');
+    };
+
     const handleMapClick = useCallback((e) => {
-        // MapLibre event object has lngLat. Sometimes it's deep depending on version/layer
         const lngLat = e.lngLat || (e.point && e.target?.unproject(e.point));
         if (lngLat) {
             setPosition({ lat: lngLat.lat, lng: lngLat.lng });
-            setSelectedPlaceId(null); // Clear place id if manually clicking map
+            setSelectedPlaceId(null);
         }
     }, []);
 
@@ -112,29 +215,56 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
     const handlePlaceClick = useCallback((place) => {
         setPosition({ lat: place.lat, lng: place.lng });
         setSelectedPlaceId(place.id);
-        setViewport(prev => ({
-            ...prev,
-            center: [place.lng, place.lat]
-        }));
+        setViewport(prev => ({ ...prev, center: [place.lng, place.lat] }));
     }, []);
 
+    // ── Render ───────────────────────────────────────────────────────────────
     return (
         <div className={styles.container}>
             <div className={styles.header}>
                 <button className={styles.backBtn} onClick={onCancel}>
                     <span className="material-symbols-outlined">arrow_back</span>
                 </button>
-                <div className={styles.headerTitle}>
-                    <h3>Elegir ubicación</h3>
-                    <p>Toca el mapa o elige un lugar existente</p>
+
+                <div className={styles.searchContainer}>
+                    <input
+                        type="text"
+                        placeholder={
+                            isOnline
+                                ? "Busca un lugar (ej. Starbucks, Recórcholis)..."
+                                : "Búsqueda no disponible sin conexión"
+                        }
+                        value={searchTerm}
+                        onChange={handleSearchChange}
+                        className={styles.searchInput}
+                        disabled={!isOnline}
+                    />
+                    {isSearching && <div className={styles.searchSpinner} />}
                 </div>
-                <div style={{ width: 40 }} /> {/* Spacer */}
+
+                {searchResults.length > 0 && (
+                    <div className={styles.searchResults}>
+                        {searchResults.map(res => (
+                            <div
+                                key={res.place_id}
+                                className={styles.searchResultItem}
+                                onClick={() => handleSearchResultClick(res)}
+                            >
+                                <span className="material-symbols-outlined">location_on</span>
+                                <div className={styles.searchResultText}>
+                                    <strong>{res.display_name.split(',')[0]}</strong>
+                                    <span>{res.display_name.split(',').slice(1, 3).join(',')}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             <div className={styles.mapWrapper}>
                 {isLocating && (
                     <div className={styles.adjustingToast}>
-                        <div className={styles.miniSpinner}></div>
+                        <div className={styles.miniSpinner} />
                         <span>Ajustando a tu ubicación...</span>
                     </div>
                 )}
@@ -146,8 +276,11 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
                     onClick={handleMapClick}
                     attributionControl={false}
                     theme="light"
+                    styles={DETAILED_MAP_STYLE}
                 >
-                    {/* Existing Places */}
+                    <MapControls position="bottom-right" showZoom={true} />
+
+                    {/* Lugares guardados (siempre disponibles, vienen de IndexedDB) */}
                     {places?.map((place) => (
                         <MapMarker
                             key={place.id}
@@ -155,18 +288,16 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
                             latitude={place.lat}
                             onClick={() => handlePlaceClick(place)}
                         >
-                            <div
-                                className={`${styles.existingPlaceMarker} ${selectedPlaceId === place.id ? styles.selectedPlace : ''}`}
-                            >
+                            <div className={`${styles.existingPlaceMarker} ${selectedPlaceId === place.id ? styles.selectedPlace : ''}`}>
                                 {place.emoji || '📍'}
                                 {selectedPlaceId === place.id && (
-                                    <div className={styles.selectionPulse}></div>
+                                    <div className={styles.selectionPulse} />
                                 )}
                             </div>
                         </MapMarker>
                     ))}
 
-                    {/* Main Selection Pin */}
+                    {/* Pin de selección principal */}
                     {position && (
                         <MapMarker
                             longitude={position.lng}
@@ -181,22 +312,31 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
                     )}
                 </Map>
 
-                <div className={styles.hintOverlay}>
-                    <span className="material-symbols-outlined">touch_app</span>
-                    Toca cualquier lugar para marcarlo ✨
-                </div>
+                {showHint && (
+                    <div className={styles.hintOverlay}>
+                        <span className="material-symbols-outlined">touch_app</span>
+                        Toca el mapa para marcar ✨
+                    </div>
+                )}
             </div>
 
             <div className={styles.footer}>
                 {position && !selectedPlaceId && (
                     <div className={styles.resolvedNamePreview}>
-                        {isGeocoding ? (
+                        {!isOnline ? (
+                            // Sin red: mostrar coordenadas como fallback informativo
+                            <span>
+                                📍 Coordenadas guardadas&nbsp;
+                                ({position.lat.toFixed(5)}, {position.lng.toFixed(5)})
+                            </span>
+                        ) : isGeocoding ? (
                             <span className={styles.miniLoader}>Buscando nombre...</span>
                         ) : (
                             <span>📍 {resolvedName || 'Lugar sin nombre'}</span>
                         )}
                     </div>
                 )}
+
                 <Button
                     className={styles.confirmBtn}
                     onClick={handleConfirm}
@@ -206,12 +346,13 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
                     Confirmar ubicación 📍
                     <span className="material-symbols-outlined">check_circle</span>
                 </Button>
+
                 {showConfirmBadge && (
                     <div className={styles.confirmBadge}>
                         ✓ ¡Ubicación guardada!
                     </div>
                 )}
             </div>
-        </div >
+        </div>
     );
 }
