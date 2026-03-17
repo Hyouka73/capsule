@@ -16,7 +16,7 @@ export const createMemory = onCall({ region: 'us-central1' }, async (request) =>
     const { uid } = request.auth;
     const rawPlaceId = request.data.placeId;
     const placeId = (rawPlaceId && rawPlaceId !== 'custom_map') ? rawPlaceId : null;
-    const { title, description, eventDate, tags, adminNotes, placeName, placeLat, placeLng } = request.data;
+    const { id, title, description, eventDate, tags, adminNotes, placeName, placeLat, placeLng } = request.data;
 
     // 2. Validación básica de Payload
     if (!eventDate) {
@@ -47,7 +47,8 @@ export const createMemory = onCall({ region: 'us-central1' }, async (request) =>
 
     try {
         // 4. Escribir a DB desde el lado del servidor
-        const memoryRef = db.collection(COLLECTIONS.MEMORIES).doc();
+        // Usar el ID proporcionado por el cliente si existe (importante para evitar duplicados con el trigger de Storage)
+        const memoryRef = id ? db.collection(COLLECTIONS.MEMORIES).doc(id) : db.collection(COLLECTIONS.MEMORIES).doc();
         const memoryId = memoryRef.id;
 
         const { offlinePhotoUrls = [] } = request.data;

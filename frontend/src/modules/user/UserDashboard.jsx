@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useAppConfig } from '../../hooks/useAppConfig';
 // eslint-disable-next-line no-unused-vars
@@ -13,15 +13,23 @@ import SnapshotOverlay from '../snapshots/components/SnapshotOverlay';
 import SnapshotCreator from '../snapshots/components/SnapshotCreator';
 import SnapshotHistory from '../snapshots/components/SnapshotHistory';
 import CitaOverlay from '../../components/Cita/CitaOverlay';
+import SnapshotButton from '../snapshots/components/SnapshotButton';
 import styles from './UserDashboard.module.css';
 
 import { TABS } from '../../data/dashboardData';
 import { usePendingCitas } from '../../hooks/usePendingCitas';
+import Memory from '../../models/Memory';
+import { useOfflineQueue } from '../../hooks/useOfflineQueue';
+import PhotoViewer from '../../components/ui/PhotoViewer/PhotoViewer';
+import PendingDatesList from '../../components/PendingDates/PendingDatesList';
+import PendingDateForm from '../../components/PendingDates/PendingDateForm';
+import { usePlaces } from '../map/hooks/usePlaces';
+import { toast } from '../../components/ui/PastelToast/PastelToast';
 
 export default function UserDashboard() {
     const { isPartner, isAdmin } = useAuth();
     const { isFeatureOn } = useAppConfig();
-    const { pendingCount, pendingCitas, removePendingCita, addPendingCita, updatePendingCitaStatus, updatePendingCita } = usePendingCitas();
+    const { pendingCount, pendingCitas, removePendingCita, addPendingCita, updatePendingCitaStatus, updatePendingCita, restorePendingCita } = usePendingCitas();
 
     // Map tab IDs to feature flags
     const TAB_FLAGS = {
@@ -56,7 +64,16 @@ export default function UserDashboard() {
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [activeSnapshots, setActiveSnapshots] = useState([]);
     const [isCameraOpen, setIsCameraOpen] = useState(false);
+    const { queueMemory } = useOfflineQueue();
+    const { places } = usePlaces();
     const [citaContext, setCitaContext] = useState(null);
+    const [selectedPendingDate, setSelectedPendingDate] = useState(null);
+    const [viewerPhotos, setViewerPhotos] = useState(null);
+    const [isPendingListOpen, setIsPendingListOpen] = useState(false);
+
+    // Dynamic check for ANY overlay that should hide the map
+    // We EXCLUDE isPlaceSelected because that modal (PlaceDetailDrawer) lives INSIDE MapView
+    const hasAnyOverlayOpen = !!citaContext || isBingoModalOpen || isCouponsModalOpen || isSnapshotOpen || isCameraOpen || isHistoryOpen || isPendingListOpen || !!selectedPendingDate || !!viewerPhotos;
 
     // Partículas solo cuando NO es el mapa
     useEffect(() => {
@@ -87,7 +104,7 @@ export default function UserDashboard() {
         if (newTab === activeTab) {
             // Si ya estamos en lugares y hay citas pendientes, mandamos señal para abrir lista
             if (newTab === 'lugares' && pendingCount > 0) {
-                setOpenPendingSignal(true);
+                setIsPendingListOpen(true);
             }
             return;
         }
@@ -159,18 +176,46 @@ export default function UserDashboard() {
         }
     };
 
+    const handleSavePendingDate = async (data) => {
+        try {
+            const memory = Memory.fromForm(data);
+            const payload = memory.toApiPayload();
+
+            if (updatePendingCita && data.id) {
+                await updatePendingCita(data.id, {
+                    title: memory.title,
+                    suggestedTags: memory.tags,
+                    placeName: memory.placeName,
+                    status: 'uploading'
+                });
+            }
+
+            const files = (data.photos || []).map(p => p.file);
+
+            if (files.length > 0) {
+                await queueMemory(payload, files, data.id);
+            }
+            setSelectedPendingDate(null);
+            if (pendingCitas.length > 1) {
+                setIsPendingListOpen(true);
+            }
+            toast.success('¡Cita guardada! 💾', 'Se está subiendo ✨');
+        } catch (err) {
+            console.error('[UserDashboard] Error saving:', err);
+            toast.error('Error al guardar');
+        }
+    };
+
     return (
         <div className={styles.appContainer}>
 
             {/* ── MAPA: va directo al appContainer, sin padding ni wrappers ── */}
-            {activeTab === 'lugares' && (
+            {activeTab === 'lugares' && !hasAnyOverlayOpen && (
                 <div className={styles.mapWrapper}>
                     <MapView
                         onPlaceSelected={setIsPlaceSelected}
                         bingoContextToMap={bingoContextToMap}
                         clearBingoContext={() => setBingoContextToMap(null)}
-                        openPendingSignal={openPendingSignal}
-                        onPendingSignalHandled={() => setOpenPendingSignal(false)}
                         onOpenSnapshot={(snapshotsArray) => {
                             setActiveSnapshots(snapshotsArray);
                             setIsSnapshotOpen(true);
@@ -178,10 +223,8 @@ export default function UserDashboard() {
                         onOpenCamera={() => setIsCameraOpen(true)}
                         citaContext={citaContext}
                         onCitaContextChange={setCitaContext}
-                        pendingDates={pendingCitas}
-                        removePendingDate={removePendingCita}
-                        updatePendingDateStatus={updatePendingCitaStatus}
-                        updatePendingDate={updatePendingCita}
+                        onOpenPending={() => setIsPendingListOpen(true)}
+                        onOpenPhotoViewer={setViewerPhotos}
                     />
                 </div>
             )}
@@ -212,28 +255,12 @@ export default function UserDashboard() {
                         </AnimatePresence>
                     </main>
 
-                    {/* ── FAB cámara persistente en tabs no-mapa (Fix 10: SnapshotButton siempre visible) ── */}
-                    {(isPartner || isAdmin) && !isSnapshotOpen && !isCameraOpen && (
-                        <motion.button
-                            className={styles.cameraFab}
-                            onClick={() => setIsCameraOpen(true)}
-                            initial={{ scale: 0, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0, opacity: 0 }}
-                            whileTap={{ scale: 0.9 }}
-                            aria-label="Enviar instantánea"
-                        >
-                            📷
-                        </motion.button>
-                    )}
                 </>
             )}
 
-            {/* ── NAVBAR: siempre flotando encima de todo, hidden if place is selected or modal open ──
-                Fix 11: Removed inline style={{ position: 'fixed', bottom: 0 }} from motion.div wrapper
-                so BottomNav.module.css .bottomNavContainer { bottom: 16px } controls positioning. ── */}
+            {/* ── NAVBAR: siempre flotando encima de todo ── */}
             <AnimatePresence>
-                {!isPlaceSelected && !isBingoModalOpen && !isCouponsModalOpen && !isSnapshotOpen && !isCameraOpen && !citaContext && (
+                {!hasAnyOverlayOpen && (
                     <motion.div
                         initial={{ y: 100, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
@@ -250,6 +277,25 @@ export default function UserDashboard() {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* ── Persist Camera FAB across specific views ── */}
+            {/* ── Global Snapshot FAB (Solo en tabs que NO son mapa y sin overlays) ── */}
+            {(isPartner || isAdmin) && !hasAnyOverlayOpen && activeTab !== 'lugares' && (
+                <motion.div
+                    className={styles.cameraFabWrapper}
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                >
+                    <SnapshotButton
+                        onOpenSnapshot={(snapshotsArray) => {
+                            setActiveSnapshots(snapshotsArray);
+                            setIsSnapshotOpen(true);
+                        }}
+                        onOpenCamera={() => setIsCameraOpen(true)}
+                    />
+                </motion.div>
+            )}
 
             <AnimatePresence>
                 {isSnapshotOpen && activeSnapshots.length > 0 && (
@@ -299,6 +345,39 @@ export default function UserDashboard() {
                         setCitaContext(null);
                         setIsPlaceSelected(false);
                     }}
+                />
+            )}
+
+            <AnimatePresence>
+                {isPendingListOpen && (
+                    <PendingDatesList
+                        pendingDates={pendingCitas}
+                        onClose={() => setIsPendingListOpen(false)}
+                        onSelectDate={(date) => {
+                            setSelectedPendingDate(date);
+                            setIsPendingListOpen(false);
+                        }}
+                        onRemove={removePendingCita}
+                        onRestore={restorePendingCita}
+                    />
+                )}
+                {selectedPendingDate && (
+                    <PendingDateForm
+                        pendingDate={selectedPendingDate}
+                        onClose={() => {
+                            setSelectedPendingDate(null);
+                            setIsPendingListOpen(true);
+                        }}
+                        onSave={handleSavePendingDate}
+                        defaultPlaces={places}
+                    />
+                )}
+            </AnimatePresence>
+
+            {viewerPhotos && (
+                <PhotoViewer
+                    photos={viewerPhotos}
+                    onClose={() => setViewerPhotos(null)}
                 />
             )}
         </div>

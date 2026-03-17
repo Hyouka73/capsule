@@ -57,6 +57,7 @@ export default class Memory {
      */
     toApiPayload() {
         return {
+            id: this.id, // Important for matching with Storage trigger ID
             title: this.title,
             description: this.description,
             eventDate: this.eventDate instanceof Date ? this.eventDate.toISOString() : this.eventDate,

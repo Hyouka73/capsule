@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 import { openDB } from '../config/dbConfig';
 import { autoDetectMetadata } from '../utils/extractGpsFromFile';
@@ -7,6 +7,8 @@ const STORE_NAME = 'pending_citas';
 export function usePendingCitas() {
     const [pendingCitas, setPendingCitas] = useState([]);
     const [pendingCount, setPendingCount] = useState(0);
+    const [hiddenIds, setHiddenIds] = useState(new Set());
+    const [removalTimers, setRemovalTimers] = useState({});
 
     const refreshPending = useCallback(async () => {
         try {
@@ -17,20 +19,25 @@ export function usePendingCitas() {
 
             request.onsuccess = () => {
                 const results = request.result || [];
-                
                 setPendingCitas(prev => {
-                    // Revoke previous URLs to free RAM
+                    const urlMap = new Map();
                     prev.forEach(cita => {
                         cita.photos?.forEach(p => {
-                            if (p.objectUrl) URL.revokeObjectURL(p.objectUrl);
+                            if (p.file && p.objectUrl) urlMap.set(p.file, p.objectUrl);
                         });
                     });
 
                     return results.map(item => {
-                        const photosWithUrls = (item.photos || []).map(p => ({
-                            ...p,
-                            objectUrl: p.file ? URL.createObjectURL(p.file) : null
-                        }));
+                        const photosWithUrls = (item.photos || []).map(p => {
+                            if (!p.file) return { ...p, objectUrl: null };
+                            // REUSE if we already have it, otherwise create
+                            const existingUrl = urlMap.get(p.file);
+                            return {
+                                ...p,
+                                objectUrl: existingUrl || URL.createObjectURL(p.file)
+                            };
+                        });
+
                         return {
                             ...item,
                             photos: photosWithUrls,
@@ -114,18 +121,89 @@ export function usePendingCitas() {
         });
     };
 
-    const removePendingCita = async (id) => {
-        const db = await openDB();
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction(STORE_NAME, 'readwrite');
-            const store = tx.objectStore(STORE_NAME);
-            store.delete(id);
-            tx.oncomplete = () => {
-                refreshPending();
-                resolve();
+    const removePendingCita = async (id, immediate = false) => {
+        if (immediate) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                const store = tx.objectStore(STORE_NAME);
+                store.delete(id);
+                tx.oncomplete = () => {
+                    setHiddenIds(prev => {
+                        const next = new Set(prev);
+                        next.delete(id);
+                        return next;
+                    });
+                    refreshPending();
+                    resolve();
+                };
+                tx.onerror = () => reject(tx.error);
+            });
+        }
+
+        // --- Soft Delete (The User's Idea) ---
+        setHiddenIds(prev => new Set(prev).add(id));
+        
+        // Schedule final deletion
+        const timer = setTimeout(() => {
+            removePendingCita(id, true);
+            setRemovalTimers(prev => {
+                const next = { ...prev };
+                delete next[id];
+                return next;
+            });
+        }, 6000);
+
+        setRemovalTimers(prev => ({ ...prev, [id]: timer }));
+    };
+
+    const restorePendingCita = async (idOrCita) => {
+        const id = typeof idOrCita === 'string' ? idOrCita : idOrCita.id;
+        
+        // If it was just hidden, just show it back
+        if (hiddenIds.has(id)) {
+            if (removalTimers[id]) {
+                clearTimeout(removalTimers[id]);
+                setRemovalTimers(prev => {
+                    const next = { ...prev };
+                    delete next[id];
+                    return next;
+                });
+            }
+            setHiddenIds(prev => {
+                const next = new Set(prev);
+                next.delete(id);
+                return next;
+            });
+            return;
+        }
+
+        // If it was already gone (legacy/fallback), perform real restoration
+        const cita = idOrCita;
+        if (typeof cita === 'object') {
+            const db = await openDB();
+            const cleanedPhotos = (cita.photos || []).map(p => {
+                const { objectUrl, ...rest } = p;
+                return rest;
+            });
+
+            const itemToRestore = {
+                ...cita,
+                photos: cleanedPhotos,
+                status: 'pending'
             };
-            tx.onerror = () => reject(tx.error);
-        });
+
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                const store = tx.objectStore(STORE_NAME);
+                store.add(itemToRestore);
+                tx.oncomplete = () => {
+                    refreshPending();
+                    resolve(cita.id);
+                };
+                tx.onerror = () => reject(tx.error);
+            });
+        }
     };
 
     const updatePendingCitaStatus = async (id, status) => {
@@ -219,15 +297,16 @@ export function usePendingCitas() {
         });
     };
 
-    return {
-        pendingCitas,
-        pendingCount,
+    return useMemo(() => ({
+        pendingCitas: pendingCitas.filter(c => !hiddenIds.has(c.id)),
+        pendingCount: pendingCount - hiddenIds.size,
         addPendingCita,
         removePendingCita,
         updatePendingCitaStatus,
         updatePendingCita,
         refreshPending,
         getActiveDraft,
-        saveDraft
-    };
+        saveDraft,
+        restorePendingCita
+    }), [pendingCitas, hiddenIds, pendingCount, addPendingCita, removePendingCita, updatePendingCitaStatus, updatePendingCita, refreshPending, getActiveDraft, saveDraft, restorePendingCita]);
 }

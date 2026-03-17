@@ -36,22 +36,35 @@ export const getMemories = onCall({ region: 'us-central1' }, async (request) => 
 
     try {
         const snapshot = await query.get();
-        const memories = snapshot.docs.map(doc => {
+        const memories = [];
+        for (const doc of snapshot.docs) {
             const data = doc.data();
-            // Handle GeoPoint to plain object conversion for places/location
+            
+            // Handle GeoPoint to plain object conversion
             if (data.location && typeof data.location.toDate !== 'function' && data.location.latitude) {
                 data.location = { lat: data.location.latitude, lng: data.location.longitude };
             }
 
-            return {
+            // Fetch Photos subcollection
+            let photos = [];
+            try {
+                const photosSnap = await doc.ref.collection(COLLECTIONS.PHOTOS)
+                    .orderBy('createdAt', 'asc')
+                    .get();
+                photos = photosSnap.docs.map(p => p.data().url);
+            } catch (err) {
+                logger.warn(`Error fetching photos for ${doc.id}:`, err);
+            }
+
+            memories.push({
                 id: doc.id,
                 ...data,
-                // Convertimos Timestamp a ISO String para que pase limpio por la red
+                photos,
                 eventDate: data.eventDate?.toDate()?.toISOString(),
                 createdAt: data.createdAt?.toDate()?.toISOString(),
                 updatedAt: data.updatedAt?.toDate()?.toISOString(),
-            };
-        });
+            });
+        }
 
         return {
             success: true,

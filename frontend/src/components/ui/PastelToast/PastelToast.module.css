@@ -1,134 +1,150 @@
-/* PastelToast — custom toast using project's pastel palette */
-@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Varela+Round&display=swap');
+/* ─────────────────────────────────────────────────────────────────────────
+   PastelToast v2.4 — Top-Aligned Attention Edition
+   ───────────────────────────────────────────────────────────────────────── */
 
-/* ─── Viewport (fixed position, sits above everything) ─── */
 .viewport {
     position: fixed;
-    top: 1rem;
+    top: calc(24px + env(safe-area-inset-top, 0px));
     left: 50%;
     transform: translateX(-50%);
-    z-index: 9999;
+    z-index: 10000;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.6rem;
+    gap: 14px;
     pointer-events: none;
-    max-width: calc(100vw - 2rem);
+    max-width: calc(100vw - 40px);
 }
 
-/* ─── Toast card ─── */
 .toast {
     pointer-events: auto;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1.1rem;
-    min-width: 260px;
-    max-width: 360px;
+    gap: 16px;
+    padding: 14px 22px;
+    min-width: 300px;
+    max-width: 440px;
 
-    background: rgba(255, 240, 243, 0.93);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 2px solid rgba(255, 255, 255, 0.8);
-    border-radius: 18px;
-    box-shadow:
-        0 8px 28px -6px rgba(255, 183, 178, 0.4),
-        0 0 0 1px rgba(255, 183, 178, 0.12);
-
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border-radius: var(--radius-lg);
+    border: 3px solid white;
+    
     font-family: var(--font-body);
     user-select: none;
+    overflow: hidden;
+    position: relative;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* ─── Badge (icon circle) ─── */
+.toast:active {
+    transform: scale(0.96);
+}
+
+/* ─── Type Variants (Pastel & Attention Grabbing) ─── */
+.success {
+    background: rgba(220, 252, 231, 0.95); /* Pastel Mint */
+    border-color: rgba(136, 216, 176, 0.6);
+    box-shadow: 
+        0 20px 40px -12px rgba(136, 216, 176, 0.4),
+        0 4px 0 rgba(116, 198, 157, 0.2);
+}
+
+.error {
+    background: rgba(255, 241, 242, 0.95); /* Pastel Rose */
+    border-color: rgba(255, 117, 143, 0.6);
+    box-shadow: 
+        0 20px 40px -12px rgba(255, 117, 143, 0.4),
+        0 4px 0 rgba(255, 117, 143, 0.2);
+}
+
+.info, .loading {
+    background: rgba(236, 254, 255, 0.95); /* Pastel Sky */
+    border-color: rgba(129, 230, 217, 0.6);
+    box-shadow: 
+        0 20px 40px -12px rgba(136, 216, 176, 0.3),
+        0 4px 0 rgba(79, 209, 197, 0.2);
+}
+
+/* ─── Badge (Icon Container) ─── */
 .badge {
-    width: 30px;
-    height: 30px;
+    width: 40px;
+    height: 40px;
     flex-shrink: 0;
-    border-radius: 50%;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 6px;
+    padding: 9px;
     box-sizing: border-box;
 }
 
-.badge svg {
-    width: 100%;
-    height: 100%;
-}
-
 .badge_success {
-    background: rgba(136, 216, 176, 0.2);
-    color: var(--pastel-green-btn, #88d8b0);
+    background: var(--gradient-mint);
+    color: white;
 }
 
 .badge_error {
-    background: rgba(255, 117, 143, 0.15);
-    color: #ff758f;
+    background: var(--gradient-rose);
+    color: white;
 }
 
-.badge_loading {
-    background: rgba(183, 228, 199, 0.2);
-    color: var(--pastel-sage-dark, #95d5b2);
+.badge_info, .badge_loading {
+    background: linear-gradient(135deg, #4fd1c5 0%, #38b2ac 100%);
+    color: white;
 }
 
-.badge_info {
-    background: rgba(183, 228, 199, 0.2);
-    color: var(--pastel-sage-dark, #95d5b2);
-}
-
-/* ─── Text content ─── */
+/* ─── Text Styling ─── */
 .content {
     display: flex;
     flex-direction: column;
-    gap: 0.15rem;
+    gap: 2px;
     flex: 1;
     min-width: 0;
 }
 
 .title {
     font-family: var(--font-display);
-    font-weight: 600;
-    font-size: 0.95rem;
+    font-weight: 800;
+    font-size: 1.05rem;
     line-height: 1.2;
-    letter-spacing: 0.01em;
-}
-
-.title_success {
-    color: var(--pastel-green-btn, #88d8b0);
-}
-
-.title_error {
-    color: #ff758f;
-}
-
-.title_loading {
-    color: var(--pastel-sage-dark, #95d5b2);
-}
-
-.title_info {
-    color: var(--pastel-sage-dark, #95d5b2);
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
 }
 
 .description {
-    font-family: var(--font-body);
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     line-height: 1.4;
-    color: var(--pastel-text, #8c6a6a);
-    opacity: 0.8;
-    word-break: break-word;
+    color: var(--text-muted);
+    font-weight: 600;
 }
 
-/* ─── Spinner animation ─── */
+/* ─── Animations ─── */
+.loading::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.4),
+        transparent
+    );
+    animation: shimmer 1.8s infinite;
+}
+
+@keyframes shimmer {
+    to { transform: translateX(50%); }
+}
+
 .spin {
-    animation: spin 1s linear infinite;
-    transform-origin: center;
+    animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
+    to { transform: rotate(360deg); }
+}

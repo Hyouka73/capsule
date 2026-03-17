@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import KawaiiInput from '../ui/KawaiiInput/KawaiiInput';
 import PlacePickerBottomSheet from './PlacePickerBottomSheet';
 import { reverseGeocode } from '../../services/mapService';
+import Carousel from '../ui/Carousel/Carousel';
 import styles from './PendingDateForm.module.css';
 
-const MOCK_ALL_TAGS = ['cine', 'comida', 'romántico', 'aventura', 'relajación', 'fiesta', 'misterioso'];
+const MOCK_ALL_TAGS = ['cine', 'comida', 'romántico', 'aventura', 'relajación', 'fiesta', 'misterioso', 'pila'];
 
 export default function PendingDateForm({ pendingDate, onClose, onSave, defaultPlaces }) {
-    // Determine the default place if one exists.
-    // If pendingDate has a suggested place logic, we would set it here.
     // Determine initial location from metadata if available
     const [selectedPlaceId, setSelectedPlaceId] = useState(() => 
         pendingDate?.coordinates ? 'custom_map' : ''
@@ -31,6 +30,10 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
         }
         return new Date().toISOString().split('T')[0];
     });
+    const [selectedTags, setSelectedTags] = useState(pendingDate?.suggestedTags || []);
+    const [comments, setComments] = useState('');
+    const [locationError, setLocationError] = useState(false);
+    const [showCarousel, setShowCarousel] = useState(false);
 
     // Auto-resolve place name if coordinates exist but name doesn't
     useEffect(() => {
@@ -44,9 +47,6 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
                 .catch(err => console.warn('[PendingDateForm] Failed to auto-resolve name:', err));
         }
     }, [customLocation, customPlaceName]);
-    const [selectedTags, setSelectedTags] = useState(pendingDate?.suggestedTags || []);
-    const [comments, setComments] = useState('');
-    const [locationError, setLocationError] = useState(false);
 
     const toggleTag = (tag) => {
         setSelectedTags(prev =>
@@ -77,142 +77,162 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
     return (
         <motion.div
             className={styles.overlay}
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
+            initial={{ opacity: 0, scale: 1.05 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
         >
             <div className={styles.orbTopLeft}></div>
 
-            <div className={styles.contentWrapper}>
-                <div className={styles.header}>
-                    <button className={styles.backBtn} onClick={onClose}>
-                        <span className="material-symbols-outlined">arrow_back</span>
-                    </button>
-                    <h2 className={styles.title}>Clasificar cita</h2>
-                    <div style={{ width: 40 }} /> {/* Spacer to keep title centered */}
-                </div>
+            <div className={styles.scrollArea}>
+                <div className={styles.contentWrapper}>
+                    <div className={styles.header}>
+                        <button className={styles.backBtn} onClick={onClose}>
+                            <span className="material-symbols-outlined">arrow_back</span>
+                        </button>
+                        <h2 className={styles.title}>Clasificar cita</h2>
+                    </div>
 
-                <div className={styles.heroSection}>
-                    <img src={pendingDate.coverPhoto} alt="Cover" className={styles.heroImg} />
-                    <div className={styles.heroBadge}>{pendingDate.photos?.length || 0} {pendingDate.photos?.length === 1 ? 'foto' : 'fotos'}</div>
-                    {pendingDate.photos?.length > 1 && (
-                        <div className={styles.pageDots}>
-                            {pendingDate.photos.map((_, i) => (
-                                <div key={i} className={`${styles.dot} ${i === 0 ? styles.dotActive : ''}`} />
+                    <div className={styles.heroSection} onClick={() => setShowCarousel(true)}>
+                        <img src={pendingDate.coverPhoto} alt="Cover" className={styles.heroImg} />
+                        <div className={styles.heroBadge}>
+                            <span className="material-symbols-outlined" style={{fontSize:'12px', verticalAlign:'middle', marginRight:'4px'}}>photo_library</span>
+                            {pendingDate.photos?.length || 0} fotos
+                        </div>
+                        <div className={styles.heroOverlay}>
+                            <span className="material-symbols-outlined">zoom_in</span>
+                            Toca para ver todas
+                        </div>
+                    </div>
+
+                    <AnimatePresence>
+                        {showCarousel && (
+                            <motion.div 
+                                className={styles.carouselOverlay}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                            >
+                                <Carousel 
+                                    photos={pendingDate.photos?.map(p => p.objectUrl) || [pendingDate.coverPhoto]} 
+                                    onBack={() => setShowCarousel(false)} 
+                                />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    <div className={styles.formGroup}>
+                        <KawaiiInput
+                            label="¿Qué título le pondrías?"
+                            iconLeft="edit"
+                            placeholder="Ej. Nuestra cena especial"
+                            value={title}
+                            onChange={e => setTitle(e.target.value)}
+                        />
+                    </div>
+
+                    <div className={styles.formGroup}>
+                        <KawaiiInput
+                            type="date"
+                            label="¿Cuándo fue esta magia?"
+                            iconLeft="calendar_today"
+                            value={eventDate}
+                            onChange={e => setEventDate(e.target.value)}
+                        />
+                    </div>
+
+                    <div className={styles.formGroup}>
+                        <label className={styles.label}>¿Dónde fue?</label>
+                        {selectedPlaceId === 'custom_map' && customLocation ? (
+                            <div className={styles.confirmedLocationBadge}>
+                                <div className={styles.confirmedLeft}>
+                                    <div className={styles.checkCircle}>
+                                        <span className="material-symbols-outlined">check</span>
+                                    </div>
+                                    <div className={styles.locationMeta}>
+                                        <span className={styles.locationLabel}>
+                                            {customPlaceName || 'Ubicación de la foto'}
+                                        </span>
+                                        <span className={styles.locationCoords}>
+                                            {customLocation.lat.toFixed(4)}, {customLocation.lng.toFixed(4)}
+                                        </span>
+                                    </div>
+                                </div>
+                                <button
+                                    className={styles.editLocationBtn}
+                                    onClick={() => setIsPlacePickerOpen(true)}
+                                >
+                                    <span className="material-symbols-outlined">edit_location_alt</span>
+                                    Cambiar
+                                </button>
+                            </div>
+                        ) : (
+                            <KawaiiInput
+                                type="select"
+                                label=""
+                                iconLeft="location_on"
+                                placeholder="Toca aquí para elegir el lugar"
+                                value={selectedPlaceId}
+                                onClick={() => {
+                                    setLocationError(false);
+                                    setIsPlacePickerOpen(true);
+                                }}
+                                error={locationError ? "Por favor selecciona una ubicación para continuar" : null}
+                                options={[
+                                    ...(defaultPlaces?.map(p => ({ value: p.id, label: `${p.emoji} ${p.name}` })) || []),
+                                    ...(customLocation ? [{ value: 'custom_map', label: '📍 Ubicación elegida en mapa' }] : [])
+                                ]}
+                            />
+                        )}
+                    </div>
+
+                    <div className={styles.formGroup}>
+                        <label className={styles.label}>Etiquetas</label>
+                        <div className={styles.tagsContainer}>
+                            {MOCK_ALL_TAGS.map(tag => (
+                                <button
+                                    key={tag}
+                                    className={`${styles.tagBtn} ${selectedTags.includes(tag) ? styles.tagBtnActive : ''}`}
+                                    onClick={() => toggleTag(tag)}
+                                >
+                                    {tag}
+                                </button>
                             ))}
                         </div>
-                    )}
-                </div>
+                    </div>
 
-                <div className={styles.formGroup}>
-                    <KawaiiInput
-                        label="Título de nuestro recuerdo"
-                        iconLeft="edit"
-                        placeholder="Ej. Nuestra cena especial"
-                        value={title}
-                        onChange={e => setTitle(e.target.value)}
-                    />
-                </div>
-
-                <div className={styles.formGroup}>
-                    <KawaiiInput
-                        type="date"
-                        label="¿Cuándo fue?"
-                        iconLeft="calendar_today"
-                        value={eventDate}
-                        onChange={e => setEventDate(e.target.value)}
-                    />
-                </div>
-
-                <div className={styles.formGroup}>
-                    {selectedPlaceId === 'custom_map' && customLocation ? (
-                        <div className={styles.confirmedLocationBadge}>
-                            <div className={styles.confirmedLeft}>
-                                <div className={styles.checkCircle}>
-                                    <span className="material-symbols-outlined">check</span>
-                                </div>
-                                <div className={styles.locationMeta}>
-                                    <span className={styles.locationLabel}>
-                                        {customPlaceName || 'Ubicación confirmada'}
-                                    </span>
-                                    <span className={styles.locationCoords}>
-                                        {customLocation.lat.toFixed(4)}, {customLocation.lng.toFixed(4)}
-                                    </span>
-                                </div>
-                            </div>
-                            <button
-                                className={styles.editLocationBtn}
-                                onClick={() => setIsPlacePickerOpen(true)}
-                            >
-                                <span className="material-symbols-outlined">edit_location_alt</span>
-                                Cambiar
-                            </button>
-                        </div>
-                    ) : (
+                    <div className={styles.formGroup}>
                         <KawaiiInput
-                            type="select"
-                            label="¿Dónde fue?"
-                            iconLeft="location_on"
-                            placeholder="Selecciona un lugar o crea uno nuevo"
-                            value={selectedPlaceId}
-                            onClick={() => {
-                                setLocationError(false);
-                                setIsPlacePickerOpen(true);
-                            }}
-                            error={locationError ? "Por favor selecciona una ubicación para continuar" : null}
-                            options={[
-                                ...(defaultPlaces?.map(p => ({ value: p.id, label: `${p.emoji} ${p.name}` })) || []),
-                                ...(customLocation ? [{ value: 'custom_map', label: '📍 Ubicación elegida en mapa' }] : [])
-                            ]}
+                            type="textarea"
+                            label={
+                                <>
+                                    Alguna nota especial
+                                    <span className={styles.optionalBadge}>(Opcional)</span>
+                                </>
+                            }
+                            placeholder="Escribe aquí algún chiste local o algo que no quieras olvidar..."
+                            value={comments}
+                            onChange={e => setComments(e.target.value)}
+                            rows={3}
                         />
+                    </div>
+
+                    {pendingDate.isFromBingo && (
+                        <div className={styles.bingoBanner}>
+                            <span className="material-symbols-outlined">casino</span>
+                            ¡Esta cita desbloquea un logro del Bingo! 🎰
+                        </div>
                     )}
                 </div>
+            </div>
 
-                <div className={styles.formGroup}>
-                    <label className={styles.label}>Etiquetas</label>
-                    <div className={styles.tagsContainer}>
-                        {MOCK_ALL_TAGS.map(tag => (
-                            <button
-                                key={tag}
-                                className={`${styles.tagBtn} ${selectedTags.includes(tag) ? styles.tagBtnActive : ''}`}
-                                onClick={() => toggleTag(tag)}
-                            >
-                                {tag}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                <div className={styles.formGroup}>
-                    <KawaiiInput
-                        type="textarea"
-                        label={
-                            <>
-                                Nuestros recuerdos
-                                <span className={styles.optionalBadge}>(Opcional)</span>
-                            </>
-                        }
-                        placeholder="Escribe aquí un resumen bonito de lo que pasó, chistes locales o lo que no quieres olvidar..."
-                        value={comments}
-                        onChange={e => setComments(e.target.value)}
-                        rows={3}
-                    />
-                </div>
-
-                {pendingDate.isFromBingo && (
-                    <div className={styles.bingoBanner}>
-                        <span className="material-symbols-outlined">casino</span>
-                        Esta cita vino del Bingo de Citas
-                    </div>
-                )}
-
+            <div className={styles.footer}>
                 <button
                     className={styles.saveBtn}
                     onClick={handleSave}
                     disabled={!selectedPlaceId && !customLocation}
                 >
-                    Guardar cita para siempre
+                    <span>Guardar este recuerdo</span>
                     <span className="material-symbols-outlined">favorite</span>
                 </button>
             </div>

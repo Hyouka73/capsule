@@ -15,6 +15,7 @@ import styles from './MapView.module.css';
 import { usePlaces } from './hooks/usePlaces';
 import { getMemories } from '../../apiClient';
 import Memory from '../../models/Memory';
+import PlaceDetailDrawer from './components/PlaceDetailDrawer/PlaceDetailDrawer';
 
 export default function MapView({
     onPlaceSelected,
@@ -26,10 +27,8 @@ export default function MapView({
     onOpenCamera,
     citaContext,
     onCitaContextChange,
-    pendingDates = [],
-    removePendingDate,
-    updatePendingDate,
-    updatePendingDateStatus
+    onOpenPending,
+    onOpenPhotoViewer
 }) {
     const { isPartner, isAdmin } = useAuth();
     const { queueMemory } = useOfflineQueue();
@@ -78,53 +77,20 @@ export default function MapView({
     }, [bingoContextToMap, clearBingoContext, onPlaceSelected, onCitaContextChange]);
 
     const { places, loading: placesLoading } = usePlaces();
-    const [isPendingListOpen, setIsPendingListOpen] = useState(false);
-    const [selectedPendingDate, setSelectedPendingDate] = useState(null);
-    const [viewerPhotos, setViewerPhotos] = useState(null);
     const [isSearchActive, setIsSearchActive] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
-    const handleSavePendingDate = async (data) => {
-        try {
-            // Use model for data sanitization and standardization
-            const memory = Memory.fromForm(data);
-            const payload = memory.toApiPayload();
-
-            if (updatePendingDate && data.id) {
-                // Set status to uploading immediately so the list locks it
-                await updatePendingDate(data.id, {
-                    title: memory.title,
-                    suggestedTags: memory.tags,
-                    placeName: memory.placeName,
-                    status: 'uploading'
-                });
-            }
-
-            const files = (data.photos || []).map(p => p.file);
-
-            if (files.length > 0) {
-                // queueMemory also handles status sync internally now
-                await queueMemory(payload, files, data.id);
-            }
-            setSelectedPendingDate(null);
-            toast.success('¡Cita guardada! 💾', 'Se está subiendo en segundo plano ✨');
-        } catch (err) {
-            console.error('[MapView] Error saving pending date:', err);
-            toast.error('Error al guardar', 'Inténtalo de nuevo más tarde');
-        }
-    };
-
     useEffect(() => {
         if (openPendingSignal) {
-            setIsPendingListOpen(true);
+            if (onOpenPending) onOpenPending();
             if (onPendingSignalHandled) onPendingSignalHandled();
         }
-    }, [openPendingSignal, onPendingSignalHandled]);
+    }, [openPendingSignal, onPendingSignalHandled, onOpenPending]);
 
     useEffect(() => {
-        const isAnyOverlayOpen = !!citaContext || isPendingListOpen || !!selectedPendingDate || !!selectedPlace || isSearchActive;
+        const isAnyOverlayOpen = !!citaContext || !!selectedPlace || isSearchActive;
         if (onPlaceSelected) onPlaceSelected(isAnyOverlayOpen);
-    }, [citaContext, isPendingListOpen, selectedPendingDate, selectedPlace, isSearchActive, onPlaceSelected]);
+    }, [citaContext, selectedPlace, isSearchActive, onPlaceSelected]);
 
     const filteredPlaces = useMemo(() => {
         return places.filter(p => {
@@ -392,7 +358,7 @@ export default function MapView({
                 {/* CITA INSTANTÁNEA (FAB bottom right) — Mantenemos la lógica pero con label correcto */}
                 <div className={styles.actionsStack}>
                     <AnimatePresence>
-                        {isPartner && !isSearchActive && !citaContext && !selectedPlace && !isPendingListOpen && !selectedPendingDate && (
+                        {isPartner && !isSearchActive && !citaContext && !selectedPlace && (
                             <motion.div
                                 className={styles.fab}
                                 initial={{ opacity: 0, scale: 0.5, y: 50 }}
@@ -412,121 +378,33 @@ export default function MapView({
                     </AnimatePresence>
                 </div>
 
-                {/* Place detail drawer */}
-                {!citaContext && !isSearchActive && (
-                    <div className={`${styles.drawer} ${selectedPlace ? styles.drawerOpen : ''}`}>
-                        <div className={styles.drawerContent}>
-                            <div className={styles.drawerHandle} />
-                            <div className={styles.placeRow}>
-                                <div className={styles.placeTitleGroup}>
-                                    <div className={styles.placeTitleWrapper}>
-                                        <span className={styles.placeEmoji}>{selectedPlace?.emoji}</span>
-                                        <h2 className={styles.placeName}>{selectedPlace?.name}</h2>
-                                    </div>
-                                    <div className={styles.tagsDisplay}>
-                                        {selectedPlace?.tags?.map(t => (
-                                            <span key={t} className={styles.tag}>{t}</span>
-                                        ))}
-                                    </div>
-                                </div>
-                                <button
-                                    className={styles.closeDrawer}
-                                    onClick={() => {
-                                        setSelectedPlace(null);
-                                        if (onPlaceSelected) onPlaceSelected(false);
-                                    }}
-                                >
-                                    <span className="material-symbols-outlined">close</span>
-                                </button>
-                            </div>
-
-                            {loadingMemories ? (
-                                <div className={styles.drawerLoading}>
-                                    <div className={styles.miniSpinner} />
-                                    <span>Buscando recuerdos... ✨</span>
-                                </div>
-                            ) : (
-                                <div className={styles.memoriesScroll}>
-                                    {placeMemories.map(memory => (
-                                        <div
-                                            key={memory.id}
-                                            className={styles.memoryCard}
-                                            onClick={() => {
-                                                if (memory.photos?.length > 0) {
-                                                    setViewerPhotos(memory.photos);
-                                                }
-                                            }}
-                                        >
-                                            <div className={styles.memoryPhotoWrap}>
-                                                {memory.mainPhotoUrl ? (
-                                                    <img src={memory.mainPhotoUrl} className={styles.memoryPhoto} alt="" />
-                                                ) : (
-                                                    <div className={styles.memoryPhotoPlaceholder}>📸</div>
-                                                )}
-                                                {memory.photoCount > 1 && (
-                                                    <div className={styles.photoCountBadge}>
-                                                        {memory.photoCount} fotos
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className={styles.memoryInfo}>
-                                                <div className={styles.memoryHeader}>
-                                                    <h3 className={styles.memoryTitle}>{memory.title || 'Sin título'}</h3>
-                                                    <span className={styles.memoryDate}>
-                                                        {memory.eventDate ? new Date(memory.eventDate).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) : ''}
-                                                    </span>
-                                                </div>
-                                                <p className={styles.memoryDesc}>{memory.description}</p>
-                                                {memory.tags?.length > 0 && (
-                                                    <div className={styles.memoryTags}>
-                                                        {memory.tags.slice(0, 2).map(t => (
-                                                            <span key={t} className={styles.miniTag}>#{t}</span>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {placeMemories.length === 0 && !loadingMemories && (
-                                        <div className={styles.noMemories}>
-                                            <p>Aún no hay fotos guardadas aquí. 📸</p>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* ── Modals & Overlays ── */}
-            <AnimatePresence>
-                {isPendingListOpen && (
-                    <PendingDatesList
-                        pendingDates={pendingDates}
-                        onClose={() => setIsPendingListOpen(false)}
-                        onSelectDate={(date) => {
-                            setSelectedPendingDate(date);
-                            setIsPendingListOpen(false);
+                {/* Place detail drawer component replaces the inline drawer */}
+                {!isSearchActive && (
+                    <PlaceDetailDrawer
+                        selectedPlace={selectedPlace}
+                        onClose={() => {
+                            setSelectedPlace(null);
+                            if (onPlaceSelected) onPlaceSelected(false);
+                        }}
+                        loadingMemories={loadingMemories}
+                        placeMemories={placeMemories}
+                        onPhotoClick={onOpenPhotoViewer}
+                        citaContext={citaContext}
+                        onVerifyPlace={(place) => {
+                            if (onCitaContextChange) {
+                                onCitaContextChange({ 
+                                    ...citaContext,
+                                    placeId: place.id, 
+                                    name: place.name,
+                                    verified: true
+                                });
+                            }
                         }}
                     />
                 )}
-                {selectedPendingDate && (
-                    <PendingDateForm
-                        pendingDate={selectedPendingDate}
-                        onClose={() => setSelectedPendingDate(null)}
-                        onSave={handleSavePendingDate}
-                        defaultPlaces={places}
-                    />
-                )}
-            </AnimatePresence>
+            </div>
 
-            {viewerPhotos && (
-                <PhotoViewer
-                    photos={viewerPhotos}
-                    onClose={() => setViewerPhotos(null)}
-                />
-            )}
+            {/* viewerPhotos removed - managed by parent dashboard */}
         </div>
     );
 }

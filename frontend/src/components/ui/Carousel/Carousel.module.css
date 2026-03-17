@@ -1,0 +1,138 @@
+.carouselContainer {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background: transparent;
+    perspective: 1000px;
+}
+
+.backBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 10px 20px;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 800;
+    color: white;
+    cursor: pointer;
+    width: fit-content;
+    margin-bottom: 20px;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 100;
+}
+
+.backBtn:active {
+    scale: 0.95;
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.mainStage {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 250px;
+    margin: 10px 0;
+}
+
+.slide {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.image {
+    max-width: 95vw;
+    max-height: 75vh;
+    object-fit: contain;
+    border-radius: 20px;
+    box-shadow: 
+        0 30px 60px rgba(0, 0, 0, 0.5),
+        0 10px 30px rgba(0, 0, 0, 0.3);
+    pointer-events: auto;
+    border: 4px solid rgba(255, 255, 255, 0.9);
+}
+
+.navBtn {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 110;
+    color: white;
+    transition: all 0.2s ease;
+}
+
+.navBtn:active {
+    scale: 0.9;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.prev {
+    left: 20px;
+}
+
+.next {
+    right: 20px;
+}
+
+.footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+}
+
+.counter {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 800;
+    color: white;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 4px 16px;
+    border-radius: 12px;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.indicators {
+    display: flex;
+    gap: 6px;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.dotActive {
+    width: 20px;
+    border-radius: 4px;
+    background: var(--gradient-mint);
+}

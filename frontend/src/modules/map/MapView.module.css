@@ -270,335 +270,23 @@
 }
 
 /* =========================================================================
-   BOTTOM DRAWER
+   MARKER LABEL STYLES
    ========================================================================= */
-.drawer {
-    position: absolute;
-    bottom: 24px;
-    /* above the map border */
-    left: 12px;
-    right: 12px;
-    width: calc(100% - 24px);
-    box-sizing: border-box;
-    height: auto;
-    padding-bottom: 6px;
-    /* give it a slight bottom padding */
-    transform: translateY(150%);
-    opacity: 0;
+.pinLabel {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    color: #b33939;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 154, 158, 0.3);
+    backdrop-filter: blur(4px);
+    z-index: 5;
     pointer-events: none;
-    background: var(--bg-overlay-light);
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border: var(--border-mint);
-    border-radius: var(--radius-card);
-    box-shadow:
-        0 -4px 24px rgba(255, 183, 178, 0.2),
-        0 8px 32px rgba(0, 0, 0, 0.08),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
-    overflow: hidden;
-}
-
-.drawerOpen {
-    transform: translateY(0);
-    opacity: 1;
-    pointer-events: auto;
-}
-
-
-
-.drawerContent {
-    padding: 10px 18px 16px;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    box-sizing: border-box;
-}
-
-.drawerHandle {
-    width: 36px;
-    height: 4px;
-    background: rgba(183, 228, 199, 0.6);
-    border-radius: 2px;
-    margin: 0 auto 12px;
-}
-
-.placeRow {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    margin-bottom: 12px;
-}
-
-.placeTitleGroup {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.placeTitleWrapper {
-    display: flex;
-    align-items: center;
-}
-
-.tagsDisplay {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-items: center;
-}
-
-.placeEmoji {
-    font-size: 18px;
-    margin-right: 6px;
-}
-
-.placeName {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 20px;
-    color: var(--text-primary);
-    margin: 0;
-    line-height: 1;
-}
-
-.closeDrawer {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: rgba(183, 228, 199, 0.2);
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: #95d5b2;
-    flex-shrink: 0;
-    transition: background 0.2s;
-}
-
-.closeDrawer:hover {
-    background: rgba(183, 228, 199, 0.4);
 }
 
 /* =========================================================================
-   MEMORIES SCROLL & CARDS
-   ========================================================================= */
-.memoriesScroll {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    max-height: 380px;
-    overflow-y: auto;
-    padding-right: 4px;
-    margin-top: 4px;
-}
-
-.memoryCard {
-    display: flex;
-    gap: 12px;
-    background: white;
-    padding: 10px;
-    border-radius: 12px;
-    border: 1px solid rgba(136, 216, 176, 0.2);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.memoryCard:active {
-    transform: scale(0.98);
-    background: var(--bg-main);
-}
-
-.memoryPhotoWrap {
-    width: 80px;
-    height: 80px;
-    border-radius: 8px;
-    overflow: hidden;
-    position: relative;
-    flex-shrink: 0;
-}
-
-.memoryPhoto {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.memoryPhotoPlaceholder {
-    width: 100%;
-    height: 100%;
-    background: var(--bg-main);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-}
-
-.photoCountBadge {
-    position: absolute;
-    bottom: 4px;
-    right: 4px;
-    background: rgba(0, 0, 0, 0.6);
-    color: white;
-    font-size: 9px;
-    padding: 2px 5px;
-    border-radius: 4px;
-}
-
-.memoryInfo {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    min-width: 0;
-}
-
-.memoryHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 2px;
-}
-
-.memoryTitle {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 15px;
-    color: var(--text-primary);
-    margin: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.memoryDate {
-    font-family: var(--font-body);
-    font-size: 11px;
-    color: var(--pastel-sage-dark);
-    flex-shrink: 0;
-    margin-left: 8px;
-}
-
-.memoryDesc {
-    font-family: var(--font-body);
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin: 0 0 6px 0;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    line-height: 1.3;
-}
-
-.memoryTags {
-    display: flex;
-    gap: 6px;
-}
-
-.miniTag {
-    font-size: 10px;
-    color: var(--pastel-green-btn);
-    font-weight: 600;
-}
-
-.noMemories {
-    padding: 20px;
-    text-align: center;
-    color: var(--text-secondary);
-    font-size: 14px;
-}
-
-.drawerLoading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 30px 0;
-    gap: 12px;
-    color: var(--pastel-green-btn);
-    font-family: var(--font-display);
-    font-weight: 600;
-}
-
-.miniSpinner {
-    width: 24px;
-    height: 24px;
-    border: 3px solid rgba(136, 216, 176, 0.2);
-    border-top: 3px solid var(--pastel-green-btn);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-/* =========================================================================
-   STATS ROW (Deprecated/Legacy)
-   ========================================================================= */
-.statsRow {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    margin-bottom: 4px;
-    /* less margin bottom since there is no cta button now */
-    width: 100%;
-}
-
-.statsRow div {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-family: var(--font-body);
-    font-size: 11px;
-}
-
-.statItemMint {
-    color: #88d8b0;
-}
-
-.statItemGray {
-    color: #bcacad;
-}
-
-.statItemRose {
-    color: #ffb7b2;
-}
-
-.tag {
-    font-family: var(--font-body);
-    font-size: 11px;
-    color: var(--pastel-sage-dark);
-    background: rgba(149, 213, 178, 0.12);
-    border: 1.5px solid rgba(149, 213, 178, 0.4);
-    border-radius: var(--radius-pill);
-    padding: 3px 10px;
-    text-transform: capitalize;
-}
-
-.tagVisits {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    font-family: var(--font-body);
-    font-size: 11px;
-    color: var(--pastel-rose);
-    background: rgba(255, 183, 178, 0.1);
-    border: 1.5px solid rgba(255, 183, 178, 0.35);
-    border-radius: var(--radius-pill);
-    padding: 3px 10px;
-}
-
-/* =========================================================================
-   FAB — DATE MODE BUTTON & ACTIONS STACK
-   ========================================================================= */
-/* =========================================================================
-   ACTION CONTROLS (Bottom Right Stack)
+   FAB — ACTIONS STACK
    ========================================================================= */
 .actionsStack {
     position: absolute;
@@ -615,11 +303,6 @@
 
 .actionsStack>* {
     pointer-events: auto;
-}
-
-.snapshotTopRight {
-    margin-left: auto;
-    flex-shrink: 0;
 }
 
 .fab {
@@ -640,7 +323,7 @@
     align-items: center;
     justify-content: center;
     border: 2px solid rgba(255, 255, 255, 0.4);
-    box-shadow:
+    box-shadow: 
         0 4px 12px rgba(116, 198, 157, 0.3),
         0 8px 24px rgba(116, 198, 157, 0.2),
         inset 0 2px 4px rgba(255, 255, 255, 0.3);
@@ -650,41 +333,15 @@
     overflow: hidden;
 }
 
-.fabBtn::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, transparent 100%);
-    pointer-events: none;
-}
-
 .fabBtn:hover {
     transform: scale(1.05) translateY(-2px);
-    box-shadow:
+    box-shadow: 
         0 6px 16px rgba(116, 198, 157, 0.4),
         0 12px 32px rgba(116, 198, 157, 0.25);
 }
 
-.fabBtn span {
-    font-size: 20px;
-}
-
 .fabBtn:active {
     transform: translateY(4px);
-    box-shadow: none !important;
-    animation: none;
-}
-
-@keyframes fabFloat {
-
-    0%,
-    100% {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-8px);
-    }
 }
 
 .fabLabel {
@@ -702,67 +359,9 @@
     border: 1px solid rgba(136, 216, 176, 0.3);
 }
 
-
-
 /* =========================================================================
-   TOAST (Add Past Memory)
+   MAP OVERRIDES
    ========================================================================= */
-.toast {
-    position: absolute;
-    bottom: 32px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #eaf8f0;
-    color: #4eb581;
-    border: var(--border-mint);
-    padding: 10px 20px;
-    border-radius: var(--radius-pill);
-    font-family: var(--font-display);
-    font-weight: 500;
-    font-size: 14px;
-    white-space: nowrap;
-    box-shadow: 0 8px 24px rgba(136, 216, 176, 0.25);
-    z-index: 200;
-    animation: toastPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-@keyframes toastPop {
-    0% {
-        opacity: 0;
-        transform: translate(-50%, 20px) scale(0.9);
-    }
-
-    100% {
-        opacity: 1;
-        transform: translate(-50%, 0) scale(1);
-    }
-}
-
-.memoryFormOverlay {
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-}
-/* Marker Popup & Label Styles */
-.pinLabel {
-    background: rgba(255, 255, 255, 0.9);
-    padding: 2px 8px;
-    border-radius: 20px;
-    font-size: 11px;
-    color: #b33939;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(255, 154, 158, 0.3);
-    backdrop-filter: blur(4px);
-    z-index: 5;
-    pointer-events: none;
-}
-
 :global(.mapboxgl-popup-content), :global(.maplibregl-popup-content) {
     padding: 0 !important;
     background: transparent !important;
@@ -772,99 +371,4 @@
 
 :global(.mapboxgl-popup-tip), :global(.maplibregl-popup-tip) {
     border-top-color: white !important;
-}
-
-.markerPopup {
-    padding: 0;
-    overflow: hidden;
-    background: transparent;
-    filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.15));
-}
-
-.popupContent {
-    width: 180px;
-    background: white;
-    border-radius: 16px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    animation: popupAppear 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes popupAppear {
-    0% { transform: scale(0.9) translateY(10px); opacity: 0; }
-    100% { transform: scale(1) translateY(0); opacity: 1; }
-}
-
-.popupImageWrap {
-    height: 120px;
-    width: 100%;
-    position: relative;
-    cursor: pointer;
-    overflow: hidden;
-}
-
-.popupImage {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
-}
-
-.popupImageWrap:hover .popupImage {
-    transform: scale(1.1);
-}
-
-.popupPlaceholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #fff5f5;
-    font-size: 32px;
-}
-
-.popupBadge {
-    position: absolute;
-    bottom: 8px;
-    right: 8px;
-    background: rgba(255, 154, 158, 0.9);
-    color: white;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 10px;
-    backdrop-filter: blur(4px);
-}
-
-.popupTitle {
-    padding: 12px 12px 4px;
-    margin: 0;
-    font-size: 14px;
-    font-family: var(--font-display);
-    color: #333;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.popupActions {
-    padding: 4px 12px 12px;
-}
-
-.popupBtn {
-    width: 100%;
-    padding: 6px;
-    background: #fff5f5;
-    border: 1px solid #ffebeb;
-    border-radius: 8px;
-    font-size: 12px;
-    color: #ff7e5f;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.popupBtn:hover {
-    background: #ffebeb;
-    transform: translateY(-1px);
 }

@@ -9,40 +9,48 @@ import Place from '../../../models/Place';
  * 
  * @returns {Object} { places: Array, loading: boolean, error: Error|null }
  */
+let globalPlacesCache = [];
+let globalLoading = true;
+let globalUnsubscribe = null;
+let listeners = new Set();
+
 export function usePlaces() {
-    const [places, setPlaces] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [places, setPlaces] = useState(globalPlacesCache);
+    const [loading, setLoading] = useState(globalLoading);
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        let unsubscribe = () => { };
+        const updateState = () => {
+            setPlaces(globalPlacesCache);
+            setLoading(globalLoading);
+        };
 
-        try {
-            setLoading(true);
+        listeners.add(updateState);
 
-            // subscribeToCollection(collectionName, callback, filters = [], maxResults = 50)
-            unsubscribe = subscribeToCollection(
-                COLLECTIONS.PLACES,
-                (docs) => {
-                    const normalizedDocs = (docs || []).map(doc => Place.fromFirestore(doc.id, doc));
-                    setPlaces(normalizedDocs);
-                    setLoading(false);
-                    setError(null);
-                },
-                [], // No filters
-                200 // Max 200 results
-            );
-        } catch (err) {
-            console.error('Error subscribing to places:', err);
-            setError(err);
-            setLoading(false);
+        if (!globalUnsubscribe) {
+            try {
+                globalUnsubscribe = subscribeToCollection(
+                    COLLECTIONS.PLACES,
+                    (docs) => {
+                        globalPlacesCache = (docs || []).map(doc => Place.fromFirestore(doc.id, doc));
+                        globalLoading = false;
+                        listeners.forEach(l => l());
+                    },
+                    [],
+                    200
+                );
+            } catch (err) {
+                console.error('Error subscribing to places:', err);
+                setError(err);
+                globalLoading = false;
+                listeners.forEach(l => l());
+            }
         }
 
-        // Cleanup subscription on unmount
         return () => {
-            if (typeof unsubscribe === 'function') {
-                unsubscribe();
-            }
+            listeners.delete(updateState);
+            // We DON'T unsubscribe globally here to keep data "in memory"
+            // The subscription will stay alive for the entire session
         };
     }, []);
 

@@ -5,77 +5,65 @@
 .overlay {
     position: fixed;
     inset: 0;
-    z-index: 2100;
+    z-index: 4000;
     background: #000;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    padding: 20px 0;
     overflow: hidden;
 }
 
-/* ── Close button ── */
+/* ── Close button (Top Left) ── */
 .closeBtn {
-    position: fixed;
-    top: 20px;
+    position: absolute;
+    top: 24px;
     left: 20px;
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.15);
-    border: 2px solid rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     color: white;
     font-size: 1.2rem;
-    font-weight: 800;
     cursor: pointer;
-    z-index: 10;
+    z-index: 5000;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.15s ease;
+    transition: all 0.2s;
+    backdrop-filter: blur(8px);
 }
 
 .closeBtn:active {
     transform: scale(0.9);
+    background: rgba(255, 255, 255, 0.2);
 }
 
-/* ── Corner clock badge (top-right) ── */
+/* ── History/Clock badge (Top Right) ── */
 .clockBadge {
-    position: fixed;
-    top: 18px;
-    right: 18px;
+    position: absolute;
+    top: 22px;
+    right: 20px;
     width: 48px;
     height: 48px;
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.18);
-    border: 2px solid rgba(255, 255, 255, 0.4);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    z-index: 20;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-    /* Subtle animation to acknowledge new sends */
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.clockBadge:has(.clockThumb) {
-    /* Pop when a thumb arrives */
-    animation: badgePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes badgePop {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.25); }
-    100% { transform: scale(1); }
+    z-index: 5000;
 }
 
 .clockIcon {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.8);
 }
 
 .clockThumb {
@@ -84,49 +72,40 @@
     object-fit: cover;
 }
 
-.clockCount {
-    position: absolute;
-    bottom: 2px;
-    right: 4px;
-    background: rgba(255, 77, 109, 0.9);
-    color: #fff;
-    font-size: 0.6rem;
-    font-weight: 700;
-    border-radius: 999px;
-    padding: 1px 4px;
-    line-height: 1.4;
-}
-
-/* ── Flying thumbnail (Framer Motion sets transform via style) ── */
+/* ── Flying Animation ── */
 .flyImg {
     position: fixed;
     top: 50%;
     left: 50%;
-    width: min(92vw, 400px);
-    height: min(92vw, 400px);
+    width: 300px;
+    height: 300px;
     translate: -50% -50%;
     object-fit: cover;
     pointer-events: none;
-    z-index: 2200;
+    z-index: 6000;
     will-change: transform, opacity;
     clip-path: url(#pillowClipCreator);
     -webkit-clip-path: url(#pillowClipCreator);
 }
 
-/* ── Main content column ── */
+/* ── Content Wrapper ── */
 .content {
+    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 24px;
+    justify-content: center;
+    width: 100%;
+    gap: 32px;
 }
 
-/* ── Squircle viewfinder ── */
+/* ── Viewfinder ── */
 .squircle {
-    width: min(92vw, 400px);
-    height: min(92vw, 400px);
+    width: 100vw;
+    height: 100vw;
+    max-width: 420px;
+    max-height: 420px;
     background: #111;
-    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -134,7 +113,7 @@
     -webkit-clip-path: url(#pillowClipCreator);
     overflow: hidden;
     position: relative;
-    transition: opacity 0.15s ease;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
 }
 
 .squircleSending {

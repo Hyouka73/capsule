@@ -11,10 +11,10 @@ let _dispatch = null;
    Public API — usable anywhere in the tree
    ───────────────────────────────────────── */
 export const toast = {
-    success: (title, description) => _dispatch?.({ op: 'add', type: 'success', title, description }),
-    error: (title, description) => _dispatch?.({ op: 'add', type: 'error', title, description }),
-    loading: (title, description) => _dispatch?.({ op: 'add', type: 'loading', title, description }),
-    info: (title, description) => _dispatch?.({ op: 'add', type: 'info', title, description }),
+    success: (title, description, options) => _dispatch?.({ op: 'add', type: 'success', title, description, ...options }),
+    error: (title, description, options) => _dispatch?.({ op: 'add', type: 'error', title, description, ...options }),
+    loading: (title, description, options) => _dispatch?.({ op: 'add', type: 'loading', title, description, ...options }),
+    info: (title, description, options) => _dispatch?.({ op: 'add', type: 'info', title, description, ...options }),
 
     /**
      * promise toast: shows a persisted "loading" toast, then
@@ -44,29 +44,32 @@ export function PastelToastProvider({ children }) {
         if (action.op === 'add') {
             const id = Date.now() + Math.random();
 
-            setToasts(prev => [...prev, {
+            // v2.3: Limit to 1 toast (single notification mode)
+            setToasts([{
                 id,
                 type: action.type,
                 title: action.title,
                 description: action.description,
+                onClick: action.onClick,
             }]);
 
             if (!action.persist) {
-                setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+                const duration = action.duration || 4000;
+                setTimeout(() => setToasts(prev => prev.filter(t => t.id === id)), duration);
             }
 
             return id;
         }
 
         if (action.op === 'update') {
-            // Mutate in-place: same id → same React key → Framer Motion animates content, not mount
+            // Update the single active toast
             setToasts(prev => prev.map(t =>
                 t.id === action.id
                     ? { ...t, type: action.type, title: action.title, description: action.description }
                     : t
             ));
             // Auto-dismiss after update
-            setTimeout(() => setToasts(prev => prev.filter(t => t.id !== action.id)), 4000);
+            setTimeout(() => setToasts(prev => prev.filter(t => t.id === action.id)), 4000);
         }
     }, []);
 
@@ -119,16 +122,24 @@ const ICONS = {
 /* ─────────────────────────────────────────
    Toast Item
    ───────────────────────────────────────── */
-function ToastItem({ id, type, title, description, onClose }) {
+function ToastItem({ id, type, title, description, onClose, onClick }) {
     return (
         <motion.div
             layout
+            initial={{ opacity: 0, scale: 0.8, y: -40 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: -20, transition: { duration: 0.2 } }}
+            transition={{
+                type: 'spring',
+                stiffness: 400,
+                damping: 25,
+                mass: 0.8
+            }}
             className={`${styles.toast} ${styles[type]}`}
-            initial={{ opacity: 0, y: -12, scale: 0.93 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.93 }}
-            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-            onClick={onClose}
+            onClick={() => {
+                if (onClick) onClick();
+                onClose();
+            }}
         >
             <motion.div
                 key={type}           /* re-animate badge when type changes */

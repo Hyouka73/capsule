@@ -215,6 +215,7 @@ export function useOfflineQueue() {
 
                         await createMemory({
                             ...memoryModel.toApiPayload(),
+                            id: item.id, // Enforce using the same ID as the storage folder
                             offlinePhotoUrls: photoUrls,
                             // Ensure coordinates always reach the backend as fallback
                             placeLat: memoryModel.placeLat,
