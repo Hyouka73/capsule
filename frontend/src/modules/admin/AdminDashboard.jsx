@@ -11,6 +11,7 @@ import GlobalSettings from '../settings/GlobalSettings';
 import SnapshotButton from '../snapshots/components/SnapshotButton';
 import SnapshotOverlay from '../snapshots/components/SnapshotOverlay';
 import SnapshotCreator from '../snapshots/components/SnapshotCreator';
+import SnapshotHistory from '../snapshots/components/SnapshotHistory';
 import Button from '../../components/ui/Button/Button';
 import styles from './AdminDashboard.module.css';
 
@@ -33,6 +34,7 @@ export default function AdminDashboard() {
     const [isSnapshotOpen, setIsSnapshotOpen] = useState(false);
     const [activeSnapshots, setActiveSnapshots] = useState([]);
     const [isCameraOpen, setIsCameraOpen] = useState(false);
+    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -145,8 +147,28 @@ export default function AdminDashboard() {
 
             {/* ── SnapshotCreator — tomar foto ── */}
             {isCameraOpen && (
-                <SnapshotCreator onClose={() => setIsCameraOpen(false)} />
+                <SnapshotCreator 
+                    onClose={() => setIsCameraOpen(false)} 
+                    onOpenOwnSnapshots={(ownSnaps) => {
+                        setActiveSnapshots(ownSnaps);
+                        setIsHistoryOpen(true);
+                        setIsCameraOpen(false);
+                    }}
+                />
             )}
+
+            <AnimatePresence>
+                {isHistoryOpen && (
+                    <SnapshotHistory 
+                        snapshots={activeSnapshots}
+                        onClose={() => {
+                            setIsHistoryOpen(false);
+                            setActiveSnapshots([]);
+                            setIsCameraOpen(true); // Return to camera
+                        }}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 }

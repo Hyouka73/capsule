@@ -8,30 +8,29 @@ import BottomSheetModal from '../../components/ui/BottomSheetModal/BottomSheetMo
 
 import { MOCK_COUPONS } from '../../data/couponsData';
 
+import { useCoupons } from '../../hooks/useCoupons';
+
 export default function UserCoupons({ onModalStateChange }) {
     const [activeTab, setActiveTab] = useState('available');
     const [previousTab, setPreviousTab] = useState('available');
-    const [coupons, setCoupons] = useState(MOCK_COUPONS);
+    const { coupons, isLoading, redeemCoupon } = useCoupons();
     const [redeemingCoupon, setRedeemingCoupon] = useState(null);
 
-    const available = coupons.filter(c => !c.isUsed);
-    const used = coupons.filter(c => c.isUsed);
+    const available = (coupons || []).filter(c => !c.isUsed);
+    const used = (coupons || []).filter(c => c.isUsed);
 
     const handleTabChange = (newTab) => {
         setPreviousTab(activeTab);
         setActiveTab(newTab);
     };
 
-    const handleRedeem = (e) => {
-        e.preventDefault();
-        setCoupons(prev => prev.map(c =>
-            c.id === redeemingCoupon.id
-                ? { ...c, isUsed: true, usedAt: new Date().toISOString() }
-                : c
-        ));
-        setRedeemingCoupon(null);
-        if (onModalStateChange) onModalStateChange(false);
-        // Aquí se llamaría a usePastelToast (si estuviéramos en ese nivel de hook)
+    const handleRedeem = async (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        const res = await redeemCoupon(redeemingCoupon.id);
+        if (res.success) {
+            setRedeemingCoupon(null);
+            if (onModalStateChange) onModalStateChange(false);
+        }
     };
 
     const handleCloseModal = () => {
@@ -43,6 +42,14 @@ export default function UserCoupons({ onModalStateChange }) {
         setRedeemingCoupon(coupon);
         if (onModalStateChange) onModalStateChange(true);
     };
+
+    if (isLoading && coupons.length === 0) {
+        return (
+            <div className={styles.root}>
+                <div className={styles.loading}>Sincronizando tus cupones... ✨</div>
+            </div>
+        );
+    }
 
     return (
         <div className={styles.root}>

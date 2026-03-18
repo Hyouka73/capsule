@@ -328,6 +328,7 @@ export default function UserDashboard() {
                         onClose={() => {
                             setIsHistoryOpen(false);
                             setActiveSnapshots([]);
+                            setIsCameraOpen(true); // Return to camera section
                         }}
                     />
                 )}
