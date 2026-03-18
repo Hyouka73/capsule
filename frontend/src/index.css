@@ -202,4 +202,9 @@ body {
   .maplibregl-popup-tip {
     @apply hidden!;
   }
+
+  /* --- Hide Firebase Emulator Banner --- */
+  .firebase-emulator-warning {
+    display: none !important;
+  }
 }

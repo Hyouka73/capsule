@@ -34,30 +34,33 @@
     z-index: 3;
 }
 
-/* Size Variants */
+/* Size Variants (Refined for white map harmony) */
 .size-large {
     width: 44px;
     height: 44px;
-    background: var(--gradient-amber);
-    box-shadow: 0 0 20px rgba(245, 166, 35, 0.6), 0 6px 20px rgba(0, 0, 0, 0.2);
-    border: 3px solid #D4891A;
+    background: var(--pastel-rose); /* Soft rose instead of amber */
+    box-shadow: 
+        0 4px 12px rgba(255, 143, 171, 0.25),
+        inset 0 0 10px rgba(255, 255, 255, 0.3);
+    border: 3px solid #ffffff;
 }
 
 .size-medium {
     width: 32px;
     height: 32px;
-    background: var(--gradient-rose);
+    background: var(--pastel-peach);
     border: 3px solid white;
-    box-shadow: 0 4px 15px rgba(255, 183, 178, 0.6);
+    box-shadow: 0 4px 10px rgba(255, 183, 178, 0.3);
 }
 
 .size-small {
     width: 24px;
     height: 24px;
-    background: linear-gradient(135deg, #c3b1e1, #a78bca);
+    background: var(--pastel-lavender);
     border: 2.5px solid white;
-    box-shadow: 0 2px 8px rgba(167, 139, 202, 0.4);
+    box-shadow: 0 2px 8px rgba(167, 139, 202, 0.25);
 }
+
 
 .smallDot {
     width: 6px;

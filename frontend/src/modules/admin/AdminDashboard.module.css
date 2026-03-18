@@ -12,15 +12,17 @@
     width: 260px;
     flex-shrink: 0;
     max-height: 100dvh;
-    background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
-    border-right: 1px solid var(--glass-border);
+    background: var(--glass-bg-strong);
+    backdrop-filter: var(--glass-blur-strong);
+    -webkit-backdrop-filter: var(--glass-blur-strong);
+    border-right: var(--border-glass);
     display: flex;
     flex-direction: column;
     padding: 1.5rem 1rem;
     position: relative;
     z-index: 50;
     transition: all 0.3s ease;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.04), inset -1px 0 0 rgba(255,255,255,0.5);
 }
 
 .sidebarHeader {
@@ -131,11 +133,11 @@
 }
 
 .navItem.active {
-    background: var(--bg-card);
+    background: var(--clay-bg-white);
     color: var(--accent-primary);
-    font-weight: 600;
-    box-shadow: var(--shadow-sm), 0 0 0 1px var(--glass-border) inset;
-    border: 1px solid var(--glass-border);
+    font-weight: 700;
+    box-shadow: var(--clay-shadow-sm);
+    border: var(--border-glass-pink);
 }
 
 .navIcon {
@@ -374,20 +376,26 @@
     height: 64px;
     border-radius: var(--radius-pill);
     background: var(--gradient-rose);
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.40);
     color: white;
-    box-shadow: var(--shadow-chunky-pink);
+    box-shadow: var(--clay-shadow-rose);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 100;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease;
+    touch-action: manipulation;
+}
+
+.fab:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: var(--clay-shadow-rose-hover);
 }
 
 .fab:active {
-    transform: translateY(4px) scale(0.95);
-    box-shadow: none;
+    transform: translateY(2px) scale(0.95);
+    box-shadow: var(--clay-shadow-pressed);
 }
 
 .fab span {

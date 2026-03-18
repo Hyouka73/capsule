@@ -144,12 +144,12 @@
 .glassCard {
     position: absolute;
     inset: 0;
-    background-color: var(--bg-overlay-light);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-radius: 2.5rem;
-    border: var(--border-mint-thick);
-    box-shadow: var(--shadow-card);
+    background: var(--clay-bg-white);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-radius: var(--radius-xl);
+    border: var(--border-glass);
+    box-shadow: var(--clay-shadow-md);
     z-index: 0;
 }
 
@@ -264,12 +264,12 @@
     width: 100%;
     margin-top: 0.75rem;
     padding: 0.875rem 1.25rem;
-    background-color: var(--pastel-green-btn);
+    background: var(--gradient-mint);
     color: white;
-    border: none;
-    border-radius: var(--radius-full);
-    box-shadow: var(--shadow-chunky-mint-lg);
-    transition: all 0.15s;
+    border: 1px solid rgba(255, 255, 255, 0.40);
+    border-radius: var(--radius-pill);
+    box-shadow: var(--clay-shadow-mint);
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -277,17 +277,20 @@
     cursor: pointer;
     position: relative;
     overflow: hidden;
-    font-family: var(--font-fredoka);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.15rem;
+    touch-action: manipulation;
 }
 
-.submitBtn:hover {
-    background-color: var(--pastel-shadow-mint);
-    box-shadow: var(--shadow-chunky-mint-lg);
+.submitBtn:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: var(--clay-shadow-mint-hover);
 }
 
-.submitBtn:active {
-    box-shadow: var(--shadow-chunky-mint-lg-active);
-    transform: translateY(6px);
+.submitBtn:active:not(:disabled) {
+    box-shadow: var(--clay-shadow-pressed);
+    transform: translateY(1px) scale(0.97);
 }
 
 .submitBtn:disabled {

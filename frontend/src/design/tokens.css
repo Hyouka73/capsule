@@ -1,86 +1,193 @@
-/* 
-  Project Capsule — Design Tokens
-  Paleta de lujo: Deep Navy, Champagne Gold, Cream, y Glassmorphism.
+/*
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║     CAPSULE — Design System: "Warm & Cozy"                       ║
+  ║     Style: Chunky Clay — Solid surfaces, no glassmorphism        ║
+  ║                                                                  ║
+  ║  PHILOSOPHY:                                                     ║
+  ║  • Surfaces are solid, opaque, warm — like a cozy café           ║
+  ║  • Elements look soft and squeezable (claymorphism)              ║
+  ║  • No blurs, no transparency — warm and real                     ║
+  ║  • Colors: rose, peach, cream — loving and affectionate          ║
+  ║  • Fredoka font for that friendly, round feel                    ║
+  ╚══════════════════════════════════════════════════════════════════╝
 */
 
 :root {
-    /* --- Colors --- */
-    --bg-main: #fff0f3;
-    --bg-card: #ffffff;
-    --bg-input: #fff2f5;
 
-    /* Cute Pastel Palette */
-    --pastel-bg: #fff0f3;
-    --pastel-sage: #b7e4c7;
-    --pastel-sage-dark: #95d5b2;
-    --pastel-rose: #ffb7b2;
-    --pastel-rose-light: #ffe5e5;
-    --pastel-green-btn: #88d8b0;
-    --pastel-text: #8c6a6a;
-    --pastel-text-muted: #bcacad;
-    --pastel-shadow-mint: #74c69d;
-    --pastel-shadow-mint-active: #5eb887;
-    --pastel-shadow-pink: #e87a8e;
+    /* ──────────────────────────────────────────────
+       PALETTE — Warm & Romantic
+    ────────────────────────────────────────────── */
+    --pastel-bg:           #fff9fa;
+    --pastel-cream:        #fffdf2;
+    --pastel-rose:         #ffadc7;  /* Soft Petal Pink */
+    --pastel-rose-light:   #ffccd5;
+    --pastel-peach:        #ffe5ec;
+    --pastel-mint:         #95d5b2;  /* Creamy Macaron Mint */
+    --pastel-sage:         #b7e4c7;
+    --pastel-yellow:       #faedcd;
+    --pastel-lavender:     #f4d9ff;
+    --pastel-text:         #4a3232;  /* Deep warm reddish-brown */
+    --pastel-text-muted:   #8a7070;
+    --pastel-mint-dark:    #74c69d;
+    --pastel-rose-dark:    #ff8fab;  /* Deeper Petal Pink for shadows */
 
-    /* Mappings */
-    --text-primary: var(--pastel-text);
-    --text-muted: var(--pastel-text-muted);
-    --text-inverse: #ffffff;
+    /* Legacy token aliases */
+    --pastel-green-btn:    #95d5b2;
+    --font-fredoka:        'Fredoka', sans-serif;
 
-    /* States */
-    --color-success: var(--pastel-green-btn);
-    --color-error: #ff758f;
-    --color-warning: #ffd166;
-    --color-info: #a2d2ff;
+    /* ──────────────────────────────────────────────
+       SEMANTIC MAPPINGS
+    ────────────────────────────────────────────── */
+    --bg-main:              #fff9fa;
+    --bg-card:              #ffffff;
+    --bg-input:             #ffffff;
+    --bg-overlay:           #fff9fa;
+    --bg-overlay-strong:    #fff9fa;
+    --bg-dots-pattern:      radial-gradient(var(--pastel-pink) 1.5px, transparent 1.5px);
+    --bg-dots-size:         24px 24px;
 
-    /* --- Glassmorphism --- */
-    --glass-bg: rgba(255, 255, 255, 0.85);
-    --glass-border: rgba(255, 143, 171, 0.25);
-    --glass-blur: blur(12px);
+    --text-primary:          #4a3232;
+    --text-secondary:        #6b4d4d;
+    --text-muted:            #8a7070;
+    --text-inverse:          #ffffff;
 
-    /* --- Typography --- */
-    --font-display: 'Fredoka', sans-serif;
-    --font-body: 'Varela Round', sans-serif;
+    --color-success:         var(--pastel-mint);
+    --color-error:           #ff758f;
+    --color-warning:         #ffb400;
+    --color-info:            #a0e7e5;
 
-    /* --- Border Radius --- */
-    --radius-sm: 0.4rem;
-    --radius-md: 0.75rem;
-    --radius-lg: 1.25rem;
-    --radius-pill: 9999px;
-    --radius-card: 2rem;
+    /* ──────────────────────────────────────────────
+       ACCENT
+    ────────────────────────────────────────────── */
+    --accent-primary:        var(--pastel-rose);
+    --accent-secondary:      var(--pastel-peach);
+    --accent-soft:           rgba(255, 143, 171, 0.20);
+    --accent-border:         rgba(255, 143, 171, 0.40);
+
+    /* ──────────────────────────────────────────────
+       CLAY SURFACES
+    ────────────────────────────────────────────── */
+    --clay-bg-white:         #ffffff;
+    --clay-bg-rose:          #ffeef2;
+    --clay-bg-mint:          #e9f9f0;
+    --clay-bg-peach:         #fff4f7;
+
+    /* ──────────────────────────────────────────────
+       SHADOWS — Deep & Loving Macaron style
+    ────────────────────────────────────────────── */
+
+    /* Default neutral shadows */
+    --clay-shadow-sm:
+        0 4px 0 rgba(74, 50, 50, 0.12),
+        0 4px 10px rgba(74, 50, 50, 0.05);
+
+    --clay-shadow-md:
+        0 6px 0 rgba(74, 50, 50, 0.15),
+        0 8px 18px rgba(74, 50, 50, 0.08);
+
+    --clay-shadow-lg:
+        0 10px 0 rgba(74, 50, 50, 0.18),
+        0 12px 28px rgba(74, 50, 50, 0.10);
+
+    /* Rose / Pink tinted — Petal Rose Shadow */
+    --clay-shadow-rose:
+        0 6px 0 var(--pastel-rose-dark),
+        0 8px 18px rgba(255, 143, 171, 0.22);
+
+    --clay-shadow-rose-hover:
+        0 8px 0 var(--pastel-rose-dark),
+        0 10px 24px rgba(255, 143, 171, 0.30);
+
+    /* Mint / Green tinted — Macaron Mint Shadow */
+    --clay-shadow-mint:
+        0 6px 0 #74c69d,
+        0 8px 18px rgba(116, 198, 157, 0.25);
+
+    --clay-shadow-mint-hover:
+        0 8px 0 #74c69d,
+        0 10px 24px rgba(116, 198, 157, 0.35);
+
+    /* Pressed state */
+    --clay-shadow-pressed:
+        0 2px 0 rgba(74, 50, 50, 0.20),
+        inset 0 4px 8px rgba(0,0,0,0.05);
+
+    /* ──────────────────────────────────────────────
+       LEGACY SHADOW TOKENS
+    ────────────────────────────────────────────── */
+    --shadow-chunky-rose:
+        0 6px 0 var(--pastel-rose-dark),
+        0 8px 16px rgba(255, 143, 171, 0.22);
+
+    --shadow-chunky-rose-soft:
+        0 4px 0 var(--pastel-rose-light),
+        0 6px 12px rgba(255, 204, 213, 0.15);
+
+    --shadow-chunky-mint:
+        0 6px 0 #74c69d,
+        0 8px 16px rgba(116, 198, 157, 0.25);
+
+    --shadow-chunky-mint-deep:
+        0 7px 0 #52b788,
+        0 10px 20px rgba(82, 183, 136, 0.30);
+
+    --shadow-chunky-mint-soft:
+        0 4px 0 #b7e4c7,
+        0 6px 12px rgba(183, 228, 199, 0.15);
+
+    --shadow-card:
+        0 4px 0 rgba(92, 61, 78, 0.12),
+        0 6px 16px rgba(92, 61, 78, 0.08);
+
+    --shadow-card-sm:
+        0 2px 0 rgba(92, 61, 78, 0.10),
+        0 4px 8px rgba(92, 61, 78, 0.06);
+
+    /* Kept for components that reference it */
+    --clay-shadow-glass:     var(--clay-shadow-md);
+
+    /* ──────────────────────────────────────────────
+       TYPOGRAPHY — Fredoka all the way
+    ────────────────────────────────────────────── */
+    --font-display:            'Fredoka', 'Varela Round', sans-serif;
+    --font-body:               'Fredoka', 'Varela Round', sans-serif;
+
+    /* ──────────────────────────────────────────────
+       BORDER RADIUS — Squishy & Round
+    ────────────────────────────────────────────── */
+    --radius-xs:    0.375rem;   /* ~6px */
+    --radius-sm:    0.625rem;   /* ~10px */
+    --radius-md:    1.00rem;    /* ~16px */
+    --radius-lg:    1.375rem;   /* ~22px */
+    --radius-xl:    1.875rem;   /* ~30px */
+    --radius-card:  1.5rem;
+    --radius-pill:  999px;
     --radius-photo: 14px;
 
-    /* --- Shadows --- */
-    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
-    --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.5);
-    --shadow-card: 0 8px 30px -4px rgba(255, 183, 178, 0.4);
-    --shadow-pink-glow: 0 4px 12px rgba(255, 183, 178, 0.3);
-    --shadow-chunky-mint: 0 6px 0 #74c69d;
-    --shadow-chunky-mint-active: 0 2px 0 #74c69d;
-    --shadow-chunky-mint-deep: 0 6px 0 #5eb887;
-    --shadow-chunky-pink: 0 6px 0 #e87a8e;
-    --shadow-chunky-amber: 0 5px 0 #D4891A;
+    /* ──────────────────────────────────────────────
+       BORDERS — Warm & visible
+    ────────────────────────────────────────────── */
+    --border-glass:          2px solid rgba(255, 214, 224, 0.60);
+    --border-glass-pink:     2px solid rgba(255, 143, 171, 0.30);
+    --border-mint:           2px solid rgba(116, 198, 157, 0.40);
+    --border-mint-thick:     3px solid rgba(116, 198, 157, 0.50);
+    --border-rose:           2px solid rgba(255, 143, 171, 0.35);
+    --border-muted:          1px solid rgba(92, 61, 78, 0.10);
 
-    /* --- Borders --- */
-    --border-mint: 2px solid rgba(183, 228, 199, 0.4);
-    --border-mint-thick: 3px solid rgba(183, 228, 199, 0.4);
-    --border-mint-input: 4px solid #b7e4c7;
-
-    /* --- Gradients --- */
-    --gradient-mint: linear-gradient(135deg, #a8edca, #74c69d);
-    --gradient-mint-soft: linear-gradient(135deg, #a8edca, #88d8b0);
-    --gradient-rose: linear-gradient(135deg, #ffb7b2, #ff8fa3);
-    --gradient-amber: linear-gradient(135deg, #FFD166, #F5A623);
-
-    /* --- Backgrounds --- */
-    --bg-dots-pattern: radial-gradient(var(--pastel-rose-light) 1px, transparent 1px);
-    --bg-overlay: rgba(255, 240, 243, 0.88);
-    --bg-overlay-strong: rgba(255, 240, 243, 0.96);
-    --bg-overlay-light: rgba(255, 255, 255, 0.85);
+    /* ──────────────────────────────────────────────
+       GRADIENTS
+    ────────────────────────────────────────────── */
+    --gradient-mint:         linear-gradient(135deg, #95e1ba, #52b788);
+    --gradient-rose:         linear-gradient(135deg, #ffadc7, #ff8fab);
+    --gradient-peach:        linear-gradient(135deg, #ffccd5, #ffadc7);
+    --gradient-warm:         linear-gradient(160deg, #fff5f7 0%, #fffbf0 100%);
+    --gradient-amber:        linear-gradient(135deg, #ffd166, #ff9f1c);
+    --gradient-lavender:     linear-gradient(135deg, #d4aaff, #c77dff);
 }
 
-/* --- Global Inheritance --- */
+/* ──────────────────────────────────────────────────
+   GLOBAL INHERITANCE
+────────────────────────────────────────────────── */
 body {
     background-color: var(--bg-main);
     color: var(--text-primary);
@@ -89,10 +196,7 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-h1,
-h2,
-h3,
-h4 {
+h1, h2, h3, h4 {
     font-family: var(--font-display);
     margin: 0;
 }
@@ -102,7 +206,6 @@ button {
     cursor: pointer;
 }
 
-input,
-textarea {
+input, textarea, select {
     font-family: var(--font-body);
 }

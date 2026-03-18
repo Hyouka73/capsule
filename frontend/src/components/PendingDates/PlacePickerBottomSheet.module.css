@@ -13,20 +13,20 @@
 }
 
 .bottomSheet {
-    background: var(--bg-main);
+    background: #ffffff;
     width: 100%;
     max-width: 600px;
-    /* Optional constraint for larger screens */
     height: 85vh;
-    border-top-left-radius: 24px;
-    border-top-right-radius: 24px;
+    border-top-left-radius: var(--radius-xl);
+    border-top-right-radius: var(--radius-xl);
     padding: 24px;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--clay-shadow-lg);
+    border: 2px solid var(--pastel-rose-light);
+    border-bottom: none;
     position: relative;
     overflow: hidden;
-    /* Hide overflow to keep border radius */
 }
 
 .header {
@@ -68,8 +68,8 @@
 }
 
 .closeBtn:hover {
-    background: var(--glass-bg);
-    color: var(--text-primary);
+    background: var(--clay-bg-rose);
+    color: var(--pastel-rose);
 }
 
 .searchSection {
@@ -136,21 +136,21 @@
 }
 
 .placeItemActive {
-    border-color: var(--pastel-green-btn);
-    background: white;
-    box-shadow: var(--shadow-chunky-mint-soft);
+    border-color: var(--pastel-rose);
+    background: var(--clay-bg-rose);
+    box-shadow: var(--clay-shadow-rose);
 }
 
 .checkIcon {
     margin-left: auto;
-    color: var(--pastel-green-btn);
+    color: var(--pastel-rose);
     font-size: 28px;
 }
 
 .placeEmoji {
     font-size: 2rem;
     margin-right: 16px;
-    background: var(--glass-bg);
+    background: var(--clay-bg-rose);
     width: 48px;
     height: 48px;
     display: flex;
@@ -205,20 +205,22 @@
     gap: 12px;
     font-size: 1.1rem;
     padding: 16px;
-    background: var(--pastel-green-btn) !important;
+    background: var(--pastel-rose) !important;
     color: white !important;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-chunky-mint);
-    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 3px solid rgba(255, 255, 255, 0.40);
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow-chunky-rose);
+    transition: transform 0.15s ease, box-shadow 0.15s;
 }
 
 .confirmBtn:hover:not(:disabled) {
     transform: scale(1.02) translateY(-2px);
-    box-shadow: 0 8px 24px rgba(104, 211, 145, 0.4);
+    box-shadow: var(--clay-shadow-rose-hover);
 }
 
 .confirmBtn:active:not(:disabled) {
-    transform: scale(0.98);
+    transform: translateY(3px);
+    box-shadow: var(--clay-shadow-pressed);
 }
 
 .confirmBtn:disabled {

@@ -11,15 +11,16 @@
 }
 
 .card {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    background: var(--clay-bg-white);
+    border: var(--border-glass);
     backdrop-filter: var(--glass-blur);
-    border-radius: var(--radius-card);
+    -webkit-backdrop-filter: 16px;
+    border-radius: var(--radius-xl);
     padding: 60px 40px;
     width: 100%;
     max-width: 400px;
     text-align: center;
-    box-shadow: var(--shadow-card);
+    box-shadow: var(--clay-shadow-lg);
     animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -55,21 +56,28 @@
 }
 
 .btn {
-    background: var(--gradient-mint-soft);
+    background: var(--gradient-mint);
     color: white;
-    border: none;
-    padding: 14px 28px;
+    border: 1px solid rgba(255, 255, 255, 0.40);
+    padding: 14px 32px;
     border-radius: var(--radius-pill);
     font-family: var(--font-display);
-    font-weight: 600;
+    font-weight: 700;
     font-size: 1rem;
-    box-shadow: var(--shadow-chunky-mint);
-    transition: all 0.2s ease;
+    box-shadow: var(--clay-shadow-mint);
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+    touch-action: manipulation;
+    cursor: pointer;
+}
+
+.btn:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: var(--clay-shadow-mint-hover);
 }
 
 .btn:active {
-    transform: translateY(4px);
-    box-shadow: var(--shadow-chunky-mint-active);
+    transform: translateY(1px) scale(0.97);
+    box-shadow: var(--clay-shadow-pressed);
 }
 
 .btn:disabled {
@@ -81,21 +89,23 @@
 .input {
     width: 100%;
     padding: 14px 20px;
-    border-radius: var(--radius-card);
-    border: 2px solid var(--glass-border);
-    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-lg);
+    border: var(--border-mint-input);
+    background: var(--bg-input);
     color: var(--text-primary);
     font-family: var(--font-body);
     font-size: 1rem;
     margin: 20px 0;
     text-align: center;
     outline: none;
-    transition: all 0.2s ease;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    box-shadow: var(--clay-shadow-sm);
+    box-sizing: border-box;
 }
 
 .input:focus {
-    border-color: var(--color-mint);
-    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--pastel-mint);
+    box-shadow: var(--clay-shadow-mint);
 }
 
 .helpText {
@@ -111,20 +121,23 @@
 }
 
 .btnGhost {
-    background: transparent;
+    background: var(--glass-bg);
     color: var(--text-muted);
-    border: 1px solid var(--glass-border);
-    padding: 10px 20px;
+    border: var(--border-glass-pink);
+    padding: 10px 24px;
     border-radius: var(--radius-pill);
     font-family: var(--font-display);
     font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: var(--clay-shadow-sm);
+    touch-action: manipulation;
 }
 
 .btnGhost:hover {
-    background: rgba(255, 255, 255, 0.05);
+    transform: translateY(-1px);
     color: var(--text-primary);
+    box-shadow: var(--clay-shadow-md);
 }
 
 @keyframes fadeIn {

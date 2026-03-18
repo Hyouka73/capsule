@@ -128,16 +128,16 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start; /* Fix: Empieza arriba en pantallas pequeñas */
+    justify-content: flex-start;
     align-items: center;
     text-align: center;
     padding: 2rem 1rem;
-    background: rgba(255, 255, 255, 0.4);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--glass-border);
-    border-radius: 32px;
-    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.03);
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: var(--border-glass);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--clay-shadow-glass);
     margin-top: 1rem;
 }
 
@@ -226,10 +226,14 @@
 
 .placeholderModule button {
     margin-top: 1.5rem;
-    padding: 10px 20px;
-    border-radius: 12px;
-    background: var(--pastel-rose);
-    border: none;
+    padding: 10px 24px;
+    border-radius: var(--radius-pill);
+    background: var(--gradient-rose);
+    border: 1px solid rgba(255,255,255,0.4);
     color: white;
-    font-weight: 600;
-}
+    font-weight: 700;
+    font-family: var(--font-display);
+    box-shadow: var(--clay-shadow-rose);
+    cursor: pointer;
+    touch-action: manipulation;
+}

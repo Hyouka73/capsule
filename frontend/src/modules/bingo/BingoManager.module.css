@@ -93,10 +93,12 @@
 /* Bingo Board */
 .boardContainer {
     background: var(--glass-bg);
-    border-radius: var(--radius-lg);
-    border: 3px solid var(--pastel-rose);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-radius: var(--radius-xl);
+    border: 1px solid rgba(136, 216, 176, 0.40);
     padding: 0.5rem;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--clay-shadow-mint);
     max-width: 800px;
     margin: 0 auto;
     width: 100%;
@@ -191,19 +193,21 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    border: 1px solid var(--glass-border);
-    background: var(--bg-card);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border: var(--border-glass);
+    background: var(--clay-bg-white);
+    box-shadow: var(--clay-shadow-sm);
     font-size: 1rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.2s;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    touch-action: manipulation;
 }
 
 .actionBtn:hover {
-    transform: scale(1.15);
+    transform: scale(1.15) translateY(-1px);
+    box-shadow: var(--clay-shadow-md);
 }
 
 .completedBadge {

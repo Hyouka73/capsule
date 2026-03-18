@@ -1,11 +1,9 @@
-/* Bottom Sheet Modal */
+/* Bottom Sheet Modal — Warm Chunky Clay */
 .modalOverlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    z-index: 1000;
+    background: rgba(92, 61, 78, 0.35);
+    z-index: 5000;
     display: flex;
     align-items: flex-end;
     justify-content: center;
@@ -14,71 +12,78 @@
 .modalContent {
     background: #ffffff;
     width: 100%;
-    border-radius: 32px 32px 0 0;
-    padding: 16px 24px 48px;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    padding: 20px 24px calc(env(safe-area-inset-bottom, 0px) + 28px);
     text-align: center;
-    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--clay-shadow-lg);
     display: flex;
     flex-direction: column;
     align-items: center;
+    border-top: 2px solid var(--pastel-rose-light);
 }
 
 .dragHandle {
-    width: 40px;
-    height: 4px;
-    background: var(--text-muted);
-    opacity: 0.3;
-    border-radius: 4px;
-    margin-bottom: 24px;
+    width: 44px;
+    height: 5px;
+    background: var(--pastel-rose-light);
+    border-radius: 99px;
+    margin-bottom: 20px;
 }
 
 .modalEmoji {
     font-size: 64px;
     line-height: 1;
     margin-bottom: 16px;
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
 }
 
 .modalContent h2 {
     font-family: var(--font-display);
-    font-size: 24px;
-    font-weight: bold;
+    font-size: 1.5rem;
+    font-weight: 800;
     color: var(--text-primary);
-    margin: 0 0 12px;
+    margin-bottom: 8px;
 }
 
 .modalContent p {
     font-family: var(--font-body);
-    font-size: 14px;
-    color: var(--text-primary);
-    margin: 0 0 24px;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+    font-weight: 600;
+    line-height: 1.4;
 }
 
 .actions {
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
 }
 
 .confirmBtn {
     width: 100%;
-    background: var(--gradient-mint);
+    background: var(--pastel-rose);
     color: white;
-    border: none;
+    border: 3px solid rgba(255, 255, 255, 0.35);
     padding: 16px 20px;
     border-radius: var(--radius-pill);
     font-family: var(--font-display);
-    font-weight: bold;
-    font-size: 16px;
+    font-weight: 800;
+    font-size: 1rem;
     cursor: pointer;
-    box-shadow: var(--shadow-chunky-mint);
-    transition: all 0.2s;
+    box-shadow: var(--shadow-chunky-rose);
+    transition: transform 0.15s ease, box-shadow 0.15s;
+    touch-action: manipulation;
+}
+
+.confirmBtn:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--clay-shadow-rose-hover);
 }
 
 .confirmBtn:active {
     transform: translateY(4px);
-    box-shadow: var(--shadow-chunky-mint-active);
+    box-shadow: var(--clay-shadow-pressed);
 }
 
 .cancelBtn {
@@ -86,11 +91,13 @@
     border: none;
     color: var(--text-muted);
     font-family: var(--font-body);
-    font-size: 14px;
-    font-weight: bold;
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 4px;
-    padding: 12px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 10px;
     cursor: pointer;
+    transition: color 0.2s;
+}
+
+.cancelBtn:hover {
+    color: var(--text-primary);
 }

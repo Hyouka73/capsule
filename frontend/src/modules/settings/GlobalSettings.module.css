@@ -43,17 +43,18 @@
 
 .sectionCard {
     padding: 2rem;
-    border-radius: var(--radius-card);
-    background: var(--glass-bg);
+    border-radius: var(--radius-xl);
+    background: var(--clay-bg-white);
     backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--shadow-card);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: var(--border-glass);
+    box-shadow: var(--clay-shadow-md);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .sectionCard:hover {
     transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--clay-shadow-rose-hover);
 }
 
 .sectionHeader {
@@ -104,14 +105,16 @@
     align-items: center;
     gap: 1.5rem;
     padding: 1rem;
-    background: rgba(255, 255, 255, 0.4);
+    background: var(--clay-bg-white);
     border-radius: var(--radius-lg);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    transition: background 0.2s ease;
+    border: var(--border-glass);
+    box-shadow: var(--clay-shadow-sm);
+    transition: box-shadow 0.2s ease, transform 0.15s ease;
 }
 
 .toggleRow:hover {
-    background: rgba(255, 255, 255, 0.6);
+    box-shadow: var(--clay-shadow-md);
+    transform: translateY(-1px);
 }
 
 .toggleInfo {
@@ -189,14 +192,15 @@
     left: 0;
     right: 0;
     padding: 1.25rem 2rem;
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(20px);
-    border-top: 1px solid var(--glass-border);
+    background: var(--glass-bg-strong);
+    backdrop-filter: var(--glass-blur-strong);
+    -webkit-backdrop-filter: var(--glass-blur-strong);
+    border-top: var(--border-glass);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    box-shadow: 0 -10px 25px rgba(255, 183, 178, 0.15);
+    box-shadow: var(--clay-shadow-glass);
 }
 
 .footerContent {

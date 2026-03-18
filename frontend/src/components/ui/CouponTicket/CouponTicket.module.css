@@ -3,10 +3,9 @@
     display: flex;
     flex-direction: row;
     min-height: 150px;
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     overflow: hidden;
-    /* Cierra los bordes exteriores redondos */
-    box-shadow: var(--shadow-card);
+    box-shadow: var(--clay-shadow-md);
     background: transparent;
     border: none;
     padding: 0;
@@ -80,18 +79,17 @@
 /* Lado derecho (.ticketBody) */
 .ticketBody {
     flex: 1;
-    background: var(--bg-card);
-    border-radius: 0 16px 16px 0;
+    background: var(--clay-bg-white);
+    border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
     border: var(--border-mint);
-    border-left: 2px dashed rgba(183, 228, 199, 0.6);
-    /* Línea de corte punteada */
+    border-left: 2px dashed rgba(183, 228, 199, 0.5);
     padding: 16px 20px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     min-height: unset;
     height: auto;
-    /* Auto height para adaptarse mejor */
+    box-shadow: inset 2px 2px 6px rgba(255,255,255,0.7);
 }
 
 .couponText {
@@ -135,21 +133,27 @@
     width: auto;
     background: var(--gradient-mint);
     color: white;
-    border: none;
-    padding: 8px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.40);
+    padding: 8px 18px;
     border-radius: var(--radius-pill);
     font-family: var(--font-display);
-    font-weight: bold;
+    font-weight: 700;
     font-size: 14px;
     cursor: pointer;
-    box-shadow: var(--shadow-chunky-mint);
-    transition: all 0.2s;
+    box-shadow: var(--clay-shadow-mint);
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
     white-space: nowrap;
+    touch-action: manipulation;
+}
+
+.redeemBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--clay-shadow-mint-hover);
 }
 
 .redeemBtn:active {
-    transform: translateY(4px);
-    box-shadow: var(--shadow-chunky-mint-active);
+    transform: translateY(1px) scale(0.97);
+    box-shadow: var(--clay-shadow-pressed);
 }
 
 /* Used State */

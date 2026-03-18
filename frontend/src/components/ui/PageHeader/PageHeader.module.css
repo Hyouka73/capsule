@@ -1,54 +1,57 @@
 .header {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    padding: 0 0.5rem;
 }
 
 .title {
     font-family: var(--font-display);
-    font-size: 2.25rem;
-    font-weight: 700;
+    font-size: 2.5rem;
+    font-weight: 800;
     color: var(--text-primary);
     margin: 0;
-    line-height: 1.2;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
 }
 
 .subtitle {
-    font-size: 0.9rem;
-    color: var(--text-muted);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    color: var(--text-secondary);
     margin: 0.25rem 0 0;
+    font-weight: 600;
 }
 
 .newBtn {
-    background: linear-gradient(135deg, var(--pastel-rose), var(--pastel-rose-light));
-    color: var(--text-primary);
-    border: none;
-    font-weight: 600;
-    box-shadow: 0 4px 12px rgba(255, 183, 178, 0.4);
+    margin-top: 1rem;
+    background: var(--gradient-rose);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: var(--radius-pill);
+    padding: 12px 24px;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1rem;
+    box-shadow: var(--clay-shadow-rose);
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    transition: all 0.3s ease;
-}
-
-.btnIcon {
-    font-size: 1.1em;
+    justify-content: center;
+    gap: 0.75rem;
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .newBtn:hover {
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 6px 16px rgba(255, 183, 178, 0.5);
+    transform: translateY(-4px) scale(1.03);
+    box-shadow: var(--clay-shadow-rose-hover);
 }
 
-@media (max-width: 600px) {
-    .header {
-        flex-direction: column;
-        align-items: stretch;
-    }
+.newBtn:active {
+    transform: translateY(2px) scale(0.96);
+    box-shadow: var(--clay-shadow-pressed);
+}
 
-    .newBtn {
-        justify-content: center;
-    }
+.btnIcon {
+    font-size: 20px;
 }

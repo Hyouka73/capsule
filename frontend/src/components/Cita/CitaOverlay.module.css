@@ -1,3 +1,8 @@
+/* =========================================================================
+   CITA OVERLAY — Reusing original chunky tokens
+   No changes to logic, just ensure legacy tokens resolve
+   ========================================================================= */
+
 .citaOverlay {
     position: absolute;
     inset: 0;
@@ -14,15 +19,15 @@
 .citaCard {
     width: 100%;
     margin: 0 16px;
-    background: var(--bg-card);
-    border: var(--border-mint-thick);
+    background: #ffffff;
+    border: 2px solid var(--pastel-rose-light);
     border-radius: var(--radius-card);
     padding: 24px;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 16px;
-    box-shadow: var(--shadow-card);
+    box-shadow: var(--clay-shadow-md);
 }
 
 .citaHeader {
@@ -58,12 +63,10 @@
         transform: scale(0.95);
         box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7);
     }
-
     70% {
         transform: scale(1);
         box-shadow: 0 0 0 10px rgba(74, 222, 128, 0);
     }
-
     100% {
         transform: scale(0.95);
         box-shadow: 0 0 0 0 rgba(74, 222, 128, 0);
@@ -81,21 +84,21 @@
     width: 42px;
     height: 42px;
     border-radius: 50%;
-    background: white;
-    border: 2px solid var(--pastel-rose);
+    background: var(--clay-bg-rose);
+    border: 2px solid var(--pastel-rose-light);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     color: var(--pastel-rose);
-    box-shadow: var(--shadow-chunky-rose-soft, 0 4px 0 #fadadd);
-    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: var(--clay-shadow-sm);
+    transition: transform 0.15s, box-shadow 0.15s;
     flex-shrink: 0;
 }
 
 .citaClose:active {
-    transform: translateY(4px);
-    box-shadow: none;
+    transform: translateY(3px);
+    box-shadow: var(--clay-shadow-pressed);
 }
 
 .separator {
@@ -106,15 +109,15 @@
 }
 
 .bingoPill {
-    background: var(--pastel-green-btn);
+    background: var(--pastel-mint);
     color: white;
-    font-family: var(--font-fredoka);
+    font-family: var(--font-display);
     font-weight: 700;
     font-size: 13px;
     padding: 6px 16px;
     border-radius: var(--radius-pill);
     margin-bottom: -4px;
-    box-shadow: 0 4px 12px rgba(116, 198, 157, 0.2);
+    box-shadow: var(--clay-shadow-mint);
 }
 
 .progressRow {
@@ -140,20 +143,20 @@
 }
 
 .circleFilled {
-    background: var(--gradient-mint);
-    border-color: var(--pastel-green-btn);
+    background: var(--pastel-mint);
+    border-color: var(--pastel-mint-dark);
 }
 
 .progressLabel {
-    font-family: var(--font-fredoka);
+    font-family: var(--font-display);
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--text-muted);
     transition: color 0.3s;
 }
 
 .progressComplete {
-    color: var(--pastel-green-btn);
+    color: var(--pastel-mint-dark);
     font-weight: 700;
 }
 
@@ -161,16 +164,16 @@
     width: 120px;
     height: 120px;
     border-radius: 50%;
-    background: var(--gradient-mint);
+    background: var(--pastel-mint);
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
-    border: 3px solid white;
+    border: 4px solid white;
     box-shadow: var(--shadow-chunky-mint-deep);
     cursor: pointer;
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s;
 }
 
 .bigCamera span {
@@ -179,11 +182,11 @@
 
 .bigCamera:active {
     transform: translateY(6px) scale(0.95);
-    box-shadow: none;
+    box-shadow: var(--clay-shadow-pressed);
 }
 
 .bigCameraLabel {
-    font-family: var(--font-fredoka);
+    font-family: var(--font-display);
     font-weight: 700;
     font-size: 16px;
     color: var(--text-primary);
@@ -200,31 +203,31 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    background: var(--bg-card);
-    border: 2px solid var(--pastel-sage);
+    background: #ffffff;
+    border: 2px solid var(--pastel-rose-light);
     border-radius: var(--radius-pill);
     padding: 10px 18px;
     color: var(--text-primary);
-    font-family: var(--font-fredoka);
+    font-family: var(--font-display);
     font-weight: 600;
     font-size: 14px;
     cursor: pointer;
-    box-shadow: var(--shadow-chunky-mint-soft);
+    box-shadow: var(--clay-shadow-sm);
     transition: transform 0.1s, box-shadow 0.1s;
 }
 
 .citaAction:active {
-    transform: translateY(4px);
-    box-shadow: none;
+    transform: translateY(3px);
+    box-shadow: var(--clay-shadow-pressed);
 }
 
 .citaAction span {
     font-size: 20px;
-    color: var(--pastel-green-btn);
+    color: var(--pastel-mint-dark);
 }
 
 .citaActionDisabled {
-    opacity: 0.5;
+    opacity: 0.45;
     cursor: not-allowed;
     background-color: var(--bg-main);
     border-color: var(--border-muted);
@@ -256,14 +259,14 @@
     min-width: 60px;
     border-radius: 12px;
     object-fit: cover;
-    border: 2px solid var(--pastel-sage);
-    box-shadow: var(--shadow-chunky-mint-soft);
+    border: 2px solid var(--pastel-rose-light);
+    box-shadow: var(--clay-shadow-sm);
 }
 
 .warningBox {
-    background: #fff5f5;
-    border: 2px solid var(--pastel-rose);
-    border-radius: 16px;
+    background: var(--clay-bg-rose);
+    border: 2px solid var(--pastel-rose-light);
+    border-radius: var(--radius-lg);
     padding: 20px;
     width: 100%;
     display: flex;
@@ -274,10 +277,10 @@
 }
 
 .warningBox p {
-    font-family: var(--font-fredoka);
-    font-weight: 500;
+    font-family: var(--font-display);
+    font-weight: 600;
     font-size: 14px;
-    color: var(--pastel-rose-dark);
+    color: var(--text-primary);
     margin: 0;
     text-align: center;
     line-height: 1.5;
@@ -290,12 +293,12 @@
 }
 
 .warningBtnPrimary {
-    background: var(--gradient-rose);
+    background: var(--pastel-rose);
     color: white;
-    border: 2px solid white;
+    border: 3px solid rgba(255, 255, 255, 0.40);
     padding: 12px;
     border-radius: var(--radius-pill);
-    font-family: var(--font-fredoka);
+    font-family: var(--font-display);
     font-weight: 700;
     font-size: 15px;
     cursor: pointer;
@@ -305,7 +308,7 @@
 
 .warningBtnPrimary:active {
     transform: translateY(4px);
-    box-shadow: none;
+    box-shadow: var(--clay-shadow-pressed);
 }
 
 .warningBtnSecondary {
@@ -322,12 +325,12 @@
 .saveBtn {
     width: 100%;
     padding: 16px;
-    background: var(--gradient-mint);
+    background: var(--pastel-mint);
     color: white;
-    border: 3px solid white;
+    border: 3px solid rgba(255, 255, 255, 0.40);
     border-radius: var(--radius-pill);
-    font-family: var(--font-fredoka);
-    font-size: 1.2rem;
+    font-family: var(--font-display);
+    font-size: 1.1rem;
     font-weight: 800;
     cursor: pointer;
     display: flex;
@@ -340,5 +343,5 @@
 
 .saveBtn:active {
     transform: translateY(4px);
-    box-shadow: none;
+    box-shadow: var(--clay-shadow-pressed);
 }
