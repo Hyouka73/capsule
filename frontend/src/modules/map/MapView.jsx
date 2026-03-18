@@ -1,21 +1,17 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Map, MapMarker, MarkerContent, MarkerPopup, MarkerLabel, MapControls } from '@/components/ui/map';
-import PhotoViewer from '../../components/ui/PhotoViewer/PhotoViewer';
+import { Map, MapMarker, MarkerContent, MapControls, MarkerLabel } from '@/components/ui/map';
 import MapPin from '../../components/ui/MapPin/MapPin';
-import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
-import PendingDatesList from '../../components/PendingDates/PendingDatesList';
-import PendingDateForm from '../../components/PendingDates/PendingDateForm';
 import { subscribeToGlobalSettings } from '../../services/settingsService';
-import { motion, AnimatePresence } from 'framer-motion';
-import SnapshotButton from '../snapshots/components/SnapshotButton';
 import { toast } from '../../components/ui/PastelToast/PastelToast';
 import { useAuth } from '../../hooks/useAuth';
-import { useOfflineQueue } from '../../hooks/useOfflineQueue';
 import styles from './MapView.module.css';
 import { usePlaces } from './hooks/usePlaces';
 import { getMemories } from '../../apiClient';
-import Memory from '../../models/Memory';
+
+// Sub-components
 import PlaceDetailDrawer from './components/PlaceDetailDrawer/PlaceDetailDrawer';
+import SearchOverlay from './components/SearchOverlay';
+import ActionFabs from './components/ActionFabs';
 
 export default function MapView({
     onPlaceSelected,
@@ -31,7 +27,6 @@ export default function MapView({
     onOpenPhotoViewer
 }) {
     const { isPartner, isAdmin } = useAuth();
-    const { queueMemory } = useOfflineQueue();
     const [selectedPlace, setSelectedPlace] = useState(null);
     const [activeFilter, setActiveFilter] = useState('todos');
     const [globalSettings, setGlobalSettings] = useState(null);
@@ -49,7 +44,6 @@ export default function MapView({
             if (data) setGlobalSettings(data);
         });
 
-        // Intentar geolocalización inicial si el usuario no tiene recuerdos aún
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
@@ -146,7 +140,6 @@ export default function MapView({
         const validPlaces = places.filter(p => (p.coordinates?.lat || p.coordinates?.latitude) && (p.coordinates?.lng || p.coordinates?.longitude));
         if (validPlaces.length === 0) return;
 
-        // Calculate bounds
         let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
         validPlaces.forEach(p => {
             const lng = p.coordinates.lng;
@@ -158,8 +151,6 @@ export default function MapView({
         });
 
         const center = [(minLng + maxLng) / 2, (minLat + maxLat) / 2];
-
-        // Simple heuristic for zoom level based on spread
         const lngDiff = maxLng - minLng;
         const latDiff = maxLat - minLat;
         const maxDiff = Math.max(lngDiff, latDiff);
@@ -169,10 +160,7 @@ export default function MapView({
         else if (maxDiff > 0.1) zoom = 12;
         else if (maxDiff > 0.05) zoom = 13;
 
-        setViewport({
-            center,
-            zoom
-        });
+        setViewport({ center, zoom });
         toast.info('Mostrando todo ✨', 'Encontramos todos tus recuerdos');
     }, [places]);
 
@@ -186,7 +174,7 @@ export default function MapView({
         if (selectedPlace && selectedPlace.id) {
             const fetchMemories = async () => {
                 setLoadingMemories(true);
-                setPlaceMemories([]); // Clear previous
+                setPlaceMemories([]);
                 try {
                     const result = await getMemories({ placeId: selectedPlace.id, limit: 10 });
                     if (result.success) {
@@ -226,13 +214,12 @@ export default function MapView({
                     theme="light"
                     onClick={handleMapClick}
                 >
-                    <MapControls position="bottom-right" showZoom={true} />
+                    {/* Controles de zoom eliminados por petición del usuario */}
 
                     {filteredPlaces.filter(p => (p.coordinates?.lat || p.coordinates?.latitude) && (p.coordinates?.lng || p.coordinates?.longitude)).map(place => {
                         const isSelected = selectedPlace?.id === place.id;
                         const zoom = viewport?.zoom || 13;
 
-                        // Icon size logic
                         let size = 'small';
                         if (place.visitCount >= 5) size = 'large';
                         else if (place.visitCount >= 2) size = 'medium';
@@ -277,108 +264,34 @@ export default function MapView({
 
             {/* ── OVERLAY LAYER ── */}
             <div className={styles.overlay}>
-                {/* Top Controls: Search & Filters */}
-                <div className={styles.topControls}>
-                    <div className={`${styles.searchWrapper} ${isSearchActive ? styles.searchWrapperActive : ''}`}>
-                        <AnimatePresence mode="wait">
-                            {!isSearchActive ? (
-                                <motion.button
-                                    key="fab"
-                                    className={styles.searchFabBtn}
-                                    onClick={() => setIsSearchActive(true)}
-                                    initial={{ scale: 0.8, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    exit={{ scale: 0.8, opacity: 0 }}
-                                >
-                                    <span className="material-symbols-outlined">search</span>
-                                </motion.button>
-                            ) : (
-                                <motion.div
-                                    key="input"
-                                    className={styles.searchContainer}
-                                    initial={{ width: 0, opacity: 0 }}
-                                    animate={{ width: '100%', opacity: 1 }}
-                                    exit={{ width: 0, opacity: 0 }}
-                                >
-                                    <KawaiiInput
-                                        placeholder="Busca un lugar mágico..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        onClear={() => {
-                                            setSearchQuery('');
-                                            setIsSearchActive(false);
-                                        }}
-                                        autoFocus
-                                    />
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
+                <SearchOverlay 
+                    isSearchActive={isSearchActive}
+                    setIsSearchActive={setIsSearchActive}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    activeFilters={activeFilters}
+                    activeFilter={activeFilter}
+                    setActiveFilter={setActiveFilter}
+                    placesLoading={placesLoading}
+                    places={places}
+                    onPlaceSelected={onPlaceSelected}
+                    isPartner={isPartner}
+                    isAdmin={isAdmin}
+                    onOpenSnapshot={onOpenSnapshot}
+                    onOpenCamera={onOpenCamera}
+                />
 
-                    {!isSearchActive && (
-                        <div className={styles.filtersScroll}>
-                            {activeFilters.map(opt => (
-                                <button
-                                    key={opt.id}
-                                    className={`${styles.chip} ${activeFilter === opt.id ? styles.chipActive : ''}`}
-                                    onClick={() => {
-                                        setActiveFilter(opt.id);
-                                        if (onPlaceSelected) onPlaceSelected(false);
-                                    }}
-                                >
-                                    <span
-                                        className={`material-symbols-outlined ${styles.chipIcon}`}
-                                        style={activeFilter === opt.id ? { fontVariationSettings: "'FILL' 1" } : {}}
-                                    >
-                                        {opt.icon}
-                                    </span>
-                                    {opt.label}
-                                </button>
-                            ))}
-                            {placesLoading && places.length === 0 && (
-                                <div style={{ display: 'flex', alignItems: 'center', padding: '0 10px', fontSize: '10px', opacity: 0.6 }}>
-                                    ✨ Cargando...
-                                </div>
-                            )}
-                        </div>
-                    )}
+                <ActionFabs 
+                    isPartner={isPartner}
+                    isSearchActive={isSearchActive}
+                    citaContext={citaContext}
+                    selectedPlace={selectedPlace}
+                    onSpontaneousCita={() => {
+                        const minVal = globalSettings?.citaConfig?.minPhotosSpontaneous || 5;
+                        if (onCitaContextChange) onCitaContextChange({ type: 'spontaneous', minPhotos: minVal });
+                    }}
+                />
 
-                    {/* Botón de Instantáneas (Tulip) — Residencia original top right */}
-                    {(isPartner || isAdmin) && !isSearchActive && (
-                        <div className={styles.snapshotMapBtn}>
-                            <SnapshotButton
-                                onOpenSnapshot={onOpenSnapshot}
-                                onOpenCamera={onOpenCamera}
-                            />
-                        </div>
-                    )}
-                </div>
-
-
-                {/* CITA INSTANTÁNEA (FAB bottom right) — Mantenemos la lógica pero con label correcto */}
-                <div className={styles.actionsStack}>
-                    <AnimatePresence>
-                        {isPartner && !isSearchActive && !citaContext && !selectedPlace && (
-                            <motion.div
-                                className={styles.fab}
-                                initial={{ opacity: 0, scale: 0.5, y: 50 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.5, y: 50 }}
-                                transition={{ type: 'spring', damping: 15, stiffness: 250 }}
-                            >
-                                <button className={styles.fabBtn} onClick={() => {
-                                    const minVal = globalSettings?.citaConfig?.minPhotosSpontaneous || 5;
-                                    if (onCitaContextChange) onCitaContextChange({ type: 'spontaneous', minPhotos: minVal });
-                                }}>
-                                    <span className="material-symbols-outlined">camera_alt</span>
-                                </button>
-                                <span className={styles.fabLabel}>Cita Instantánea ✨</span>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
-
-                {/* Place detail drawer component replaces the inline drawer */}
                 {!isSearchActive && (
                     <PlaceDetailDrawer
                         selectedPlace={selectedPlace}
@@ -403,8 +316,6 @@ export default function MapView({
                     />
                 )}
             </div>
-
-            {/* viewerPhotos removed - managed by parent dashboard */}
         </div>
     );
 }
