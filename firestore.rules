@@ -135,9 +135,9 @@ service cloud.firestore {
 
     // ── INSTANTANEAS ──────────────────────────────────────────────────────────
     match /instantaneas/{id} {
-      allow read: if canAccess();
-      allow create: if isAdmin();
-      allow update: if isAdmin() || (isPartner() && 
+      allow read: if isAdmin() || (isPartner() && isNotRevoked());
+      allow create: if isAdmin() || (isPartner() && isNotRevoked());
+      allow update: if isAdmin() || (isPartner() && isNotRevoked() && 
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isSeen', 'seenAt']));
       allow delete: if isAdmin();
 
@@ -169,7 +169,7 @@ service cloud.firestore {
 
     // ── APP CONFIG ───────────────────────────────────────────────────────────
     match /appConfig/{docId} {
-      allow read: if canAccess();
+      allow read: if true;
       allow write: if isAdmin();
     }
   }

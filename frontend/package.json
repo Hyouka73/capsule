@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:emulators": "VITE_USE_EMULATORS=true vite",
     "generate-sw": "node scripts/generate-sw.js",
     "prebuild": "npm run generate-sw",
     "build": "vite build",

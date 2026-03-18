@@ -56,7 +56,7 @@ export function usePendingCitas() {
         refreshPending();
     }, [refreshPending]);
 
-    const addPendingCita = async (files, context = null) => {
+    const addPendingCita = useCallback(async (files, context = null) => {
         const db = await openDB();
         const id = crypto.randomUUID();
         const newItem = {
@@ -71,17 +71,14 @@ export function usePendingCitas() {
             context
         };
 
-        // Try to extract metadata from the first photo
         if (files.length > 0) {
             try {
                 const metadata = await autoDetectMetadata(files[0]);
                 if (metadata) {
-                    console.log('[usePendingCitas] Metadata detected for new cita:', metadata);
                     if (metadata.lat && metadata.lng) {
                         newItem.coordinates = { lat: metadata.lat, lng: metadata.lng };
                     }
                     if (metadata.dateTime) {
-                        // Use a readable format for the UI
                         newItem.originalDate = metadata.dateTime.toLocaleDateString('es-MX', {
                             weekday: 'long',
                             day: 'numeric',
@@ -89,7 +86,6 @@ export function usePendingCitas() {
                             hour: '2-digit',
                             minute: '2-digit'
                         });
-                        // Also store the raw ISO for the form date input
                         newItem.rawDate = metadata.dateTime.toISOString();
                     }
                 }
@@ -98,7 +94,6 @@ export function usePendingCitas() {
             }
         }
 
-        // Fallback for date if not extracted
         if (!newItem.originalDate) {
             newItem.originalDate = new Date().toLocaleDateString('es-MX', {
                 weekday: 'long',
@@ -119,9 +114,9 @@ export function usePendingCitas() {
             };
             tx.onerror = () => reject(tx.error);
         });
-    };
+    }, [refreshPending]);
 
-    const removePendingCita = async (id, immediate = false) => {
+    const removePendingCita = useCallback(async (id, immediate = false) => {
         if (immediate) {
             const db = await openDB();
             return new Promise((resolve, reject) => {
@@ -141,10 +136,12 @@ export function usePendingCitas() {
             });
         }
 
-        // --- Soft Delete (The User's Idea) ---
-        setHiddenIds(prev => new Set(prev).add(id));
-        
-        // Schedule final deletion
+        setHiddenIds(prev => {
+            const next = new Set(prev);
+            next.add(id);
+            return next;
+        });
+
         const timer = setTimeout(() => {
             removePendingCita(id, true);
             setRemovalTimers(prev => {
@@ -155,12 +152,11 @@ export function usePendingCitas() {
         }, 6000);
 
         setRemovalTimers(prev => ({ ...prev, [id]: timer }));
-    };
+    }, [refreshPending]);
 
-    const restorePendingCita = async (idOrCita) => {
+    const restorePendingCita = useCallback(async (idOrCita) => {
         const id = typeof idOrCita === 'string' ? idOrCita : idOrCita.id;
         
-        // If it was just hidden, just show it back
         if (hiddenIds.has(id)) {
             if (removalTimers[id]) {
                 clearTimeout(removalTimers[id]);
@@ -178,7 +174,6 @@ export function usePendingCitas() {
             return;
         }
 
-        // If it was already gone (legacy/fallback), perform real restoration
         const cita = idOrCita;
         if (typeof cita === 'object') {
             const db = await openDB();
@@ -204,9 +199,9 @@ export function usePendingCitas() {
                 tx.onerror = () => reject(tx.error);
             });
         }
-    };
+    }, [hiddenIds, removalTimers, refreshPending]);
 
-    const updatePendingCitaStatus = async (id, status) => {
+    const updatePendingCitaStatus = useCallback(async (id, status) => {
         const db = await openDB();
         return new Promise((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -225,9 +220,9 @@ export function usePendingCitas() {
             };
             tx.onerror = () => reject(tx.error);
         });
-    };
+    }, [refreshPending]);
 
-    const updatePendingCita = async (id, updates) => {
+    const updatePendingCita = useCallback(async (id, updates) => {
         const db = await openDB();
         return new Promise((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -246,11 +241,8 @@ export function usePendingCitas() {
             };
             tx.onerror = () => reject(tx.error);
         });
-    };
+    }, [refreshPending]);
 
-    /**
-     * Finds the most recent unfinished draft.
-     */
     const getActiveDraft = useCallback(async () => {
         const db = await openDB();
         return new Promise((resolve) => {
@@ -259,26 +251,22 @@ export function usePendingCitas() {
             const request = store.getAll();
             request.onsuccess = () => {
                 const results = request.result || [];
-                // A draft is an item that hasn't been "queued" for upload yet
                 const active = results.find(c => c.status === 'draft');
                 resolve(active || null);
             };
         });
     }, []);
 
-    /**
-     * Creates or updates a draft with current form data and photos.
-     */
-    const saveDraft = async (id, data, photos = []) => {
+    const saveDraft = useCallback(async (id, data, photos = []) => {
         const db = await openDB();
         const draftId = id || crypto.randomUUID();
         const draftItem = {
             id: draftId,
             status: 'draft',
             updatedAt: Date.now(),
-            data, // stores title, tags, place info, etc.
+            data,
             photos: photos.map(p => ({
-                file: p.file || p.blob, // Blob to be stored in physical memory
+                file: p.file || p.blob,
                 name: p.name || `photo_${Date.now()}.jpg`,
                 type: p.type || 'image/jpeg'
             })),
@@ -295,10 +283,13 @@ export function usePendingCitas() {
             };
             tx.onerror = () => reject(tx.error);
         });
-    };
+    }, [refreshPending]);
 
     return useMemo(() => ({
-        pendingCitas: pendingCitas.filter(c => !hiddenIds.has(c.id)),
+        pendingCitas: pendingCitas.map(cita => ({
+            ...cita,
+            isHidden: hiddenIds.has(cita.id)
+        })),
         pendingCount: pendingCount - hiddenIds.size,
         addPendingCita,
         removePendingCita,

@@ -21,6 +21,12 @@ export function AuthProvider({ children }) {
     // Register FCM Token for partners
     const registerFCM = useCallback(async (userId) => {
         try {
+            // SKIP FCM in emulator mode to avoid logs and SW evaluation errors
+            if (import.meta.env.VITE_USE_EMULATORS === 'true') {
+                console.log('[Auth] FCM skipping in emulator mode');
+                return;
+            }
+
             // Wait for messaging to be initialized (it's lazy in firebase.js)
             let messagingInstance = messaging;
             if (!messagingInstance) {

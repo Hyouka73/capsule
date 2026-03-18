@@ -1,5 +1,5 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
-import { initializeFirestore, persistentLocalCache, connectFirestoreEmulator } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, connectFirestoreEmulator } from 'firebase/firestore';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
@@ -9,11 +9,22 @@ import firebaseConfig from '../config/firebase';
 // Initialize Firebase (prevent re-initialization in HMR)
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-// Core services — initialized once
-const db = initializeFirestore(app, {
-    localCache: persistentLocalCache(),
-    experimentalAutoDetectLongPolling: true,
-});
+// Core services — initialized once (singleton pattern to avoid HMR errors)
+let db;
+try {
+    db = initializeFirestore(app, {
+        localCache: persistentLocalCache({
+            tabManager: persistentMultipleTabManager()
+        }),
+        experimentalAutoDetectLongPolling: true,
+    });
+} catch (e) {
+    if (e.code === 'failed-precondition' || e.message?.includes('already been called')) {
+        db = getFirestore(app);
+    } else {
+        throw e;
+    }
+}
 const storage = getStorage(app);
 const auth = getAuth(app);
 
@@ -22,9 +33,12 @@ const functions = getFunctions(app, 'us-central1');
 
 // Messaging — lazy initialization
 let messaging = null;
-isSupported().then(supported => {
-    if (supported) messaging = getMessaging(app);
-});
+// SKIP Messaging in emulator mode to avoid installations 400 errors during Callable calls
+if (import.meta.env.VITE_USE_EMULATORS !== 'true') {
+    isSupported().then(supported => {
+        if (supported) messaging = getMessaging(app);
+    });
+}
 
 // In DEV mode, always connect the Functions emulator (port 5001).
 // Only connect Firestore/Storage/Auth emulators when VITE_USE_EMULATORS=true
