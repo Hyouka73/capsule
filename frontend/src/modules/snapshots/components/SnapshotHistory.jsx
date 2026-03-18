@@ -25,27 +25,36 @@ export default function SnapshotHistory({ snapshots = [], onClose }) {
             </div>
 
             <div className={styles.scrollArea}>
-                <div className={styles.grid}>
-                    {snapshots.map((snap, idx) => (
-                        <motion.div 
-                            key={snap.id}
-                            className={styles.gridItem}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => setSelectedIdx(idx)}
-                        >
-                            <div className={styles.photoWrapper}>
-                                <img src={snap.photoUrl} alt="" className={styles.photo} loading="lazy" />
-                                {snap.message && <div className={styles.msgIndicator}>💌</div>}
-                                {snap.isLocal && <div className={styles.syncingIndicator}>⏳</div>}
-                            </div>
-                            <div className={styles.itemMeta}>
-                                {snap.createdAt instanceof Date ? snap.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 
-                                 snap.createdAt?.seconds ? new Date(snap.createdAt.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 
-                                 typeof snap.createdAt === 'number' ? new Date(snap.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-                            </div>
-                        </motion.div>
-                    ))}
-                </div>
+                {snapshots.length === 0 ? (
+                    <div className={styles.emptyState}>
+                        <div className={styles.emptyIcon}>✨</div>
+                        <p>Aún no has enviado instantáneas hoy.</p>
+                        <p className={styles.emptySub}>¡Captura un momento ahora!</p>
+                    </div>
+                ) : (
+                    <div className={styles.grid}>
+                        {snapshots.map((snap, idx) => (
+                            <motion.div 
+                                key={snap.id}
+                                className={styles.gridItem}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => setSelectedIdx(idx)}
+                            >
+                                <div className={styles.photoWrapper}>
+                                    <img src={snap.photoUrl} alt="" className={styles.photo} loading="lazy" />
+                                    {snap.message && <div className={styles.msgIndicator}>💌</div>}
+                                    {snap.isLocal && <div className={styles.syncingIndicator}>⏳</div>}
+                                </div>
+                                <div className={styles.itemMeta}>
+                                    {snap.createdAt instanceof Date ? snap.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 
+                                     snap.createdAt?.seconds ? new Date(snap.createdAt.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 
+                                     typeof snap.createdAt === 'number' ? new Date(snap.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 
+                                     snap.createdAt && typeof snap.createdAt === 'string' ? new Date(snap.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Simple Lightbox for viewing one at a time from history */}

@@ -89,7 +89,7 @@ export default function SnapshotButton({ onOpenSnapshot, onOpenCamera }) {
             title={hasUnseen ? `${unseenSnapshots.length} nuevas instantáneas de tu pareja ✨` : 'Enviar instantánea'}
         >
             <div className={styles.iconWrapper}>
-                <TulipIcon size={26} />
+                <TulipIcon size={30} color={hasUnseen ? 'white' : undefined} />
                 {/* Badge retirado por petición del usuario */}
             </div>
             {hasUnseen && <div className={styles.glowContainer} />}

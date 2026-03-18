@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import Button from '../../components/ui/Button/Button';
-import Card from '../../components/ui/Card/Card';
-import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
 import styles from './BingoManager.module.css';
+
+// Sub-components
+import BingoEditPanel from './components/BingoEditPanel';
 
 export default function BingoManager() {
     // 20 Squares (4 cols x 5 rows)
@@ -16,7 +16,6 @@ export default function BingoManager() {
         memoryLink: null
     }));
 
-    // Mocking some completed ones
     // Mocking some completed ones
     initialSquares[0] = { ...initialSquares[0], title: 'Cita en la playa', description: 'Visitar nuestra playa favorita.', minPhotos: 4, emoji: '🏖️', isCompleted: true, memoryLink: '123' };
     initialSquares[5] = { ...initialSquares[5], title: 'Cocinar juntos', description: 'Hacer una pizza desde cero.', minPhotos: 5, emoji: '🍝', isCompleted: true, memoryLink: '456' };
@@ -38,7 +37,7 @@ export default function BingoManager() {
     };
 
     const handleSave = (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         setSquares(prev => prev.map(sq => sq.id === editingSquare.id ? { ...sq, ...formData } : sq));
         setEditingSquare(null);
     };
@@ -62,46 +61,13 @@ export default function BingoManager() {
                 </div>
             </div>
 
-            {editingSquare && (
-                <Card className={styles.editPanel} glass>
-                    <div className={styles.panelHeader}>
-                        <h3>✏️ Editar Casilla</h3>
-                        <button className={styles.closeBtn} onClick={() => setEditingSquare(null)}>✕</button>
-                    </div>
-                    <form onSubmit={handleSave} className={styles.editForm}>
-                        <div className={styles.formRow}>
-                            <div className={styles.formGroup} style={{ flex: '0 0 100px' }}>
-                                <KawaiiInput type="text" label="Emoji" maxLength="2" required value={formData.emoji} onChange={e => setFormData({ ...formData, emoji: e.target.value })} />
-                            </div>
-                            <div className={styles.formGroup} style={{ flex: '1' }}>
-                                <KawaiiInput type="text" label="Reto o Meta" required value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className={styles.formGroup}>
-                            <KawaiiInput
-                                type="textarea"
-                                label="Descripción / Reglas"
-                                value={formData.description}
-                                onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                rows="2"
-                                placeholder="Ej. Tómense una foto en la entrada del cine..."
-                            />
-                        </div>
-                        <div className={styles.formGroup}>
-                            <KawaiiInput
-                                type="number"
-                                label="Mínimo de fotos requeridas"
-                                min="1"
-                                max="20"
-                                required
-                                value={formData.minPhotos}
-                                onChange={e => setFormData({ ...formData, minPhotos: parseInt(e.target.value) || 1 })}
-                            />
-                        </div>
-                        <Button type="submit" size="sm">Guardar</Button>
-                    </form>
-                </Card>
-            )}
+            <BingoEditPanel 
+                editingSquare={editingSquare}
+                formData={formData}
+                setFormData={setFormData}
+                onSave={handleSave}
+                onClose={() => setEditingSquare(null)}
+            />
 
             <div className={styles.boardContainer}>
                 <div className={styles.bingoBoard}>

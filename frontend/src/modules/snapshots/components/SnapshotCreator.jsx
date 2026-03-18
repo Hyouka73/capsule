@@ -20,8 +20,8 @@ const TWENTY_FOUR_H_MS = 24 * 60 * 60 * 1000;
 
 export default function SnapshotCreator({ onClose, onOpenOwnSnapshots }) {
     const { user } = useAuth();
-    const [stream, setStream] = useState(null);
     const [isCameraLoading, setIsCameraLoading] = useState(true);
+    const streamRef = useRef(null);
     const [facingMode, setFacingMode] = useState('environment');
     const [message, setMessage] = useState('');
     const [isMessageOpen, setIsMessageOpen] = useState(false);
@@ -69,8 +69,10 @@ export default function SnapshotCreator({ onClose, onOpenOwnSnapshots }) {
             const snaps = snapshot.docs
                 .map(doc => ({ id: doc.id, ...doc.data() }))
                 .filter(snap => {
-                    // Solo ver instantáneas que envié YO (esto es para el historial del botón de arriba)
-                    // (isSeen se ignora en el historial para mostrar algo siempre)
+                    // Solo ver instantáneas que envié YO y que el OTRO aún no ha visto
+                    // que tengan menos de 24 horas de antigüedad.
+                    if (snap.isSeen) return false;
+
                     const createdMs = snap.createdAt instanceof Timestamp
                         ? snap.createdAt.toMillis()
                         : (snap.createdAt?.seconds ? snap.createdAt.seconds * 1000 : 0);
@@ -92,16 +94,22 @@ export default function SnapshotCreator({ onClose, onOpenOwnSnapshots }) {
 
     /* ─── Combine Remote + Local ─── */
     const allHistory = useMemo(() => {
-        const local = localPending.map(item => ({
-            id: item.id,
-            photoUrl: URL.createObjectURL(item.photos[0].blob), // WARNING: We must manage revoking
-            createdAt: item.createdAt,
-            message: item.data?.message,
-            isLocal: true
-        }));
+        const local = localPending.map(item => {
+            const blob = item.photos?.[0]?.blob || item.compressedBlob;
+            return {
+                id: item.id,
+                photoUrl: blob ? URL.createObjectURL(blob) : null,
+                createdAt: item.createdAt,
+                message: item.data?.message,
+                isLocal: true
+            };
+        }).filter(item => item.photoUrl);
 
-        // Combinar, evitar duplicados si ID coincide, y ordenar
-        const combined = [...local, ...ownUnseenSnapshots];
+        // Filter and remove duplicates (remote overrides local if same ID)
+        const remoteIds = new Set(ownUnseenSnapshots.map(s => s.id));
+        const filteredLocal = local.filter(l => !remoteIds.has(l.id));
+
+        const combined = [...filteredLocal, ...ownUnseenSnapshots].filter(s => s.photoUrl);
         return combined.sort((a, b) => {
             const timeA = a.createdAt?.toMillis?.() || a.createdAt?.seconds * 1000 || a.createdAt || 0;
             const timeB = b.createdAt?.toMillis?.() || b.createdAt?.seconds * 1000 || b.createdAt || 0;
@@ -116,21 +124,18 @@ export default function SnapshotCreator({ onClose, onOpenOwnSnapshots }) {
             tracks.forEach(t => t.stop());
             videoRef.current.srcObject = null;
         }
-        if (stream) {
-            stream.getTracks().forEach(t => t.stop());
-            setStream(null);
+        if (streamRef.current) {
+            const tracks = streamRef.current.getTracks();
+            tracks.forEach(t => t.stop());
+            streamRef.current = null;
         }
-    }, [stream]);
+    }, []);
 
     const startCamera = useCallback(async (mode) => {
         setIsCameraLoading(true);
         
-        // Parada limpia inmediata
-        if (videoRef.current && videoRef.current.srcObject) {
-            const tracks = videoRef.current.srcObject.getTracks();
-            tracks.forEach(t => t.stop());
-            videoRef.current.srcObject = null;
-        }
+        // Stop any existing stream first
+        stopCamera();
 
         try {
             const constraints = {
@@ -143,12 +148,12 @@ export default function SnapshotCreator({ onClose, onOpenOwnSnapshots }) {
             };
 
             const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+            streamRef.current = mediaStream;
             
             if (videoRef.current) {
                 videoRef.current.srcObject = mediaStream;
                 videoRef.current.onloadedmetadata = () => {
                     setIsCameraLoading(false);
-                    setStream(mediaStream);
                 };
             }
             logToVercel('SnapshotCreator', 'CAMERA_STARTED', mode);
@@ -159,10 +164,10 @@ export default function SnapshotCreator({ onClose, onOpenOwnSnapshots }) {
                     video: { facingMode: mode },
                     audio: false
                 });
+                streamRef.current = fallbackStream;
                 if (videoRef.current) {
                     videoRef.current.srcObject = fallbackStream;
                     setIsCameraLoading(false);
-                    setStream(fallbackStream);
                 }
             } catch (fallbackErr) {
                 logToVercel('SnapshotCreator', 'CAMERA_ERROR', fallbackErr.message);
@@ -174,11 +179,9 @@ export default function SnapshotCreator({ onClose, onOpenOwnSnapshots }) {
     useEffect(() => {
         startCamera(facingMode);
         return () => {
-            if (videoRef.current && videoRef.current.srcObject) {
-                videoRef.current.srcObject.getTracks().forEach(t => t.stop());
-            }
+            stopCamera();
         };
-    }, [facingMode, startCamera]);
+    }, [facingMode, startCamera, stopCamera]);
 
     /* ─── Capture + instant send ─── */
     const handleCapture = async () => {
@@ -209,8 +212,9 @@ export default function SnapshotCreator({ onClose, onOpenOwnSnapshots }) {
 
             setIsSending(true);
             try {
-                await queueSnapshot(file, message.trim());
+                const res = await queueSnapshot(file, message.trim());
                 logToVercel('SnapshotCreator', 'QUEUED', `size=${file.size}`);
+                // Refresh local immediately to show in history badge
                 await refreshLocalHistory();
             } catch (err) {
                 console.error('Queue error:', err);
