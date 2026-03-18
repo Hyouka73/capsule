@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion';
 import { toast } from './../../components/ui/PastelToast/PastelToast';
 import styles from './PendingDatesList.module.css';
 
@@ -11,21 +11,16 @@ function PendingDateCard({ pd, idx, onSelectDate, onRemove, onRestore }) {
     const isFailed = pd.status === 'failed';
     const containerRef = useRef(null);
     const [containerWidth, setContainerWidth] = useState(0);
-
-    useEffect(() => {
-        if (containerRef.current) {
-            setContainerWidth(containerRef.current.offsetWidth);
-        }
-    }, []);
-
-    // Motion values
     const x = useMotionValue(0);
-    
-    // Smooth color transform (White -> Subtle Rose)
-    // Higher contrast rose for the swipe effect
-    const backgroundColor = useTransform(x, [-120, 0], ['#ffe0e5', '#ffffff']);
-    const deleteOpacity = useTransform(x, [-100, -20, 0], [1, 0.4, 0]);
-    const iconScale = useTransform(x, [-80, -20, 0], [1.1, 0.9, 0.7]);
+
+    // Colores tipo "Pastel Red" progresivos e intensos
+    const backgroundColor = useTransform(
+        x, 
+        [-150, -60, 0], 
+        ['#ff6b81', '#ffecf0', '#ffffff'] // De blanco a rosa claro y termina en un rojo pastel potente
+    );
+    const deleteOpacity = useTransform(x, [-80, -20, 0], [1, 0.4, 0]);
+    const iconScale = useTransform(x, [-80, -30, 0], [1.3, 0.9, 0.4]);
 
     // Better date parsing & 24hr format conversion
     const parts = pd.originalDate?.split(', ') || [];
@@ -47,17 +42,38 @@ function PendingDateCard({ pd, idx, onSelectDate, onRemove, onRestore }) {
         }
     }
 
-    const maxDrag = containerWidth ? -(containerWidth * 0.45) : -150;
+    const maxDrag = containerWidth ? -(containerWidth * 0.9) : -300; 
+
+    // Centrar automáticamente cuando se monta para asegurar estado limpio
+    useEffect(() => {
+        x.set(0);
+    }, [x]);
+
+    // Calcular ancho inicial y al redimensionar
+    useEffect(() => {
+        const updateWidth = () => {
+            if (containerRef.current) setContainerWidth(containerRef.current.offsetWidth);
+        };
+        updateWidth();
+        window.addEventListener('resize', updateWidth);
+        return () => window.removeEventListener('resize', updateWidth);
+    }, []);
 
     const handleDelete = () => {
         if (onRemove) {
-            toast.loading('Eliminando...', 'Quitando este recuerdo de la lista');
+            // Pequeña vibración visual antes de borrar
+            animate(x, -containerWidth * 0.8, { duration: 0.3 });
+            
             setTimeout(() => {
                 onRemove(pd.id);
-                toast.info('Recuerdo eliminado', 'Toca aquí para deshacer ↺', {
+                toast.info('Recuerdo quitado de la lista ✨', 'Toca para DESHACER ↺', {
+                    id: `delete-${pd.id}`, // Individual toast for each deletion
                     duration: 6000,
                     onClick: () => {
-                        if (onRestore) onRestore(pd);
+                        if (onRestore) {
+                            onRestore(pd);
+                            toast.success('¡Recuperado!', 'El recuerdo volvió a su lugar', { id: `delete-${pd.id}` });
+                        }
                     }
                 });
             }, 300);
@@ -69,7 +85,14 @@ function PendingDateCard({ pd, idx, onSelectDate, onRemove, onRestore }) {
             ref={containerRef}
             layout
             initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={{ 
+                opacity: pd.isHidden ? 0 : 1, 
+                y: 0,
+                height: pd.isHidden ? 0 : 'auto',
+                minHeight: pd.isHidden ? 0 : 'unset',
+                marginBottom: pd.isHidden ? 0 : '1.125rem',
+                scale: pd.isHidden ? 0.9 : 1
+            }}
             exit={{ 
                 x: 200, 
                 opacity: 0, 
@@ -98,10 +121,19 @@ function PendingDateCard({ pd, idx, onSelectDate, onRemove, onRestore }) {
                 dragConstraints={{ left: maxDrag, right: 0 }}
                 dragElastic={0.15}
                 dragMomentum={false}
-                onDragEnd={(e, { offset }) => {
-                    const threshold = containerWidth * 0.40 || 120;
-                    if (offset.x < -threshold) {
+                animate={{ 
+                    x: pd.isHidden ? -containerWidth : 0
+                }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                onDragEnd={(e, info) => {
+                    const currentX = x.get();
+                    const threshold = containerWidth * 0.25 || 80; 
+                    const isFlick = info.velocity.x < -500;
+                    
+                    if (currentX < -threshold || isFlick) {
                         handleDelete();
+                    } else {
+                        animate(x, 0, { type: 'spring', damping: 25, stiffness: 200 });
                     }
                 }}
                 className={`${styles.listItem} ${isUploading ? styles.listItemUploading : ''} ${isFailed ? styles.listItemFailed : ''}`}
@@ -164,16 +196,16 @@ export default function PendingDatesList({ pendingDates = [], onClose, onSelectD
                 </div>
 
                 <div className={styles.scrollList}>
-                    {pendingDates.length === 0 ? (
+                    {pendingDates.filter(p => !p.isHidden).length === 0 ? (
                         <div className={styles.emptyState}>
                             <span className="material-symbols-outlined">celebration</span>
                             <p>¡Todo listo para hoy!</p>
                         </div>
                     ) : (
-                        <AnimatePresence mode='popLayout'>
+                        <AnimatePresence>
                             {pendingDates.map((pd, idx) => (
                                 <PendingDateCard
-                                    key={pd.id || idx}
+                                    key={pd.id}
                                     pd={pd}
                                     idx={idx}
                                     onSelectDate={onSelectDate}

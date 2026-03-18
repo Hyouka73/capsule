@@ -6,7 +6,7 @@ import './TimeLock.css'; // Just in case we need specific adjustments
 // CONFIGURACIÓN: Fecha de desbloqueo
 // Formato ISO: YYYY-MM-DDTHH:mm:ss
 // Ejemplo: "2026-02-14T08:00:00"
-const UNLOCK_DATE = "2026-02-14T08:00:00";
+const UNLOCK_DATE = "2024-02-14T08:00:00";
 
 function TimeLock({ children }) {
     const [isLocked, setIsLocked] = useState(true);

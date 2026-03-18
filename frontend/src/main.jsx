@@ -51,7 +51,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-checkForUpdate();
+// checkForUpdate();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // React bootstrap

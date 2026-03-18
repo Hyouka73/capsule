@@ -1,12 +1,12 @@
 import React from 'react';
 import './VersionBadge.css';
 
-const VERSION = 'v1.8.26-24hr-format';
+const APP_VERSION = 'v0.0.15';
 
 export default function VersionBadge() {
     return (
         <div className="version-badge">
-            {VERSION}
+            {APP_VERSION}
         </div>
     );
 }

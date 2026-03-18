@@ -44,18 +44,24 @@ export function PastelToastProvider({ children }) {
         if (action.op === 'add') {
             const id = Date.now() + Math.random();
 
-            // v2.3: Limit to 1 toast (single notification mode)
-            setToasts([{
-                id,
-                type: action.type,
-                title: action.title,
-                description: action.description,
-                onClick: action.onClick,
-            }]);
+            // Version 3.0: Compact stacking (limit to 3)
+            setToasts(prev => {
+                const newToasts = [
+                    {
+                        id,
+                        type: action.type,
+                        title: action.title,
+                        description: action.description,
+                        onClick: action.onClick,
+                    },
+                    ...prev
+                ].slice(0, 3);
+                return newToasts;
+            });
 
             if (!action.persist) {
-                const duration = action.duration || 4000;
-                setTimeout(() => setToasts(prev => prev.filter(t => t.id === id)), duration);
+                const duration = action.duration || 3500;
+                setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), duration);
             }
 
             return id;
@@ -126,53 +132,55 @@ function ToastItem({ id, type, title, description, onClose, onClick }) {
     return (
         <motion.div
             layout
-            initial={{ opacity: 0, scale: 0.8, y: -40 }}
+            initial={{ opacity: 0, scale: 0.9, y: -20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: -20, transition: { duration: 0.2 } }}
+            exit={{ opacity: 0, scale: 0.85, transition: { duration: 0.15 } }}
+            drag="y"
+            dragConstraints={{ top: -50, bottom: 50 }}
+            onDragEnd={(_, info) => {
+                if (Math.abs(info.offset.y) > 40) onClose();
+            }}
+            whileTap={{ scale: 0.98 }}
             transition={{
                 type: 'spring',
-                stiffness: 400,
-                damping: 25,
-                mass: 0.8
+                stiffness: 500,
+                damping: 30,
+                mass: 1
             }}
             className={`${styles.toast} ${styles[type]}`}
-            onClick={() => {
-                if (onClick) onClick();
-                onClose();
-            }}
+            role="status"
+            aria-live="polite"
         >
             <motion.div
-                key={type}           /* re-animate badge when type changes */
+                key={type}
                 className={`${styles.badge} ${styles[`badge_${type}`]}`}
-                initial={{ scale: 0.6, opacity: 0 }}
+                initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: 'spring', stiffness: 500, damping: 22 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 25 }}
             >
                 {ICONS[type]}
             </motion.div>
 
-            <div className={styles.content}>
-                <motion.span
-                    key={title}      /* re-animate text when content changes */
-                    className={`${styles.title} ${styles[`title_${type}`]}`}
-                    initial={{ opacity: 0, x: -4 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.2 }}
-                >
-                    {title}
-                </motion.span>
+            <div className={styles.content} onClick={() => {
+                if (onClick) onClick();
+                onClose();
+            }}>
+                <span className={styles.title}>{title}</span>
                 {description && (
-                    <motion.span
-                        key={description}
-                        className={styles.description}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.2, delay: 0.05 }}
-                    >
-                        {description}
-                    </motion.span>
+                    <span className={styles.description}>{description}</span>
                 )}
             </div>
+
+            <button 
+                className={styles.closeBtn} 
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onClose();
+                }}
+                aria-label="Cerrar"
+            >
+                ✕
+            </button>
         </motion.div>
     );
 }
