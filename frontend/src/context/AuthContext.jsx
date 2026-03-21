@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getToken, onMessage } from 'firebase/messaging';
-import { arrayUnion, doc, updateDoc } from 'firebase/firestore';
+import { arrayUnion, doc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { auth, messaging, db } from '../services/firebase';
 import firebaseConfig from '../config/firebase';
 import {
@@ -9,6 +9,7 @@ import {
     signOut as authSignOut,
 } from '../services/auth';
 import { ROLES, COLLECTIONS } from '../config/constants';
+import User from '../models/User';
 
 const AuthContext = createContext(null);
 
@@ -16,6 +17,9 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [role, setRole] = useState(null);
     const [deviceId, setDeviceId] = useState(null);
+    const [onboardingCompleted, setOnboardingCompleted] = useState(null);
+    const [welcomeSeen, setWelcomeSeen] = useState(null);
+    const [teaserCompleted, setTeaserCompleted] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
     // Register FCM Token for partners
@@ -54,7 +58,12 @@ export function AuthProvider({ children }) {
     }, []);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        let unsubscribeDoc = () => { };
+
+        const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+            // Clean up previous doc listener if user changes
+            unsubscribeDoc();
+
             if (firebaseUser) {
                 let claims = { role: null, deviceId: null };
                 try {
@@ -64,7 +73,30 @@ export function AuthProvider({ children }) {
                 setUser(firebaseUser);
                 setRole(claims.role);
                 setDeviceId(claims.deviceId);
-                console.log('[Auth] User role identified:', claims.role);
+                console.log('[Auth) User role identified:', claims.role);
+
+                // Start real-time listener for user document
+                const userRef = doc(db, COLLECTIONS.USERS, firebaseUser.uid);
+                unsubscribeDoc = onSnapshot(userRef, (snapshot) => {
+                    let data = {};
+                    if (snapshot.exists()) {
+                        data = snapshot.data();
+                    } else {
+                        // Fallback to User model defaults
+                        const defaultUser = new User({ uid: firebaseUser.uid });
+                        data = {
+                            onboardingCompleted: defaultUser.onboardingCompleted,
+                            welcomeSeen: defaultUser.welcomeSeen,
+                            teaserCompleted: defaultUser.teaserCompleted
+                        };
+                    }
+
+                    setOnboardingCompleted(data.onboardingCompleted ?? null);
+                    setWelcomeSeen(data.welcomeSeen ?? false);
+                    setTeaserCompleted(data.teaserCompleted ?? false);
+                }, (err) => {
+                    console.error('[Auth] User document listener error:', err);
+                });
 
                 // If partner, try registering FCM
                 if (claims.role === ROLES.PARTNER) {
@@ -74,6 +106,9 @@ export function AuthProvider({ children }) {
                 setUser(null);
                 setRole(null);
                 setDeviceId(null);
+                setOnboardingCompleted(null);
+                setWelcomeSeen(null);
+                setTeaserCompleted(null);
             }
             setIsLoading(false);
         });
@@ -102,7 +137,8 @@ export function AuthProvider({ children }) {
         setupMessagingListener();
 
         return () => {
-            unsubscribe();
+            unsubscribeAuth();
+            unsubscribeDoc();
             unsubscribeMessaging();
         };
     }, [registerFCM]);
@@ -113,12 +149,15 @@ export function AuthProvider({ children }) {
         user,
         role,
         deviceId,
+        onboardingCompleted,
+        welcomeSeen,
+        teaserCompleted,
         isLoading,
         isAuthenticated: !!user,
         isAdmin: role === ROLES.ADMIN,
         isPartner: role === ROLES.PARTNER,
         signOut,
-    }), [user, role, deviceId, isLoading, signOut]);
+    }), [user, role, deviceId, onboardingCompleted, welcomeSeen, teaserCompleted, isLoading, signOut]);
 
     return (
         <AuthContext.Provider value={value}>

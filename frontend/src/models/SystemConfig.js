@@ -66,7 +66,26 @@ export default class SystemConfig {
             ...data.citaConfig
         };
 
+        this.onboarding = {
+            enabled: data.onboarding?.enabled ?? false,
+            modules: {
+                map: data.onboarding?.modules?.map ?? true,
+                bingo: data.onboarding?.modules?.bingo ?? true,
+                capsules: data.onboarding?.modules?.capsules ?? true,
+                coupons: data.onboarding?.modules?.coupons ?? true,
+                snapshots: data.onboarding?.modules?.snapshots ?? true,
+                gallery: data.onboarding?.modules?.gallery ?? true,
+                movies: data.onboarding?.modules?.movies ?? true,
+                games: data.onboarding?.modules?.games ?? true,
+            }
+        };
+
         this.updatedAt = data.updatedAt || null;
+
+        this.partner = {
+            welcomeMessage: data.partner?.welcomeMessage ?? '¡Bienvenida a nuestro espacio! 💖',
+            displayName: data.partner?.displayName ?? ''
+        };
     }
 
     /**
@@ -83,6 +102,8 @@ export default class SystemConfig {
             teaser: this.teaser,
             inviteConfig: this.inviteConfig,
             citaConfig: this.citaConfig,
+            onboarding: this.onboarding,
+            partner: this.partner,
             updatedAt: new Date().toISOString()
         };
     }
@@ -103,6 +124,8 @@ export default class SystemConfig {
             teaser: data.teaser,
             inviteConfig: data.inviteConfig,
             citaConfig: data.citaConfig,
+            onboarding: data.onboarding,
+            partner: data.partner,
             updatedAt: data.updatedAt
         });
     }

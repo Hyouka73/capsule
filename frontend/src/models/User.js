@@ -27,6 +27,21 @@ export default class User {
             ...data.preferences
         };
 
+        // Onboarding & Welcome stats
+        this.onboardingCompleted = {
+            map: data.onboardingCompleted?.map ?? false,
+            bingo: data.onboardingCompleted?.bingo ?? false,
+            capsules: data.onboardingCompleted?.capsules ?? false,
+            coupons: data.onboardingCompleted?.coupons ?? false,
+            snapshots: data.onboardingCompleted?.snapshots ?? false,
+            gallery: data.onboardingCompleted?.gallery ?? false,
+            movies: data.onboardingCompleted?.movies ?? false,
+            games: data.onboardingCompleted?.games ?? false,
+        };
+
+        this.welcomeSeen = data.welcomeSeen ?? false;
+        this.teaserCompleted = data.teaserCompleted ?? false;
+
         // Activity tracking
         this.lastActiveAt = data.lastActiveAt ? new Date(data.lastActiveAt) : null;
         this.lastSeenAt = data.lastSeenAt ? new Date(data.lastSeenAt) : null;

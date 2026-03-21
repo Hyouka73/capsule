@@ -1,10 +1,12 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
+import { useAppConfig } from './context/AppConfigContext';
 import Teaser from './components/Teaser/Teaser';
 import AdminLogin from './modules/admin/AdminLogin';
 import AdminDashboard from './modules/admin/AdminDashboard';
 import UserDashboard from './modules/user/UserDashboard';
 import JoinInvite from './modules/auth/JoinInvite';
+import WelcomeScreen from './modules/auth/WelcomeScreen';
 import LoadingScreen from './components/ui/LoadingScreen/LoadingScreen';
 import { PastelToastProvider } from './components/ui/PastelToast/PastelToast';
 import './App.css';
@@ -22,24 +24,67 @@ import VersionBadge from './components/ui/VersionBadge/VersionBadge';
  *   /*            → Teaser (fallback)
  */
 export default function App() {
-  const { isAdmin, isAuthenticated, isLoading } = useAuth();
+  const { 
+    isAdmin, 
+    isAuthenticated, 
+    isLoading, 
+    welcomeSeen 
+  } = useAuth();
+
+  const { teaser } = useAppConfig();
 
   // While resolving Firebase auth, show nothing (prevents flash)
   if (isLoading) return <LoadingScreen />;
 
+  const isLocked = teaser?.unlockAt ? new Date(teaser.unlockAt) > new Date() : true;
+
   return (
     <PastelToastProvider>
       <Routes>
-        {/* Raíz: sesión activa → /app, sin sesión → Teaser */}
+        {/* Raíz Dispatcher: Redirige según el estado de la sesión y el progreso */}
         <Route path="/" element={
-          isAuthenticated
-            ? <Navigate to="/app" replace />
-            : <><Teaser /><VersionBadge /></>
+          !isAuthenticated 
+            ? <Navigate to="/join" replace /> 
+            : isAdmin 
+              ? <Navigate to="/admin" replace />
+              : (welcomeSeen === null)
+                ? <LoadingScreen />
+                : (isLocked && !welcomeSeen)
+                  ? <Navigate to="/teaser" replace />
+                  : !welcomeSeen
+                    ? <Navigate to="/welcome" replace />
+                    : <Navigate to="/app" replace />
         } />
 
         {/* Flujo de invitación (público) */}
         <Route path="/join" element={
-          <><JoinInvite /><VersionBadge /></>
+          isAuthenticated 
+            ? <Navigate to="/" replace />
+            : <><JoinInvite /><VersionBadge /></>
+        } />
+
+        {/* Teaser (protegido por estado) — solo si no ha visto bienvenida y está bloqueado */}
+        <Route path="/teaser" element={
+          !isAuthenticated 
+            ? <Navigate to="/join" replace />
+            : isAdmin
+              ? <Navigate to="/admin" replace />
+              : welcomeSeen
+                ? <Navigate to="/app" replace />
+                : !isLocked
+                  ? <Navigate to="/" replace />
+                  : <><Teaser /><VersionBadge /></>
+        } />
+
+        {/* Pantalla de Bienvenida (protegida) — accesible después del Teaser aunque siga locked */}
+        <Route path="/welcome" element={
+          !isAuthenticated 
+            ? <Navigate to="/join" replace />
+            : isAdmin
+              ? <Navigate to="/admin" replace />
+              : welcomeSeen === true
+                ? <Navigate to="/app" replace />
+                : <><WelcomeScreen /><VersionBadge /></>
         } />
 
         {/* Admin: login público + dashboard protegido */}
@@ -55,21 +100,20 @@ export default function App() {
         } />
 
         {/* Dashboard de usuario (protegido) */}
-        {/* Admin should never be in /app → redirect to their panel */}
         <Route path="/app/*" element={
           !isAuthenticated
             ? <Navigate to="/join" replace />
             : isAdmin
               ? <Navigate to="/admin" replace />
-              : <><UserDashboard /><VersionBadge /></>
+              : (isLocked && !welcomeSeen)
+                ? <Navigate to="/teaser" replace />
+                : (welcomeSeen === false)
+                  ? <Navigate to="/welcome" replace />
+                  : <><UserDashboard /><VersionBadge /></>
         } />
 
-        {/* Fallback: cualquier otra ruta → Teaser */}
-        <Route path="*" element={
-          isAuthenticated
-            ? <Navigate to="/app" replace />
-            : <><Teaser /><VersionBadge /></>
-        } />
+        {/* Fallback: redirigir a raíz para que el dispatcher decida */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </PastelToastProvider>
   );

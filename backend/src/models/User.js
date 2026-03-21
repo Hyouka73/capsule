@@ -19,6 +19,19 @@ export default class User {
             galleryOrderBy: data.preferences?.galleryOrderBy || 'eventDate',
             ...data.preferences
         };
+        this.onboardingCompleted = {
+            map: data.onboardingCompleted?.map ?? false,
+            bingo: data.onboardingCompleted?.bingo ?? false,
+            capsules: data.onboardingCompleted?.capsules ?? false,
+            coupons: data.onboardingCompleted?.coupons ?? false,
+            snapshots: data.onboardingCompleted?.snapshots ?? false,
+            gallery: data.onboardingCompleted?.gallery ?? false,
+            movies: data.onboardingCompleted?.movies ?? false,
+            games: data.onboardingCompleted?.games ?? false,
+        };
+        this.welcomeSeen = data.welcomeSeen ?? false;
+        this.teaserCompleted = data.teaserCompleted ?? false;
+
         this.lastActiveAt = this._toDate(data.lastActiveAt);
         this.lastSeenAt = this._toDate(data.lastSeenAt);
         this.registeredAt = this._toDate(data.registeredAt);
@@ -43,6 +56,9 @@ export default class User {
             deviceInfo: this.deviceInfo,
             fcmTokens: this.fcmTokens,
             preferences: this.preferences,
+            onboardingCompleted: this.onboardingCompleted,
+            welcomeSeen: this.welcomeSeen,
+            teaserCompleted: this.teaserCompleted,
             lastActiveAt: this.lastActiveAt,
             lastSeenAt: this.lastSeenAt,
             registeredAt: this.registeredAt,

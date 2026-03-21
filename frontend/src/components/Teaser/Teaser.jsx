@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import StarryBackground from './StarryBackground';
 import IntroSequence, { SakuraOverlay } from './IntroSequence';
@@ -6,7 +7,7 @@ import FlowerGarden from './FlowerGarden';
 import LetterReveal from './LetterReveal';
 import Countdown from './Countdown';
 import FloatingPetals from './FloatingPetals';
-import TimeLock from './TimeLock';
+import { useAppConfig } from '../../context/AppConfigContext';
 import './Teaser.css';
 
 /**
@@ -30,6 +31,14 @@ function Teaser() {
     const [showSakura, setShowSakura] = useState(false);
     const [isLetterFinished, setIsLetterFinished] = useState(false);
     const [letterSkipTriggered, setLetterSkipTriggered] = useState(false);
+    const [isExploding, setIsExploding] = useState(false);
+    const [isFadingOut, setIsFadingOut] = useState(false);
+    const navigate = useNavigate();
+    const { teaser } = useAppConfig();
+
+    const unlockAt = teaser?.unlockAt 
+        ? new Date(teaser.unlockAt) 
+        : new Date('2026-04-04T00:00:00');
 
     const handleIntroComplete = useCallback(() => {
         setPhase('flowers');
@@ -53,6 +62,17 @@ function Teaser() {
         setShowCountdown(true);
     }, []);
 
+    const handleCountdownComplete = useCallback(() => {
+        setIsExploding(true);
+        
+        // Start fade out to pastel-bg shortly before navigating
+        setTimeout(() => setIsFadingOut(true), 3000);
+
+        setTimeout(() => {
+            navigate('/welcome');
+        }, 4000);
+    }, [navigate]);
+
     return (
         <div className="teaser-app">
             <StarryBackground />
@@ -60,8 +80,7 @@ function Teaser() {
             {/* Floating petals appear after intro */}
             {phase !== 'intro' && <FloatingPetals />}
 
-            <TimeLock>
-                <AnimatePresence mode="wait">
+            <AnimatePresence mode="wait">
                     {/* Phase 1: Intro with PhotoMosaic */}
                     {phase === 'intro' && (
                         <IntroSequence
@@ -106,7 +125,11 @@ function Teaser() {
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
                                         >
-                                            <Countdown visible={true} />
+                                            <Countdown 
+                                                visible={true} 
+                                                targetDate={unlockAt}
+                                                onComplete={handleCountdownComplete}
+                                            />
 
                                             <motion.div
                                                 className="teaser-footer"
@@ -125,10 +148,29 @@ function Teaser() {
                         </motion.div>
                     )}
                 </AnimatePresence>
-            </TimeLock>
 
             {/* 🌸 Sakura petals — rendered at App level so they persist above flower garden */}
-            {showSakura && <SakuraOverlay />}
+            {(showSakura || isExploding) && <SakuraOverlay />}
+
+            {/* Final Explosion Flash */}
+            {isExploding && (
+                <motion.div
+                    className="explosion-flash"
+                    initial={{ scale: 0, opacity: 1 }}
+                    animate={{ scale: 4, opacity: 0 }}
+                    transition={{ duration: 2.0, ease: "easeInOut" }}
+                />
+            )}
+
+            {/* Cinematic Fade Out to Welcome */}
+            {isFadingOut && (
+                <motion.div
+                    className="welcome-fade-overlay"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 1.0, ease: "linear" }}
+                />
+            )}
 
             {/* Centralized Buttons */}
             {phase === 'intro' && (

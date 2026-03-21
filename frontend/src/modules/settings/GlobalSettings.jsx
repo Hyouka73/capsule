@@ -67,7 +67,11 @@ export default function GlobalSettings() {
                 snapshotConfig: { ...prev.snapshotConfig },
                 teaser: { ...prev.teaser },
                 inviteConfig: { ...prev.inviteConfig },
-                citaConfig: { ...prev.citaConfig }
+                citaConfig: { ...prev.citaConfig },
+                onboarding: { 
+                    ...prev.onboarding,
+                    modules: { ...prev.onboarding?.modules }
+                }
             });
             
             if (parts.length === 1) {

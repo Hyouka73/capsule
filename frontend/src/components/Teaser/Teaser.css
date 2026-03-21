@@ -106,3 +106,13 @@
     outline: 2px solid rgba(176, 168, 192, 0.5);
     outline-offset: 2px;
 }
+
+/* Phase 5 — Final Transition */
+.explosion-flash {
+    position: fixed;
+    inset: 0;
+    background: white;
+    z-index: 9999;
+    pointer-events: none;
+    border-radius: 50%;
+}
