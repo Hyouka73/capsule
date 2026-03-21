@@ -9,6 +9,8 @@ import {
     doc,
     onSnapshot,
     getFirestore,
+    updateDoc,
+    serverTimestamp,
 } from 'firebase/firestore';
 import { useOfflineActions } from './useOfflineActions';
 import { COLLECTIONS, SINGLETON_DOCS } from '../config/constants';
@@ -192,6 +194,28 @@ export function useBingo() {
         return categories.find(c => c.id === categoryId) ?? null;
     }, [categories]);
 
+    /**
+     * updateBingoBoard
+     * Guarda el tablero completo en Firestore (Admin action).
+     */
+    const updateBingoBoard = useCallback(async (newCategories) => {
+        try {
+            setIsLoading(true);
+            await updateDoc(boardRef, {
+                categories: newCategories,
+                updatedAt: serverTimestamp()
+            });
+            toast.success('¡Tablero Guardado! 🎯', 'Los retos han sido actualizados.');
+            return { success: true };
+        } catch (err) {
+            console.error('[useBingo] Error al guardar tablero:', err);
+            toast.error('Error al guardar', err.message);
+            return { success: false, error: err.message };
+        } finally {
+            setIsLoading(false);
+        }
+    }, [boardRef]);
+
     const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
     return {
@@ -204,5 +228,6 @@ export function useBingo() {
         markComplete,
         isCategoryComplete,
         getCategory,
+        updateBingoBoard,
     };
 }

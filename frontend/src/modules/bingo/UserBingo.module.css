@@ -45,7 +45,7 @@
     border-radius: var(--radius-pill);
     overflow: hidden;
     position: relative;
-    box-shadow: inset 2px 2px 4px rgba(0,0,0,0.05);
+    box-shadow: none;
 }
 
 .progressBarFill {
@@ -53,7 +53,7 @@
     bottom: 0;
     background: var(--gradient-mint);
     border-radius: var(--radius-pill);
-    box-shadow: 2px 0 8px var(--clay-shadow-mint);
+    box-shadow: 3px 0 0 var(--pastel-mint-dark);
 }
 
 .progressBadge {
@@ -77,7 +77,7 @@
     padding-bottom: 24px;
     overflow: visible;
     box-shadow: var(--clay-shadow-md);
-    border: var(--border-glass);
+    border: 3px solid var(--pastel-rose-light);
     width: calc(100% - 32px);
     max-width: 400px;
     margin: 0 16px;
@@ -134,7 +134,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    border: 2px solid rgba(255, 255, 255, 0.4);
+    border: 3px solid var(--clay-bg-white);
     box-shadow: var(--clay-shadow-rose);
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
@@ -164,10 +164,10 @@
 .dateBadge {
     font-family: var(--font-body);
     font-size: 9px;
-    color: rgba(255, 255, 255, 0.85);
+    color: #ffffff;
     margin-top: 2px;
     padding: 2px 6px;
-    background: rgba(0, 0, 0, 0.1);
+    background: var(--pastel-text-muted);
     border-radius: 99px;
 }
 
@@ -194,9 +194,7 @@
 .modalOverlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: var(--pastel-text); /* Solid dark warm brown overlay */
     z-index: 100;
     display: flex;
     align-items: center;
@@ -208,7 +206,7 @@
     background: white;
     padding: 1rem 1rem 3.5rem 1rem;
     border-radius: var(--radius-sm);
-    box-shadow: var(--clay-shadow-lg), 0 0 0 8px rgba(255, 255, 255, 0.3);
+    box-shadow: var(--clay-shadow-lg);
     width: 100%;
     max-width: 350px;
     position: relative;
@@ -233,7 +231,7 @@
     justify-content: center;
     cursor: pointer;
     z-index: 10;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--clay-shadow-sm);
 }
 
 .photoArea {
@@ -243,7 +241,7 @@
     overflow: hidden;
     margin-bottom: 1.5rem;
     border-radius: 2px;
-    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.5);
+    box-shadow: none;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -266,14 +264,7 @@
 
 .bigEmoji {
     font-size: 5rem;
-    filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.2));
-}
-
-.bigFavoriteIcon {
-    font-size: 5rem;
-    color: white;
-    font-variation-settings: 'FILL' 1;
-    filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.2));
+    filter: none;
 }
 
 .polaroidText {
@@ -307,7 +298,7 @@
 .galleryBtn {
     margin-top: 10px;
     background: var(--clay-bg-mint);
-    border: 1px solid rgba(136, 216, 176, 0.40);
+    border: 3px solid var(--pastel-mint);
     border-radius: var(--radius-pill);
     padding: 8px 20px;
     color: #5a7a6a;
