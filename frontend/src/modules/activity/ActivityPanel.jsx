@@ -1,121 +1,141 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Card from '../../components/ui/Card/Card';
+import Button from '../../components/ui/Button/Button';
 import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
+import { useActivityLog } from '../../hooks/useActivityLog';
 import styles from './ActivityPanel.module.css';
 
 export default function ActivityPanel() {
-    const [filter, setFilter] = useState('all');
+    const { logs, isLoading, markAsRead, markAllAsRead, unreadCount } = useActivityLog();
+    
+    // Filters
+    const [filterType, setFilterType] = useState('all');
+    const [onlyUnread, setOnlyUnread] = useState(false);
 
-    // Mock Stats
-    const stats = [
-        { label: 'Sesiones esta semana', value: '14', icon: '📱', trend: '+3' },
-        { label: 'Fotos en recuerdos', value: '128', icon: '📸', trend: '+12' },
-        { label: 'Cápsulas abiertas', value: '4', icon: '⏳', trend: '0' },
-        { label: 'Bingo completado', value: '2', icon: '🎯', trend: '+1' },
-    ];
+    const filteredLogs = useMemo(() => {
+        return logs.filter(log => {
+            const matchesType = filterType === 'all' || log.targetType === filterType;
+            const matchesUnread = !onlyUnread || !log.isReadByAdmin;
+            return matchesType && matchesUnread;
+        });
+    }, [logs, filterType, onlyUnread]);
 
-    // Mock Next Capsules
-    const nextCapsules = [
-        { id: 1, title: 'Nuestro primer aniversario', unlockDate: '2026-02-14T00:00:00Z' },
-        { id: 2, title: 'Pista para San Valentín', unlockDate: '2026-02-13T20:00:00Z' }
-    ];
-
-    // Mock Activity Log
-    const activities = [
-        { id: 101, type: 'session', user: 'Partner', action: 'Inició sesión', timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), icon: '👋' },
-        { id: 102, type: 'coupon_used', user: 'Partner', action: 'Canjeó el cupón "Tarde de Cine"', timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(), icon: '🎟️' },
-        { id: 103, type: 'capsule_viewed', user: 'Partner', action: 'Abrió la cápsula "Pista 1"', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), icon: '🔓' },
-        { id: 104, type: 'memory_created', user: 'Admin', action: 'Creó el recuerdo "Cena en la Roma"', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), icon: '✨' },
-        { id: 105, type: 'bingo_marked', user: 'Admin', action: 'Marcó el reto "Cocinar juntos" en Bingo', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), icon: '🎯' },
-    ];
-
-    const filteredActivities = filter === 'all' ? activities : activities.filter(a => a.type === filter);
-
-    const getTimeAgo = (dateString) => {
-        const diffMs = Date.now() - new Date(dateString).getTime();
-        const diffMins = Math.floor(diffMs / 60000);
-        if (diffMins < 60) return `Hace ${diffMins} min`;
-        const diffHours = Math.floor(diffMins / 60);
-        if (diffHours < 24) return `Hace ${diffHours} h`;
-        return `Hace ${Math.floor(diffHours / 24)} días`;
+    const getTimeAgo = (date) => {
+        const seconds = Math.floor((new Date() - date) / 1000);
+        if (seconds < 60) return 'ahora mismo';
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `hace ${minutes}m`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `hace ${hours}h`;
+        return date.toLocaleDateString();
     };
+
+    const getIcon = (type) => {
+        switch (type) {
+            case 'memory': return '📸';
+            case 'photo': return '🖼️';
+            case 'capsule': return '⏳';
+            case 'coupon': return '🎁';
+            case 'bingo': return '🎯';
+            case 'wrapped': return '🎬';
+            default: return '✨';
+        }
+    };
+
+    if (isLoading) {
+        return <div className={styles.loading}>Cargando feed de actividad real...</div>;
+    }
 
     return (
         <div className={styles.root}>
-            <div className={styles.header}>
-                <div>
+            <header className={styles.header}>
+                <div className={styles.titleGroup}>
                     <h1 className={styles.title}>Panel de Actividad</h1>
-                    <p className={styles.subtitle}>Métricas y bitácora de interacción de la app.</p>
+                    <p className={styles.subtitle}>Monitorea las acciones de tu partner en tiempo real.</p>
                 </div>
-            </div>
+                {unreadCount > 0 && (
+                    <Button variant="ghost" size="sm" onClick={markAllAsRead}>
+                        Marcar todo como leído ({unreadCount})
+                    </Button>
+                )}
+            </header>
 
-            {/* Stats Row */}
-            <div className={styles.statsGrid}>
-                {stats.map((stat, i) => (
-                    <Card key={i} className={styles.statCard}>
-                        <div className={styles.statIcon}>{stat.icon}</div>
-                        <div className={styles.statInfo}>
-                            <p className={styles.statLabel}>{stat.label}</p>
-                            <h3 className={styles.statValue}>
-                                {stat.value}
-                                {stat.trend && <span className={styles.trendBadge}>{stat.trend}</span>}
-                            </h3>
+            <div className={styles.dashboardGrid}>
+                {/* ── Desktop Filters ── */}
+                <aside className={styles.filtersSidebar}>
+                    <Card className={styles.filterCard}>
+                        <h3 className={styles.filterTitle}>Filtros</h3>
+                        
+                        <div className={styles.filterGroup}>
+                            <KawaiiInput 
+                                type="toggle" 
+                                label="Solo no leídos" 
+                                value={onlyUnread} 
+                                onChange={e => setOnlyUnread(e.target.checked)} 
+                            />
+                        </div>
+
+                        <div className={styles.filterGroup}>
+                            <label className={styles.label}>Por tipo</label>
+                            <div className={styles.filterOptions}>
+                                {['all', 'memory', 'photo', 'capsule', 'coupon', 'bingo'].map(type => (
+                                    <button 
+                                        key={type}
+                                        className={`${styles.filterBtn} ${filterType === type ? styles.activeFilter : ''}`}
+                                        onClick={() => setFilterType(type)}
+                                    >
+                                        {type === 'all' ? 'Todos' : type.charAt(0).toUpperCase() + type.slice(1)}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </Card>
-                ))}
-            </div>
 
-            <div className={styles.mainLayout}>
-                {/* Left Col: Activity Log */}
-                <Card className={styles.feedCardContainer} glass>
-                    <div className={styles.feedHeader}>
-                        <h3>Última Actividad</h3>
-                        <div style={{ width: '200px' }}>
-                            <KawaiiInput type="select" value={filter} onChange={e => setFilter(e.target.value)} options={[
-                                { value: 'all', label: 'Todas las acciones' },
-                                { value: 'session', label: 'Sesiones' },
-                                { value: 'coupon_used', label: 'Cupones' },
-                                { value: 'capsule_viewed', label: 'Cápsulas Leídas' },
-                                { value: 'memory_created', label: 'Recuerdos' },
-                                { value: 'bingo_marked', label: 'Bingo' }
-                            ]} />
+                    <Card className={styles.statsCard}>
+                        <div className={styles.stat}>
+                            <span className={styles.statLabel}>Total Logs</span>
+                            <span className={styles.statValue}>{logs.length}</span>
                         </div>
-                    </div>
+                        <div className={styles.stat}>
+                            <span className={styles.statLabel}>Sin leer</span>
+                            <span className={styles.statValue}>{unreadCount}</span>
+                        </div>
+                    </Card>
+                </aside>
 
-                    <div className={styles.feedList}>
-                        {filteredActivities.length === 0 ? (
-                            <div className={styles.emptyFeed}>No hay actividad para este filtro.</div>
-                        ) : (
-                            filteredActivities.map(act => (
-                                <div key={act.id} className={styles.feedItem}>
-                                    <div className={styles.feedIcon}>{act.icon}</div>
-                                    <div className={styles.feedContent}>
-                                        <p className={styles.feedAction}><strong>{act.user}</strong> {act.action}</p>
-                                        <span className={styles.feedTime}>{getTimeAgo(act.timestamp)}</span>
+                {/* ── Main Feed ── */}
+                <div className={styles.feedContainer}>
+                    {filteredLogs.length === 0 ? (
+                        <div className={styles.emptyFeed}>
+                            <span>📭</span>
+                            <p>No hay actividad que coincida con los filtros.</p>
+                        </div>
+                    ) : (
+                        <div className={styles.feedList}>
+                            {filteredLogs.map(log => (
+                                <div 
+                                    key={log.id} 
+                                    className={`${styles.feedItem} ${!log.isReadByAdmin ? styles.unread : ''}`}
+                                    onMouseEnter={() => !log.isReadByAdmin && markAsRead(log.id)}
+                                >
+                                    <div className={`${styles.itemIcon} ${styles[log.targetType]}`}>
+                                        {getIcon(log.targetType)}
                                     </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </Card>
-
-                {/* Right Col: Next Capsules */}
-                <div className={styles.sideCol}>
-                    <Card className={styles.upcomingCard} glass>
-                        <h3 className={styles.upcomingTitle}>Próximas Cápsulas</h3>
-                        <div className={styles.upcomingList}>
-                            {nextCapsules.map(cap => (
-                                <div key={cap.id} className={styles.upcomingItem}>
-                                    <div className={styles.upcomingIcon}>⏳</div>
-                                    <div>
-                                        <h4 className={styles.upcomingName}>{cap.title}</h4>
-                                        <p className={styles.upcomingDate}>{new Date(cap.unlockDate).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+                                    <div className={styles.itemContent}>
+                                        <div className={styles.itemHeader}>
+                                            <span className={styles.itemAction}>{log.displayText}</span>
+                                            <span className={styles.itemTime}>{getTimeAgo(log.createdAt)}</span>
+                                        </div>
+                                        <div className={styles.itemFooter}>
+                                            <span className={styles.itemType}>{log.targetType}</span>
+                                            <span className={styles.itemId}>ID: {log.targetId}</span>
+                                        </div>
                                     </div>
+                                    {!log.isReadByAdmin && <div className={styles.unreadDot} />}
                                 </div>
                             ))}
-                            {nextCapsules.length === 0 && <p className={styles.emptyText}>No hay cápsulas programadas.</p>}
                         </div>
-                    </Card>
+                    )}
                 </div>
             </div>
         </div>
