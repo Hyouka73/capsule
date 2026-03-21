@@ -1,0 +1,219 @@
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg-overlay);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.modal {
+    background: var(--clay-bg-white);
+    width: 100%;
+    max-width: 400px;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--clay-shadow-lg);
+    border: var(--border-glass);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: 85vh;
+}
+
+.modalHeader {
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid var(--pastel-rose-light);
+}
+
+.modalHeader h2 {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.closeBtn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.modalBody {
+    padding: 20px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Search Box */
+.searchBox {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.searchIcon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+}
+
+.searchBox input {
+    width: 100%;
+    padding: 12px 12px 12px 40px;
+    border-radius: var(--radius-pill);
+    border: 2px solid var(--pastel-rose-light);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    background: var(--clay-bg-white);
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.searchBox input:focus {
+    border-color: var(--pastel-rose);
+}
+
+/* Results List */
+.resultsList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.resultItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    background: var(--clay-bg-white);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 3px solid var(--pastel-rose-light);
+}
+
+.resultItem:hover {
+    transform: translateX(4px);
+    box-shadow: var(--clay-shadow-sm);
+}
+
+.miniPoster {
+    width: 40px;
+    height: 60px;
+    background: var(--pastel-bg);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.miniPoster img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.resultTitle {
+    font-weight: 700;
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+.resultYear {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+/* Details Form */
+.detailsForm {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.selectedPreview {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    background: var(--pastel-bg);
+    padding: 12px;
+    border-radius: var(--radius-lg);
+}
+
+.previewPoster {
+    width: 60px;
+    height: 90px;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--clay-shadow-sm);
+}
+
+.changeBtn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    text-decoration: underline;
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 0;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.formGroup label {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.formGroup input[type="date"] {
+    padding: 12px;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--pastel-rose-light);
+    font-family: var(--font-body);
+}
+
+.ratingScale {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.2rem;
+    margin-top: -8px;
+}
+
+.saveBtn {
+    background: var(--gradient-rose);
+    color: white;
+    border: none;
+    padding: 16px;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.1rem;
+    box-shadow: var(--clay-shadow-rose);
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.loader, .noResults {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-muted);
+    font-style: italic;
+}

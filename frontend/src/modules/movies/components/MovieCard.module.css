@@ -1,0 +1,75 @@
+.card {
+    background: var(--clay-bg-white);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--clay-shadow-md);
+    border: var(--border-glass);
+    display: flex;
+    flex-direction: column;
+}
+
+.posterWrapper {
+    width: 100%;
+    aspect-ratio: 2/3;
+    position: relative;
+    background: var(--pastel-bg);
+    overflow: hidden;
+}
+
+.poster {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.noPoster {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    background: var(--pastel-rose-light);
+}
+
+.ratingBadge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--pastel-yellow);
+    color: #554400;
+    padding: 4px 8px;
+    border-radius: var(--radius-pill);
+    font-weight: 800;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: var(--clay-shadow-sm);
+}
+
+.ratingBadge span {
+    font-size: 14px;
+    font-variation-settings: 'FILL' 1;
+}
+
+.info {
+    padding: 12px;
+}
+
+.movieTitle {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    margin: 0 0 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.date {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin: 0;
+    text-transform: capitalize;
+}

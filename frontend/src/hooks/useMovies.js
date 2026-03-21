@@ -9,14 +9,15 @@ import {
     collection,
     query,
     orderBy,
+    where,
     onSnapshot,
     getFirestore,
 } from 'firebase/firestore';
-import { useOfflineActions } from './useOfflineActions';
 import { COLLECTIONS } from '../config/constants';
 import { toast } from '../components/ui/PastelToast/PastelToast';
 import MovieEntry from '../models/MovieEntry';
 import { openDB } from '../config/dbConfig';
+import { callBackendApi } from '../apiClient';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Caché local de películas en IndexedDB
@@ -59,8 +60,6 @@ export function useMovies() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    const { queueAction } = useOfflineActions();
-
     useEffect(() => {
         let unsubscribe = null;
         setIsLoading(true);
@@ -73,17 +72,17 @@ export function useMovies() {
             }
 
             if (navigator.onLine) {
-                const moviesRef = collection(firestoreDb, COLLECTIONS.MEMORIES);
+                const memoriesRef = collection(firestoreDb, COLLECTIONS.MEMORIES);
                 const q = query(
-                    moviesRef, 
+                    memoriesRef, 
+                    where('movieData', '!=', null),
+                    orderBy('movieData'),
                     orderBy('eventDate', 'desc')
                 );
-                // Nota: Filtrar en el cliente por movieData != null si no hay colección de películas dedicada
-                // o usar la colección apropiada si existe. Según Flujo 1, las películas se guardan como memories.
 
                 unsubscribe = onSnapshot(q, (snap) => {
-                    const allMemories = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    const movieMemories = allMemories.filter(m => m.movieData != null);
+                    const movieMemories = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    
                     setMovies(movieMemories);
                     saveMoviesCache(movieMemories);
                     setIsLoading(false);
@@ -107,33 +106,31 @@ export function useMovies() {
             const entry = new MovieEntry(movieData);
             const payload = entry.toQueuePayload();
 
-            // Actualización optimista
-            const tempId = crypto.randomUUID();
-            const optimisticMovie = {
-                id: tempId,
+            // Los registros ligeros se guardan directo en Firestore vía BFF
+            const memoryPayload = {
                 title: payload.title,
-                eventDate: payload.watchDate,
+                eventDate: payload.watchDate, // MovieEntry usa watchDate YYYY-MM-DD
                 movieData: payload,
-                isPending: true
+                placeId: payload.placeId,
+                tags: ['Película', 'Cine'],
+                isSpecial: payload.rating >= 9
             };
 
-            setMovies(prev => [optimisticMovie, ...prev]);
+            // Llamada directa al backend
+            const response = await callBackendApi('createMemory', memoryPayload);
 
-            // Encolar acción
-            const { queued } = await queueAction('movie_entry', payload);
-
-            if (navigator.onLine) {
+            if (response.id || response.success) {
                 toast.success('¡Película añadida! 🍿', payload.title);
+                return { success: true };
             } else {
-                toast.info('Guardado offline 📱', 'Se sincronizará cuando tengas conexión');
+                throw new Error(response.error || 'Error al guardar');
             }
-
-            return { success: true, queued, tempId };
         } catch (err) {
+            console.error('[useMovies] addMovie error:', err);
             toast.error('Error', err.message);
             return { success: false, error: err.message };
         }
-    }, [queueAction]);
+    }, []);
 
     const latestMovie = movies[0] || null;
 

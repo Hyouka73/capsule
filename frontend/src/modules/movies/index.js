@@ -4,4 +4,4 @@
 //   MoviesView.jsx, MovieCard.jsx, MovieWizard.jsx
 //   hooks/useMovies.js
 
-export { };
+export { default as MoviesView } from './MoviesView';
