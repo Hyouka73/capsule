@@ -5,6 +5,20 @@
             "queryScope": "COLLECTION",
             "fields": [
                 {
+                    "fieldPath": "movieData",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "eventDate",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "memories",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
                     "fieldPath": "isHidden",
                     "order": "ASCENDING"
                 },

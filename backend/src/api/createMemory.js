@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
-import { COLLECTIONS } from '../config/constants.js';
+import { COLLECTIONS, SINGLETON_DOCS } from '../config/constants.js';
 
 /**
  * createMemory API - Solo para usuarios autenticados (Admin o Partner)
@@ -104,7 +104,68 @@ export const createMemory = onCall({ region: 'us-central1' }, async (request) =>
             }
         }
 
-        // 6. Retornar solo lo que el Frontend necesita saber
+        // 6. Bingo Autodetection (No bloqueante para la creación del recuerdo)
+        try {
+            await db.runTransaction(async (transaction) => {
+                const bingoRef = db.collection(COLLECTIONS.BINGO_BOARD).doc(SINGLETON_DOCS.BINGO_BOARD);
+                const bingoDoc = await transaction.get(bingoRef);
+
+                if (bingoDoc.exists) {
+                    const board = bingoDoc.data();
+                    const categories = board.categories || [];
+                    let modified = false;
+                    let completedCount = 0;
+
+                    const newCategories = categories.map(cat => {
+                        // Si ya está completada, solo contamos
+                        if (cat.completedMemoryId) {
+                            completedCount++;
+                            return cat;
+                        }
+
+                        // Comparar tags del memory contra suggestedTags de la categoría
+                        const hasTagMatch = (cat.suggestedTags || []).some(t => 
+                            (memoryData.tags || []).includes(t)
+                        );
+
+                        // Autodetección especial para películas
+                        const isMovieMatch = cat.id === 'movies' && request.data.movieData;
+
+                        if (hasTagMatch || isMovieMatch) {
+                            modified = true;
+                            completedCount++;
+                            return {
+                                ...cat,
+                                completedMemoryId: memoryId,
+                                completedAt: FieldValue.serverTimestamp()
+                            };
+                        }
+
+                        return cat;
+                    });
+
+                    if (modified) {
+                        const updateData = {
+                            categories: newCategories,
+                            updatedAt: FieldValue.serverTimestamp()
+                        };
+
+                        // Si se completaron las 20, marcar victoria
+                        if (completedCount >= 20 && !board.isWinner) {
+                            updateData.isWinner = true;
+                            updateData.wonAt = FieldValue.serverTimestamp();
+                        }
+
+                        transaction.update(bingoRef, updateData);
+                    }
+                }
+            });
+        } catch (bingoErr) {
+            logger.error('Error in Bingo Autodetection:', bingoErr);
+            // No relanzamos para no fallar el createMemory
+        }
+
+        // 7. Retornar solo lo que el Frontend necesita saber
         return {
             success: true,
             memoryId: memoryId,

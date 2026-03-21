@@ -22,6 +22,11 @@ export const COLLECTIONS = {
     APP_CONFIG: 'appConfig',
 };
 
+export const SINGLETON_DOCS = {
+    APP_CONFIG: 'main',
+    BINGO_BOARD: 'board',
+};
+
 // export const PARTNER_SINGLETON_ID = 'partner_main'; // Deprecated: Use role-based search instead
 
 export const STORAGE_PATHS = {

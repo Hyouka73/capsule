@@ -16,19 +16,25 @@ export const getGallery = onCall({ region: 'us-central1' }, async (request) => {
     try {
         // 1. Fetch memory photos via Collection Group
         let photosQuery = db.collectionGroup(COLLECTIONS.PHOTOS)
-            .where('isSnapshot', '==', false) // Using == false since we fixed createMemory/onPhotoUploaded
-            .orderBy('createdAt', 'desc')
-            .limit(limit);
+            .where('isSnapshot', '==', false)
+            .orderBy('createdAt', 'desc');
 
         // 2. Fetch snapshots
         let snapshotsQuery = db.collection(COLLECTIONS.INSTANTANEAS)
             .where('isArchived', '==', true)
-            .orderBy('createdAt', 'desc')
-            .limit(limit);
+            .orderBy('createdAt', 'desc');
+
+        // Apply cursor if provided
+        if (lastCreatedAt) {
+            const cursorDate = new Date(lastCreatedAt);
+            // Use the date for both queries
+            photosQuery = photosQuery.startAfter(cursorDate);
+            snapshotsQuery = snapshotsQuery.startAfter(cursorDate);
+        }
 
         const [photosSnap, snapshotsSnap] = await Promise.all([
-            photosQuery.get(),
-            snapshotsQuery.get()
+            photosQuery.limit(limit).get(),
+            snapshotsQuery.limit(limit).get()
         ]);
 
         const memoryPhotos = photosSnap.docs.map(doc => ({
