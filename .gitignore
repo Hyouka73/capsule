@@ -39,3 +39,8 @@ implementation_plan.md
 
 .firebase/
 serviceAccountKey.json
+
+# Local development and documentation
+info/
+tmp/
+emulator_log*.txt
