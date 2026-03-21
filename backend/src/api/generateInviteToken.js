@@ -13,7 +13,7 @@ export const generateInviteToken = onCall({ region: 'us-central1' }, async (requ
 
     const { expiresInDays = null } = request.data ?? {};
     const db = getFirestore();
-    const baseUrl = process.env.APP_URL ?? 'https://capsule-sooty.vercel.app';
+    const baseUrl = process.env.APP_URL || '';
 
     try {
         // 1. Check if there's an existing valid and unclaimed token

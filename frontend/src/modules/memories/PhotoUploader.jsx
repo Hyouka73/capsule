@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { compressImage } from '../../services/storage';
 import { autoDetectMetadata } from '../../utils/extractGpsFromFile';
 import Button from '../../components/ui/Button/Button';
@@ -6,13 +7,10 @@ import { logToVercel } from '../../utils/vercelLogger';
 import CameraPermissionGate from '../../components/ui/CameraPermissionGate/CameraPermissionGate';
 
 export default function PhotoUploader({ 
-    memoryId, 
     onDone, 
     onMetadataDetected, 
-    onPhotosChange,
-    initialFiles = [] 
+    onPhotosChange
 }) {
-    const { user } = useAuth();
     const [uploads, setUploads] = useState([]);
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -37,12 +35,24 @@ export default function PhotoUploader({
             const id = Math.random().toString(36).substring(7);
             
             // 1. Immediate Compression (RAM optimization)
-            const compressedBlob = await compressImage(file);
-            const previewUrl = URL.createObjectURL(compressedBlob);
+            let compressedBlob;
+            let previewUrl;
+            let finalFile;
+
+            try {
+                compressedBlob = await compressImage(file);
+                previewUrl = URL.createObjectURL(compressedBlob);
+                finalFile = compressedBlob;
+            } catch (err) {
+                logToVercel('PhotoUploader', 'COMPRESS_ERROR', err.message);
+                // Fallback to original file if compression fails
+                previewUrl = URL.createObjectURL(file);
+                finalFile = file;
+            }
             
             const photoItem = {
                 id,
-                file: compressedBlob,
+                file: finalFile,
                 previewUrl,
                 originalName: file.name,
                 status: 'ready'
@@ -57,7 +67,7 @@ export default function PhotoUploader({
                 autoDetectMetadata(file).then(metadata => {
                     if (metadata) onMetadataDetected(metadata);
                 }).catch((err) => {
-                    console.warn('[PhotoUploader] Metadata extraction failed:', err);
+                    logToVercel('PhotoUploader', 'METADATA_ERROR', err.message);
                 });
             }
         }
@@ -87,7 +97,6 @@ export default function PhotoUploader({
         processFiles(files);
     }, [processFiles]);
 
-    const allFinished = uploads.length > 0 && uploads.every(u => u.status === 'success' || u.status === 'error');
 
     return (
         <div className={styles.root}>

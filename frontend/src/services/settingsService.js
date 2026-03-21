@@ -15,6 +15,17 @@ export async function saveGlobalSettings(settings) {
 }
 
 /**
+ * Update partial settings
+ */
+export async function updateConfig(partialSettings) {
+    const docRef = doc(db, SETTINGS_DOC_PATH);
+    await setDoc(docRef, {
+        ...partialSettings,
+        updatedAt: new Date().toISOString()
+    }, { merge: true });
+}
+
+/**
  * Fetch global application settings once
  */
 export async function getGlobalSettings() {

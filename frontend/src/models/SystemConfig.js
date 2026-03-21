@@ -50,10 +50,14 @@ export default class SystemConfig {
             ...data.snapshotConfig
         };
 
+        this.teaser = {
+            unlockAt: data.teaser?.unlockAt ?? '2026-04-04T00:00:00',
+            isEnabled: data.teaser?.isEnabled ?? true
+        };
+
         this.inviteConfig = {
-            // No persistiremos el link real, solo metadatos si fuera necesario
-            ...data.inviteConfig,
-            inviteLink: data.inviteConfig?.inviteLink || ''
+            inviteLink: data.inviteConfig?.inviteLink ?? null,
+            generatedAt: data.inviteConfig?.generatedAt ?? null
         };
 
         this.citaConfig = {
@@ -76,7 +80,8 @@ export default class SystemConfig {
             map: this.mapConfig,
             notifications: this.notifications,
             snapshotConfig: this.snapshotConfig,
-            // Excluimos inviteConfig para no guardar el link efímero
+            teaser: this.teaser,
+            inviteConfig: this.inviteConfig,
             citaConfig: this.citaConfig,
             updatedAt: new Date().toISOString()
         };
@@ -95,6 +100,7 @@ export default class SystemConfig {
             mapConfig: data.map,
             notifications: data.notifications,
             snapshotConfig: data.snapshotConfig,
+            teaser: data.teaser,
             inviteConfig: data.inviteConfig,
             citaConfig: data.citaConfig,
             updatedAt: data.updatedAt

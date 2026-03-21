@@ -7,6 +7,8 @@ import {
     generateDeviceFingerprint
 } from '../../services/auth';
 import LoadingScreen from '../../components/ui/LoadingScreen/LoadingScreen';
+import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
+import Button from '../../components/ui/Button/Button';
 import styles from './JoinInvite.module.css';
 
 /**
@@ -79,20 +81,20 @@ export default function JoinInvite() {
                     <span className={styles.icon}>💌</span>
                     <h2>Casi listos...</h2>
                     <p>Pega tu código de invitación aquí para entrar:</p>
-                    <input
+                    <KawaiiInput
                         type="text"
-                        className={styles.input}
                         placeholder="Código de invitación..."
                         value={manualToken}
                         onChange={(e) => setManualToken(e.target.value)}
                     />
-                    <button
-                        className={styles.btn}
+                    <Button
                         onClick={() => processInvite(manualToken)}
                         disabled={!manualToken.trim()}
+                        whileTap={{ scale: 0.95 }}
+                        className={styles.btn}
                     >
                         Unirme a la aventura
-                    </button>
+                    </Button>
                     <p className={styles.helpText}>
                         Pídele a tu pareja que te pase el código desde el panel Admin.
                     </p>
@@ -120,12 +122,12 @@ export default function JoinInvite() {
                 <h2>Ups, algo salió mal</h2>
                 <p className={styles.errorText}>{errorMsg}</p>
                 <div className={styles.errorActions}>
-                    <button className={styles.btn} onClick={() => setStatus('manual')}>
+                    <Button onClick={() => setStatus('manual')} className={styles.btn} whileTap={{ scale: 0.95 }}>
                         Intentar con otro código
-                    </button>
-                    <button className={styles.btnGhost} onClick={() => navigate('/')}>
+                    </Button>
+                    <Button variant="ghost" onClick={() => navigate('/')} className={styles.btnGhost} whileTap={{ scale: 0.95 }}>
                         Volver al inicio
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

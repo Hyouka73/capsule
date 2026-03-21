@@ -75,7 +75,7 @@ export function PastelToastProvider({ children }) {
                     : t
             ));
             // Auto-dismiss after update
-            setTimeout(() => setToasts(prev => prev.filter(t => t.id === action.id)), 4000);
+            setTimeout(() => setToasts(prev => prev.filter(t => t.id !== action.id)), 4000);
         }
     }, []);
 

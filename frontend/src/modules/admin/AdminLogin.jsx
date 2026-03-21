@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from '../../components/ui/PastelToast/PastelToast';
 import { signInAsAdmin } from '../../services/auth';
 import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
@@ -8,6 +9,7 @@ export default function AdminLogin() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const navigate = useNavigate();
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -19,6 +21,8 @@ export default function AdminLogin() {
                 success: { title: '¡Acceso concedido!', description: 'Bienvenido a Capsule Admin.' },
                 error: { title: 'Acceso denegado', description: 'Credenciales incorrectas.' },
             });
+            // 2. Explicitly navigate to admin panel
+            navigate('/admin', { replace: true });
         } catch {
             // handled by toast.promise
         } finally {

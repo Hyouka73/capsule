@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../Button/Button';
 import styles from './ConfirmModal.module.css';
@@ -27,7 +28,7 @@ export default function ConfirmModal({
     variant = 'default',
     emoji = '👋'
 }) {
-    return (
+    return createPortal(
         <AnimatePresence>
             {isOpen && (
                 <motion.div
@@ -72,6 +73,7 @@ export default function ConfirmModal({
                     </motion.div>
                 </motion.div>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 }

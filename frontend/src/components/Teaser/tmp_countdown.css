@@ -1,0 +1,278 @@
+/* --- IMPORTAR FUENTE DE LUJO (Bodoni Moda - Alta Contraste) --- */
+@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,700;1,6..96,400&display=swap');
+
+/* Final 3D Flip Countdown Styles (Luxury Edition) */
+
+.countdown-section {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    padding: var(--space-2xl) 1rem;
+    max-width: 100%;
+    overflow: hidden;
+    --flip-duration: 0.65s;
+
+    /* Colores locales para el contador */
+    --card-bg-color: #0d0d1a;
+    /* Azul oscuro profundo (casi negro) */
+    --text-gold: #d4a853;
+    /* Dorado Champagne suave */
+    --text-gold-shadow: #8b6b23;
+    /* Sombra dorada más oscura */
+    font-family: 'Bodoni Moda', serif;
+}
+
+.countdown-teaser {
+    font-family: 'Bodoni Moda', serif;
+    /* Cambiado a la fuente elegante */
+    font-size: clamp(1.5rem, 4vw, 2.5rem);
+    font-weight: 400;
+    font-style: italic;
+    color: #e0e0e0;
+    margin-bottom: var(--space-xl);
+    letter-spacing: 0.03em;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.countdown-grid {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    /* Un poco más de espacio entre bloques */
+}
+
+.countdown-separator {
+    font-family: 'Bodoni Moda', serif;
+    font-size: clamp(2rem, 6vw, 4rem);
+    color: var(--text-gold);
+    opacity: 0.8;
+    padding-bottom: 15px;
+    font-weight: 700;
+}
+
+.flip-unit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.flip-label {
+    font-family: 'Bodoni Moda', serif;
+    /* Fuente elegante también en etiquetas */
+    font-size: clamp(0.9rem, 2.5vw, 1.2rem);
+    color: #a0a0b0;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    font-weight: 400;
+    margin-top: 10px;
+}
+
+/* --- 3D Flip Card Container --- */
+.flip-card {
+    position: relative;
+    /* Mayor tamaño en general */
+    width: clamp(75px, 20vw, 130px);
+    height: clamp(80px, 20vw, 140px);
+    perspective: 500px;
+    transform-style: preserve-3d;
+}
+
+/* --- Base Card Styles --- */
+.card-face {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+
+    /* FONDO Y COLOR DE LUJO */
+    background: var(--card-bg-color);
+    color: var(--text-gold);
+
+    /* Bordes sutiles para dar volumen */
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+
+    /* TIPOGRAFÍA DE LUJO */
+    font-family: 'Bodoni Moda', serif;
+    font-weight: 700;
+    /* Negrita para que se note el contraste fino/grueso */
+    /* Aumentado tamaño de fuente */
+    font-size: clamp(2.5rem, 10vw, 5rem);
+
+    /* Centrado Vertical Matemático (DEBE coincidir con height de flip-card) */
+    line-height: clamp(80px, 20vw, 140px);
+    text-align: center;
+
+    /* Sombra suave al texto para que "brille" un poco */
+    text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.2);
+}
+
+/* --- MITAD SUPERIOR (Top Half) --- */
+.card-top {
+    top: 0;
+    height: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    /* Mostrar parte de arriba del número */
+
+    background-color: var(--card-bg-color);
+    border-radius: 8px 8px 0 0;
+    /* Bordes redondeados más suaves */
+
+    /* Línea divisoria oscura */
+    border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+    z-index: 1;
+}
+
+/* Efecto de brillo en la parte superior (opcional, da efecto cristal) */
+.card-top::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
+    pointer-events: none;
+}
+
+/* --- MITAD INFERIOR (Bottom Half) --- */
+.card-bottom {
+    bottom: 0;
+    height: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    /* Mostrar parte de abajo del número */
+
+    background-color: var(--card-bg-color);
+    border-radius: 0 0 8px 8px;
+
+    /* Línea divisoria clara (para efecto 3D en la ranura) */
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    z-index: 0;
+}
+
+/* --- Animación y Piezas Móviles --- */
+.card-flip {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 50%;
+    z-index: 2;
+    transform-style: preserve-3d;
+    transform-origin: bottom center;
+}
+
+.flip-card.flipping .card-flip {
+    animation: flipDown var(--flip-duration) cubic-bezier(0.15, 0.45, 0.28, 1) forwards;
+}
+
+@keyframes flipDown {
+    0% {
+        transform: rotateX(0deg);
+    }
+
+    100% {
+        transform: rotateX(-180deg);
+    }
+}
+
+/* CARA FRONTAL (Old Number - Top Half) */
+.card-flip .face-front {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    backface-visibility: hidden;
+
+    background: var(--card-bg-color);
+    border-radius: 8px 8px 0 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+/* CARA TRASERA (New Number - Bottom Half) */
+.card-flip .face-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+
+    transform: rotateX(180deg);
+
+    background: var(--card-bg-color);
+    border-radius: 0 0 8px 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+}
+
+/* Ajuste de alineación fina */
+.card-face span {
+    transform: translateY(0px);
+}
+
+/* Sombra dinámica más realista */
+.flip-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.6) 100%);
+    opacity: 0;
+    z-index: 5;
+    transition: opacity 0.1s;
+    border-radius: 8px;
+    /* Debe coincidir con el borde de la tarjeta */
+    pointer-events: none;
+}
+
+.flip-card.flipping::before {
+    animation: flashShadow var(--flip-duration) ease-in forwards;
+}
+
+@keyframes flashShadow {
+    0% {
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+/* Fecha final */
+.countdown-date {
+    margin-top: var(--space-xl);
+    font-family: 'Bodoni Moda', serif;
+    font-size: 0.9rem;
+    color: #888899;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-weight: 400;
+}
+
+@media (max-width: 380px) {
+    .countdown-grid {
+        gap: 6px;
+    }
+}

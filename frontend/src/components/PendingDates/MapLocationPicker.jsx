@@ -222,7 +222,7 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
     return (
         <div className={styles.container}>
             <div className={styles.header}>
-                <button className={styles.backBtn} onClick={onCancel}>
+                <button type="button" className={styles.backBtn} onClick={onCancel}>
                     <span className="material-symbols-outlined">arrow_back</span>
                 </button>
 

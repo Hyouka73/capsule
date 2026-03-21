@@ -1,35 +1,37 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Countdown from './Countdown';
-import './TimeLock.css'; // Just in case we need specific adjustments
-
-// CONFIGURACIÓN: Fecha de desbloqueo
-// Formato ISO: YYYY-MM-DDTHH:mm:ss
-// Ejemplo: "2026-02-14T08:00:00"
-const UNLOCK_DATE = "2024-02-14T08:00:00";
+import { useAppConfig } from '../../context/AppConfigContext';
+import LoadingScreen from '../ui/LoadingScreen/LoadingScreen';
+import './TimeLock.css';
 
 function TimeLock({ children }) {
+    const { teaser, isConfigLoaded } = useAppConfig();
     const [isLocked, setIsLocked] = useState(true);
-    const [checking, setChecking] = useState(true);
+
+    const unlockDate = teaser?.unlockAt 
+        ? new Date(teaser.unlockAt) 
+        : new Date('2026-04-04T00:00:00');
 
     useEffect(() => {
-        const target = new Date(UNLOCK_DATE).getTime();
+        if (!isConfigLoaded) return;
+
+        const target = unlockDate.getTime();
         const now = Date.now();
 
         if (now >= target) {
             setIsLocked(false);
         }
-        setChecking(false);
-    }, []);
+    }, [isConfigLoaded, unlockDate]);
 
     const handleUnlock = () => {
-        // Wait a moment for the countdown hitting 0 visual
+        // Wait a moment for the countdown hitting 0 visual state
         setTimeout(() => {
             setIsLocked(false);
         }, 1000);
     };
 
-    if (checking) return null; // Avoid flash
+    if (!isConfigLoaded) return <LoadingScreen message="Sincronizando tiempo..." />;
 
     return (
         <AnimatePresence mode="wait">
@@ -45,7 +47,7 @@ function TimeLock({ children }) {
                         {/* Reusing Countdown with custom title and date */}
                         <Countdown
                             visible={true}
-                            targetDate={UNLOCK_DATE}
+                            targetDate={unlockDate}
                             onComplete={handleUnlock}
                             title="El contenido no está disponible aún. Espera un poquito..."
                         />

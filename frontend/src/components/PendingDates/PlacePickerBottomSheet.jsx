@@ -87,7 +87,7 @@ export default function PlacePickerBottomSheet({
                         <div className={styles.header}>
                             <div className={styles.handle} />
                             <h3>Selecciona un lugar</h3>
-                            <button className={styles.closeBtn} onClick={onClose}>
+                            <button type="button" className={styles.closeBtn} onClick={onClose}>
                                 <span className="material-symbols-outlined">close</span>
                             </button>
                         </div>

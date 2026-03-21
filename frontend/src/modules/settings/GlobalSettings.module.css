@@ -136,53 +136,81 @@
     margin-top: 0.3rem;
 }
 
-/* Forms */
-.formGroup {
+
+/* Redesigned Invite Section */
+.inviteContainer {
+    background: var(--clay-bg-rose-light);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    border: 2px solid var(--pastel-rose-light);
+    box-shadow: inset var(--clay-shadow-sm);
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 1.25rem;
+    margin: 1rem 0;
 }
 
-.formGroup label {
-    font-size: 0.9rem;
-    font-weight: 700;
+.inviteHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.inviteLabel {
+    font-size: 0.95rem;
+    font-weight: 800;
     color: var(--text-primary);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    font-family: var(--font-display);
 }
 
-.inviteWrapper {
+.inviteDate {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    background: white;
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--pastel-rose-light);
+}
+
+.inviteGroup {
     display: flex;
     gap: 0.75rem;
-    background: var(--bg-input);
-    padding: 0.5rem;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--glass-border);
+    align-items: center;
+}
+
+.inviteInputWrapper {
+    flex: 1;
+}
+
+.skeletonRadius {
+    border-radius: var(--radius-md) !important;
+}
+
+.copyBtn {
+    min-width: 100px;
+}
+
+.miniRevokeBtn {
+    min-width: 40px !important;
+    padding: 0 !important;
+    height: 48px;
+    width: 48px;
+    font-size: 1.5rem !important;
+    border-radius: var(--radius-md) !important;
+    border: 1px dashed var(--pastel-rose-light) !important;
+    color: var(--text-muted) !important;
+}
+
+.miniRevokeBtn:hover {
+    background: var(--clay-bg-rose) !important;
+    color: var(--pastel-rose) !important;
+    border-style: solid !important;
 }
 
 .helpText {
-    margin: 0;
-    font-size: 0.85rem;
     color: var(--text-muted);
     font-style: italic;
-}
-
-.revokeBtn {
-    align-self: flex-start;
-    margin-top: 0.5rem;
-    color: var(--color-error);
-    font-size: 0.85rem;
-    font-weight: 600;
-    background: none;
-    border: none;
-    padding: 4px 8px;
-    border-radius: var(--radius-sm);
-    transition: background 0.2s ease;
-}
-
-.revokeBtn:hover {
-    background: rgba(255, 117, 143, 0.1);
 }
 
 /* Sticky Footer */
@@ -318,4 +346,5 @@
     .dangerActions {
         flex-direction: column;
     }
-}
+}
+

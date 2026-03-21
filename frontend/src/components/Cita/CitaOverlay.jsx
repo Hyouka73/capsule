@@ -61,7 +61,7 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                                 Modo Cita
                             </p>
                         </div>
-                        <button className={styles.citaClose} onClick={() => {
+                        <button type="button" className={styles.citaClose} onClick={() => {
                             if (sessionPhotos.length > 0) {
                                 setWarningOpen(true);
                             } else {
@@ -167,6 +167,7 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                         </label>
 
                         <button
+                            type="button"
                             className={`${styles.citaAction} ${sessionPhotos.length === 0 ? styles.citaActionDisabled : ''}`}
                             disabled={sessionPhotos.length === 0}
                         >
@@ -209,12 +210,14 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                             <p>¿Salir sin guardar? Perderás las fotos.</p>
                             <div className={styles.warningActions}>
                                 <button
+                                    type="button"
                                     className={styles.warningBtnPrimary}
                                     onClick={() => setWarningOpen(false)}
                                 >
                                     Seguir
                                 </button>
                                 <button
+                                    type="button"
                                     className={styles.warningBtnSecondary}
                                     onClick={() => {
                                         setWarningOpen(false);

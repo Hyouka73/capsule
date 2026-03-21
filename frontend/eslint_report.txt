@@ -1,0 +1,8 @@
+
+C:\Users\baka6\OneDrive\Documents\Proyecto del amor\APP\frontend\src\modules\memories\PhotoUploader.jsx
+  11:5   error  'memoryId' is defined but never used                                                  no-unused-vars
+  15:5   error  'initialFiles' is assigned a value but never used                                     no-unused-vars
+  17:13  error  'user' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+✖ 3 problems (3 errors, 0 warnings)
+

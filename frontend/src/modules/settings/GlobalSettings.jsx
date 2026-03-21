@@ -4,9 +4,12 @@ import Card from '../../components/ui/Card/Card';
 import Button from '../../components/ui/Button/Button';
 import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
 import { toast } from '../../components/ui/PastelToast/PastelToast';
-import { getGlobalSettings, saveGlobalSettings } from '../../services/settingsService';
+import { getGlobalSettings, saveGlobalSettings, updateConfig } from '../../services/settingsService';
 import { generateInviteToken } from '../../apiClient';
 import SystemConfig from '../../models/SystemConfig';
+import ConfirmModal from '../../components/ui/ConfirmModal/ConfirmModal';
+import LoadingScreen from '../../components/ui/LoadingScreen/LoadingScreen';
+import Skeleton from '../../components/ui/Skeleton/Skeleton';
 import styles from './GlobalSettings.module.css';
 
 const containerVariants = {
@@ -32,6 +35,8 @@ export default function GlobalSettings() {
     const [config, setConfig] = useState(new SystemConfig());
     const [isSaving, setIsSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [isRegenerating, setIsRegenerating] = useState(false);
+    const [showInviteConfirm, setShowInviteConfirm] = useState(false);
 
     useEffect(() => {
         async function load() {
@@ -60,6 +65,7 @@ export default function GlobalSettings() {
                 mapConfig: { ...prev.mapConfig },
                 notifications: { ...prev.notifications },
                 snapshotConfig: { ...prev.snapshotConfig },
+                teaser: { ...prev.teaser },
                 inviteConfig: { ...prev.inviteConfig },
                 citaConfig: { ...prev.citaConfig }
             });
@@ -99,24 +105,36 @@ export default function GlobalSettings() {
     };
 
     const handleRegenerateInvite = async () => {
-        if (!confirm('¿Seguro? El enlace anterior dejará de funcionar para nuevos dispositivos.')) return;
+        setShowInviteConfirm(false);
+        setIsRegenerating(true);
         try {
-            const { inviteUrl } = await generateInviteToken({ expiresInDays: 7 });
+            const { tokenId } = await generateInviteToken({ expiresInDays: 7 });
+            const BASE_URL = import.meta.env.VITE_APP_URL || window.location.origin;
+            const inviteUrl = `${BASE_URL}/join?t=${tokenId}`;
+            const now = new Date().toISOString();
+            
+            // 1. Update local state
             handleUpdate('inviteConfig.inviteLink', inviteUrl);
-            toast.success('¡Enlace generado!', 'El nuevo token está listo. Recuerda que no se guarda permanentemente.');
+            handleUpdate('inviteConfig.generatedAt', now);
+
+            // 2. Persist automatically
+            await updateConfig({ 
+                inviteConfig: { 
+                    inviteLink: inviteUrl, 
+                    generatedAt: now 
+                } 
+            });
+
+            toast.success('¡Enlace generado!', 'Link generado y guardado ✓');
         } catch (err) {
-            console.error('Error generating token:', err);
-            toast.error('Error al generar enlace', err.message || 'Error del servidor');
+            console.error('Error in regenerate invite flow:', err);
+            toast.error('Error al generar enlace', 'Link generado pero no se pudo guardar. Cópialo antes de cerrar.');
+        } finally {
+            setIsRegenerating(false);
         }
     };
 
-    if (isLoading) {
-        return (
-            <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                <p>Abriendo el panel de control...</p>
-            </div>
-        );
-    }
+    // Removed full-screen LoadingScreen return to support skeleton states
 
     return (
         <motion.div 
@@ -295,27 +313,49 @@ export default function GlobalSettings() {
                             <h3>Acceso y Seguridad</h3>
                         </div>
 
-                        <div className={styles.formGroup}>
-                            <label>Enlace de Invitación</label>
-                            <div className={styles.inviteWrapper}>
-                                <div style={{ flex: 1 }}>
-                                    <KawaiiInput 
-                                        type="text" 
-                                        readOnly 
-                                        placeholder="Pulsa regenerar para crear uno..."
-                                        value={config.inviteConfig.inviteLink} 
-                                    />
-                                </div>
-                                <Button variant="secondary" onClick={handleCopyInvite}>Copiar</Button>
+                        <div className={styles.inviteContainer}>
+                            <div className={styles.inviteHeader}>
+                                <label className={styles.inviteLabel}>Enlace de Invitación</label>
+                                {config.inviteConfig.generatedAt && (
+                                    <span className={styles.inviteDate}>
+                                        Generado el {new Date(config.inviteConfig.generatedAt).toLocaleDateString()}
+                                    </span>
+                                )}
                             </div>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className={styles.revokeBtn}
-                                onClick={handleRegenerateInvite}
-                            >
-                                ↻ Regenerar token temporal
-                            </Button>
+
+                            <div className={styles.inviteGroup}>
+                                <div className={styles.inviteInputWrapper}>
+                                    {isLoading || isRegenerating ? (
+                                        <Skeleton height="48px" className={styles.skeletonRadius} />
+                                    ) : (
+                                        <KawaiiInput 
+                                            type="text" 
+                                            readOnly 
+                                            placeholder="Pulsa regenerar para crear uno..."
+                                            value={config.inviteConfig.inviteLink}
+                                            className={styles.cleanInput}
+                                        />
+                                    )}
+                                </div>
+                                <Button 
+                                    variant="primary" 
+                                    onClick={handleCopyInvite} 
+                                    disabled={isLoading || !config.inviteConfig.inviteLink}
+                                    className={styles.copyBtn}
+                                >
+                                    📋 Copiar
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setShowInviteConfirm(true)}
+                                    disabled={isRegenerating || isLoading}
+                                    className={styles.miniRevokeBtn}
+                                    title="Regenerar enlace"
+                                >
+                                    {isRegenerating ? '↻' : '↻'}
+                                </Button>
+                            </div>
                         </div>
                         
                         <div className={styles.divider}></div>
@@ -326,6 +366,27 @@ export default function GlobalSettings() {
                             checked={config.visibility.showAdminNotes}
                             onChange={() => handleUpdate('visibility.showAdminNotes', !config.visibility.showAdminNotes)}
                         />
+                    </Card>
+                </motion.div>
+
+                {/* Critical Dates Section */}
+                <motion.div variants={itemVariants}>
+                    <Card className={styles.sectionCard} glass>
+                        <div className={styles.sectionHeader}>
+                            <span className={styles.sectionIcon}>📅</span>
+                            <h3>Fechas Críticas</h3>
+                        </div>
+                        <p className={styles.sectionDesc}>Eventos detonantes del sistema.</p>
+
+                        <div className={styles.formGroup}>
+                            <KawaiiInput
+                                type="datetime-local"
+                                label="🚀 Fecha y hora de lanzamiento"
+                                value={config.teaser?.unlockAt ? config.teaser.unlockAt.substring(0, 16) : ''}
+                                onChange={e => handleUpdate('teaser.unlockAt', e.target.value)}
+                                helpText="Fecha en que ella podrá entrar a la app por primera vez."
+                            />
+                        </div>
                     </Card>
                 </motion.div>
 
@@ -459,6 +520,18 @@ export default function GlobalSettings() {
                     </Button>
                 </div>
             </motion.div>
+
+            {/* Modals */}
+            <ConfirmModal
+                isOpen={showInviteConfirm}
+                title="¿Regenerar enlace de invitación?"
+                message="El enlace anterior dejará de funcionar para nuevos dispositivos."
+                confirmText="Sí, regenerar"
+                cancelText="Cancelar"
+                onConfirm={handleRegenerateInvite}
+                onCancel={() => setShowInviteConfirm(false)}
+                emoji="🔒"
+            />
         </motion.div>
     );
 }
@@ -474,4 +547,3 @@ function ToggleRow({ label, desc, checked, onChange }) {
         </div>
     );
 }
-
