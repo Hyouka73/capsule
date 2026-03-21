@@ -1,6 +1,7 @@
 /* 
   Sileo Custom Theme — Project Capsule
   Toast notifications using the Cute Pastel palette.
+  Style: Clay Chunky (Solid, Opaque, No blurs)
 */
 
 :root {
@@ -19,17 +20,12 @@
     display: none !important;
 }
 
-/* ===== Toast Container (Pastel Glass Card) ===== */
+/* ===== Toast Container (Clay Chunky Card) ===== */
 [data-sileo-toast] {
-    background: rgba(255, 240, 243, 0.92) !important;
-    /* pastel-bg con opacidad */
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    border: 2.5px solid rgba(255, 255, 255, 0.75) !important;
-    border-radius: 20px !important;
-    box-shadow:
-        0 8px 24px -4px rgba(255, 183, 178, 0.3),
-        0 0 0 1px rgba(255, 183, 178, 0.1) !important;
+    background: var(--pastel-bg) !important;
+    border: 3px solid var(--pastel-rose-light) !important;
+    border-radius: var(--radius-xl) !important;
+    box-shadow: var(--clay-shadow-md) !important;
     overflow: hidden !important;
 }
 
@@ -42,15 +38,15 @@
 [data-sileo-title] {
     color: var(--pastel-text) !important;
     font-family: var(--font-display) !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
     font-size: 0.95rem !important;
     letter-spacing: 0.01em !important;
 }
 
 /* Title state colors (override Sileo defaults) */
 [data-sileo-title][data-state="success"] {
-    color: var(--pastel-green-btn) !important;
-    --sileo-tone: var(--pastel-green-btn) !important;
+    color: var(--pastel-mint-dark) !important;
+    --sileo-tone: var(--pastel-mint-dark) !important;
 }
 
 [data-sileo-title][data-state="error"] {
@@ -59,8 +55,8 @@
 }
 
 [data-sileo-title][data-state="loading"] {
-    color: var(--pastel-sage-dark) !important;
-    --sileo-tone: var(--pastel-sage-dark) !important;
+    color: var(--pastel-text-muted) !important;
+    --sileo-tone: var(--pastel-text-muted) !important;
 }
 
 [data-sileo-title][data-state="warning"] {
@@ -74,8 +70,7 @@
 }
 
 [data-sileo-description] {
-    color: var(--pastel-text) !important;
-    opacity: 0.75;
+    color: var(--pastel-text-muted) !important;
     font-family: var(--font-body) !important;
     font-size: 0.875rem !important;
     line-height: 1.45 !important;
@@ -89,66 +84,52 @@
     width: 26px !important;
     height: 26px !important;
     border-radius: 50% !important;
+    background-color: var(--pastel-yellow) !important; /* Solid background */
 }
 
 /* State-specific badge colors */
 [data-sileo-badge][data-state="success"] {
-    background-color: rgba(136, 216, 176, 0.2) !important;
-    /* pastel-green-btn tint */
-    color: var(--pastel-green-btn) !important;
-    --sileo-tone: var(--pastel-green-btn) !important;
-    --sileo-tone-bg: rgba(136, 216, 176, 0.18) !important;
+    color: var(--pastel-mint-dark) !important;
+    --sileo-tone: var(--pastel-mint-dark) !important;
 }
 
 [data-sileo-badge][data-state="error"] {
-    background-color: rgba(255, 117, 143, 0.15) !important;
     color: var(--color-error) !important;
     --sileo-tone: var(--color-error) !important;
-    --sileo-tone-bg: rgba(255, 117, 143, 0.15) !important;
 }
 
 [data-sileo-badge][data-state="loading"] {
-    background-color: rgba(183, 228, 199, 0.2) !important;
-    /* pastel-sage tint */
-    color: var(--pastel-sage-dark) !important;
-    --sileo-tone: var(--pastel-sage-dark) !important;
-    --sileo-tone-bg: rgba(183, 228, 199, 0.2) !important;
+    color: var(--pastel-text-muted) !important;
+    --sileo-tone: var(--pastel-text-muted) !important;
 }
 
 [data-sileo-badge][data-state="warning"] {
-    background-color: rgba(255, 209, 102, 0.2) !important;
     color: #e6a800 !important;
     --sileo-tone: #e6a800 !important;
-    --sileo-tone-bg: rgba(255, 209, 102, 0.2) !important;
 }
 
 [data-sileo-badge][data-state="info"] {
-    background-color: rgba(149, 213, 178, 0.2) !important;
-    color: var(--pastel-sage-dark) !important;
-    --sileo-tone: var(--pastel-sage-dark) !important;
-    --sileo-tone-bg: rgba(149, 213, 178, 0.2) !important;
+    color: var(--pastel-text-muted) !important;
+    --sileo-tone: var(--pastel-text-muted) !important;
 }
 
-/* ===== Premium animations ===== */
+/* ===== Solid animations (No blur) ===== */
 [data-sileo-viewport][data-position^="bottom"] [data-sileo-toast]:not([data-ready="true"]) {
-    transform: translateY(20px) scale(0.92) !important;
+    transform: translateY(20px) scale(0.95) !important;
     opacity: 0 !important;
-    filter: blur(6px);
 }
 
 [data-sileo-viewport][data-position^="top"] [data-sileo-toast]:not([data-ready="true"]) {
-    transform: translateY(-20px) scale(0.92) !important;
+    transform: translateY(-20px) scale(0.95) !important;
     opacity: 0 !important;
-    filter: blur(6px);
 }
 
 [data-sileo-toast][data-ready="true"][data-exiting="true"] {
-    transform: scale(0.92) !important;
+    transform: scale(0.95) !important;
     opacity: 0 !important;
-    filter: blur(4px);
 }
 
 /* Remove default canvas filter */
 [data-sileo-canvas] {
     filter: none !important;
-}
+}

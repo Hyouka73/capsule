@@ -11,19 +11,11 @@
     position: relative;
     overflow: hidden;
     padding: 1rem 1.25rem;
-    /* horizontal padding so card never touches edges on mobile */
     box-sizing: border-box;
 
     font-family: var(--font-varela);
-    color: var(--pastel-text);
+    color: var(--text-primary);
     background-color: var(--pastel-bg);
-    background-image: var(--bg-dots-pattern);
-    background-size: 20px 20px;
-}
-
-.root ::selection {
-    background-color: var(--pastel-rose);
-    color: white;
 }
 
 /* Floating Elements */
@@ -32,17 +24,9 @@
 }
 
 @keyframes float {
-    0% {
-        transform: translateY(0px) rotate(0deg);
-    }
-
-    50% {
-        transform: translateY(-10px) rotate(2deg);
-    }
-
-    100% {
-        transform: translateY(0px) rotate(0deg);
-    }
+    0% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(2deg); }
+    100% { transform: translateY(0px) rotate(0deg); }
 }
 
 .sparkleAnim {
@@ -50,119 +34,47 @@
 }
 
 @keyframes sparkle {
-
-    0%,
-    100% {
-        transform: scale(1);
-        opacity: 0.8;
-    }
-
-    50% {
-        transform: scale(1.2);
-        opacity: 1;
-    }
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.2); opacity: 1; }
 }
 
-.delay100 {
-    animation-delay: 100ms;
-}
+.delay100 { animation-delay: 100ms; }
+.delay200 { animation-delay: 200ms; }
+.delay500 { animation-delay: 500ms; }
 
-.delay200 {
-    animation-delay: 200ms;
-}
-
-.delay500 {
-    animation-delay: 500ms;
-}
-
-/* Background Decorations — positioned relative to root, outside the card */
+/* Background Decorations */
 .bgDeco {
     position: absolute;
     pointer-events: none;
     z-index: 1;
 }
 
-.star1 {
-    top: 1.5rem;
-    left: 1.5rem;
-    color: var(--pastel-sage);
-    opacity: 0.6;
-}
+.star1 { top: 1.5rem; left: 1.5rem; color: var(--pastel-sage); opacity: 0.8; }
+.heart1 { top: 4rem; right: 2rem; color: var(--pastel-rose); opacity: 0.8; }
+.heart2 { bottom: 5rem; left: 1.5rem; color: var(--pastel-rose); opacity: 0.7; }
+.sparkle1 { bottom: 1.5rem; right: 1.5rem; color: var(--pastel-sage); opacity: 0.8; }
 
-.heart1 {
-    top: 4rem;
-    right: 2rem;
-    color: var(--pastel-rose);
-    opacity: 0.6;
-}
-
-.heart2 {
-    bottom: 5rem;
-    left: 1.5rem;
-    color: var(--pastel-rose);
-    opacity: 0.5;
-}
-
-.sparkle1 {
-    bottom: 1.5rem;
-    right: 1.5rem;
-    color: var(--pastel-sage);
-    opacity: 0.7;
-}
-
-.star2 {
-    bottom: 30%;
-    left: 1rem;
-    color: #e5989b;
-    opacity: 0.3;
-}
-
-.circle1 {
-    top: 25%;
-    left: 3rem;
-    color: var(--pastel-sage-dark);
-    opacity: 0.25;
-    font-size: 0.875rem;
-}
-
-/* Main Container */
+/* Main Container - The Card itself */
 .mainContainer {
     width: 100%;
     max-width: 26rem;
-    /* On mobile, fill minus the root's horizontal padding */
     margin: 0 1.25rem;
-    padding: 1.5rem 1.5rem;
+    padding: 2.5rem 2rem;
     display: flex;
     flex-direction: column;
     align-items: center;
     position: relative;
     z-index: 10;
-    /* The glass card background is attached to this */
-}
-
-/* Glass card is the visual background of mainContainer */
-.glassCard {
-    position: absolute;
-    inset: 0;
+    
     background: var(--clay-bg-white);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
+    border: 3px solid var(--pastel-rose-light);
     border-radius: var(--radius-xl);
-    border: var(--border-glass);
     box-shadow: var(--clay-shadow-md);
-    z-index: 0;
-}
-
-/* All children need to be above the glass card background */
-.mainContainer>*:not(.glassCard) {
-    position: relative;
-    z-index: 1;
 }
 
 /* Header Elements */
 .headerGroup {
-    margin-top: 1.25rem;
-    margin-bottom: 1rem;
+    margin-bottom: 2rem;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -170,83 +82,61 @@
 
 .iconWrapper {
     position: relative;
-    width: 6rem;
-    height: 6rem;
-    margin-bottom: 0.75rem;
+    width: 6.5rem;
+    height: 6.5rem;
+    margin-bottom: 1rem;
     display: flex;
     align-items: center;
     justify-content: center;
+    background: var(--clay-bg-rose);
+    border: 3px solid var(--pastel-rose-light);
+    border-radius: var(--radius-pill);
 }
 
 .mainIcon {
-    width: 5rem;
-    height: 5rem;
-    color: var(--pastel-rose);
-    filter: drop-shadow(0 4px 6px rgba(255, 183, 178, 0.5));
-}
-
-.iconGlow {
-    position: absolute;
-    inset: 0;
-    background-color: rgba(255, 183, 178, 0.35);
-    filter: blur(18px);
-    border-radius: var(--radius-pill);
-    z-index: -1;
-    animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulse-glow {
-
-    0%,
-    100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-
-    50% {
-        opacity: 0.5;
-        transform: scale(1.15);
-    }
+    width: 4rem;
+    height: 4rem;
+    color: var(--pastel-rose-dark);
 }
 
 .faceDetails {
     position: absolute;
-    top: 1.9rem;
+    top: 2.2rem;
     display: flex;
     gap: 0.8rem;
 }
 
 .eye {
-    width: 0.375rem;
-    height: 0.55rem;
-    background-color: rgba(255, 255, 255, 0.9);
+    width: 0.4rem;
+    height: 0.6rem;
+    background-color: var(--pastel-rose-dark);
     border-radius: var(--radius-pill);
 }
 
 .mouth {
     position: absolute;
-    top: 2.9rem;
-    width: 0.65rem;
-    height: 0.3rem;
-    background-color: rgba(255, 255, 255, 0.7);
+    top: 3.4rem;
+    width: 0.8rem;
+    height: 0.4rem;
+    background-color: var(--pastel-rose-dark);
+    opacity: 0.6;
     border-radius: var(--radius-pill);
 }
 
 .title {
     font-family: var(--font-fredoka) !important;
-    font-size: 2rem;
+    font-size: 2.25rem;
     font-weight: 700;
-    color: var(--pastel-text);
-    letter-spacing: 0.025em;
-    margin: 0 0 0.2rem;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem;
     text-align: center;
 }
 
 .subtitle {
-    color: rgba(140, 106, 106, 0.65);
-    font-size: 0.875rem;
+    color: var(--text-muted);
+    font-size: 1rem;
     font-weight: 500;
-    margin: 0 0 0.5rem;
+    margin: 0;
     text-align: center;
 }
 
@@ -255,92 +145,64 @@
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    padding: 0 0.25rem;
+    gap: 1.25rem;
 }
 
 /* Submit Button */
 .submitBtn {
     width: 100%;
-    margin-top: 0.75rem;
-    padding: 0.875rem 1.25rem;
-    background: var(--gradient-mint);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.40);
+    margin-top: 1rem;
+    padding: 1rem 1.5rem;
+    background: var(--pastel-mint);
+    color: var(--pastel-mint-dark);
+    border: 3px solid var(--pastel-mint-light);
     border-radius: var(--radius-pill);
-    box-shadow: var(--clay-shadow-mint);
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+    box-shadow: var(--clay-shadow-sm);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
     cursor: pointer;
-    position: relative;
-    overflow: hidden;
     font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 1.15rem;
-    touch-action: manipulation;
+    font-weight: 800;
+    font-size: 1.2rem;
 }
 
 .submitBtn:hover:not(:disabled) {
-    transform: translateY(-3px);
-    box-shadow: var(--clay-shadow-mint-hover);
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: var(--clay-shadow-md);
+    background: var(--pastel-mint-light);
 }
 
 .submitBtn:active:not(:disabled) {
-    box-shadow: var(--clay-shadow-pressed);
-    transform: translateY(1px) scale(0.97);
-}
-
-.submitBtn:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.submitBtnText {
-    font-weight: 700;
-    font-size: 1.15rem;
-    letter-spacing: 0.025em;
-}
-
-.btnHighlight {
-    position: absolute;
-    top: -1rem;
-    left: -1rem;
-    width: 2rem;
-    height: 2rem;
-    background-color: rgba(255, 255, 255, 0.2);
-    border-radius: var(--radius-pill);
-    filter: blur(8px);
-    pointer-events: none;
+    transform: translateY(1px) scale(0.98);
+    box-shadow: none;
 }
 
 .arrowIcon {
     transition: transform 0.3s;
-    font-size: 1rem;
 }
 
 .submitBtn:hover .arrowIcon {
-    transform: translateX(3px);
+    transform: translateX(5px);
 }
 
 /* Bottom Extras */
 .avatarBtnContainer {
     display: flex;
     justify-content: center;
-    padding-top: 0.75rem;
-    padding-bottom: 0.25rem;
+    margin-top: 2rem;
 }
 
 .avatarBtn {
-    padding: 0.75rem;
-    background-color: var(--bg-overlay-light);
-    border-radius: var(--radius-full);
-    color: var(--pastel-sage);
-    border: var(--border-mint);
-    transition: all 0.3s;
+    width: 56px;
+    height: 56px;
+    background-color: var(--clay-bg-white);
+    border-radius: var(--radius-pill);
+    color: var(--pastel-rose);
+    border: 3px solid var(--pastel-rose-light);
+    transition: all 0.2s;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -348,36 +210,35 @@
 }
 
 .avatarBtn:hover {
-    color: var(--pastel-rose);
-    box-shadow: 0 4px 12px rgba(255, 183, 178, 0.3);
+    transform: scale(1.1) rotate(-5deg);
+    border-color: var(--pastel-rose);
+    box-shadow: var(--clay-shadow-sm);
 }
 
 .footerNote {
-    margin-top: 0.75rem;
-    margin-bottom: 1.25rem;
+    margin-top: 2rem;
     text-align: center;
-    padding: 0 1rem;
 }
 
 .footerPill {
-    background-color: rgba(255, 255, 255, 0.6);
-    padding: 0.4rem 0.875rem;
+    background-color: var(--clay-bg-rose);
+    padding: 0.5rem 1.25rem;
+    border: 2px solid var(--pastel-rose-light);
     border-radius: var(--radius-pill);
     display: inline-block;
 }
 
 .footerText {
-    color: var(--pastel-text);
+    color: var(--pastel-rose-dark);
     font-family: var(--font-fredoka);
-    font-size: 0.85rem;
-    letter-spacing: 0.02em;
+    font-size: 0.9rem;
+    font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.5rem;
     margin: 0;
 }
 
 .footerIcon {
-    color: var(--pastel-rose);
-    font-size: 0.85rem;
+    font-size: 1rem;
 }

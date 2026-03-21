@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { AnimatePresence } from 'framer-motion';
+import { useActivityLog } from '../../hooks/useActivityLog';
 import MemoryManager from '../memories/MemoryManager';
+// ... other managers remains same ...
 import CapsuleManager from '../capsules/CapsuleManager';
 import CouponManager from '../coupons/CouponManager';
 import BingoManager from '../bingo/BingoManager';
@@ -27,7 +29,9 @@ const SECTIONS = [
 
 export default function AdminDashboard() {
     const { signOut, user } = useAuth();
+    const { unreadCount } = useActivityLog();
     const [activeSection, setActiveSection] = useState('activity');
+    // ... rest same ...
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
     // Snapshot state — mirrors UserDashboard
@@ -79,6 +83,9 @@ export default function AdminDashboard() {
                         >
                             <span className={styles.navIcon}>{section.icon}</span>
                             <span className={styles.navLabel}>{section.label}</span>
+                            {section.id === 'activity' && unreadCount > 0 && (
+                                <span className={styles.unreadBadge}>{unreadCount}</span>
+                            )}
                         </button>
                     ))}
                 </nav>

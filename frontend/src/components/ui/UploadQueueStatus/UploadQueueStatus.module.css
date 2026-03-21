@@ -1,31 +1,97 @@
-.badge {
+.root {
     position: fixed;
     bottom: 5rem;
     left: 1rem;
     z-index: 1000;
     display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    pointer-events: none; /* Let parent handle layout, children handle clicks */
+}
+
+.badge {
+    pointer-events: auto;
+    display: flex;
     align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--clay-bg-white);
+    border: 3px solid var(--pastel-rose-light);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--clay-shadow-md);
+    font-family: var(--font-body);
+    min-width: 140px;
+}
+
+.failed {
+    background: var(--clay-bg-rose);
+    border-color: var(--pastel-rose);
+    box-shadow: var(--clay-shadow-rose);
+    align-items: flex-start;
+}
+
+.failedContent {
+    display: flex;
+    flex-direction: column;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: var(--color-bg-card, rgba(20, 20, 35, 0.95));
-    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
-    border-radius: var(--radius-pill, 999px);
-    backdrop-filter: blur(12px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    font-family: var(--font-body, 'Inter', sans-serif);
-    animation: slideIn 0.3s ease-out;
 }
 
 .icon {
-    font-size: 1rem;
+    font-size: 1.2rem;
     line-height: 1;
 }
 
 .text {
-    font-size: 0.78rem;
-    color: var(--color-text-secondary, #c0b8d0);
-    font-weight: 500;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    font-weight: 700;
     white-space: nowrap;
+}
+
+.actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.retryBtn, .clearBtn {
+    border-radius: var(--radius-pill);
+    padding: 0.4rem 0.8rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    font-family: var(--font-display);
+    border: 2px solid;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.retryBtn {
+    background: var(--pastel-mint);
+    color: white;
+    border-color: var(--pastel-mint-dark);
+    box-shadow: var(--clay-shadow-sm);
+}
+
+.retryBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--clay-shadow-mint);
+}
+
+.clearBtn {
+    background: white;
+    color: var(--text-muted);
+    border-color: var(--pastel-peach);
+    box-shadow: var(--clay-shadow-sm);
+}
+
+.clearBtn:hover {
+    transform: translateY(-2px);
+    background: var(--pastel-peach);
+    color: var(--pastel-rose-dark);
+}
+
+.retryBtn:active, .clearBtn:active {
+    transform: translateY(1px) scale(0.95);
+    box-shadow: var(--clay-shadow-pressed);
 }
 
 .spinner {
@@ -36,15 +102,4 @@
 @keyframes spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
 }

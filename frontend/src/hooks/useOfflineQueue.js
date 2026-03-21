@@ -34,6 +34,34 @@ async function getAllPending() {
     });
 }
 
+async function getAllFailed() {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.getAll();
+        req.onsuccess = () => {
+            const results = req.result || [];
+            resolve(results.filter(item => item.status === 'failed'));
+        };
+        req.onerror = () => reject(req.error);
+    });
+}
+
+async function clearFailedFromDB() {
+    const db = await openDB();
+    const failed = await getAllFailed();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    for (const item of failed) {
+        store.delete(item.id);
+    }
+    return new Promise((resolve, reject) => {
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
 async function saveToQueue(item) {
     const db = await openDB();
 
@@ -123,6 +151,7 @@ async function syncCitaStatus(citaId, status) {
  */
 export function useOfflineQueue() {
     const [pendingCount, setPendingCount] = useState(0);
+    const [failedCount, setFailedCount] = useState(0);
     const [isProcessing, setIsProcessing] = useState(false);
     const processingRef = useRef(false);
 
@@ -130,7 +159,9 @@ export function useOfflineQueue() {
     const refreshCount = useCallback(async () => {
         try {
             const pending = await getAllPending();
+            const failed = await getAllFailed();
             setPendingCount(pending.length);
+            setFailedCount(failed.length);
         } catch {
             // IndexedDB not available (e.g. private browsing)
         }
@@ -246,23 +277,17 @@ export function useOfflineQueue() {
                     await removeFromQueue(item.id);
                 } catch (err) {
                     console.error('[offlineQueue] Item failed:', err);
-                    const newRetryCount = (item.retryCount ?? 0) + 1;
+                    const currentRetries = item.retryCount ?? 0;
+                    const newRetryCount = currentRetries + 1;
+                    
                     if (newRetryCount >= 3) {
-                        await updateQueueItem(item.id, { status: 'failed' });
+                        // Mark as permanent fail
+                        await updateQueueItem(item.id, { status: 'failed', retryCount: newRetryCount });
                         if (item.originalCitaId) {
-                            const db = await openDB();
-                            const tx = db.transaction('pending_citas', 'readwrite');
-                            const store = tx.objectStore('pending_citas');
-                            const cita = await new Promise(r => {
-                                const req = store.get(item.originalCitaId);
-                                req.onsuccess = () => r(req.result);
-                            });
-                            if (cita) {
-                                cita.status = 'failed';
-                                store.put(cita);
-                            }
+                            await syncCitaStatus(item.originalCitaId, 'failed');
                         }
                     } else {
+                        // Mark for later retry
                         await updateQueueItem(item.id, { status: 'pending', retryCount: newRetryCount });
                     }
                 }
@@ -444,6 +469,20 @@ export function useOfflineQueue() {
         if (navigator.onLine) processQueue();
     }, [refreshCount, processQueue]);
 
+    const retryFailedItems = useCallback(async () => {
+        const failed = await getAllFailed();
+        for (const item of failed) {
+            await updateQueueItem(item.id, { status: 'pending', retryCount: 0 });
+        }
+        await refreshCount();
+        if (navigator.onLine) processQueue();
+    }, [refreshCount, processQueue]);
+
+    const clearFailedItems = useCallback(async () => {
+        await clearFailedFromDB();
+        await refreshCount();
+    }, [refreshCount]);
+
     /**
      * Gets all snapshots currently in the offline queue.
      */
@@ -466,9 +505,12 @@ export function useOfflineQueue() {
         queueMemory,
         queueSnapshot,
         pendingCount,
+        failedCount,
         isProcessing,
         processQueue,
         retryItem,
+        retryFailedItems,
+        clearFailedItems,
         getPendingSnapshots,
     };
 }

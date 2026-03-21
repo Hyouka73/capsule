@@ -28,7 +28,7 @@
 .title {
     font-family: var(--font-display);
     font-size: 2.6rem;
-    color: #614646;
+    color: var(--text-primary); /* #614646 -> text-primary */
     /* Color mas cafe oscuro como en la imagen */
     margin: 0;
     line-height: 1.2;
@@ -36,7 +36,7 @@
 
 .subtitle {
     font-family: var(--font-body);
-    color: #8c6a6a;
+    color: var(--text-muted); /* #8c6a6a -> text-muted */
     font-size: 1rem;
     margin-top: 0.8rem;
     opacity: 0.8;
@@ -79,12 +79,12 @@
 }
 
 .cardUnlocked {
-    border-color: rgba(136, 216, 176, 0.50);
+    border: var(--border-mint); /* rgba(136, 216, 176, 0.50) -> border-mint */
     box-shadow: var(--clay-shadow-mint);
 }
 
 .cardDestructible {
-    border: 1px solid rgba(255, 117, 143, 0.20);
+    border: var(--border-rose); /* rgba(255, 117, 143, 0.20) -> border-rose */
     padding-bottom: 2.5rem;
 }
 
@@ -96,23 +96,23 @@
 }
 
 .badgeOpen {
-    background: #fff9e5;
+    background: var(--pastel-yellow); /* #fff9e5 -> pastel-yellow */
     /* Fondo crema amarillento como en la imagen */
-    color: #88d8b0;
+    color: var(--pastel-mint-dark); /* #88d8b0 -> pastel-mint-dark */
     padding: 0.35rem 1.2rem;
     border-radius: var(--radius-pill);
     font-size: 0.78rem;
     font-weight: 800;
     font-family: var(--font-display);
-    border: 1px solid rgba(136, 216, 176, 0.2);
+    border: var(--border-mint); /* rgba(136, 216, 176, 0.2) -> border-mint */
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
 
 .badgeLocked {
-    background: #edf2f7;
+    background: var(--bg-input); /* #edf2f7 -> bg-input */
     /* Gris azulado */
-    color: #718096;
+    color: var(--text-muted); /* #718096 -> text-muted */
     padding: 0.35rem 1.2rem;
     border-radius: var(--radius-pill);
     font-size: 0.78rem;
@@ -132,18 +132,18 @@
 }
 
 .iconMint {
-    color: #88d8b0;
+    color: var(--pastel-mint-dark); /* #88d8b0 -> pastel-mint-dark */
 }
 
 .iconGray {
-    color: #cbd5e0;
+    color: var(--text-muted); /* #cbd5e0 -> text-muted */
 }
 
 /* --- Text --- */
 .teaser {
     font-family: var(--font-body);
     font-size: 1.05rem;
-    color: #8c6a6a;
+    color: var(--text-muted); /* #8c6a6a -> text-muted */
     margin: 0;
     font-style: italic;
     line-height: 1.4;
@@ -153,7 +153,7 @@
 .teaserDimmed {
     font-family: var(--font-body);
     font-size: 1rem;
-    color: #a0aec0;
+    color: var(--text-muted); /* #a0aec0 -> text-muted */
     margin: 0;
     font-style: italic;
     opacity: 0.7;
@@ -162,14 +162,14 @@
 .contentTitle {
     font-family: var(--font-display);
     font-size: 1.4rem;
-    color: #614646;
+    color: var(--text-primary); /* #614646 -> text-primary */
     font-weight: 600;
     margin: 0;
 }
 
 .domainPill {
-    background-color: #f7fafc;
-    color: #a0aec0;
+    background-color: var(--bg-main); /* #f7fafc -> bg-main */
+    color: var(--text-muted); /* #a0aec0 -> text-muted */
     font-size: 0.75rem;
     padding: 0.25rem 0.7rem;
     border-radius: 8px;
@@ -180,7 +180,7 @@
 .openBtn {
     background: var(--gradient-mint);
     color: white;
-    border: 1px solid rgba(255, 255, 255, 0.40);
+    border: 3px solid var(--pastel-sage);
     border-radius: var(--radius-pill);
     padding: 0.75rem 1.5rem;
     font-size: 1rem;
@@ -216,7 +216,7 @@
 }
 
 .destructionText {
-    color: #ff758f;
+    color: var(--color-error); /* #ff758f -> color-error */
     font-size: 0.75rem;
     font-weight: 800;
     font-family: var(--font-display);
@@ -228,14 +228,14 @@
 .progressBar {
     width: 100%;
     height: 6px;
-    background-color: #fff0f3;
+    background-color: var(--pastel-rose-light); /* #fff0f3 -> pastel-rose-light */
     border-radius: 3px;
     overflow: hidden;
 }
 
 .progressFill {
     height: 100%;
-    background-color: #ff758f;
+    background-color: var(--color-error); /* #ff758f -> color-error */
     border-radius: 3px;
 }
 
@@ -244,7 +244,6 @@
     position: fixed;
     inset: 0;
     background: var(--bg-overlay);
-    backdrop-filter: var(--glass-blur);
     z-index: 100;
     display: flex;
     align-items: center;
@@ -261,7 +260,7 @@
     box-shadow: var(--clay-shadow-lg);
     padding: 3rem 2rem 2rem;
     text-align: center;
-    border: var(--border-glass);
+    border: var(--border-rose);
 }
 
 .closeBtn {
@@ -278,4 +277,89 @@
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.closeBtn:active {
+    transform: scale(0.9);
+}
+
+.loading {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 3rem;
+}
+
+/* --- Modal Content Styles --- */
+.modalBody {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: center;
+    width: 100%;
+}
+
+.modalIconLarge {
+    font-size: 3rem;
+    color: var(--pastel-rose);
+    margin-bottom: 0.5rem;
+}
+
+.modalMessage {
+    font-family: var(--font-body);
+    font-size: 1.15rem;
+    color: var(--text-primary);
+    line-height: 1.6;
+    background: var(--pastel-peach);
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    border: var(--border-rose);
+    width: 100%;
+    box-sizing: border-box;
+    text-align: left;
+}
+
+.sectionTitle {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+    width: 100%;
+    text-align: left;
+}
+
+.contentList {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.contentLink {
+    background: var(--clay-bg-white);
+    border: 3px solid var(--pastel-mint);
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--pastel-mint-dark);
+    text-decoration: none;
+    font-family: var(--font-display);
+    font-weight: 700;
+    transition: all 0.2s ease;
+    box-shadow: var(--clay-shadow-sm);
+}
+
+.contentLink:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--clay-shadow-mint);
+    background: var(--clay-bg-mint);
+}
+
+.linkIcon {
+    font-size: 1.25rem;
 }

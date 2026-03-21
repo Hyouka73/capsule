@@ -79,11 +79,9 @@
     height: 48px;
     flex-shrink: 0;
     border-radius: var(--radius-pill);
-    background: #ffffff;
+    background: var(--clay-bg-white);
     border: 2px solid var(--pastel-rose-light);
-    box-shadow: 
-        0 4px 0 var(--pastel-rose-light),
-        0 6px 14px rgba(255, 204, 213, 0.15);
+    box-shadow: 0 4px 0 var(--pastel-rose-light);
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -147,7 +145,7 @@
     gap: 7px;
     padding: 10px 20px;
     border-radius: var(--radius-pill);
-    background: #ffffff;
+    background: var(--clay-bg-white);
     border: 2.5px solid var(--pastel-mint);
     color: var(--text-primary);
     font-family: var(--font-display);
@@ -156,41 +154,31 @@
     cursor: pointer;
     white-space: nowrap;
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow:
-        0 5px 0 var(--pastel-mint-dark),
-        0 6px 14px rgba(116, 198, 157, 0.18);
+    box-shadow: 0 5px 0 var(--pastel-mint-dark);
     user-select: none;
 }
 
 .chip:hover {
     transform: translateY(-2px);
-    box-shadow:
-        0 7px 0 var(--pastel-mint-dark),
-        0 10px 20px rgba(116, 198, 157, 0.25);
-    background: #f5fdf9;
+    box-shadow: 0 7px 0 var(--pastel-mint-dark);
+    background: var(--clay-bg-mint);
 }
 
 .chip:active {
     transform: translateY(4px) scale(0.96);
-    box-shadow:
-        0 1px 0 var(--pastel-mint-dark),
-        0 2px 6px rgba(116, 198, 157, 0.10);
+    box-shadow: 0 1px 0 var(--pastel-mint-dark);
 }
 
 .chipActive {
     background: var(--pastel-mint);
     color: #ffffff !important;
     border-color: var(--pastel-mint-dark);
-    box-shadow:
-        0 5px 0 var(--pastel-mint-dark),
-        0 8px 18px rgba(116, 198, 157, 0.35);
+    box-shadow: 0 5px 0 var(--pastel-mint-dark);
 }
 
 .chipActive:hover {
     background: var(--pastel-mint);
-    box-shadow:
-        0 7px 0 var(--pastel-mint-dark),
-        0 10px 22px rgba(116, 198, 157, 0.40);
+    box-shadow: 0 7px 0 var(--pastel-mint-dark);
 }
 
 .chipIcon {
@@ -221,8 +209,8 @@
     border-radius: 50% 50% 50% 0;
     transform: rotate(-45deg);
     background: var(--pastel-rose);
-    border: 3.5px solid white;
-    box-shadow: 0 6px 0 #ff8fa3, 0 8px 16px rgba(255, 143, 163, 0.25);
+    border: 3.5px solid var(--clay-bg-white);
+    box-shadow: 0 6px 0 var(--pastel-rose-dark);
     overflow: hidden;
 }
 
@@ -240,8 +228,8 @@
     border-radius: 50% 50% 50% 0;
     transform: rotate(-45deg);
     background: var(--gradient-rose);
-    border: 3px solid white;
-    box-shadow: 0 5px 0 #ff8fa3, 0 8px 12px rgba(255, 143, 163, 0.20);
+    border: 3px solid var(--clay-bg-white);
+    box-shadow: 0 5px 0 var(--pastel-rose-dark);
 }
 
 .pinIcon {
@@ -258,14 +246,14 @@
     border-radius: 50% 50% 50% 0;
     transform: rotate(-45deg);
     background: var(--pastel-peach);
-    border: 2.5px solid white;
-    box-shadow: 0 4px 0 #f0d5a7, 0 6px 10px rgba(240, 213, 167, 0.2);
+    border: 2.5px solid var(--clay-bg-white);
+    box-shadow: 0 4px 0 var(--pastel-yellow);
 }
 
 .pinDot {
     width: 7px;
     height: 7px;
-    background: white;
+    background: var(--clay-bg-white);
     border-radius: 50%;
 }
 
@@ -276,8 +264,8 @@
     transform: rotate(45deg) translateX(-60%);
     width: 14px;
     height: 6px;
-    background: rgba(92, 74, 74, 0.15);
-    filter: blur(3px);
+    background: var(--pastel-text-muted);
+    border-radius: var(--radius-pill);
     border-radius: 50%;
 }
 
@@ -288,7 +276,7 @@
     transform: translate(-50%, -50%);
     width: 64px;
     height: 64px;
-    border: 2px solid rgba(255, 202, 212, 0.6);
+    border: 3px solid var(--pastel-rose-light);
     border-radius: 50%;
     animation: pulse 2.5s ease-out infinite;
     pointer-events: none;
@@ -303,14 +291,14 @@
    MARKER LABELS
    ========================================================================= */
 .pinLabel {
-    background: #ffffff;
+    background: var(--clay-bg-white);
     padding: 4px 12px;
     border-radius: var(--radius-pill);
     font-size: 11px;
     font-weight: 800;
     font-family: var(--font-display);
     color: var(--text-primary);
-    box-shadow: 0 4px 8px rgba(92, 74, 74, 0.1);
+    box-shadow: var(--clay-shadow-sm);
     border: 2px solid var(--pastel-rose-light);
     z-index: 5;
     pointer-events: none;
@@ -354,23 +342,17 @@
     align-items: center;
     justify-content: center;
     border: 2px solid var(--pastel-rose);
-    box-shadow: 
-        0 4px 0 var(--pastel-rose),
-        0 7px 14px rgba(255, 173, 199, 0.20);
+    box-shadow: 0 4px 0 var(--pastel-rose);
 }
 
 .fabBtn:hover {
     transform: translateY(-2px);
-    box-shadow:
-        0 7px 0 var(--pastel-rose),
-        0 10px 22px rgba(255, 173, 199, 0.35);
+    box-shadow: 0 7px 0 var(--pastel-rose);
 }
 
 .fabBtn:active {
     transform: translateY(4px) scale(0.96);
-    box-shadow:
-        0 1px 0 var(--pastel-rose),
-        0 2px 8px rgba(255, 173, 199, 0.10);
+    box-shadow: 0 1px 0 var(--pastel-rose);
 }
 
 .fabBtn span {
@@ -386,7 +368,7 @@
     font-weight: 700;
     font-size: 11px;
     color: var(--text-primary);
-    background: #ffffff;
+    background: var(--clay-bg-white);
     padding: 5px 12px;
     border-radius: var(--radius-pill);
     white-space: nowrap;

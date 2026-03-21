@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
-import { getCapsules } from '../../apiClient';
+import { doc, deleteDoc } from 'firebase/firestore';
+import { db } from '../../services/firebase';
+import { COLLECTIONS } from '../../config/constants';
+import { getCapsules, openCapsule } from '../../apiClient';
 import CapsuleForm from './CapsuleForm';
 import Button from '../../components/ui/Button/Button';
 import Card from '../../components/ui/Card/Card';
 import PageHeader from '../../components/ui/PageHeader/PageHeader';
 import EmptyState from '../../components/ui/EmptyState/EmptyState';
+import ConfirmModal from '../../components/ui/ConfirmModal/ConfirmModal';
+import { toast } from '../../components/ui/PastelToast/PastelToast';
 import styles from './CapsuleManager.module.css';
 
 export default function CapsuleManager() {
@@ -12,6 +17,16 @@ export default function CapsuleManager() {
     const [isLoading, setIsLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editingCapsule, setEditingCapsule] = useState(null);
+
+    // Confirm Modal State
+    const [confirmState, setConfirmState] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => {},
+        variant: 'default',
+        emoji: '👋'
+    });
 
     useEffect(() => {
         loadCapsules();
@@ -24,6 +39,7 @@ export default function CapsuleManager() {
             setCapsules(result.docs || []);
         } catch (err) {
             console.error('Error loading capsules:', err);
+            toast.error('Error al cargar cápsulas');
         } finally {
             setIsLoading(false);
         }
@@ -35,17 +51,47 @@ export default function CapsuleManager() {
         loadCapsules();
     };
 
-    // Mock Actions
     const handleDelete = (id) => {
-        if (confirm('¿Seguro que quieres eliminar esta cápsula? (UI mock)')) {
-            setCapsules(prev => prev.filter(c => c.id !== id));
-        }
+        setConfirmState({
+            isOpen: true,
+            title: '¿Eliminar Cápsula?',
+            message: 'Esta acción no se puede deshacer. Se borrarán todos los datos y archivos asociados.',
+            variant: 'danger',
+            emoji: '🗑️',
+            onConfirm: async () => {
+                try {
+                    await deleteDoc(doc(db, COLLECTIONS.CAPSULES, id));
+                    toast.success('Cápsula eliminada 🗑️');
+                    setCapsules(prev => prev.filter(c => c.id !== id));
+                    setConfirmState(p => ({ ...p, isOpen: false }));
+                } catch (err) {
+                    toast.error('Error al eliminar');
+                }
+            }
+        });
     };
 
     const handleUnlockManual = (id) => {
-        if (confirm('¿Desbloquear esta cápsula ahora mismo?')) {
-            setCapsules(prev => prev.map(c => c.id === id ? { ...c, isUnlocked: true, unlockDate: new Date().toISOString() } : c));
-        }
+        setConfirmState({
+            isOpen: true,
+            title: '¿Desbloquear Cápsula?',
+            message: 'Se notificará al partner y podrá leer el contenido de inmediato.',
+            variant: 'default',
+            emoji: '🔑',
+            onConfirm: async () => {
+                try {
+                    await toast.promise(openCapsule({ capsuleId: id }), {
+                        loading: 'Desbloqueando...',
+                        success: 'Cápsula desbloqueada ✅',
+                        error: 'Error al desbloquear'
+                    });
+                    loadCapsules();
+                    setConfirmState(p => ({ ...p, isOpen: false }));
+                } catch (err) {
+                    console.error('Unlock error:', err);
+                }
+            }
+        });
     };
 
     return (
@@ -58,11 +104,23 @@ export default function CapsuleManager() {
                 onAction={() => { setEditingCapsule(null); setShowForm(true); }}
             />
 
+            <ConfirmModal 
+                isOpen={confirmState.isOpen}
+                title={confirmState.title}
+                message={confirmState.message}
+                variant={confirmState.variant}
+                emoji={confirmState.emoji}
+                onConfirm={confirmState.onConfirm}
+                onCancel={() => setConfirmState(p => ({ ...p, isOpen: false }))}
+                confirmText="Síp, adelante"
+                cancelText="Nop, espera"
+            />
+
             {/* Form panel */}
             {showForm && (
-                <Card className={styles.formPanel} glass>
+                <Card className={styles.formPanel}>
                     <div className={styles.formPanelHeader}>
-                        <h2>{editingCapsule ? '✍️ Editar Cápsula' : '✨ Nueva Cápsula Sorpresa'}</h2>
+                        <h2>{editingCapsule ? '✍️ Editar Cápsula' : '✨ Nueva Cápsula Real'}</h2>
                         <button onClick={() => setShowForm(false)} className={styles.closeBtn} title="Cerrar">✕</button>
                     </div>
                     <CapsuleForm
@@ -77,16 +135,16 @@ export default function CapsuleManager() {
             {isLoading ? (
                 <div className={styles.loading}>
                     <div className={styles.spinner}></div>
-                    <p>Buscando cápsulas...</p>
+                    <p>Conectando con el Tiempo...</p>
                 </div>
             ) : capsules.length === 0 ? (
                 <EmptyState
                     icon="⏳"
-                    title="No has enterrado ninguna cápsula"
+                    title="No hay cápsulas enterradas"
                     description="Escribe mensajes para el futuro y prográmalos para que se abran en una fecha especial."
                     action={
                         <Button onClick={() => setShowForm(true)} className={styles.newBtn}>
-                            ¡Crea la primera!
+                            ¡Crear primera real!
                         </Button>
                     }
                 />
@@ -122,7 +180,7 @@ function CapsuleCard({ capsule, onEdit, onDelete, onUnlock }) {
         statusClass = styles.unlocked;
     }
 
-    const unlockDate = capsule.unlockDate
+    const unlockDateDisplay = capsule.unlockDate
         ? new Date(capsule.unlockDate).toLocaleDateString('es-MX', {
             day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
         })
@@ -138,7 +196,7 @@ function CapsuleCard({ capsule, onEdit, onDelete, onUnlock }) {
             </div>
 
             <p className={styles.cardDate}>
-                <span className={styles.dateIcon}>{capsule.unlockDate ? '⏰' : '🕹️'}</span> {unlockDate}
+                <span className={styles.dateIcon}>{capsule.unlockDate ? '⏰' : '🕹️'}</span> {unlockDateDisplay}
             </p>
 
             <div className={styles.cardBody}>
@@ -161,10 +219,11 @@ function CapsuleCard({ capsule, onEdit, onDelete, onUnlock }) {
                 <button className={styles.actionBtn} onClick={onEdit} title="Editar">
                     ✏️
                 </button>
-                <button className={styles.actionBtn} onClick={() => alert('Mock: Cápsula clonada')} title="Clonar">
-                    📑
-                </button>
-                <button className={`${styles.actionBtn} ${styles.deleteBtn}`} onClick={onDelete} title="Eliminar">
+                <button 
+                    className={`${styles.actionBtn} ${styles.deleteBtn}`} 
+                    onClick={onDelete} 
+                    title="Eliminar"
+                >
                     🗑️
                 </button>
             </div>

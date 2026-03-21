@@ -41,9 +41,9 @@
     --bg-main:              #fff9fa;
     --bg-card:              #ffffff;
     --bg-input:             #ffffff;
-    --bg-overlay:           #fff9fa;
-    --bg-overlay-strong:    #fff9fa;
-    --bg-dots-pattern:      radial-gradient(var(--pastel-pink) 1.5px, transparent 1.5px);
+    --bg-overlay:           #2a1a1a;  /* Solid dark warm brown for modals */
+    --bg-overlay-strong:    #1a0f0f;
+    --bg-dots-pattern:      radial-gradient(var(--pastel-pink) 1.5px, var(--bg-main) 1.5px);
     --bg-dots-size:         24px 24px;
 
     --text-primary:          #4a3232;
@@ -61,8 +61,8 @@
     ────────────────────────────────────────────── */
     --accent-primary:        var(--pastel-rose);
     --accent-secondary:      var(--pastel-peach);
-    --accent-soft:           rgba(255, 143, 171, 0.20);
-    --accent-border:         rgba(255, 143, 171, 0.40);
+    --accent-soft:           var(--pastel-rose-light);
+    --accent-border:         var(--pastel-rose);
 
     /* ──────────────────────────────────────────────
        CLAY SURFACES
@@ -71,6 +71,7 @@
     --clay-bg-rose:          #ffeef2;
     --clay-bg-mint:          #e9f9f0;
     --clay-bg-peach:         #fff4f7;
+    --pastel-mint-light:     #dcf5e7;
 
     /* ──────────────────────────────────────────────
        SHADOWS — Deep & Loving Macaron style
@@ -78,73 +79,62 @@
 
     /* Default neutral shadows */
     --clay-shadow-sm:
-        0 4px 0 rgba(74, 50, 50, 0.12),
-        0 4px 10px rgba(74, 50, 50, 0.05);
+        0 4px 0 #e0d6d6;
 
     --clay-shadow-md:
-        0 6px 0 rgba(74, 50, 50, 0.15),
-        0 8px 18px rgba(74, 50, 50, 0.08);
+        0 6px 0 #d1c1c1;
 
     --clay-shadow-lg:
-        0 10px 0 rgba(74, 50, 50, 0.18),
-        0 12px 28px rgba(74, 50, 50, 0.10);
+        0 10px 0 #c2b1b1;
 
     /* Rose / Pink tinted — Petal Rose Shadow */
     --clay-shadow-rose:
-        0 6px 0 var(--pastel-rose-dark),
-        0 8px 18px rgba(255, 143, 171, 0.22);
+        0 6px 0 var(--pastel-rose-dark);
 
     --clay-shadow-rose-hover:
-        0 8px 0 var(--pastel-rose-dark),
-        0 10px 24px rgba(255, 143, 171, 0.30);
+        0 8px 0 var(--pastel-rose-dark);
 
     /* Mint / Green tinted — Macaron Mint Shadow */
     --clay-shadow-mint:
-        0 6px 0 #74c69d,
-        0 8px 18px rgba(116, 198, 157, 0.25);
+        0 6px 0 var(--pastel-mint-dark);
 
     --clay-shadow-mint-hover:
-        0 8px 0 #74c69d,
-        0 10px 24px rgba(116, 198, 157, 0.35);
+        0 8px 0 var(--pastel-mint-dark);
 
     /* Pressed state */
     --clay-shadow-pressed:
-        0 2px 0 rgba(74, 50, 50, 0.20),
-        inset 0 4px 8px rgba(0,0,0,0.05);
+        0 2px 0 #d1c1c1;
 
     /* ──────────────────────────────────────────────
        LEGACY SHADOW TOKENS
     ────────────────────────────────────────────── */
     --shadow-chunky-rose:
-        0 6px 0 var(--pastel-rose-dark),
-        0 8px 16px rgba(255, 143, 171, 0.22);
+        0 6px 0 var(--pastel-rose-dark);
 
     --shadow-chunky-rose-soft:
-        0 4px 0 var(--pastel-rose-light),
-        0 6px 12px rgba(255, 204, 213, 0.15);
+        0 4px 0 var(--pastel-rose-light);
 
     --shadow-chunky-mint:
-        0 6px 0 #74c69d,
-        0 8px 16px rgba(116, 198, 157, 0.25);
+        0 6px 0 var(--pastel-mint-dark);
 
     --shadow-chunky-mint-deep:
-        0 7px 0 #52b788,
-        0 10px 20px rgba(82, 183, 136, 0.30);
+        0 7px 0 #52b788;
 
     --shadow-chunky-mint-soft:
-        0 4px 0 #b7e4c7,
-        0 6px 12px rgba(183, 228, 199, 0.15);
+        0 4px 0 #b7e4c7;
 
     --shadow-card:
-        0 4px 0 rgba(92, 61, 78, 0.12),
-        0 6px 16px rgba(92, 61, 78, 0.08);
+        0 4px 0 #e0d6d6;
 
     --shadow-card-sm:
-        0 2px 0 rgba(92, 61, 78, 0.10),
-        0 4px 8px rgba(92, 61, 78, 0.06);
+        0 2px 0 #e0d6d6;
 
     /* Kept for components that reference it */
     --clay-shadow-glass:     var(--clay-shadow-md);
+
+    /* PhotoViewer and Floating UI Specifics */
+    --shadow-pink-glow:      var(--clay-shadow-rose);
+    --shadow-pink-glow-active: var(--clay-shadow-pressed);
 
     /* ──────────────────────────────────────────────
        TYPOGRAPHY — Fredoka all the way
@@ -167,12 +157,12 @@
     /* ──────────────────────────────────────────────
        BORDERS — Warm & visible
     ────────────────────────────────────────────── */
-    --border-glass:          2px solid rgba(255, 214, 224, 0.60);
-    --border-glass-pink:     2px solid rgba(255, 143, 171, 0.30);
-    --border-mint:           2px solid rgba(116, 198, 157, 0.40);
-    --border-mint-thick:     3px solid rgba(116, 198, 157, 0.50);
-    --border-rose:           2px solid rgba(255, 143, 171, 0.35);
-    --border-muted:          1px solid rgba(92, 61, 78, 0.10);
+    --border-glass:          3px solid var(--pastel-rose-light);
+    --border-glass-pink:     3px solid var(--pastel-rose-light);
+    --border-mint:           3px solid var(--pastel-mint);
+    --border-mint-thick:     4px solid var(--pastel-mint);
+    --border-rose:           3px solid var(--pastel-rose);
+    --border-muted:          2px solid var(--pastel-rose-light);
 
     /* ──────────────────────────────────────────────
        GRADIENTS

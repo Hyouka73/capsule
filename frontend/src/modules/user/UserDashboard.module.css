@@ -36,8 +36,8 @@
 .gradientOrb2 {
     position: absolute;
     border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0.5;
+    opacity: 0.2;
+    border: 3px solid var(--clay-bg-white);
     animation: drift 15s infinite alternate ease-in-out;
 }
 
@@ -74,7 +74,6 @@
     background-color: var(--pastel-rose);
     border-radius: 50%;
     opacity: 0.4;
-    filter: blur(2px);
     animation-name: particleUp;
     animation-timing-function: linear;
     animation-fill-mode: forwards;
@@ -132,12 +131,10 @@
     align-items: center;
     text-align: center;
     padding: 2rem 1rem;
-    background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: var(--border-glass);
+    background: var(--clay-bg-white);
+    border: var(--border-rose);
     border-radius: var(--radius-xl);
-    box-shadow: var(--clay-shadow-glass);
+    box-shadow: var(--clay-shadow-lg);
     margin-top: 1rem;
 }
 
@@ -152,7 +149,7 @@
     font-size: 4rem;
     margin-bottom: 1rem;
     animation: pulse 2s infinite ease-in-out;
-    filter: drop-shadow(0 4px 10px rgba(255, 117, 143, 0.3));
+    filter: drop-shadow(0 4px 10px var(--pastel-rose-dark));
 }
 
 @keyframes pulse {
@@ -185,9 +182,9 @@
     .mainContent {
         max-width: 600px;
         margin: 0 auto;
-        border-left: 1px rgba(255, 255, 255, 0.2) solid;
-        border-right: 1px rgba(255, 255, 255, 0.2) solid;
-        background: rgba(255, 255, 255, 0.1);
+        border-left: 2px var(--border-rose) solid;
+        border-right: 2px var(--border-rose) solid;
+        background: var(--clay-bg-white);
     }
 
     .mapWrapper {
@@ -205,7 +202,7 @@
     bottom: 90px;
     right: 20px;
     z-index: 60;
-    filter: drop-shadow(0 4px 12px rgba(255, 117, 143, 0.3));
+    box-shadow: var(--clay-shadow-rose);
 }
 
 /* Placeholder Modules */
@@ -229,7 +226,7 @@
     padding: 10px 24px;
     border-radius: var(--radius-pill);
     background: var(--gradient-rose);
-    border: 1px solid rgba(255,255,255,0.4);
+    border: 3px solid var(--pastel-peach);
     color: white;
     font-weight: 700;
     font-family: var(--font-display);

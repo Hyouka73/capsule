@@ -1,36 +1,53 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Button from '../../components/ui/Button/Button';
 import Card from '../../components/ui/Card/Card';
 import PageHeader from '../../components/ui/PageHeader/PageHeader';
 import EmptyState from '../../components/ui/EmptyState/EmptyState';
 import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
+import { useCoupons } from '../../hooks/useCoupons';
+import { toast } from '../../components/ui/PastelToast/PastelToast';
 import styles from './CouponManager.module.css';
 
 export default function CouponManager() {
-    const [coupons, setCoupons] = useState([
-        // Mock data to test UI
-        { id: '1', emoji: '💆‍♀️', title: 'Masaje Relajante (30 min)', type: 'massage', description: 'Vale por un masaje completo de 30 minutos sin quejas.', instructions: 'Canjear en un lugar con privacidad y luz tenue.', expiryDate: '2026-12-31', isActive: true, isRedeemed: false },
-        { id: '2', emoji: '🎬', title: 'Tarde de Cine', type: 'date_night', description: 'Tú eliges la película, yo pago las palomitas.', instructions: 'Válido para cualquier cine local o peli en casa.', expiryDate: null, isActive: true, isRedeemed: true, redeemedAt: '2025-10-14T20:00:00Z' },
-        { id: '3', emoji: '🃏', title: 'Pase Libre', type: 'free_pass', description: 'Vale por salirte con la tuya en una discusión pequeña.', instructions: 'Úsalo con sabiduría. Aplican restricciones.', expiryDate: '2026-05-15', isActive: false, isRedeemed: false }
-    ]);
-    const [isLoading] = useState(false);
+    const { 
+        coupons, 
+        isLoading, 
+        createCoupon, 
+        updateCoupon, 
+        deleteCoupon 
+    } = useCoupons({ adminMode: true });
+
     const [showForm, setShowForm] = useState(false);
     const [editingCoupon, setEditingCoupon] = useState(null);
 
     // Form state
-    const [formData, setFormData] = useState({ emoji: '🎁', title: '', type: 'wish', description: '', instructions: '', expiryDate: '', isActive: true });
+    const [formData, setFormData] = useState({ 
+        emoji: '🎁', title: '', type: 'wish', description: '', instructions: '', expiryDate: '', isActive: true 
+    });
 
-    const handleCreated = (e) => {
+    const handleCreated = async (e) => {
         e.preventDefault();
-        const newCoupon = { id: Date.now().toString(), ...formData, isRedeemed: false };
-        if (editingCoupon) {
-            setCoupons(prev => prev.map(c => c.id === editingCoupon.id ? { ...c, ...formData } : c));
-        } else {
-            setCoupons(prev => [newCoupon, ...prev]);
+        
+        try {
+            if (editingCoupon) {
+                await toast.promise(updateCoupon(editingCoupon.id, formData), {
+                    loading: 'Guardando cambios...',
+                    success: 'Cupón actualizado ✨',
+                    error: 'Error al actualizar'
+                });
+            } else {
+                await toast.promise(createCoupon(formData), {
+                    loading: 'Creando cupón...',
+                    success: '¡Cupón creado con éxito! 🎁',
+                    error: 'Error al crear'
+                });
+            }
+            setShowForm(false);
+            setEditingCoupon(null);
+            setFormData({ emoji: '🎁', title: '', type: 'wish', description: '', instructions: '', expiryDate: '', isActive: true });
+        } catch (err) {
+            console.error('[CouponManager] Form error:', err);
         }
-        setShowForm(false);
-        setEditingCoupon(null);
-        setFormData({ emoji: '🎁', title: '', type: 'wish', description: '', instructions: '', expiryDate: '', isActive: true });
     };
 
     const handleEdit = (c) => {
@@ -42,18 +59,30 @@ export default function CouponManager() {
         setShowForm(true);
     };
 
-    const handleDelete = (id) => {
-        if (confirm('¿Seguro que quieres eliminar este cupón?')) {
-            setCoupons(prev => prev.filter(c => c.id !== id));
+    const handleDelete = async (id) => {
+        if (confirm('¿Seguro que quieres eliminar este cupón permanentemente?')) {
+            try {
+                await toast.promise(deleteCoupon(id), {
+                    loading: 'Eliminando...',
+                    success: 'Cupón eliminado 🗑️',
+                    error: 'No se pudo eliminar'
+                });
+            } catch (err) {
+                console.error('[CouponManager] Delete error:', err);
+            }
         }
     };
 
-    const toggleActive = (id) => {
-        setCoupons(prev => prev.map(c => c.id === id ? { ...c, isActive: !c.isActive } : c));
+    const toggleActive = async (coupon) => {
+        try {
+            await updateCoupon(coupon.id, { isActive: !coupon.isActive });
+        } catch (err) {
+            toast.error('Error al cambiar estado');
+        }
     };
 
-    const availableCoupons = coupons.filter(c => !c.isRedeemed);
-    const redeemedCoupons = coupons.filter(c => c.isRedeemed);
+    const availableCoupons = coupons.filter(c => !c.isUsed);
+    const redeemedCoupons = coupons.filter(c => c.isUsed);
 
     return (
         <div className={styles.root}>
@@ -62,51 +91,99 @@ export default function CouponManager() {
                 subtitle={`${availableCoupons.length} disponibles, ${redeemedCoupons.length} canjeados`}
                 actionLabel="Nuevo Cupón"
                 actionIcon="✨"
-                onAction={() => { setEditingCoupon(null); setFormData({ emoji: '🎁', title: '', type: 'wish', description: '', instructions: '', expiryDate: '', isActive: true }); setShowForm(true); }}
+                onAction={() => { 
+                    setEditingCoupon(null); 
+                    setFormData({ emoji: '🎁', title: '', type: 'wish', description: '', instructions: '', expiryDate: '', isActive: true }); 
+                    setShowForm(true); 
+                }}
             />
 
             {/* Form panel */}
             {showForm && (
                 <Card className={styles.formPanel} glass>
                     <div className={styles.formPanelHeader}>
-                        <h2>{editingCoupon ? '✍️ Editar Cupón' : '✨ Nuevo Cupón Sorpresa'}</h2>
+                        <h2>{editingCoupon ? '✍️ Editar Cupón' : '✨ Nuevo Cupón Real'}</h2>
                         <button type="button" onClick={() => setShowForm(false)} className={styles.closeBtn} title="Cerrar">✕</button>
                     </div>
                     <form onSubmit={handleCreated} className={styles.form}>
                         <div className={styles.formRow}>
                             <div className={styles.formGroup} style={{ flex: '0 0 100px' }}>
-                                <KawaiiInput type="text" label="Emoji" maxLength="2" required value={formData.emoji} onChange={e => setFormData({ ...formData, emoji: e.target.value })} />
+                                <KawaiiInput 
+                                    type="text" 
+                                    label="Emoji" 
+                                    maxLength="2" 
+                                    required 
+                                    value={formData.emoji} 
+                                    onChange={e => setFormData({ ...formData, emoji: e.target.value })} 
+                                />
                             </div>
                             <div className={styles.formGroup} style={{ flex: '1' }}>
-                                <KawaiiInput type="text" label="Título del Cupón" required placeholder="Ej. Vale por un abrazo..." value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
+                                <KawaiiInput 
+                                    type="text" 
+                                    label="Título del Cupón" 
+                                    required 
+                                    placeholder="Ej. Vale por un abrazo..." 
+                                    value={formData.title} 
+                                    onChange={e => setFormData({ ...formData, title: e.target.value })} 
+                                />
                             </div>
                         </div>
 
                         <div className={styles.formRow}>
                             <div className={styles.formGroup} style={{ flex: '1' }}>
-                                <KawaiiInput type="select" label="Categoría" value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value })} options={[
-                                    { value: 'massage', label: '💆‍♀️ Masaje / Relax' },
-                                    { value: 'date_night', label: '🍷 Date Night' },
-                                    { value: 'free_pass', label: '🃏 Pase Libre' },
-                                    { value: 'wish', label: '✨ Deseo Libre' },
-                                    { value: 'naughty', label: '🌶️ Picante' }
-                                ]} />
+                                <KawaiiInput 
+                                    type="select" 
+                                    label="Categoría" 
+                                    value={formData.type} 
+                                    onChange={e => setFormData({ ...formData, type: e.target.value })} 
+                                    options={[
+                                        { value: 'massage', label: '💆‍♀️ Masaje / Relax' },
+                                        { value: 'date_night', label: '🍷 Date Night' },
+                                        { value: 'free_pass', label: '🃏 Pase Libre' },
+                                        { value: 'wish', label: '✨ Deseo Libre' },
+                                        { value: 'naughty', label: '🌶️ Picante' }
+                                    ]} 
+                                />
                             </div>
                             <div className={styles.formGroup} style={{ flex: '1' }}>
-                                <KawaiiInput type="date" label="Expiración (Opcional)" value={formData.expiryDate} onChange={e => setFormData({ ...formData, expiryDate: e.target.value })} />
+                                <KawaiiInput 
+                                    type="date" 
+                                    label="Expiración (Opcional)" 
+                                    value={formData.expiryDate} 
+                                    onChange={e => setFormData({ ...formData, expiryDate: e.target.value })} 
+                                />
                             </div>
                         </div>
 
                         <div className={styles.formGroup}>
-                            <KawaiiInput type="textarea" label="Descripción corta" required rows="2" placeholder="¿Qué incluye este cupón?" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
+                            <KawaiiInput 
+                                type="textarea" 
+                                label="Descripción corta" 
+                                required 
+                                rows="2" 
+                                placeholder="¿Qué incluye este cupón?" 
+                                value={formData.description} 
+                                onChange={e => setFormData({ ...formData, description: e.target.value })} 
+                            />
                         </div>
 
                         <div className={styles.formGroup}>
-                            <KawaiiInput type="text" label="Reglas o instrucciones (Opcional)" placeholder="Ej. Válido solo los fines de semana" value={formData.instructions} onChange={e => setFormData({ ...formData, instructions: e.target.value })} />
+                            <KawaiiInput 
+                                type="text" 
+                                label="Reglas o instrucciones" 
+                                placeholder="Ej. Válido solo los fines de semana" 
+                                value={formData.instructions} 
+                                onChange={e => setFormData({ ...formData, instructions: e.target.value })} 
+                            />
                         </div>
 
                         <div className={styles.toggleGroup}>
-                            <KawaiiInput type="toggle" label="Cupón Activo (Visible para ella)" value={formData.isActive} onChange={e => setFormData({ ...formData, isActive: e.target.checked || e.target.value })} />
+                            <KawaiiInput 
+                                type="toggle" 
+                                label="Cupón Activo (Visible para ella)" 
+                                value={formData.isActive} 
+                                onChange={e => setFormData({ ...formData, isActive: e.target.checked || e.target.value === true })} 
+                            />
                         </div>
 
                         <div className={styles.formActions}>
@@ -121,18 +198,24 @@ export default function CouponManager() {
             {isLoading ? (
                 <div className={styles.loading}>
                     <div className={styles.spinner}></div>
-                    <p>Buscando talones...</p>
+                    <p>Conectando con Firestore...</p>
                 </div>
             ) : availableCoupons.length === 0 ? (
                 <EmptyState
                     icon="🎟️"
                     title="El talonario está vacío"
-                    description="Crea cupones con favores o citas divertidas para que ella los canjee cuando quiera."
+                    description="Crea cupones reales que ella podrá ver en su dashboard de inmediato."
                 />
             ) : (
                 <div className={styles.grid}>
                     {availableCoupons.map(coupon => (
-                        <CouponCard key={coupon.id} coupon={coupon} onEdit={() => handleEdit(coupon)} onDelete={() => handleDelete(coupon.id)} onToggleActive={() => toggleActive(coupon.id)} />
+                        <CouponCard 
+                            key={coupon.id} 
+                            coupon={coupon} 
+                            onEdit={() => handleEdit(coupon)} 
+                            onDelete={() => handleDelete(coupon.id)} 
+                            onToggleActive={() => toggleActive(coupon)} 
+                        />
                     ))}
                 </div>
             )}
@@ -140,16 +223,23 @@ export default function CouponManager() {
             {/* Redemption History */}
             {redeemedCoupons.length > 0 && (
                 <div className={styles.historySection}>
-                    <h3 className={styles.historyTitle}>📓 Historial de Canjes</h3>
+                    <h3 className={styles.historyTitle}>📓 Historial de Canjes (Real)</h3>
                     <div className={styles.historyList}>
                         {redeemedCoupons.map(coupon => (
                             <div key={coupon.id} className={styles.historyItem}>
                                 <div className={styles.historyItemIcon}>{coupon.emoji}</div>
                                 <div className={styles.historyItemContent}>
                                     <h4>{coupon.title}</h4>
-                                    <p>Canjeado el {new Date(coupon.redeemedAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                                    <p>Canjeado el {coupon.usedAt ? new Date(coupon.usedAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Fecha desconocida'}</p>
                                 </div>
-                                <Button size="sm" variant="ghost" className={styles.reactivateBtn} onClick={() => setCoupons(prev => prev.map(c => c.id === coupon.id ? { ...c, isRedeemed: false, isActive: true } : c))}>Reactivar</Button>
+                                <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className={styles.reactivateBtn} 
+                                    onClick={() => updateCoupon(coupon.id, { isUsed: false, isActive: true, usedAt: null })}
+                                >
+                                    Reactivar
+                                </Button>
                             </div>
                         ))}
                     </div>

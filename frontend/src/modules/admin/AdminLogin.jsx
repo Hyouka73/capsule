@@ -49,8 +49,6 @@ export default function AdminLogin() {
             </div>
 
             <main className={styles.mainContainer}>
-                <div className={styles.glassCard}></div>
-
                 <div className={styles.headerGroup}>
                     <div className={`${styles.iconWrapper} ${styles.floating}`}>
                         <svg className={styles.mainIcon} fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

@@ -27,10 +27,8 @@
     max-width: 90%;
 
     background: var(--clay-bg-white);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
     border-radius: var(--radius-pill);
-    border: var(--border-glass-pink);
+    border: var(--border-rose);
     box-shadow: var(--clay-shadow-lg);
     
     font-family: var(--font-body);
@@ -50,17 +48,17 @@
     transform: scale(0.96);
 }
 
-/* ─── Type Variants ─── */
+/* ─── Type Variants (Solid Borders) ─── */
 .success {
-    border-color: rgba(156, 228, 193, 0.35);
+    border-color: var(--pastel-mint);
 }
 
 .error {
-    border-color: rgba(255, 175, 204, 0.35);
+    border-color: var(--pastel-rose);
 }
 
 .info, .loading {
-    border-color: rgba(189, 224, 254, 0.35);
+    border-color: var(--pastel-sage);
 }
 
 /* ─── Badge ─── */
@@ -88,8 +86,8 @@
 }
 
 .badge_info, .badge_loading {
-    background: linear-gradient(135deg, #bde0fe 0%, #a2d2ff 100%);
-    color: #4a5c6e;
+    background: var(--pastel-sage);
+    color: var(--pastel-text);
 }
 
 /* ─── Text Styling ─── */

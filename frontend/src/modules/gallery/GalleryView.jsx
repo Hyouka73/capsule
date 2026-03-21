@@ -73,15 +73,32 @@ export default function GalleryView() {
                     </div>
                 </motion.div>
             ) : (
-                <div className={styles.grid}>
+                <motion.div 
+                    className={styles.grid}
+                    variants={{
+                        hidden: { opacity: 0 },
+                        show: {
+                            opacity: 1,
+                            transition: {
+                                staggerChildren: 0.05
+                            }
+                        }
+                    }}
+                    initial="hidden"
+                    animate="show"
+                >
                     {photos.map((photo, index) => (
                         <motion.div
-                            key={photo.id}
+                            key={`${photo.id}-${index}`}
                             className={styles.photoThumb}
                             onClick={() => setSelectedPhotoIndex(index)}
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: (index % 12) * 0.05 }}
+                            variants={{
+                                hidden: { opacity: 0, y: 20, scale: 0.9 },
+                                show: { 
+                                    opacity: 1, y: 0, scale: 1,
+                                    transition: { type: 'spring', damping: 25, stiffness: 200 }
+                                }
+                            }}
                         >
                             <img
                                 src={photo.thumbnailUrl || photo.url || photo.storagePath}
@@ -110,7 +127,7 @@ export default function GalleryView() {
                             </div>
                         )}
                     </div>
-                </div>
+                </motion.div>
             )}
 
             {/* Photo Detail Modal */}

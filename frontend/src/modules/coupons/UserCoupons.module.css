@@ -29,14 +29,14 @@
 .title {
     font-family: var(--font-display);
     font-size: 2.6rem;
-    color: #614646;
+    color: var(--text-primary); /* #614646 -> text-primary */
     margin: 0;
     line-height: 1.2;
 }
 
 .subtitle {
     font-family: var(--font-body);
-    color: #8c6a6a;
+    color: var(--text-muted); /* #8c6a6a -> text-muted */
     font-size: 1rem;
     margin-top: 0.8rem;
     opacity: 0.8;

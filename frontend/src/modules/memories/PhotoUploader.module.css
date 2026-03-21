@@ -5,9 +5,9 @@
 }
 
 .dropzone {
-    border: 2px dashed var(--glass-border);
+    border: 3px dashed var(--pastel-rose-light);
     border-radius: var(--radius-lg);
-    background: var(--bg-input);
+    background: var(--clay-bg-white);
     padding: 3rem 2rem;
     text-align: center;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -16,9 +16,9 @@
 }
 
 .dropzone:hover {
-    border-color: var(--accent-primary);
-    background: var(--accent-soft);
-    box-shadow: 0 0 20px var(--color-gold-glow);
+    border-color: var(--pastel-rose);
+    background: var(--clay-bg-rose);
+    box-shadow: var(--clay-shadow-md);
 }
 
 .hiddenInput {
@@ -61,8 +61,8 @@
 }
 
 .previewItem {
-    background: var(--bg-card);
-    border: 1px solid var(--glass-border);
+    background: var(--clay-bg-white);
+    border: 3px solid var(--pastel-rose-light);
     border-radius: var(--radius-md);
     padding: 0.5rem;
     position: relative;
@@ -108,8 +108,8 @@
 .spinner {
     width: 12px;
     height: 12px;
-    border: 2px solid var(--accent-soft);
-    border-top-color: var(--accent-primary);
+    border: 3px solid var(--pastel-rose-light);
+    border-top-color: var(--pastel-rose);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
 }
@@ -122,5 +122,5 @@
     padding-top: 1rem;
     display: flex;
     justify-content: flex-end;
-    border-top: 1px solid var(--glass-border);
+    border-top: 3px solid var(--pastel-rose-light);
 }

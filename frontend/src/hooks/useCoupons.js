@@ -12,7 +12,9 @@ import {
     where, 
     orderBy, 
     doc, 
+    addDoc,
     updateDoc, 
+    deleteDoc,
     serverTimestamp 
 } from 'firebase/firestore';
 import { db } from '../services/firebase';
@@ -21,7 +23,7 @@ import Coupon from '../models/Coupon';
 import { useOfflineActions } from './useOfflineActions';
 import { toast } from '../components/ui/PastelToast/PastelToast';
 
-export function useCoupons() {
+export function useCoupons({ adminMode = false } = {}) {
     const [coupons, setCoupons] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -29,11 +31,14 @@ export function useCoupons() {
 
     useEffect(() => {
         const couponsRef = collection(db, COLLECTIONS.COUPONS);
-        const q = query(
-            couponsRef, 
-            where('isActive', '==', true),
-            orderBy('createdAt', 'desc')
-        );
+        
+        // Admin sees everything, Partner only active coupons
+        const constraints = [orderBy('createdAt', 'desc')];
+        if (!adminMode) {
+            constraints.unshift(where('isActive', '==', true));
+        }
+
+        const q = query(couponsRef, ...constraints);
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const list = snapshot.docs.map(doc => Coupon.fromFirestore(doc));
@@ -47,7 +52,7 @@ export function useCoupons() {
         });
 
         return unsubscribe;
-    }, []);
+    }, [adminMode]);
 
     const redeemCoupon = useCallback(async (couponId, usedNotes = '') => {
         try {
@@ -85,10 +90,54 @@ export function useCoupons() {
         }
     }, [queueAction]);
 
+    const createCoupon = useCallback(async (couponData) => {
+        try {
+            const docRef = await addDoc(collection(db, COLLECTIONS.COUPONS), {
+                ...couponData,
+                isUsed: false,
+                usedAt: null,
+                usedNotes: '',
+                createdAt: serverTimestamp()
+            });
+            return { success: true, id: docRef.id };
+        } catch (err) {
+            console.error('[useCoupons] Error creating:', err);
+            throw err;
+        }
+    }, []);
+
+    const updateCoupon = useCallback(async (id, data) => {
+        try {
+            const couponRef = doc(db, COLLECTIONS.COUPONS, id);
+            await updateDoc(couponRef, {
+                ...data,
+                updatedAt: serverTimestamp()
+            });
+            return { success: true };
+        } catch (err) {
+            console.error('[useCoupons] Error updating:', err);
+            throw err;
+        }
+    }, []);
+
+    const deleteCoupon = useCallback(async (id) => {
+        try {
+            const couponRef = doc(db, COLLECTIONS.COUPONS, id);
+            await deleteDoc(couponRef);
+            return { success: true };
+        } catch (err) {
+            console.error('[useCoupons] Error deleting:', err);
+            throw err;
+        }
+    }, []);
+
     return {
         coupons,
         isLoading,
         error,
-        redeemCoupon
+        redeemCoupon,
+        createCoupon,
+        updateCoupon,
+        deleteCoupon
     };
 }

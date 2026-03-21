@@ -28,16 +28,19 @@ export function useGallery(pageSize = 20) {
         setError(null);
 
         try {
-            const result = await callBackendApi('getGallery', {
-                limit: pageSize,
-                // Pagination can be added here if needed in the future
-            });
+            const currentPageSize = pageSize;
+            const params = { limit: currentPageSize };
+
+            // Apply cursor if not initial fetch
+            if (!isInitial && lastDocRef.current) {
+                params.lastCreatedAt = lastDocRef.current.createdAt;
+                params.lastId = lastDocRef.current.id;
+            }
+
+            const result = await callBackendApi('getGallery', params);
 
             if (result.success) {
-                const fetchedPhotos = result.photos.map(p => ({
-                    ...p,
-                    // If backend sends ISO strings, we might need to verify format
-                }));
+                const fetchedPhotos = result.photos || [];
 
                 if (isInitial) {
                     setPhotos(fetchedPhotos);
@@ -45,10 +48,15 @@ export function useGallery(pageSize = 20) {
                     setPhotos(prev => [...prev, ...fetchedPhotos]);
                 }
 
-                // For now, simplicity: if we got less than pageSize, there's no more.
-                setHasMore(fetchedPhotos.length === pageSize);
+                // Update cursor with the last element
+                if (fetchedPhotos.length > 0) {
+                    lastDocRef.current = fetchedPhotos[fetchedPhotos.length - 1];
+                }
+
+                // If we got less than limit, we've reached the end
+                setHasMore(fetchedPhotos.length === currentPageSize);
             } else {
-                throw new Error(result.error);
+                throw new Error(result.error || 'Failed to fetch gallery');
             }
         } catch (err) {
             console.error('Error fetching gallery photos:', err);
@@ -57,7 +65,7 @@ export function useGallery(pageSize = 20) {
             setLoading(false);
             isLoadingRef.current = false;
         }
-    }, [pageSize]);
+    }, [pageSize, hasMore]);
 
     // Initial fetch
     useEffect(() => {

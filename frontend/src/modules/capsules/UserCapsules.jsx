@@ -16,7 +16,9 @@ function normalizeCapsule(raw) {
 
     let status = 'locked';
     if (raw.isDestructed) status = 'destructed';
-    else if (raw.isUnlocked) status = 'unlocked';
+    else if (raw.isUnlocked) {
+        status = (raw.isDestructible || destructsAt) ? 'destructible' : 'unlocked';
+    }
     else if (opensAt && opensAt > now) status = 'scheduled';
 
     const opensInDays = opensAt ? Math.ceil((opensAt - now) / 86400000) : null;
@@ -161,6 +163,34 @@ function CapsuleCard({ capsule, onOpen }) {
 }
 
 function CapsuleModal({ capsule, onClose }) {
+    const { type, content, status } = capsule;
+    const Icon = CapsuleIcons[type] || CapsuleIcons['message'];
+
+    // Variants for sequenced reveal
+    const bodyVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: { staggerChildren: 0.15, delayChildren: 0.2 }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20, scale: 0.95 },
+        visible: { 
+            opacity: 1, y: 0, scale: 1,
+            transition: { type: 'spring', damping: 20, stiffness: 200 }
+        }
+    };
+
+    const iconVariants = {
+        hidden: { scale: 0, rotate: -20 },
+        visible: { 
+            scale: 1, rotate: 0,
+            transition: { type: 'spring', damping: 15, stiffness: 300, delay: 0.1 }
+        }
+    };
+
     return (
         <motion.div
             className={styles.modalOverlay}
@@ -171,23 +201,79 @@ function CapsuleModal({ capsule, onClose }) {
         >
             <motion.div
                 className={styles.modalContent}
-                initial={{ scale: 0.9, y: 20 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.9, y: 20 }}
+                initial={{ scale: 0.9, y: 50, rotate: -2 }}
+                animate={{ scale: 1, y: 0, rotate: 0 }}
+                exit={{ scale: 0.9, y: 50, rotate: 2 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                 onClick={(e) => e.stopPropagation()}
             >
                 <button className={styles.closeBtn} onClick={onClose}>×</button>
-                <h2 style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
-                    Cerrar para volver
-                </h2>
-                <div style={{ marginTop: '2rem', color: 'var(--text-muted)' }}>
-                    <p>Contenido tipo: {capsule.type}</p>
-                    {capsule.status === 'destructible' && (
-                        <p style={{ color: 'var(--color-error)', fontWeight: 'bold' }}>
-                            ¡Este mensaje se autodestruirá!
-                        </p>
+                
+                <motion.div 
+                    className={styles.modalBody}
+                    variants={bodyVariants}
+                    initial="hidden"
+                    animate="visible"
+                >
+                    <motion.div className={styles.modalIconLarge} variants={iconVariants}>
+                        <Icon />
+                    </motion.div>
+
+                    {content?.message && (
+                        <motion.div className={styles.modalMessage} variants={itemVariants}>
+                            {content.message}
+                        </motion.div>
                     )}
-                </div>
+
+                    {content?.files && content.files.length > 0 && (
+                        <motion.div style={{ width: '100%' }} variants={itemVariants}>
+                            <p className={styles.sectionTitle}>Archivos adjuntos</p>
+                            <div className={styles.contentList}>
+                                {content.files.map((file, idx) => (
+                                    <a 
+                                        key={idx} 
+                                        href={file.url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className={styles.contentLink}
+                                    >
+                                        <span className={styles.linkIcon}>📎</span>
+                                        {file.name || 'Descargar archivo'}
+                                    </a>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {content?.links && content.links.length > 0 && (
+                        <motion.div style={{ width: '100%' }} variants={itemVariants}>
+                            <p className={styles.sectionTitle}>Links compartidos</p>
+                            <div className={styles.contentList}>
+                                {content.links.map((link, idx) => (
+                                    <a 
+                                        key={idx} 
+                                        href={link.url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className={styles.contentLink}
+                                    >
+                                        <span className={styles.linkIcon}>🔗</span>
+                                        {link.title || link.url}
+                                    </a>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {status === 'destructible' && (
+                        <motion.div 
+                            variants={itemVariants}
+                            style={{ marginTop: '1rem', color: 'var(--color-error)', fontWeight: '800', fontSize: '0.8rem', textTransform: 'uppercase' }}
+                        >
+                            ⚠️ Esta cápsula se autodestruirá pronto
+                        </motion.div>
+                    )}
+                </motion.div>
             </motion.div>
         </motion.div>
     );

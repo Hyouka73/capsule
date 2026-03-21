@@ -8,7 +8,7 @@
     max-height: 85vh;
     box-sizing: border-box;
     box-shadow: var(--clay-shadow-lg);
-    border: var(--border-glass-pink);
+    border: 3px solid var(--pastel-rose-light);
 }
 
 .steps {
@@ -42,7 +42,7 @@
 .stepDivider {
     width: 3rem;
     height: 1px;
-    background: var(--glass-border);
+    background: var(--pastel-rose-light);
     flex-shrink: 0;
 }
 
@@ -75,7 +75,7 @@
 .textarea,
 .select {
     background: var(--bg-input);
-    border: var(--border-glass-pink);
+    border: 3px solid var(--pastel-rose-light);
     border-radius: var(--radius-md);
     color: var(--text-primary);
     font-size: 0.95rem;
@@ -101,7 +101,7 @@
     gap: 14px;
     padding: 16px 20px;
     background: var(--clay-bg-white);
-    border: var(--border-glass-pink);
+    border: 3px solid var(--pastel-rose-light);
     border-radius: var(--radius-lg);
     cursor: pointer;
     transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -183,7 +183,7 @@
 
 .tagBtn {
     background: var(--clay-bg-white);
-    border: var(--border-glass);
+    border: 3px solid var(--pastel-rose-light);
     border-radius: var(--radius-pill);
     color: var(--text-muted);
     font-size: 0.75rem;
@@ -210,7 +210,7 @@
 }
 
 .error {
-    background: rgba(240, 135, 122, 0.1);
+    background: var(--pastel-yellow); /* Solid caution highlight */
     border: 1px solid var(--color-error);
     border-radius: var(--radius-md);
     color: var(--color-error);
@@ -224,8 +224,8 @@
     gap: 1rem;
     justify-content: flex-end;
     padding-top: 1.25rem;
-    border-top: var(--border-glass);
-    background: var(--glass-bg-strong);
+    border-top: 3px solid var(--pastel-rose-light);
+    background: var(--pastel-bg);
     margin: 1.5rem -1.5rem -1.5rem;
     padding: 1.25rem 1.5rem;
     border-radius: 0 0 var(--radius-xl) var(--radius-xl);
@@ -236,7 +236,7 @@
     align-items: center;
     gap: 1.25rem;
     background: var(--clay-bg-white);
-    border: var(--border-glass);
+    border: 3px solid var(--pastel-rose-light);
     border-radius: var(--radius-xl);
     padding: 1.25rem;
     margin-bottom: 2rem;
