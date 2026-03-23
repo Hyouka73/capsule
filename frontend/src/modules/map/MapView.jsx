@@ -52,10 +52,12 @@ export default function MapView({
                         center: [pos.coords.longitude, pos.coords.latitude],
                         zoom: 14
                     }));
-                    toast.info('Ubicación encontrada ✨', 'Centrando el mapa en ti');
                 },
-                (err) => console.log('[MapView] Geolocation error:', err),
-                { enableHighAccuracy: true, timeout: 10000 }
+                (err) => {
+                    if (err.code === 3) console.warn('[MapView] Geolocation timeout');
+                    else console.log('[MapView] Geolocation error:', err);
+                },
+                { enableHighAccuracy: false, timeout: 30000, maximumAge: 300000 }
             );
         }
 
@@ -161,7 +163,6 @@ export default function MapView({
         else if (maxDiff > 0.05) zoom = 13;
 
         setViewport({ center, zoom });
-        toast.info('Mostrando todo ✨', 'Encontramos todos tus recuerdos');
     }, [places]);
 
     useEffect(() => {
