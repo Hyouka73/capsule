@@ -11,18 +11,25 @@ function TimeLock({ children }) {
 
     const unlockDate = teaser?.unlockAt 
         ? new Date(teaser.unlockAt) 
-        : new Date('2026-04-04T00:00:00');
+        : null;
 
     useEffect(() => {
         if (!isConfigLoaded) return;
 
-        const target = unlockDate.getTime();
-        const now = Date.now();
-
-        if (now >= target) {
+        if (teaser?.isEnabled === false) {
             setIsLocked(false);
+            return;
         }
-    }, [isConfigLoaded, unlockDate]);
+
+        if (unlockDate) {
+            const target = unlockDate.getTime();
+            const now = Date.now();
+
+            if (now >= target) {
+                setIsLocked(false);
+            }
+        }
+    }, [isConfigLoaded, unlockDate, teaser?.isEnabled]);
 
     const handleUnlock = () => {
         // Wait a moment for the countdown hitting 0 visual state
@@ -47,7 +54,7 @@ function TimeLock({ children }) {
                         {/* Reusing Countdown with custom title and date */}
                         <Countdown
                             visible={true}
-                            targetDate={unlockDate}
+                            targetDate={unlockDate || new Date()}
                             onComplete={handleUnlock}
                             title="El contenido no está disponible aún. Espera un poquito..."
                         />

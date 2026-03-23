@@ -8,6 +8,9 @@ import LetterReveal from './LetterReveal';
 import Countdown from './Countdown';
 import FloatingPetals from './FloatingPetals';
 import { useAppConfig } from '../../context/AppConfigContext';
+import { useAuth } from '../../hooks/useAuth';
+import { db } from '../../services/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 import './Teaser.css';
 
 /**
@@ -35,6 +38,7 @@ function Teaser() {
     const [isFadingOut, setIsFadingOut] = useState(false);
     const navigate = useNavigate();
     const { teaser } = useAppConfig();
+    const { user } = useAuth();
 
     const unlockAt = teaser?.unlockAt 
         ? new Date(teaser.unlockAt) 
@@ -62,16 +66,27 @@ function Teaser() {
         setShowCountdown(true);
     }, []);
 
-    const handleCountdownComplete = useCallback(() => {
+    const handleCountdownComplete = useCallback(async () => {
         setIsExploding(true);
         
-        // Start fade out to pastel-bg shortly before navigating
-        setTimeout(() => setIsFadingOut(true), 3000);
+        // Start fade to dark poetic background at 2s
+        setTimeout(() => setIsFadingOut(true), 2000);
 
-        setTimeout(() => {
+        // Final transition after 10s (2s sakura + 8s text)
+        setTimeout(async () => {
+            if (user?.uid) {
+                try {
+                    // 1. Mark teaser as completed in Firestore
+                    const userRef = doc(db, 'users', user.uid);
+                    await updateDoc(userRef, { teaserCompleted: true });
+                } catch (err) {
+                    console.error('Error updating teaser status:', err);
+                }
+            }
+            // 2. Navigate to welcome screen
             navigate('/welcome');
-        }, 4000);
-    }, [navigate]);
+        }, 10000);
+    }, [navigate, user?.uid]);
 
     return (
         <div className="teaser-app">
@@ -150,7 +165,8 @@ function Teaser() {
                 </AnimatePresence>
 
             {/* 🌸 Sakura petals — rendered at App level so they persist above flower garden */}
-            {(showSakura || isExploding) && <SakuraOverlay />}
+            {/* We hide them when fade-out (Phase 5 dark bg) starts for a cleaner transition */}
+            {(showSakura || (isExploding && !isFadingOut)) && <SakuraOverlay />}
 
             {/* Final Explosion Flash */}
             {isExploding && (
@@ -162,14 +178,43 @@ function Teaser() {
                 />
             )}
 
-            {/* Cinematic Fade Out to Welcome */}
+            {/* Cinematic Fade Out to Dark with Poetic Text */}
             {isFadingOut && (
                 <motion.div
                     className="welcome-fade-overlay"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ duration: 1.0, ease: "linear" }}
-                />
+                    transition={{ duration: 2.0, ease: "easeInOut" }}
+                    style={{
+                        position: 'fixed',
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: '#110c14', // dark theme color
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 9999
+                    }}
+                >
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 1.5, duration: 3.0, ease: "easeInOut" }}
+                        style={{
+                            color: '#fff',
+                            fontSize: '1.4rem',
+                            fontFamily: 'serif',
+                            fontStyle: 'italic',
+                            textAlign: 'center',
+                            lineHeight: '1.6',
+                            padding: '0 2rem'
+                        }}
+                    >
+                        Ya llegó el momento...<br/>
+                        <span style={{ fontSize: '1rem', opacity: 0.7, marginTop: '2rem', display: 'block' }}>
+                            Nuestro viaje continúa.
+                        </span>
+                    </motion.div>
+                </motion.div>
             )}
 
             {/* Centralized Buttons */}
