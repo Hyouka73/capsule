@@ -8,7 +8,7 @@ import styles from './PendingDateForm.module.css';
 
 const MOCK_ALL_TAGS = ['cine', 'comida', 'romántico', 'aventura', 'relajación', 'fiesta', 'misterioso', 'pila'];
 
-export default function PendingDateForm({ pendingDate, onClose, onSave, defaultPlaces }) {
+export default function PendingDateForm({ pendingDate, onClose, onSave, onAutoSave, defaultPlaces }) {
     // Determine initial location from metadata if available
     const [selectedPlaceId, setSelectedPlaceId] = useState(() => 
         pendingDate?.coordinates ? 'custom_map' : ''
@@ -19,8 +19,8 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
     const [title, setTitle] = useState(pendingDate?.title || '');
     const [eventDate, setEventDate] = useState(() => {
         try {
-            // Priority: rawDate from EXIF > createdAt
-            const dateToUse = pendingDate?.rawDate || pendingDate?.createdAt;
+            // Priority: eventDate from form > rawDate from EXIF > createdAt
+            const dateToUse = pendingDate?.eventDate || pendingDate?.rawDate || pendingDate?.createdAt;
             if (dateToUse) {
                 const d = new Date(dateToUse);
                 if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
@@ -30,10 +30,34 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
         }
         return new Date().toISOString().split('T')[0];
     });
-    const [selectedTags, setSelectedTags] = useState(pendingDate?.suggestedTags || []);
-    const [comments, setComments] = useState('');
+    const [selectedTags, setSelectedTags] = useState(pendingDate?.tags || pendingDate?.suggestedTags || pendingDate?.context?.tags || []);
+    const [comments, setComments] = useState(pendingDate?.description || pendingDate?.comments || pendingDate?.context?.description || '');
     const [locationError, setLocationError] = useState(false);
     const [showCarousel, setShowCarousel] = useState(false);
+
+    // Auto-save debounced
+    useEffect(() => {
+        if (!onAutoSave) return;
+        
+        const timer = setTimeout(() => {
+            // Only save if something looks "touched" or already exists
+            const hasData = title || selectedTags.length > 0 || comments || selectedPlaceId;
+            if (hasData) {
+                onAutoSave({
+                    id: pendingDate.id,
+                    title,
+                    eventDate,
+                    tags: selectedTags,
+                    comments,
+                    placeId: selectedPlaceId,
+                    placeName: selectedPlaceId === 'custom_map' ? customPlaceName : null,
+                    customLocation
+                });
+            }
+        }, 800);
+
+        return () => clearTimeout(timer);
+    }, [title, eventDate, selectedTags, comments, selectedPlaceId, customLocation, customPlaceName, onAutoSave, pendingDate.id]);
 
     // Auto-resolve place name if coordinates exist but name doesn't
     useEffect(() => {
@@ -217,7 +241,7 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, defaultP
                         />
                     </div>
 
-                    {pendingDate.isFromBingo && (
+                    {(pendingDate.isFromBingo || pendingDate.context?.type === 'bingo') && (
                         <div className={styles.bingoBanner}>
                             <span className="material-symbols-outlined">casino</span>
                             ¡Esta cita desbloquea un logro del Bingo! 🎰

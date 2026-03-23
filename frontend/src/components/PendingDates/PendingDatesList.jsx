@@ -23,9 +23,23 @@ function PendingDateCard({ pd, idx, onSelectDate, onRemove, onRestore }) {
     const iconScale = useTransform(x, [-80, -30, 0], [1.3, 0.9, 0.4]);
 
     // Better date parsing & 24hr format conversion
-    const parts = pd.originalDate?.split(', ') || [];
-    const displayDate = parts.length >= 3 ? parts[1] : (pd.originalDate || 'Sin fecha');
-    let displayTime = parts.length >= 3 ? parts[2] : '';
+    // Priority: user-selected eventDate > original metadata date
+    const finalDate = pd.eventDate || pd.originalDate;
+    const parts = typeof finalDate === 'string' ? finalDate.split(', ') : [];
+    
+    let displayDate = 'Sin fecha';
+    let displayTime = '';
+
+    if (pd.eventDate) {
+        // If it's a YYYY-MM-DD from the form
+        const d = new Date(pd.eventDate);
+        if (!isNaN(d.getTime())) {
+            displayDate = d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+    } else if (parts.length >= 2) {
+        displayDate = parts[1];
+        displayTime = parts[2] || '';
+    }
 
     // Convert "06:32 p" or "06:32 p.m." to "18:32"
     if (displayTime) {
@@ -161,13 +175,29 @@ function PendingDateCard({ pd, idx, onSelectDate, onRemove, onRestore }) {
                     </div>
 
                     <div className={styles.info}>
-                        <span className={styles.date}>{displayDate}</span>
+                        <span className={styles.date}>
+                            {pd.title ? (
+                                <strong className={styles.titleText}>{pd.title}</strong>
+                            ) : (
+                                displayDate
+                            )}
+                        </span>
                         <div className={styles.detailsRow}>
                             <span className={styles.photoCount}>
-                                <span className="material-symbols-outlined">photo_library</span>
-                                {pd.photos?.length || 0} fotos
+                                {pd.title ? displayDate : (
+                                    <>
+                                        <span className="material-symbols-outlined">photo_library</span>
+                                        {pd.photos?.length || 0} fotos
+                                    </>
+                                )}
                             </span>
                             {displayTime && <span className={styles.timeTag}>{displayTime}</span>}
+                            {pd.title && (
+                                <span className={styles.photoCountMini}>
+                                    <span className="material-symbols-outlined" style={{fontSize: '12px'}}>photo_library</span>
+                                    {pd.photos?.length || 0}
+                                </span>
+                            )}
                         </div>
                     </div>
                 </div>

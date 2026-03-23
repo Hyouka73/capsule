@@ -68,7 +68,10 @@ export function usePendingCitas() {
                 type: file.type
             })),
             status: 'pending',
-            context
+            context,
+            isFromBingo: context?.type === 'bingo',
+            tags: context?.tags || [],
+            description: context?.description || ''
         };
 
         if (files.length > 0) {

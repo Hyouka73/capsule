@@ -13,6 +13,9 @@ import styles from './BottomSheetModal.module.css';
  * @param {string} props.cancelText - Secondary action text
  * @param {function} props.onConfirm - Action when confirmed
  * @param {function} props.onCancel - Action when cancelled (defaults to onClose)
+ * @param {boolean} props.closeOnClickOutside - Whether to close when clicking the overlay
+ * @param {string} props.overlayClassName - Custom class for the overlay
+ * @param {boolean} props.showOverlay - Whether to show the backdrop background/blur
  */
 export default function BottomSheetModal({
     isOpen,
@@ -20,20 +23,25 @@ export default function BottomSheetModal({
     emoji,
     title,
     description,
+    children,
     confirmText = 'Confirmar',
     cancelText = 'Cancelar',
     onConfirm,
     onCancel,
+    hideActions = false,
+    closeOnClickOutside = true,
+    overlayClassName = '',
+    showOverlay = true,
 }) {
     return (
         <AnimatePresence>
             {isOpen && (
                 <motion.div
-                    className={styles.modalOverlay}
+                    className={`${styles.modalOverlay} ${overlayClassName} ${!showOverlay ? styles.noOverlay : ''}`}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    onClick={onClose}
+                    onClick={() => closeOnClickOutside && onClose()}
                 >
                     <motion.div
                         className={styles.modalContent}
@@ -49,23 +57,27 @@ export default function BottomSheetModal({
                         {emoji && <span className={styles.modalEmoji}>{emoji}</span>}
                         {title && <h2>{title}</h2>}
                         {description && <p>{description}</p>}
+                        {children && <div className={styles.children}>{children}</div>}
 
-                        <div className={styles.actions}>
-                            <button
-                                type="button"
-                                className={styles.confirmBtn}
-                                onClick={onConfirm}
-                            >
-                                {confirmText}
-                            </button>
-                            <button
-                                type="button"
-                                className={styles.cancelBtn}
-                                onClick={onCancel || onClose}
-                            >
-                                {cancelText}
-                            </button>
-                        </div>
+
+                        {!hideActions && (
+                            <div className={styles.actions}>
+                                <button
+                                    type="button"
+                                    className={styles.confirmBtn}
+                                    onClick={onConfirm}
+                                >
+                                    {confirmText}
+                                </button>
+                                <button
+                                    type="button"
+                                    className={styles.cancelBtn}
+                                    onClick={onCancel || onClose}
+                                >
+                                    {cancelText}
+                                </button>
+                            </div>
+                        )}
                     </motion.div>
                 </motion.div>
             )}

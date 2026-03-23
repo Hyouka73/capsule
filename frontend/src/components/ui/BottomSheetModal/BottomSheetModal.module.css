@@ -2,11 +2,22 @@
 .modalOverlay {
     position: fixed;
     inset: 0;
-    background: rgba(92, 61, 78, 0.35);
+    background: var(--bg-overlay-soft);
+    backdrop-filter: blur(8px);
     z-index: 5000;
     display: flex;
     align-items: flex-end;
     justify-content: center;
+}
+
+.noOverlay {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    pointer-events: none; /* Allow clicks to pass through to content behind, but content itself must re-enable */
+}
+
+.noOverlay > * {
+    pointer-events: auto; /* Re-enable pointer events for the modal content */
 }
 
 .modalContent {
@@ -100,4 +111,9 @@
 
 .cancelBtn:hover {
     color: var(--text-primary);
+}
+
+.children {
+    width: 100%;
+    margin-bottom: 24px;
 }
