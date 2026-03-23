@@ -12,7 +12,7 @@ import { COLLECTIONS } from '../config/constants.js';
  * Input:  { token: string, deviceFingerprint: string }
  * Output: { customToken: string, userId: string }
  */
-export const exchangeInviteToken = onCall({ region: 'us-central1' }, async (request) => {
+export const exchangeInviteToken = onCall({ region: 'us-central1', cors: true }, async (request) => {
     try {
         const { token, deviceFingerprint } = request.data;
 
@@ -70,6 +70,8 @@ export const exchangeInviteToken = onCall({ region: 'us-central1' }, async (requ
 
         // 5. Update/create user doc in Firestore
         const userRef = db.collection(COLLECTIONS.USERS).doc(realPartnerUid);
+        console.log(`[Backend Debug] Creating user doc: ${COLLECTIONS.USERS}/${realPartnerUid}`);
+        
         await userRef.set({
             uid: realPartnerUid,
             role: 'partner',
@@ -89,9 +91,18 @@ export const exchangeInviteToken = onCall({ region: 'us-central1' }, async (requ
                 language: 'es',
                 notificationsEnabled: true,
             },
+            onboardingCompleted: {
+                map: false, bingo: false, capsules: false,
+                coupons: false, snapshots: false,
+                gallery: false, movies: false, games: false
+            },
+            welcomeSeen: false,
+            teaserCompleted: false,
             createdAt: Timestamp.now(),
             lastActiveAt: Timestamp.now(),
         }, { merge: true });
+
+        console.log(`[Backend Debug] User doc created successfully.`);
 
         // 6. Generate and return the custom token
         const customToken = await auth.createCustomToken(realPartnerUid, {

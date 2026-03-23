@@ -30,6 +30,8 @@ export default class InviteToken {
             claimedAt: this.claimedAt,
             expiresAt: this.expiresAt,
             createdBy: this.createdBy,
+            createdAt: this.createdAt || new Date(),
+            updatedAt: this.updatedAt || new Date(),
         };
     }
 }

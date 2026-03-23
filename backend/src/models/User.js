@@ -62,6 +62,8 @@ export default class User {
             lastActiveAt: this.lastActiveAt,
             lastSeenAt: this.lastSeenAt,
             registeredAt: this.registeredAt,
+            createdAt: this.createdAt || new Date(),
+            updatedAt: this.updatedAt || new Date(),
         };
     }
 }

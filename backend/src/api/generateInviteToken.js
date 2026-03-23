@@ -3,7 +3,7 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions';
 import { v4 as uuidv4 } from 'uuid';
 
-export const generateInviteToken = onCall({ region: 'us-central1' }, async (request) => {
+export const generateInviteToken = onCall({ region: 'us-central1', cors: true }, async (request) => {
     // Must be authenticated as admin
     if (!request.auth || request.auth.token.role !== 'admin') {
         const uid = request.auth?.uid || 'anonymous';

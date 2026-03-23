@@ -1,0 +1,59 @@
+.welcome-screen-container {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--pastel-bg) 0%, #ffeaf1 100%);
+    padding: 2rem;
+    box-sizing: border-box;
+}
+
+.welcome-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    border-radius: 32px;
+    padding: 3rem;
+    max-width: 500px;
+    text-align: center;
+    box-shadow: 0 16px 40px rgba(255, 182, 193, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+.welcome-title {
+    font-family: var(--font-chunky);
+    color: var(--text-primary);
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.2;
+}
+
+.welcome-message {
+    font-family: var(--font-body);
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+}
+
+.welcome-button {
+    font-family: var(--font-chunky);
+    font-size: 1.2rem;
+    padding: 1rem 2rem;
+    width: 100%;
+    border-radius: 20px;
+    box-shadow: 0 8px 24px rgba(255, 107, 129, 0.4);
+    transform-origin: center;
+}
+
+.welcome-button:active {
+    transform: scale(0.95);
+}
+
+@media (max-width: 480px) {
+    .welcome-card {
+        padding: 2rem;
+    }
+    .welcome-title {
+        font-size: 2rem;
+    }
+}

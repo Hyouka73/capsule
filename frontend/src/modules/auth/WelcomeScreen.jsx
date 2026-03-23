@@ -1,93 +1,73 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { doc, updateDoc } from 'firebase/firestore';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../context/AuthContext';
 import { db } from '../../services/firebase';
-import { useAuth } from '../../hooks/useAuth';
-import { useAppConfig } from '../../context/AppConfigContext';
 import { COLLECTIONS } from '../../config/constants';
-import { toast } from '../../components/ui/PastelToast/PastelToast';
 import Button from '../../components/ui/Button/Button';
+import LoadingScreen from '../../components/ui/LoadingScreen/LoadingScreen';
 import styles from './WelcomeScreen.module.css';
-
-const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-        opacity: 1,
-        transition: {
-            staggerChildren: 0.15,
-            delayChildren: 0.5
-        }
-    }
-};
-
-const itemVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: { 
-        opacity: 1, 
-        y: 0,
-        transition: { type: 'spring', stiffness: 300, damping: 24 }
-    }
-};
 
 export default function WelcomeScreen() {
     const { user } = useAuth();
-    const { partner } = useAppConfig();
+    const [isSaving, setIsSaving] = useState(false);
     const navigate = useNavigate();
-    const [isUpdating, setIsUpdating] = useState(false);
 
-    const handleEnterApp = async () => {
-        if (!user) return;
-        
-        setIsUpdating(true);
+    const handleContinue = async () => {
+        setIsSaving(true);
         try {
             const userRef = doc(db, COLLECTIONS.USERS, user.uid);
-            await updateDoc(userRef, {
-                welcomeSeen: true
-            });
+            await updateDoc(userRef, { welcomeSeen: true });
             navigate('/app');
-        } catch (err) {
-            console.error('Error updating welcomeSeen:', err);
-            toast.error('¡Ups!', 'No pudimos guardar tu progreso. Inténtalo de nuevo.');
-        } finally {
-            setIsUpdating(false);
+        } catch (error) {
+            console.error('Error updating welcomeSeen:', error);
+            setIsSaving(false);
         }
     };
 
     return (
-        <motion.div 
-            className={styles.root}
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-        >
-            <div className={styles.content}>
-                <motion.div variants={itemVariants} className={styles.emojiWrapper}>
-                    <span className={styles.mainEmoji}>✨</span>
-                </motion.div>
-
-                <motion.h1 variants={itemVariants} className={styles.title}>
-                    Hola, {user?.displayName || 'amor'}
-                </motion.h1>
-
-                <motion.div variants={itemVariants} className={styles.messageCard}>
-                    <p className={styles.message}>
-                        {partner?.welcomeMessage || '¡Bienvenida a nuestro espacio! 💖'}
-                    </p>
-                </motion.div>
-
-                <motion.div variants={itemVariants} className={styles.actions}>
-                    <Button 
-                        variant="primary" 
-                        size="lg" 
-                        onClick={handleEnterApp} 
-                        disabled={isUpdating}
-                        className={styles.enterBtn}
+        <div className={styles.welcomeContainer}>
+            <AnimatePresence mode="wait">
+                {isSaving ? (
+                    <motion.div
+                        key="saving"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className={styles.savingOverlay}
                     >
-                        {isUpdating ? 'Abriendo...' : 'Abrir mi Capsule →'}
-                    </Button>
-                </motion.div>
-            </div>
-        </motion.div>
+                        <LoadingScreen message="Preparando tu espacio..." />
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        key="content"
+                        className={styles.welcomeCard}
+                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        transition={{ duration: 0.8, type: 'spring' }}
+                    >
+                        <h1 className={styles.welcomeTitle}>
+                            ¡Bienvenida, {user?.displayName || 'amor'}! 💖
+                        </h1>
+                        <p className={styles.welcomeText}>
+                            Este rincón digital fue creado pieza por pieza con todo el amor del mundo.
+                            Aquí guardaremos nuestros mejores momentos, jugaremos y recordaremos por qué
+                            somos el mejor equipo.
+                        </p>
+                        <div className={styles.actions}>
+                            <Button 
+                                variant="primary" 
+                                size="lg" 
+                                onClick={handleContinue}
+                                className={styles.continueBtn}
+                            >
+                                Abrir mi Capsule →
+                            </Button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
     );
 }

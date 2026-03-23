@@ -65,15 +65,18 @@ export function AuthProvider({ children }) {
             unsubscribeDoc();
 
             if (firebaseUser) {
+                setIsLoading(true); // Ensure stays loading while getting claims
                 let claims = { role: null, deviceId: null };
                 try {
                     claims = await getCurrentUserClaims(true);
-                } catch { /* session error */ }
+                } catch (err) {
+                    console.error('[Auth] Error fetching claims:', err);
+                }
 
                 setUser(firebaseUser);
                 setRole(claims.role);
                 setDeviceId(claims.deviceId);
-                console.log('[Auth) User role identified:', claims.role);
+                console.log('[Auth] User identified:', { uid: firebaseUser.uid, role: claims.role, deviceId: claims.deviceId });
 
                 // Start real-time listener for user document
                 const userRef = doc(db, COLLECTIONS.USERS, firebaseUser.uid);
@@ -94,8 +97,17 @@ export function AuthProvider({ children }) {
                     setOnboardingCompleted(data.onboardingCompleted ?? null);
                     setWelcomeSeen(data.welcomeSeen ?? false);
                     setTeaserCompleted(data.teaserCompleted ?? false);
+
+                    // Fallback: If role wasn't in claims, take it from Firestore
+                    if (!claims.role && data.role) {
+                        console.log('[Auth] Role fallback from Firestore:', data.role);
+                        setRole(data.role);
+                    }
+                    
+                    setIsLoading(false); // Only stop loading after doc is loaded
                 }, (err) => {
                     console.error('[Auth] User document listener error:', err);
+                    setIsLoading(false);
                 });
 
                 // If partner, try registering FCM
@@ -109,8 +121,8 @@ export function AuthProvider({ children }) {
                 setOnboardingCompleted(null);
                 setWelcomeSeen(null);
                 setTeaserCompleted(null);
+                setIsLoading(false); // No user, stop loading
             }
-            setIsLoading(false);
         });
 
         // Listen for foreground messages
