@@ -10,7 +10,7 @@ import { COLLECTIONS } from '../config/constants.js';
  * si quien solicita es 'partner' y la cápsula aún está bloqueada, brindando seguridad
  * total directamente en el servidor.
  */
-export const getCapsules = onCall({ region: 'us-central1' }, async (request) => {
+export const getCapsules = onCall({ region: 'us-central1', cors: true }, async (request) => {
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Debes iniciar sesión.');
     }

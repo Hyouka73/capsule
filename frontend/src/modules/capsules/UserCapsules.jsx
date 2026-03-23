@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from './UserCapsules.module.css';
 import { CapsuleIcons } from '../../icons/CapsuleIcons';
-import { getCapsules } from '../../apiClient';
+import { getCapsules, openCapsule } from '../../apiClient';
+import Button from '../../components/ui/Button/Button';
 
 /**
  * Normaliza los campos raw de Firestore a los campos derivados que espera la UI.
@@ -42,6 +44,8 @@ export default function UserCapsules() {
     const [capsules, setCapsules] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedCapsule, setSelectedCapsule] = useState(null);
+    const [showDestruct, setShowDestruct] = useState(false);
+    const hasOpenedRef = useRef(new Set()); // Track which capsules were marked as opened/viewed
 
     useEffect(() => {
         getCapsules({})
@@ -52,6 +56,51 @@ export default function UserCapsules() {
             .catch(err => console.error(err))
             .finally(() => setIsLoading(false));
     }, []);
+
+    const handleDownloadFiles = (files) => {
+        if (!files || files.length === 0) return;
+        files.forEach(file => {
+            const a = document.createElement('a');
+            a.href = file.url;
+            a.download = file.fileName || 'capsule-file';
+            a.target = '_blank'; // Previene bloqueos en algunos navegadores
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        });
+    };
+
+    const handleFinalClose = async (capsuleId) => {
+        // Only trigger backend open once per session/view
+        if (!hasOpenedRef.current.has(capsuleId)) {
+            try {
+                await openCapsule({ capsuleId });
+                hasOpenedRef.current.add(capsuleId);
+            } catch (err) {
+                console.error('[UserCapsules] Error marking capsule as opened:', err);
+            }
+        }
+        
+        setSelectedCapsule(null);
+        setShowDestruct(false);
+        
+        // Refresh list to show 'destructed' state
+        const res = await getCapsules({});
+        setCapsules((res.docs || []).map(normalizeCapsule));
+    };
+
+    const handleToggleModal = (capsule) => {
+        if (!capsule) {
+            // Case: Closing from the content modal (X button)
+            if (selectedCapsule?.autoDestruct && selectedCapsule?.files?.length > 0) {
+                setShowDestruct(true);
+            } else {
+                handleFinalClose(selectedCapsule?.id);
+            }
+        } else {
+            setSelectedCapsule(capsule);
+        }
+    };
 
     if (isLoading) {
         return (
@@ -79,10 +128,24 @@ export default function UserCapsules() {
             </div>
 
             <AnimatePresence>
-                {selectedCapsule?.status !== 'locked' && selectedCapsule != null && (
+                {selectedCapsule && !showDestruct && selectedCapsule.status !== 'locked' && (
                     <CapsuleModal
                         capsule={selectedCapsule}
-                        onClose={() => setSelectedCapsule(null)}
+                        onClose={() => handleToggleModal(null)}
+                    />
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {showDestruct && (
+                    <DestructModal
+                        files={selectedCapsule?.content?.files || []}
+                        onDownload={() => {
+                            handleDownloadFiles(selectedCapsule.content.files);
+                            handleFinalClose(selectedCapsule.id);
+                        }}
+                        onSkip={() => handleFinalClose(selectedCapsule.id)}
+                        onTimeUp={() => handleFinalClose(selectedCapsule.id)}
                     />
                 )}
             </AnimatePresence>
@@ -163,7 +226,7 @@ function CapsuleCard({ capsule, onOpen }) {
 }
 
 function CapsuleModal({ capsule, onClose }) {
-    const { type, content, status } = capsule;
+    const { type, status, message, files, links } = capsule;
     const Icon = CapsuleIcons[type] || CapsuleIcons['message'];
 
     // Variants for sequenced reveal
@@ -219,17 +282,17 @@ function CapsuleModal({ capsule, onClose }) {
                         <Icon />
                     </motion.div>
 
-                    {content?.message && (
+                    {message && (
                         <motion.div className={styles.modalMessage} variants={itemVariants}>
-                            {content.message}
+                            {message}
                         </motion.div>
                     )}
 
-                    {content?.files && content.files.length > 0 && (
+                    {files && files.length > 0 && (
                         <motion.div style={{ width: '100%' }} variants={itemVariants}>
                             <p className={styles.sectionTitle}>Archivos adjuntos</p>
                             <div className={styles.contentList}>
-                                {content.files.map((file, idx) => (
+                                {files.map((file, idx) => (
                                     <a 
                                         key={idx} 
                                         href={file.url} 
@@ -238,18 +301,18 @@ function CapsuleModal({ capsule, onClose }) {
                                         className={styles.contentLink}
                                     >
                                         <span className={styles.linkIcon}>📎</span>
-                                        {file.name || 'Descargar archivo'}
+                                        {file.fileName || file.name || 'Descargar archivo'}
                                     </a>
                                 ))}
                             </div>
                         </motion.div>
                     )}
 
-                    {content?.links && content.links.length > 0 && (
+                    {links && links.length > 0 && (
                         <motion.div style={{ width: '100%' }} variants={itemVariants}>
                             <p className={styles.sectionTitle}>Links compartidos</p>
                             <div className={styles.contentList}>
-                                {content.links.map((link, idx) => (
+                                {links.map((link, idx) => (
                                     <a 
                                         key={idx} 
                                         href={link.url} 
@@ -276,5 +339,77 @@ function CapsuleModal({ capsule, onClose }) {
                 </motion.div>
             </motion.div>
         </motion.div>
+    );
+}
+
+/**
+ * DestructModal — Pantalla de advertencia crítica con countdown
+ */
+function DestructModal({ files, onDownload, onSkip, onTimeUp }) {
+    const [seconds, setSeconds] = useState(10);
+    const timerRef = useRef(null);
+
+    useEffect(() => {
+        timerRef.current = setInterval(() => {
+            setSeconds(prev => {
+                if (prev <= 1) {
+                    clearInterval(timerRef.current);
+                    onTimeUp();
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, [onTimeUp]);
+
+    return createPortal(
+        <div className={styles.destructOverlay}>
+            <motion.div 
+                className={styles.destructCard}
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', damping: 20 }}
+            >
+                <div className={styles.destructIcon}>💥</div>
+                <h2 className={styles.destructTitle}>Esta cápsula se autodestruirá</h2>
+                
+                <div className={styles.countdownContainer}>
+                    <motion.span 
+                        key={seconds}
+                        initial={{ scale: 1.5, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className={styles.countdownNumber}
+                    >
+                        {seconds}
+                    </motion.span>
+                </div>
+
+                <p className={styles.destructText}>
+                    ¿Quieres descargar los archivos antes de que desaparezcan para siempre?
+                </p>
+
+                <div className={styles.destructActions}>
+                    <Button 
+                        variant="primary" 
+                        fullWidth 
+                        onClick={onDownload}
+                    >
+                        💾 Descargar todo
+                    </Button>
+                    <Button 
+                        variant="ghost" 
+                        fullWidth 
+                        onClick={onSkip}
+                    >
+                        No, destruir
+                    </Button>
+                </div>
+            </motion.div>
+        </div>,
+        document.body
     );
 }

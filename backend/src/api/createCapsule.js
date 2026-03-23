@@ -9,13 +9,16 @@ import { COLLECTIONS } from '../config/constants.js';
  * Crea una nueva cápsula del tiempo. Si la fecha de apertura es en el futuro,
  * encola automáticamente una tarea (Cloud Task) para el desbloqueo y notificación exacta.
  */
-export const createCapsule = onCall({ region: 'us-central1' }, async (request) => {
+export const createCapsule = onCall({ region: 'us-central1', cors: true }, async (request) => {
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Debes iniciar sesión para crear una cápsula.');
     }
 
     const { uid } = request.auth;
-    const { title, teaserMessage, message, unlockTrigger, unlockDate, autoDestruct, notifyOnUnlock } = request.data;
+    const { 
+        title, teaserMessage, message, unlockTrigger, unlockDate, 
+        autoDestruct, notifyOnUnlock, attachments = [] 
+    } = request.data;
 
     if (!title || !unlockTrigger) {
         throw new HttpsError('invalid-argument', 'El título y el motivo de desbloqueo son obligatorios.');
@@ -53,8 +56,8 @@ export const createCapsule = onCall({ region: 'us-central1' }, async (request) =
         isViewed: false,
         notifyOnUnlock: notifyOnUnlock !== undefined ? notifyOnUnlock : true,
 
-        hasAttachments: false,
-        files: [],
+        hasAttachments: attachments.length > 0,
+        files: attachments,
     };
 
     try {

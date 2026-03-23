@@ -10,7 +10,7 @@ import { COLLECTIONS } from '../config/constants.js';
  * Si la cápsula tiene configurada la "autodestrucción", el backend inmediatamente la fulmina de la BBDD, 
  * devolviendo los datos (foto/mensaje) sólo esta única y última vez al cliente para que los autodescargue.
  */
-export const openCapsule = onCall({ region: 'us-central1' }, async (request) => {
+export const openCapsule = onCall({ region: 'us-central1', cors: true }, async (request) => {
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Debes iniciar sesión para abrir una cápsula.');
     }
@@ -53,7 +53,10 @@ export const openCapsule = onCall({ region: 'us-central1' }, async (request) => 
                 updates.destructedAt = Timestamp.now();
                 // El campo mensaje se censura para el futuro en DB (opcional extra seguridad)
                 updates.message = '[DELETED BY AUTODESTRUCT]';
+                updates.files = [];
+                updates.hasAttachments = false;
             }
+
 
             t.update(capsuleRef, updates);
         });
@@ -68,6 +71,8 @@ export const openCapsule = onCall({ region: 'us-central1' }, async (request) => 
                 message: capsuleData.message ?? null,
                 photoUrl: capsuleData.photoUrl ?? null,
                 storagePath: capsuleData.storagePath ?? null,
+                hasAttachments: capsuleData.hasAttachments ?? false,
+                files: capsuleData.files || [],
                 autoDestruct: capsuleData.autoDestruct ?? false,
                 isUnlocked: capsuleData.isUnlocked ?? false,
                 isViewed: capsuleData.isViewed ?? false,

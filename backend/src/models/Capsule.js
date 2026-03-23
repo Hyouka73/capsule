@@ -51,6 +51,8 @@ export default class Capsule {
             unlockDate: this.unlockDate,
             unlockedAt: this.unlockedAt,
             createdBy: this.createdBy,
+            createdAt: this.createdAt || new Date(),
+            updatedAt: this.updatedAt || new Date(),
         };
     }
 }

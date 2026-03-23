@@ -3,6 +3,9 @@ import { createCapsule } from '../../apiClient';
 import Button from '../../components/ui/Button/Button';
 import DescriptiveCheckbox from '../../components/ui/DescriptiveCheckbox/DescriptiveCheckbox';
 import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
+import MediaUploader from './components/MediaUploader';
+import { uploadFile } from '../../services/storage';
+import { STORAGE_PATHS } from '../../config/constants';
 import styles from './CapsuleForm.module.css';
 
 export default function CapsuleForm({ onSuccess, onCancel }) {
@@ -20,6 +23,9 @@ export default function CapsuleForm({ onSuccess, onCancel }) {
         notifyOnUnlock: true,
     });
 
+    const [files, setFiles] = useState([]);
+    const [uploadProgress, setUploadProgress] = useState(0);
+
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
         setFormData(prev => ({
@@ -34,7 +40,39 @@ export default function CapsuleForm({ onSuccess, onCancel }) {
         setIsSubmitting(true);
 
         try {
-            await createCapsule(formData);
+            let attachments = [];
+            
+            if (files.length > 0) {
+                // Generar un ID temporal para la carpeta si no existe uno
+                const tempCapsuleId = crypto.randomUUID();
+                
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const fileId = crypto.randomUUID();
+                    const ext = file.name.split('.').pop();
+                    const path = STORAGE_PATHS.ORIGINAL('capsules', tempCapsuleId, fileId); 
+                    // Nota: STORAGE_PATHS.ORIGINAL ya formatea como `type/entityId/fileId.jpg` (o extensión)
+                    
+                    const url = await uploadFile(file, path, (p) => {
+                        // Progreso simple ponderado
+                        const totalProgress = ((i / files.length) * 100) + (p / files.length);
+                        setUploadProgress(Math.round(totalProgress));
+                    });
+
+                    attachments.push({
+                        url,
+                        storagePath: path,
+                        fileName: file.name,
+                        fileType: file.type,
+                        size: file.size,
+                    });
+                }
+            }
+
+            await createCapsule({
+                ...formData,
+                attachments
+            });
             onSuccess();
         } catch (err) {
             console.error('Error creating capsule:', err);
@@ -129,6 +167,16 @@ export default function CapsuleForm({ onSuccess, onCancel }) {
                     title="🔔 Notificación Push (Cloud Tasks)"
                     description="Despertará su teléfono en el instante milimétrico de la fecha de apertura elegida."
                 />
+            </div>
+
+            <div className={styles.field}>
+                <MediaUploader files={files} onChange={setFiles} />
+                {isSubmitting && files.length > 0 && (
+                    <div className={styles.progressContainer}>
+                        <div className={styles.progressBar} style={{ width: `${uploadProgress}%` }} />
+                        <span className={styles.progressText}>Subiendo multimedia: {uploadProgress}%</span>
+                    </div>
+                )}
             </div>
 
             <div className={styles.actions}>

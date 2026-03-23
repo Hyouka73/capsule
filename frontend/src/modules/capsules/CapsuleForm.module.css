@@ -54,3 +54,28 @@
     gap: 1rem;
     margin-top: 1rem;
 }
+
+.progressContainer {
+    margin-top: 1rem;
+    background: #f0f4f8;
+    height: 12px;
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--accent-border);
+}
+
+.progressBar {
+    height: 100%;
+    background: var(--pastel-rose, #f4a7b9);
+    transition: width 0.3s ease;
+}
+
+.progressText {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+    text-align: center;
+}
