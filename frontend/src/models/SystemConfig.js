@@ -57,7 +57,9 @@ export default class SystemConfig {
 
         this.inviteConfig = {
             inviteLink: data.inviteConfig?.inviteLink ?? null,
-            generatedAt: data.inviteConfig?.generatedAt ?? null
+            generatedAt: data.inviteConfig?.generatedAt ?? null,
+            expiresAt: data.inviteConfig?.expiresAt ?? null,
+            isActive: data.inviteConfig?.isActive ?? true
         };
 
         this.citaConfig = {

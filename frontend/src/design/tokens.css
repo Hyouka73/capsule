@@ -42,6 +42,9 @@
     --bg-card:              #ffffff;
     --bg-input:             #ffffff;
     --bg-overlay:           #2a1a1a;  /* Solid dark warm brown for modals */
+    --bg-overlay-soft:      rgba(255, 182, 193, 0.35);
+    --bg-overlay-ghost:     rgba(0, 0, 0, 0.05);
+    --bg-overlay-stronger:  rgba(26, 15, 15, 0.7);
     --bg-overlay-strong:    #1a0f0f;
     --bg-dots-pattern:      radial-gradient(var(--pastel-pink) 1.5px, var(--bg-main) 1.5px);
     --bg-dots-size:         24px 24px;

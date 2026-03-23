@@ -16,7 +16,7 @@ import { COLLECTIONS } from '../config/constants.js';
  * 5. Enqueues Cloud Task to archive exactly 24 h from now
  * 6. Sends FCM to the OTHER party (admin → partner, partner → admin)
  */
-export const createSnapshot = onCall({ region: 'us-central1' }, async (request) => {
+export const createSnapshot = onCall({ region: 'us-central1', cors: true }, async (request) => {
     // ── 1. Auth: both roles can create snapshots ──
     const role = request.auth?.token?.role;
     if (!request.auth || (role !== 'admin' && role !== 'partner')) {

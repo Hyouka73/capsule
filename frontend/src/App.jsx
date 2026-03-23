@@ -9,6 +9,7 @@ import JoinInvite from './modules/auth/JoinInvite';
 import WelcomeScreen from './modules/auth/WelcomeScreen';
 import LoadingScreen from './components/ui/LoadingScreen/LoadingScreen';
 import { PastelToastProvider } from './components/ui/PastelToast/PastelToast';
+import { BingoProvider } from './context/BingoContext';
 import './App.css';
 import VersionBadge from './components/ui/VersionBadge/VersionBadge';
 
@@ -28,30 +29,27 @@ export default function App() {
     isAdmin, 
     isAuthenticated, 
     isLoading, 
-    welcomeSeen 
+    welcomeSeen,
+    teaserCompleted
   } = useAuth();
-
-  const { teaser } = useAppConfig();
 
   // While resolving Firebase auth, show nothing (prevents flash)
   if (isLoading) return <LoadingScreen />;
 
-  const isLocked = teaser?.unlockAt ? new Date(teaser.unlockAt) > new Date() : true;
-
   return (
     <PastelToastProvider>
-      <Routes>
+        <Routes>
         {/* Raíz Dispatcher: Redirige según el estado de la sesión y el progreso */}
         <Route path="/" element={
           !isAuthenticated 
             ? <Navigate to="/join" replace /> 
             : isAdmin 
               ? <Navigate to="/admin" replace />
-              : (welcomeSeen === null)
+              : (welcomeSeen === null || teaserCompleted === null)
                 ? <LoadingScreen />
-                : (isLocked && !welcomeSeen)
+                : teaserCompleted === false
                   ? <Navigate to="/teaser" replace />
-                  : !welcomeSeen
+                  : welcomeSeen === false
                     ? <Navigate to="/welcome" replace />
                     : <Navigate to="/app" replace />
         } />
@@ -63,28 +61,28 @@ export default function App() {
             : <><JoinInvite /><VersionBadge /></>
         } />
 
-        {/* Teaser (protegido por estado) — solo si no ha visto bienvenida y está bloqueado */}
+        {/* Teaser (protegido por estado) — solo si no ha sido completado */}
         <Route path="/teaser" element={
           !isAuthenticated 
             ? <Navigate to="/join" replace />
             : isAdmin
               ? <Navigate to="/admin" replace />
-              : welcomeSeen
-                ? <Navigate to="/app" replace />
-                : !isLocked
-                  ? <Navigate to="/" replace />
-                  : <><Teaser /><VersionBadge /></>
+              : teaserCompleted === true
+                ? <Navigate to="/" replace />
+                : <><Teaser /><VersionBadge /></>
         } />
 
-        {/* Pantalla de Bienvenida (protegida) — accesible después del Teaser aunque siga locked */}
+        {/* Pantalla de Bienvenida (protegida) — accesible después del Teaser */}
         <Route path="/welcome" element={
           !isAuthenticated 
             ? <Navigate to="/join" replace />
             : isAdmin
               ? <Navigate to="/admin" replace />
-              : welcomeSeen === true
-                ? <Navigate to="/app" replace />
-                : <><WelcomeScreen /><VersionBadge /></>
+              : teaserCompleted === false
+                ? <Navigate to="/teaser" replace />
+                : welcomeSeen === true
+                  ? <Navigate to="/app" replace />
+                  : <><WelcomeScreen /><VersionBadge /></>
         } />
 
         {/* Admin: login público + dashboard protegido */}
@@ -105,16 +103,16 @@ export default function App() {
             ? <Navigate to="/join" replace />
             : isAdmin
               ? <Navigate to="/admin" replace />
-              : (isLocked && !welcomeSeen)
+              : teaserCompleted === false
                 ? <Navigate to="/teaser" replace />
-                : (welcomeSeen === false)
+                : welcomeSeen === false
                   ? <Navigate to="/welcome" replace />
                   : <><UserDashboard /><VersionBadge /></>
         } />
 
         {/* Fallback: redirigir a raíz para que el dispatcher decida */}
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+        </Routes>
     </PastelToastProvider>
   );
 }

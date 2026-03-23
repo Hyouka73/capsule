@@ -57,7 +57,8 @@ export default class Memory {
             isSpecial: this.isSpecial,
             isHidden: this.isHidden,
             uploadedBy: this.uploadedBy,
-            // Timestamps are usually handled by FieldValue.serverTimestamp() in the API call
+            createdAt: this.createdAt || new Date(),
+            updatedAt: this.updatedAt || new Date(),
         };
     }
 }

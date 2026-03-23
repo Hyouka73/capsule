@@ -7,7 +7,7 @@ import { COLLECTIONS } from '../config/constants.js';
  * getMemories API 
  * Retorna las memorias filtradas y ordenadas centralizando la lógica en el backend.
  */
-export const getMemories = onCall({ region: 'us-central1' }, async (request) => {
+export const getMemories = onCall({ region: 'us-central1', cors: true }, async (request) => {
     if (!request.auth) return { success: false, error: 'Unauthorized' };
 
     const { limit, pageSize, tag, isSpecial, placeId, lastEventDate, includeHidden = false } = request.data || {};

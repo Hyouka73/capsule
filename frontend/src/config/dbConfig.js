@@ -1,5 +1,5 @@
 export const DB_NAME = 'capsule_offline_queue';
-export const DB_VERSION = 5;
+export const DB_VERSION = 6;
 
 /**
  * Abre la base de datos IndexedDB centralizada creando todos los stores necesarios.
@@ -33,6 +33,11 @@ export function openDB() {
             // 4. Caché de la aplicación (Bingo, Ejercicio, Películas)
             if (!db.objectStoreNames.contains('app_cache')) {
                 db.createObjectStore('app_cache', { keyPath: 'key' });
+            }
+
+            // 5. Bingo Suggestions (Pendientes de resolver offline pos-sync)
+            if (!db.objectStoreNames.contains('pending_bingo')) {
+                db.createObjectStore('pending_bingo', { keyPath: 'memoryId' });
             }
         };
 

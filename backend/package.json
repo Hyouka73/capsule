@@ -8,7 +8,7 @@
         "deploy": "firebase deploy --only functions",
         "logs": "firebase functions:log",
         "lint": "echo 'No lint configured'",
-        "seed": "node seed_config.js"
+        "seed": "node seeds/run.js"
     },
     "engines": {
         "node": "20"

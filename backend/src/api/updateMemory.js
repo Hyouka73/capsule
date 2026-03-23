@@ -7,7 +7,7 @@ import { COLLECTIONS } from '../config/constants.js';
  * updateMemory API - Modifica un recuerdo existente.
  * Permite actualizaciones parciales enviando solo los campos necesarios.
  */
-export const updateMemory = onCall({ region: 'us-central1' }, async (request) => {
+export const updateMemory = onCall({ region: 'us-central1', cors: true }, async (request) => {
     // 1. Verificar autenticación
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Debes iniciar sesión para actualizar un recuerdo.');

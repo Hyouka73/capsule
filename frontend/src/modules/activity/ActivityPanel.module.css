@@ -139,8 +139,34 @@
 .feedList {
     display: flex;
     flex-direction: column;
+    gap: 2rem;
+}
+
+.feedSection {
+    display: flex;
+    flex-direction: column;
     gap: 1rem;
 }
+
+.dateHeader {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--clay-bg-white);
+    padding: 0.5rem 1rem;
+    margin: 0 -0.5rem;
+    border-radius: var(--radius-md);
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    color: var(--pastel-rose-dark);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border: 2px solid var(--pastel-rose-light);
+    display: inline-block;
+    align-self: flex-start;
+}
+
 
 .feedItem {
     position: relative;

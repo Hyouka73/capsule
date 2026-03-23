@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { AppConfigProvider } from './context/AppConfigContext.jsx'
+import { BingoProvider } from './context/BingoContext.jsx'
 import { BrowserRouter } from 'react-router-dom'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -61,7 +62,9 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <AuthProvider>
         <AppConfigProvider>
-          <App />
+          <BingoProvider>
+            <App />
+          </BingoProvider>
         </AppConfigProvider>
       </AuthProvider>
     </BrowserRouter>

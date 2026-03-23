@@ -7,7 +7,7 @@ import { COLLECTIONS } from '../config/constants.js';
  * getGallery API
  * Optimized chronological photo feed merging memory photos and snapshots.
  */
-export const getGallery = onCall({ region: 'us-central1' }, async (request) => {
+export const getGallery = onCall({ region: 'us-central1', cors: true }, async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Unauthorized');
 
     const { limit = 30, lastId, lastCreatedAt } = request.data || {};

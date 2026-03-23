@@ -7,7 +7,7 @@ import { COLLECTIONS, SINGLETON_DOCS } from '../config/constants.js';
  * createMemory API - Solo para usuarios autenticados (Admin o Partner)
  * Valida los datos y maneja la escritura en Firestore de forma segura.
  */
-export const createMemory = onCall({ region: 'us-central1' }, async (request) => {
+export const createMemory = onCall({ region: 'us-central1', cors: true }, async (request) => {
     // 1. Verificar autenticación
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Debes iniciar sesión para crear un recuerdo.');
@@ -104,71 +104,48 @@ export const createMemory = onCall({ region: 'us-central1' }, async (request) =>
             }
         }
 
-        // 6. Bingo Autodetection (No bloqueante para la creación del recuerdo)
+        // 6. Bingo Autodetection — Solo sugerencias, 
+        //    sin mutar el tablero
+        let bingoSuggestions = [];
         try {
-            await db.runTransaction(async (transaction) => {
-                const bingoRef = db.collection(COLLECTIONS.BINGO_BOARD).doc(SINGLETON_DOCS.BINGO_BOARD);
-                const bingoDoc = await transaction.get(bingoRef);
+            const bingoRef = db.collection(COLLECTIONS.BINGO_BOARD)
+                .doc(SINGLETON_DOCS.BINGO_BOARD);
+            const bingoDoc = await bingoRef.get();
 
-                if (bingoDoc.exists) {
-                    const board = bingoDoc.data();
-                    const categories = board.categories || [];
-                    let modified = false;
-                    let completedCount = 0;
-
-                    const newCategories = categories.map(cat => {
-                        // Si ya está completada, solo contamos
-                        if (cat.completedMemoryId) {
-                            completedCount++;
-                            return cat;
-                        }
-
-                        // Comparar tags del memory contra suggestedTags de la categoría
-                        const hasTagMatch = (cat.suggestedTags || []).some(t => 
-                            (memoryData.tags || []).includes(t)
-                        );
-
-                        // Autodetección especial para películas
-                        const isMovieMatch = cat.id === 'movies' && request.data.movieData;
-
-                        if (hasTagMatch || isMovieMatch) {
-                            modified = true;
-                            completedCount++;
-                            return {
-                                ...cat,
-                                completedMemoryId: memoryId,
-                                completedAt: FieldValue.serverTimestamp()
-                            };
-                        }
-
-                        return cat;
-                    });
-
-                    if (modified) {
-                        const updateData = {
-                            categories: newCategories,
-                            updatedAt: FieldValue.serverTimestamp()
-                        };
-
-                        // Si se completaron las 20, marcar victoria
-                        if (completedCount >= 20 && !board.isWinner) {
-                            updateData.isWinner = true;
-                            updateData.wonAt = FieldValue.serverTimestamp();
-                        }
-
-                        transaction.update(bingoRef, updateData);
-                    }
-                }
-            });
+            if (bingoDoc.exists) {
+                const categories = bingoDoc.data().categories || [];
+                
+                bingoSuggestions = categories
+                    .filter(cat => {
+                        // Solo categorías sin completar
+                        if (cat.completedMemoryId) return false;
+                        
+                        // Match por tags
+                        const hasTagMatch = (cat.suggestedTags || [])
+                            .some(t => (memoryData.tags || []).includes(t));
+                        
+                        // Match especial para películas
+                        const isMovieMatch = cat.id === 'movies' 
+                            && request.data.movieData;
+                        
+                        return hasTagMatch || isMovieMatch;
+                    })
+                    .map(cat => ({
+                        categoryId: cat.id,
+                        label: cat.label || cat.title,
+                        emoji: cat.emoji
+                    }));
+            }
         } catch (bingoErr) {
-            logger.error('Error in Bingo Autodetection:', bingoErr);
-            // No relanzamos para no fallar el createMemory
+            logger.warn('Bingo suggestion check failed:', bingoErr);
+            // No falla createMemory si esto falla
         }
 
         // 7. Retornar solo lo que el Frontend necesita saber
         return {
             success: true,
             memoryId: memoryId,
+            bingoSuggestions: bingoSuggestions,
             message: 'Recuerdo creado correctamente.'
         };
     } catch (error) {

@@ -7,7 +7,7 @@ import { COLLECTIONS } from '../config/constants.js';
  * LogActivity API 
  * Mapeo controlado del log de actividades.
  */
-export const logActivity = onCall({ region: 'us-central1' }, async (request) => {
+export const logActivity = onCall({ region: 'us-central1', cors: true }, async (request) => {
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Operación denegada.');
     }

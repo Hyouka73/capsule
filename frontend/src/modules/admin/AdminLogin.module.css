@@ -1,6 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Varela+Round&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+/* ============================================================
+   AdminLogin — Chunky Clay Romance Design
+   ============================================================ */
 
 .root {
     min-height: 100dvh;
@@ -10,137 +10,150 @@
     justify-content: center;
     position: relative;
     overflow: hidden;
-    padding: 1rem 1.25rem;
+    padding: 1.5rem;
     box-sizing: border-box;
-
-    font-family: var(--font-varela);
-    color: var(--text-primary);
-    background-color: var(--pastel-bg);
+    background: #fef8f9;
+    /* Subtle warm radial glow in the center */
+    background-image: radial-gradient(ellipse 80% 70% at 50% 40%, #ffd9e320 0%, transparent 70%);
 }
 
-/* Floating Elements */
-.floating {
-    animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-    0% { transform: translateY(0px) rotate(0deg); }
-    50% { transform: translateY(-10px) rotate(2deg); }
-    100% { transform: translateY(0px) rotate(0deg); }
-}
-
-.sparkleAnim {
-    animation: sparkle 2s ease-in-out infinite;
-}
-
-@keyframes sparkle {
-    0%, 100% { transform: scale(1); opacity: 0.8; }
-    50% { transform: scale(1.2); opacity: 1; }
-}
-
-.delay100 { animation-delay: 100ms; }
-.delay200 { animation-delay: 200ms; }
-.delay500 { animation-delay: 500ms; }
-
-/* Background Decorations */
+/* ── Floating Background Decorations ── */
 .bgDeco {
     position: absolute;
     pointer-events: none;
     z-index: 1;
 }
+.star1 { top: 1.75rem; left: 1.75rem; color: #ffadc7; opacity: 0.7; }
+.heart1 { top: 4rem; right: 2.25rem; color: #ffadc7; opacity: 0.6; }
+.heart2 { bottom: 5rem; left: 1.75rem; color: #95d5b2; opacity: 0.55; }
+.sparkle1 { bottom: 2rem; right: 2rem; color: #95d5b2; opacity: 0.6; }
+.star2 { top: 35%; right: 6%; color: #ffadc7; opacity: 0.4; }
+.circle1 { bottom: 25%; left: 5%; color: #f4d9ff; opacity: 0.5; }
 
-.star1 { top: 1.5rem; left: 1.5rem; color: var(--pastel-sage); opacity: 0.8; }
-.heart1 { top: 4rem; right: 2rem; color: var(--pastel-rose); opacity: 0.8; }
-.heart2 { bottom: 5rem; left: 1.5rem; color: var(--pastel-rose); opacity: 0.7; }
-.sparkle1 { bottom: 1.5rem; right: 1.5rem; color: var(--pastel-sage); opacity: 0.8; }
+.floating {
+    animation: float 4s ease-in-out infinite;
+}
+.sparkleAnim {
+    animation: sparkle 2.5s ease-in-out infinite;
+}
+.delay100 { animation-delay: 0.1s; }
+.delay200 { animation-delay: 0.2s; }
+.delay500 { animation-delay: 0.5s; }
 
-/* Main Container - The Card itself */
+@keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-12px) rotate(3deg); }
+}
+@keyframes sparkle {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.25); opacity: 1; }
+}
+
+/* ── Main Card ── */
 .mainContainer {
     width: 100%;
-    max-width: 26rem;
-    margin: 0 1.25rem;
-    padding: 2.5rem 2rem;
+    max-width: 28rem;
+    padding: 2.75rem 2.25rem;
     display: flex;
     flex-direction: column;
     align-items: center;
     position: relative;
     z-index: 10;
-    
-    background: var(--clay-bg-white);
-    border: 3px solid var(--pastel-rose-light);
-    border-radius: var(--radius-xl);
-    box-shadow: var(--clay-shadow-md);
+
+    background: #ffffff;
+    border-radius: 2rem;
+    box-shadow: 0 8px 0 #d1c1c6, 0 16px 48px rgba(139, 74, 97, 0.08);
 }
 
-/* Header Elements */
+/* ── Logo / Icon Area ── */
 .headerGroup {
-    margin-bottom: 2rem;
+    margin-bottom: 2.25rem;
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 0.25rem;
 }
 
 .iconWrapper {
     position: relative;
-    width: 6.5rem;
-    height: 6.5rem;
-    margin-bottom: 1rem;
+    width: 7rem;
+    height: 7rem;
+    margin-bottom: 1.25rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--clay-bg-rose);
-    border: 3px solid var(--pastel-rose-light);
-    border-radius: var(--radius-pill);
+    background: #ffd9e3;
+    border-radius: 9999px;
+    box-shadow: 0 6px 0 #e8b4c4;
+    animation: float 4s ease-in-out infinite;
 }
 
 .mainIcon {
-    width: 4rem;
-    height: 4rem;
-    color: var(--pastel-rose-dark);
+    width: 4.25rem;
+    height: 4.25rem;
+    color: #8b4a61;
+}
+
+.iconGlow {
+    position: absolute;
+    inset: -4px;
+    border-radius: 9999px;
+    background: radial-gradient(circle, rgba(255, 173, 199, 0.3) 0%, transparent 70%);
+    pointer-events: none;
 }
 
 .faceDetails {
     position: absolute;
-    top: 2.2rem;
+    top: 2.4rem;
     display: flex;
-    gap: 0.8rem;
+    gap: 0.85rem;
 }
-
 .eye {
-    width: 0.4rem;
-    height: 0.6rem;
-    background-color: var(--pastel-rose-dark);
-    border-radius: var(--radius-pill);
+    width: 0.38rem;
+    height: 0.55rem;
+    background: #8b4a61;
+    border-radius: 9999px;
 }
-
 .mouth {
     position: absolute;
-    top: 3.4rem;
-    width: 0.8rem;
-    height: 0.4rem;
-    background-color: var(--pastel-rose-dark);
-    opacity: 0.6;
-    border-radius: var(--radius-pill);
+    top: 3.5rem;
+    width: 0.9rem;
+    height: 0.45rem;
+    background: #8b4a61;
+    opacity: 0.5;
+    border-radius: 9999px;
+}
+
+.logoRow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.logoStar {
+    font-size: 1.5rem;
+    color: #8b4a61;
+    line-height: 1;
 }
 
 .title {
-    font-family: var(--font-fredoka) !important;
-    font-size: 2.25rem;
+    font-family: 'Fredoka', var(--font-display, sans-serif);
+    font-size: 2rem;
     font-weight: 700;
-    color: var(--text-primary);
-    margin: 0 0 0.25rem;
-    text-align: center;
+    color: #4a3232;
+    margin: 0;
+    letter-spacing: -0.5px;
 }
 
 .subtitle {
-    color: var(--text-muted);
-    font-size: 1rem;
-    font-weight: 500;
-    margin: 0;
+    font-size: 0.9rem;
+    color: #847377;
+    font-style: italic;
+    margin: 0.25rem 0 0;
     text-align: center;
 }
 
-/* Form Elements */
+/* ── Form ── */
 .form {
     width: 100%;
     display: flex;
@@ -148,61 +161,87 @@
     gap: 1.25rem;
 }
 
-/* Submit Button */
+/* ── Primary CTA Button ── */
 .submitBtn {
     width: 100%;
-    margin-top: 1rem;
+    margin-top: 0.75rem;
     padding: 1rem 1.5rem;
-    background: var(--pastel-mint);
-    color: var(--pastel-mint-dark);
-    border: 3px solid var(--pastel-mint-light);
-    border-radius: var(--radius-pill);
-    box-shadow: var(--clay-shadow-sm);
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #8b4a61 0%, #b5667e 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 9999px;
+    box-shadow: 0 6px 0 #6b3049;
+    transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.75rem;
     cursor: pointer;
-    font-family: var(--font-display);
-    font-weight: 800;
-    font-size: 1.2rem;
+    font-family: 'Fredoka', var(--font-display, sans-serif);
+    font-weight: 700;
+    font-size: 1.15rem;
+    letter-spacing: 0.02em;
+}
+
+.btnHighlight {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 9999px 9999px 0 0;
+    pointer-events: none;
+}
+
+.submitBtnText {
+    position: relative;
+    z-index: 1;
 }
 
 .submitBtn:hover:not(:disabled) {
-    transform: translateY(-4px) scale(1.02);
-    box-shadow: var(--clay-shadow-md);
-    background: var(--pastel-mint-light);
+    transform: translateY(-3px);
+    box-shadow: 0 9px 0 #6b3049;
 }
 
 .submitBtn:active:not(:disabled) {
-    transform: translateY(1px) scale(0.98);
-    box-shadow: none;
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 #6b3049;
+}
+
+.submitBtn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
 .arrowIcon {
-    transition: transform 0.3s;
+    font-size: 1rem;
+    position: relative;
+    z-index: 1;
+    transition: transform 0.25s;
 }
-
 .submitBtn:hover .arrowIcon {
-    transform: translateX(5px);
+    transform: translateX(4px);
 }
 
-/* Bottom Extras */
+/* ── Avatar Shortcut ── */
 .avatarBtnContainer {
     display: flex;
     justify-content: center;
-    margin-top: 2rem;
+    margin-top: 1.75rem;
 }
 
 .avatarBtn {
-    width: 56px;
-    height: 56px;
-    background-color: var(--clay-bg-white);
-    border-radius: var(--radius-pill);
-    color: var(--pastel-rose);
-    border: 3px solid var(--pastel-rose-light);
-    transition: all 0.2s;
+    width: 52px;
+    height: 52px;
+    background: #fef8f9;
+    border-radius: 9999px;
+    color: #8b4a61;
+    border: 2.5px solid #ffadc7;
+    box-shadow: 0 4px 0 #d4a4b8;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -210,35 +249,35 @@
 }
 
 .avatarBtn:hover {
-    transform: scale(1.1) rotate(-5deg);
-    border-color: var(--pastel-rose);
-    box-shadow: var(--clay-shadow-sm);
+    transform: scale(1.12) rotate(-8deg);
+    box-shadow: 0 6px 0 #d4a4b8;
 }
 
+/* ── Footer ── */
 .footerNote {
-    margin-top: 2rem;
+    margin-top: 1.75rem;
     text-align: center;
 }
 
 .footerPill {
-    background-color: var(--clay-bg-rose);
-    padding: 0.5rem 1.25rem;
-    border: 2px solid var(--pastel-rose-light);
-    border-radius: var(--radius-pill);
+    background: #ffd9e3;
+    padding: 0.45rem 1.25rem;
+    border-radius: 9999px;
     display: inline-block;
+    box-shadow: 0 3px 0 #e8b4c4;
 }
 
 .footerText {
-    color: var(--pastel-rose-dark);
-    font-family: var(--font-fredoka);
-    font-size: 0.9rem;
+    color: #8b4a61;
+    font-family: 'Fredoka', var(--font-display, sans-serif);
+    font-size: 0.875rem;
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
     margin: 0;
 }
 
 .footerIcon {
-    font-size: 1rem;
+    font-size: 0.9rem;
 }

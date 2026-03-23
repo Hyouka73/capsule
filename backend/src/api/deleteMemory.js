@@ -7,7 +7,7 @@ import { COLLECTIONS } from '../config/constants.js';
  * deleteMemory API - Realiza un borrado lógico de un recuerdo.
  * Marca el documento como isDeleted: true para ocultarlo sin borrar los datos físicamente.
  */
-export const deleteMemory = onCall({ region: 'us-central1' }, async (request) => {
+export const deleteMemory = onCall({ region: 'us-central1', cors: true }, async (request) => {
     // 1. Verificar autenticación
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Debes iniciar sesión para borrar un recuerdo.');

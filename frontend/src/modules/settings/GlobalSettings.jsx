@@ -390,6 +390,20 @@ export default function GlobalSettings() {
                                 onChange={e => handleUpdate('teaser.unlockAt', e.target.value)}
                                 helpText="Fecha en que ella podrá entrar a la app por primera vez."
                             />
+                            {config.teaser?.unlockAt && (
+                                <p className={styles.helpText} style={{ marginTop: '0.5rem', fontWeight: 'bold' }}>
+                                    Configurado para: {new Date(config.teaser.unlockAt).toLocaleString()}
+                                </p>
+                            )}
+                        </div>
+                        
+                        <div className={styles.togglesList} style={{ marginTop: '1rem' }}>
+                            <ToggleRow
+                                label="Habilitar Teaser"
+                                desc="Mostrar la cuenta regresiva antes del lanzamiento."
+                                checked={config.teaser?.isEnabled ?? true}
+                                onChange={() => handleUpdate('teaser.isEnabled', !(config.teaser?.isEnabled ?? true))}
+                            />
                         </div>
                     </Card>
                 </motion.div>

@@ -83,3 +83,8 @@ export function generateInviteToken(payload) {
 export function getGallery(payload) {
     return callBackendApi('getGallery', payload);
 }
+
+export function completeBingoSquare(payload) {
+    return callBackendApi('completeBingoSquare', payload);
+}
+

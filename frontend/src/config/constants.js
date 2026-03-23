@@ -82,7 +82,15 @@ export const MEMORY_TAGS = {
     LOGRO: { value: 'logro', label: 'Logro 🎯' },
     HITO: { value: 'hito', label: 'Hito 🌟' },
     FAMILIA: { value: 'familia', label: 'Familia 👨‍👩‍👦' },
-    AMIGOS: { value: 'amigos', label: 'Amigos 👯‍♂️' }
+    AMIGOS: { value: 'amigos', label: 'Amigos 👯‍♂️' },
+    CINE: { value: 'cine', label: 'Cine 🍿' },
+    COMIDA: { value: 'comida', label: 'Comida 🍝' },
+    AVENTURA: { value: 'aventura', label: 'Aventura 🌲' },
+    MUSICA: { value: 'musica', label: 'Música 🎵' },
+    RELAX: { value: 'relax', label: 'Relax 💆‍♂️' },
+    DEPORTE: { value: 'deporte', label: 'Deporte 🏃‍♀️' },
+    ARTE: { value: 'arte', label: 'Arte 🎨' },
+    CASA: { value: 'casa', label: 'En Casa 🏠' }
 };
 
 export const MEMORY_TAGS_OPTIONS = Object.values(MEMORY_TAGS);

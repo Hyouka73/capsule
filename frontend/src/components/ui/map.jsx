@@ -208,6 +208,10 @@ const Map = forwardRef(function Map(
     map.on("click", handleClick);
     map.on("dblclick", handleDblClick);
     map.on("contextmenu", handleContextMenu);
+    map.on("styleimagemissing", (e) => {
+        // Silently ignore missing images from remote styles
+        console.warn(`[Map] Estilo solicitó imagen inexistente: ${e.id}`);
+    });
 
     setMapInstance(map);
 

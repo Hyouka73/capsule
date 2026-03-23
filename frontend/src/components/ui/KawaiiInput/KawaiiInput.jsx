@@ -3,6 +3,7 @@ import styles from './KawaiiInput.module.css';
 
 export default function KawaiiInput({
     type = 'text', // text, search, select, date, photo, textarea, toggle
+    name,
     label,
     value,
     onChange,
@@ -18,6 +19,7 @@ export default function KawaiiInput({
     options = [], // for select
     className = '',
     onClear,
+    helpText,
     ...rest
 }) {
     const [isFocused, setIsFocused] = useState(false);
@@ -91,6 +93,7 @@ export default function KawaiiInput({
                     <textarea
                         ref={inputRef}
                         className={styles.textareaElement}
+                        name={name}
                         value={value || ''}
                         onChange={onChange}
                         onFocus={handleFocus}
@@ -140,6 +143,7 @@ export default function KawaiiInput({
                         ref={inputRef}
                         type={inputType}
                         className={styles.inputElement}
+                        name={name}
                         value={value || ''}
                         onChange={onChange}
                         onFocus={handleFocus}
@@ -261,6 +265,7 @@ export default function KawaiiInput({
                 {type === 'select' && options && options.length > 0 && !onClick && (
                     <select
                         className={styles.hiddenNativeInput}
+                        name={name}
                         value={value || ''}
                         onChange={onChange}
                         onFocus={handleFocus}
@@ -280,6 +285,7 @@ export default function KawaiiInput({
                     <input
                         type="date"
                         className={styles.hiddenNativeInput}
+                        name={name}
                         value={value || ''}
                         onChange={onChange}
                         onFocus={handleFocus}

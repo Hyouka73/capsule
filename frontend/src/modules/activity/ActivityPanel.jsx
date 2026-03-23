@@ -20,6 +20,38 @@ export default function ActivityPanel() {
         });
     }, [logs, filterType, onlyUnread]);
 
+    const groupedLogs = useMemo(() => {
+        const groups = {};
+        filteredLogs.forEach(log => {
+            const date = new Date(log.createdAt);
+            const dateKey = date.toDateString();
+            if (!groups[dateKey]) {
+                groups[dateKey] = {
+                    date,
+                    label: getFriendlyDate(date),
+                    items: []
+                };
+            }
+            groups[dateKey].items.push(log);
+        });
+        return Object.values(groups).sort((a, b) => b.date - a.date);
+    }, [filteredLogs]);
+
+    function getFriendlyDate(date) {
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
+
+        if (date.toDateString() === today.toDateString()) return 'Hoy';
+        if (date.toDateString() === yesterday.toDateString()) return 'Ayer';
+        
+        return date.toLocaleDateString('es-ES', { 
+            day: 'numeric', 
+            month: 'long', 
+            year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined 
+        });
+    }
+
     const getTimeAgo = (date) => {
         const seconds = Math.floor((new Date() - date) / 1000);
         if (seconds < 60) return 'ahora mismo';
@@ -27,7 +59,7 @@ export default function ActivityPanel() {
         if (minutes < 60) return `hace ${minutes}m`;
         const hours = Math.floor(minutes / 60);
         if (hours < 24) return `hace ${hours}h`;
-        return date.toLocaleDateString();
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
     const getIcon = (type) => {
@@ -38,7 +70,8 @@ export default function ActivityPanel() {
             case 'coupon': return '🎁';
             case 'bingo': return '🎯';
             case 'wrapped': return '🎬';
-            default: return '✨';
+            case 'snapshot': return '✨';
+            default: return '🔔';
         }
     };
 
@@ -78,7 +111,7 @@ export default function ActivityPanel() {
                         <div className={styles.filterGroup}>
                             <label className={styles.label}>Por tipo</label>
                             <div className={styles.filterOptions}>
-                                {['all', 'memory', 'photo', 'capsule', 'coupon', 'bingo'].map(type => (
+                                {['all', 'memory', 'photo', 'capsule', 'coupon', 'bingo', 'snapshot'].map(type => (
                                     <button 
                                         key={type}
                                         className={`${styles.filterBtn} ${filterType === type ? styles.activeFilter : ''}`}
@@ -105,34 +138,43 @@ export default function ActivityPanel() {
 
                 {/* ── Main Feed ── */}
                 <div className={styles.feedContainer}>
-                    {filteredLogs.length === 0 ? (
+                    {groupedLogs.length === 0 ? (
                         <div className={styles.emptyFeed}>
                             <span>📭</span>
                             <p>No hay actividad que coincida con los filtros.</p>
                         </div>
                     ) : (
                         <div className={styles.feedList}>
-                            {filteredLogs.map(log => (
-                                <div 
-                                    key={log.id} 
-                                    className={`${styles.feedItem} ${!log.isReadByAdmin ? styles.unread : ''}`}
-                                    onMouseEnter={() => !log.isReadByAdmin && markAsRead(log.id)}
-                                >
-                                    <div className={`${styles.itemIcon} ${styles[log.targetType]}`}>
-                                        {getIcon(log.targetType)}
-                                    </div>
-                                    <div className={styles.itemContent}>
-                                        <div className={styles.itemHeader}>
-                                            <span className={styles.itemAction}>{log.displayText}</span>
-                                            <span className={styles.itemTime}>{getTimeAgo(log.createdAt)}</span>
+                            {groupedLogs.map(group => (
+                                <section key={group.label} className={styles.feedSection}>
+                                    <header className={styles.dateHeader}>
+                                        {group.label}
+                                    </header>
+                                    
+                                    {group.items.map(log => (
+                                        <div 
+                                            key={log.id} 
+                                            className={`${styles.feedItem} ${!log.isReadByAdmin ? styles.unread : ''}`}
+                                            onClick={() => !log.isReadByAdmin && markAsRead(log.id)}
+                                            style={{ cursor: !log.isReadByAdmin ? 'pointer' : 'default' }}
+                                        >
+                                            <div className={`${styles.itemIcon} ${styles[log.targetType]}`}>
+                                                {getIcon(log.targetType)}
+                                            </div>
+                                            <div className={styles.itemContent}>
+                                                <div className={styles.itemHeader}>
+                                                    <span className={styles.itemAction}>{log.displayText}</span>
+                                                    <span className={styles.itemTime}>{getTimeAgo(log.createdAt)}</span>
+                                                </div>
+                                                <div className={styles.itemFooter}>
+                                                    <span className={styles.itemType}>{log.targetType}</span>
+                                                    <span className={styles.itemId}>ID: {log.targetId}</span>
+                                                </div>
+                                            </div>
+                                            {!log.isReadByAdmin && <div className={styles.unreadDot} />}
                                         </div>
-                                        <div className={styles.itemFooter}>
-                                            <span className={styles.itemType}>{log.targetType}</span>
-                                            <span className={styles.itemId}>ID: {log.targetId}</span>
-                                        </div>
-                                    </div>
-                                    {!log.isReadByAdmin && <div className={styles.unreadDot} />}
-                                </div>
+                                    ))}
+                                </section>
                             ))}
                         </div>
                     )}
@@ -141,3 +183,4 @@ export default function ActivityPanel() {
         </div>
     );
 }
+

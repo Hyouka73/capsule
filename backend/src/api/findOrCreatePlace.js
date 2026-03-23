@@ -23,7 +23,7 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
  * findOrCreatePlace API 
  * Backend Service: Mapea la lógica transaccional de lugares.
  */
-export const findOrCreatePlace = onCall({ region: 'us-central1' }, async (request) => {
+export const findOrCreatePlace = onCall({ region: 'us-central1', cors: true }, async (request) => {
     const db = getFirestore();
     const placesRef = db.collection(COLLECTIONS.PLACES);
 
