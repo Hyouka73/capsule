@@ -12,7 +12,7 @@ import styles from './BottomNav.module.css';
  * @param {Array} props.moreTabs - Secondary tabs to display in the "More" sheet
  * @param {number} props.pendingCount - Count for the notification badge
  */
-export default function BottomNav({ activeTab, setActiveTab, tabs = [], moreTabs = [], pendingCount = 0 }) {
+export default function BottomNav({ activeTab, setActiveTab, tabs = [], moreTabs = [], pendingCount = 0, pendingBingoCount = 0 }) {
     const [isMoreOpen, setIsMoreOpen] = useState(false);
     const moreMenuRef = useRef(null);
 
@@ -57,9 +57,20 @@ export default function BottomNav({ activeTab, setActiveTab, tabs = [], moreTabs
                                     className={`${styles.moreItem} ${activeTab === tab.id ? styles.moreItemActive : ''}`}
                                     onClick={() => handleTabSelect(tab.id)}
                                 >
-                                    <span className={`material-symbols-outlined ${styles.moreIcon}`}>
-                                        {tab.icon}
-                                    </span>
+                                    <div className={styles.iconWrapper}>
+                                        <span className={`material-symbols-outlined ${styles.moreIcon}`}>
+                                            {tab.icon}
+                                        </span>
+                                        {tab.id === 'bingo' && pendingBingoCount > 0 && (
+                                            <motion.div
+                                                className={styles.badgeLeft}
+                                                initial={{ scale: 0 }}
+                                                animate={{ scale: 1 }}
+                                            >
+                                                {pendingBingoCount}
+                                            </motion.div>
+                                        )}
+                                    </div>
                                     <span className={styles.moreLabel}>{tab.label}</span>
                                 </button>
                             ))}
@@ -72,7 +83,8 @@ export default function BottomNav({ activeTab, setActiveTab, tabs = [], moreTabs
             <nav className={styles.bottomNav}>
                 {tabs.map(tab => {
                     const isActive = activeTab === tab.id;
-                    const hasBadge = tab.id === 'lugares' && pendingCount > 0;
+                    const hasLugaresBadge = tab.id === 'lugares' && pendingCount > 0;
+                    const hasBadge = hasLugaresBadge;
 
                     return (
                         <button
@@ -92,7 +104,7 @@ export default function BottomNav({ activeTab, setActiveTab, tabs = [], moreTabs
                                     >
                                         {tab.icon}
                                     </span>
-                                    {hasBadge && (
+                                    {hasLugaresBadge && (
                                         <motion.div
                                             className={styles.badge}
                                             initial={{ scale: 0 }}
@@ -106,13 +118,14 @@ export default function BottomNav({ activeTab, setActiveTab, tabs = [], moreTabs
                             </motion.div>
                         </button>
                     );
+
                 })}
 
                 {/* --- "More" Button --- */}
                 {moreTabs.length > 0 && (
                     <button
                         onClick={() => setIsMoreOpen(!isMoreOpen)}
-                        className={`${styles.navItem} ${isMoreActive ? styles.navItemActive : ''} ${isMoreOpen ? styles.navItemMoreOpen : ''}`}
+                        className={`${styles.navItem} ${isMoreActive ? styles.navItemActive : ''} ${isMoreOpen ? styles.navItemMoreOpen : ''} ${pendingBingoCount > 0 ? styles.navItemGlow : ''}`}
                     >
                         <motion.div
                             className={styles.itemContent}

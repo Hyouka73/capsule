@@ -1,250 +1,242 @@
+/* ============================================================
+   UserBingo — Partner Redesign V8 (Precision Material Grid)
+   ============================================================ */
+
 .root {
     display: flex;
     flex-direction: column;
-    height: 100%;
     align-items: center;
+    padding: 1.5rem 0 3rem;
+    gap: 1.25rem;
+    background: transparent;
+    min-height: 100dvh;
 }
 
 .header {
     text-align: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0;
     width: 100%;
 }
 
 .title {
     font-family: var(--font-display);
-    font-weight: bold;
-    font-size: 28px;
+    font-size: 2.2rem;
+    font-weight: 700;
     color: var(--text-primary);
-    margin: 0 0 0.5rem;
+    margin: 0;
 }
 
 .subtitle {
     font-family: var(--font-body);
-    font-size: 13px;
+    font-size: 1rem;
     color: var(--text-muted);
-    font-style: italic;
-    margin: 0;
+    margin: 0.15rem 0 0;
+    font-weight: 500;
 }
 
-/* Progress Bar */
+/* ── Progress Tracker ── */
 .progressContainer {
     width: 100%;
-    max-width: 400px;
-    margin-bottom: 2.25rem;
-    padding: 0 1rem;
+    max-width: 480px;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 14px;
+    padding: 12px;
+    background: transparent;
 }
 
-.progressBarBg {
-    flex: 1;
-    height: 18px;
-    background: var(--pastel-rose-light);
-    border-radius: var(--radius-pill);
-    overflow: hidden;
-    position: relative;
-    box-shadow: none;
-}
-
-.progressBarFill {
-    top: 0;
-    bottom: 0;
-    background: var(--gradient-mint);
-    border-radius: var(--radius-pill);
-    box-shadow: 3px 0 0 var(--pastel-mint-dark);
-}
-
-.progressBadge {
-    background: white;
-    border: 2px solid var(--pastel-rose-light);
-    border-radius: var(--radius-pill);
-    padding: 6px 12px;
+.progressLabel {
     font-family: var(--font-display);
-    font-weight: 800;
-    font-size: 13px;
+    font-size: 1.15rem;
     color: var(--text-primary);
-    white-space: nowrap;
-    box-shadow: var(--clay-shadow-sm);
+    margin-bottom: 12px;
 }
 
-/* Tablero Cartón */
+.beadTrack {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.bead {
+    width: 14px;
+    height: 14px;
+    background: var(--surface-container-low, #f5efef);
+    border-radius: 50%;
+    box-shadow: inset 0 2px 3px rgba(0,0,0,0.05);
+}
+
+.beadActive {
+    background: var(--primary, #864959);
+}
+
+/* ── The Precision Board (Container) ── */
 .boardCard {
-    background: var(--clay-bg-white);
-    border-radius: var(--radius-xl);
-    padding: 16px;
-    padding-bottom: 24px;
-    overflow: visible;
-    box-shadow: var(--clay-shadow-md);
-    border: 3px solid var(--pastel-rose-light);
-    width: calc(100% - 32px);
-    max-width: 400px;
-    margin: 0 16px;
+    /* Rule: SIN border, SIN outline, SIN box-shadow exterior */
+    background: transparent;
+    padding: 16px; 
+    border-radius: 24px;
+    width: 100%;
+    max-width: 480px;
+    box-sizing: border-box;
 }
 
 .grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
+    /* Rule: gap 10px entre casillas */
     gap: 10px;
-}
-
-.square {
-    position: relative;
-    border-radius: 14px;
-    overflow: visible;
-}
-
-/* Empty Squares */
-.empty {
-    background: var(--pastel-bg);
-    border: 2px dashed var(--pastel-rose);
-    aspect-ratio: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.empty:hover {
-    transform: scale(1.05) rotate(2deg);
-    background: var(--pastel-rose-light);
-    box-shadow: var(--clay-shadow-rose);
-}
-
-.emptyContent {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.emptyIcon {
-    font-size: 24px;
-    color: var(--pastel-mint);
-    opacity: 1;
-}
-
-/* Completed Squares */
-.completed {
-    background: var(--gradient-rose);
-    border-radius: 16px;
-    aspect-ratio: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    border: 3px solid var(--clay-bg-white);
-    box-shadow: var(--clay-shadow-rose);
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.completed:hover {
-    transform: scale(1.1) rotate(-2deg);
-    box-shadow: var(--clay-shadow-rose-hover);
-}
-
-.completedContent {
     width: 100%;
-    height: 100%;
+}
+
+/* ── Precision Squares (Individual Tiles) ── */
+.square {
+    /* Rule: aspect-ratio: 1 (cuadradas perfectas) */
+    aspect-ratio: 1;
+    /* Rule: border-radius: 20px (más redondeado, estilo clay) */
+    border-radius: 20px;
+    /* Rule: SIN border */
+    border: none;
+    /* Rule: padding: 12px */
+    padding: 12px;
+    
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    cursor: pointer;
     position: relative;
-    padding-top: 2px;
+    /* Rule: background var(--surface-container-highest) */
+    /* Light Mode Fallback: #e6e0e9, Dark Mode Fallback: #36343b */
+    background: var(--surface-container-highest, #ece6f0);
+    /* Rule: con sombra interna suave */
+    box-shadow: inset 2px 2px 4px rgba(0,0,0,0.05), inset -2px -2px 4px rgba(255,255,255,0.3);
+    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    min-width: 0;
 }
 
-.checkIcon {
-    font-size: 28px;
-    color: white;
-    font-variation-settings: 'FILL' 1;
+/* Rule: Completadas: background var(--primary-container) */
+/* Light Mode Fallback: #eaddff, Dark Mode Fallback: #4f378b */
+.completed {
+    background: var(--primary-container, #eaddff) !important;
 }
 
-.dateBadge {
+/* Rule: Hover/press: scale(0.95) + invertir sombra interna */
+.square:hover, .square:active {
+    transform: scale(0.95);
+    box-shadow: inset -2px -2px 4px rgba(0,0,0,0.05), inset 2px 2px 4px rgba(255,255,255,0.3);
+}
+
+.squareContent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+    padding-bottom: 2px;
+}
+
+/* ── Icon Rendering (Emoji / SVG / Fallback) ── */
+.emoji {
+    /* Rule: emoji grande (1.8rem) */
+    font-size: 1.8rem;
+    line-height: 1;
+}
+
+.fallback {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--on-surface-variant, #49454f);
+}
+
+.svgIcon {
+    width: 1.8rem;
+    height: 1.8rem;
+    color: var(--on-surface, #1d1b20);
+}
+
+/* ── Label/Título ── */
+.squareTitle {
+    /* Rule: debajo del emoji, font-size pequeño (0.65rem), truncado si es largo */
     font-family: var(--font-body);
-    font-size: 9px;
-    color: #ffffff;
-    margin-top: 2px;
-    padding: 2px 6px;
-    background: var(--pastel-text-muted);
-    border-radius: 99px;
-}
-
-.footerHint {
-    margin-top: 1.5rem;
-    font-family: var(--font-body);
-    font-size: 12px;
-    color: var(--text-muted);
-    font-style: italic;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--on-surface, #1d1b20);
     text-align: center;
+    line-height: 1.2;
+    width: 100%;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+/* ── State Markers ── */
+.checkMark {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: var(--primary, #6750a4);
+    color: #ffffff;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    font-size: 0.85rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    z-index: 5;
 }
 
-.footerIcon {
-    font-size: 14px;
-    color: var(--pastel-mint);
-    font-variation-settings: 'FILL' 1;
+.suggestionIndicator {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    z-index: 10;
 }
 
-/* Modal Polaroid */
+/* ── Bingo Memory Polaroid Modal ── */
 .modalOverlay {
     position: fixed;
-    inset: 0;
-    background: var(--pastel-text); /* Solid dark warm brown overlay */
-    z-index: 100;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(12px);
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1.5rem;
+    padding: 24px;
+    z-index: 2000;
 }
 
 .polaroid {
-    background: white;
-    padding: 1rem 1rem 3.5rem 1rem;
-    border-radius: var(--radius-sm);
-    box-shadow: var(--clay-shadow-lg);
+    background: #ffffff;
+    padding: 16px 16px 28px;
     width: 100%;
-    max-width: 350px;
-    position: relative;
+    max-width: 320px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.1);
     display: flex;
     flex-direction: column;
-    overflow: visible;
-}
-
-.closeBtn {
-    position: absolute;
-    top: -10px;
-    right: -10px;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    border: none;
-    background: var(--text-primary);
-    color: white;
-    font-size: 1.2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 10;
-    box-shadow: var(--clay-shadow-sm);
+    position: relative;
+    transform-origin: center;
 }
 
 .photoArea {
     width: 100%;
-    aspect-ratio: 1/1;
-    background: #111;
+    aspect-ratio: 1;
+    background: #1a1a1a;
     overflow: hidden;
-    margin-bottom: 1.5rem;
-    border-radius: 2px;
-    box-shadow: none;
+    margin-bottom: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
 }
 
 .memoryImg {
@@ -254,74 +246,91 @@
 }
 
 .noPhotoDefault {
-    background: linear-gradient(135deg, var(--pastel-rose), #ff9a9e);
-    width: 100%;
-    height: 100%;
+    color: var(--primary-container, #eaddff);
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-.bigEmoji {
-    font-size: 5rem;
-    filter: none;
+    width: 100%;
+    height: 100%;
+    opacity: 0.5;
 }
 
 .polaroidText {
     text-align: center;
+    font-family: 'Handlee', cursive, 'Comic Sans MS', sans-serif;
+    color: #2b2b2b;
 }
 
-.polaroidText h2 {
-    font-family: 'Caveat', cursive, var(--font-display);
-    font-size: 2rem;
-    color: var(--text-primary);
-    margin: 0 0 0.5rem;
-    line-height: 1.1;
+.title {
+    margin: 0;
+    font-size: 1.6rem !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
 }
 
-.polaroidText p {
-    font-family: var(--font-display);
-    font-size: 1rem;
-    color: var(--text-secondary);
-    margin: 0 0 1rem;
-    line-height: 1.4;
+.description {
+    margin: 12px 0 20px !important;
+    font-size: 0.95rem !important;
+    line-height: 1.4 !important;
+    max-height: 120px;
+    overflow-y: auto;
+    padding: 0 4px;
 }
 
-.dateStamp {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    font-family: monospace;
-    letter-spacing: 1px;
-    opacity: 0.6;
+.dateBadge {
+    display: inline-block;
+    background: #f5f5f5;
+    padding: 4px 12px;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    color: #666;
+    font-weight: 600;
+    border: 1px solid #eee;
 }
 
-.galleryBtn {
-    margin-top: 10px;
-    background: var(--clay-bg-mint);
-    border: 3px solid var(--pastel-mint);
-    border-radius: var(--radius-pill);
-    padding: 8px 20px;
-    color: #5a7a6a;
-    font-family: var(--font-display);
-    font-size: 0.9rem;
-    font-weight: 700;
-    cursor: pointer;
+.closeBtn {
+    position: absolute;
+    top: -50px;
+    right: 0;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    box-shadow: var(--clay-shadow-mint);
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+    cursor: pointer;
+    color: white;
+    transition: all 0.2s;
+}
+
+.closeBtn:hover {
+    background: rgba(255, 255, 255, 0.4);
+    transform: scale(1.1);
+}
+
+.galleryBtn {
+    margin-top: 15px;
+    background: #333;
+    color: #fff;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     width: 100%;
-    touch-action: manipulation;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
 .galleryBtn:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--clay-shadow-mint-hover);
-}
-
-.galleryBtn:active {
-    transform: translateY(1px) scale(0.97);
-    box-shadow: var(--clay-shadow-pressed);
+    background: #000;
+    transform: translateY(-1px);
 }

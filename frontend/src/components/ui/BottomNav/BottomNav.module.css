@@ -175,3 +175,38 @@
     transform: rotate(45deg) scale(1.1);
     color: var(--pastel-rose);
 }
+
+/* ── Bingo Pending Indicators ───────────────────────────────────────────── */
+.navItemGlow {
+    animation: borderPulse 2s infinite ease-in-out;
+    /* Use the same border-radius as .navItem */
+    border-radius: var(--radius-lg);
+}
+
+@keyframes borderPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0px transparent;
+    }
+    50% {
+        box-shadow: 0 0 0 2px var(--pastel-rose);
+    }
+}
+
+.badgeLeft {
+    position: absolute;
+    top: -2px;
+    left: -4px;
+    background: var(--pastel-rose);
+    color: white;
+    font-size: 0.6rem;
+    font-weight: 800;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 6px rgba(255, 175, 204, 0.4);
+    z-index: 2;
+}

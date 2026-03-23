@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { createMemory, findOrCreatePlace, updateMemory } from '../../apiClient';
+import { createMemory, findOrCreatePlace, updateMemory, completeBingoSquare } from '../../apiClient';
+import BingoSuggestionSheet from './components/BingoSuggestionSheet';
 import { useOfflineQueue } from '../../hooks/useOfflineQueue';
 import { usePendingCitas } from '../../hooks/usePendingCitas';
 import Memory from '../../models/Memory';
@@ -64,6 +65,10 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
     const [customLocation, setCustomLocation] = useState(null);
     const [error, setError] = useState(null);
     const [step, setStep] = useState(isPartner ? 'details' : 'unified'); 
+    
+    // Bingo Suggestions States
+    const [bingoSuggestions, setBingoSuggestions] = useState([]);
+    const [showBingoSheet, setShowBingoSheet] = useState(false);
     const { places } = usePlaces();
 
     // drafts on mount
@@ -211,6 +216,13 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
             } else {
                 const response = await createMemory(memoryPayload);
                 setMemoryId(response.memoryId);
+
+                // Handle Bingo Suggestions
+                if (response.bingoSuggestions?.length > 0) {
+                    setBingoSuggestions(response.bingoSuggestions);
+                    setShowBingoSheet(true);
+                    return; // Don't call onSuccess yet, wait for Modal
+                }
             }
 
             if (!isEditing && isPartner) {
@@ -225,6 +237,28 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
             setIsSaving(false);
         }
     }
+
+    async function handleBingoConfirm(selectedCategoryIds) {
+        setIsSaving(true);
+        try {
+            await Promise.all(
+                selectedCategoryIds.map(categoryId => 
+                    completeBingoSquare({ 
+                        categoryId, 
+                        memoryId: memoryId 
+                    })
+                )
+            );
+        } catch (err) {
+            console.error('[Bingo Link Error]', err);
+        } finally {
+            setIsSaving(false);
+            setShowBingoSheet(false);
+            onSuccess?.();
+        }
+    }
+
+
 
     return (
         <div className={styles.root}>
@@ -325,6 +359,45 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
                     onFinalSave={handleSaveDetails}
                 />
             )}
+
+            <BingoSuggestionSheet 
+                isOpen={showBingoSheet}
+                suggestions={bingoSuggestions}
+                onConfirm={handleBingoConfirm}
+                onCancel={async () => {
+                    // Save to IndexedDB so badge appears on board even if sheet is dismissed
+                    try {
+                        const { openDB } = await import('../../config/dbConfig');
+                        const db = await openDB();
+                        const tx = db.transaction('pending_bingo', 'readwrite');
+                        const store = tx.objectStore('pending_bingo');
+                        
+                        // Use existing memoryId or generate UUID
+                        const mid = memoryId || crypto.randomUUID();
+                        
+                        store.put({
+                            memoryId: mid,
+                            suggestions: bingoSuggestions,
+                            createdAt: Date.now(),
+                            resolved: false,
+                            dismissed: true
+                        });
+                        
+                        await new Promise((resolve, reject) => {
+                            tx.oncomplete = () => resolve();
+                            tx.onerror = () => reject(tx.error);
+                        });
+                    } catch (err) {
+                        console.error('[MemoryForm] Error saving suggestions to IndexedDB:', err);
+                    }
+
+                    setShowBingoSheet(false);
+                    onSuccess?.();
+                }}
+                isSaving={isSaving}
+            />
         </div>
     );
 }
+
+

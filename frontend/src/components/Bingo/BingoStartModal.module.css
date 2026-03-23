@@ -1,138 +1,190 @@
+/* ============================================================
+   BingoStartModal — V2 Vibrant Sticker
+   ============================================================ */
+
 .overlay {
     position: fixed;
     inset: 0;
-    z-index: 9999;
-    background: var(--bg-overlay);
+    background: var(--bg-overlay-soft);
     backdrop-filter: blur(10px);
+    z-index: 10000;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 16px;
+    padding: 1rem;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .card {
-    background: var(--bg-card);
-    border-radius: 2rem;
-    padding: 24px;
+    background: var(--surface, #ffffff);
+    border-radius: 2.5rem;
+    padding: 2.5rem 1.5rem 2rem;
     width: 100%;
-    max-width: 400px;
-    box-shadow: var(--shadow-card);
-    border: var(--border-mint-thick);
+    max-width: 420px;
+    box-shadow: 0 12px 0 var(--shadow-chunky-pressed, #f2eced), 0 32px 64px rgba(66, 50, 50, 0.15);
+    border: 4px solid var(--outline-variant, #f2eced);
     position: relative;
-    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
 .header {
     display: flex;
     justify-content: flex-end;
+    position: absolute;
+    top: 1rem;
+    right: 1.25rem;
 }
 
 .closeBtn {
-    background: var(--pastel-rose-light);
+    background: var(--surface-container-high, #f2eced);
     border: none;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
-    color: var(--pastel-text);
     cursor: pointer;
-    transition: transform 0.2s;
+    font-size: 1.5rem;
+    color: var(--on-surface, #4a3232);
+    transition: all 0.2s;
 }
 
 .closeBtn:hover {
-    transform: scale(1.1);
+    background: var(--outline-variant, #e0d6d6);
+    transform: rotate(90deg);
 }
 
 .content {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
     text-align: center;
-    margin-top: -10px;
 }
 
 .iconWrapper {
-    width: 80px;
-    height: 80px;
-    background: var(--pastel-shadow-mint);
-    border-radius: 50%;
+    width: 96px;
+    height: 96px;
+    background: #ffffff;
+    border-radius: 1.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: var(--shadow-chunky-mint-soft);
+    margin-bottom: 1.25rem;
+    box-shadow: 0 8px 0 #f2eced;
+    border: 3px solid #f2eced;
+    transform: rotate(-3deg);
 }
 
 .emoji {
-    font-size: 40px;
+    font-size: 3.5rem;
+    line-height: 1;
+}
+
+.materialEmoji {
+    font-variation-settings: 'FILL' 1;
+    color: #ff85a2;
 }
 
 .title {
-    font-family: var(--font-fredoka);
-    color: var(--pastel-text);
-    font-size: 1.5rem;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 1.85rem;
+    font-weight: 700;
+    color: #4a3232;
     margin: 0;
+    line-height: 1.2;
 }
 
 .rulesBox {
-    background: rgba(255, 255, 255, 0.6);
-    border: var(--border-mint);
-    border-radius: 1rem;
-    padding: 16px;
+    background: #fdf2f4; /* Light Rose background for contrast */
+    border-radius: 2rem;
+    padding: 1.5rem;
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 1.25rem;
+    border: 3px solid #ffadc7;
 }
 
 .description {
-    font-family: var(--font-varela);
-    font-size: 0.95rem;
-    color: var(--pastel-text);
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 1rem;
+    color: #4a3232;
+    line-height: 1.6;
     margin: 0;
+    font-weight: 500;
 }
 
 .reqs {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    color: var(--pastel-sage-dark);
-    font-family: var(--font-fredoka);
-    font-weight: 500;
+    gap: 0.5rem;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    color: #8b4a61;
+}
+
+.tagsContainer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.tagPill {
+    background: #ffffff;
+    border: 2px solid #ffadc7;
+    color: #8b4a61;
+    padding: 0.4rem 0.85rem;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .hint {
-    font-family: var(--font-varela);
-    font-size: 0.8rem;
-    color: var(--pastel-text-muted);
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.85rem;
+    color: #847377;
+    font-style: italic;
     margin: 0;
 }
 
+/* ── Start Button ── */
 .startBtn {
-    width: 100%;
-    padding: 14px;
-    background: linear-gradient(135deg, var(--pastel-sage), var(--pastel-shadow-mint));
+    background: linear-gradient(135deg, #ff85a2 0%, #ffadc7 100%);
     color: white;
     border: none;
-    border-radius: var(--radius-pill);
-    font-family: var(--font-fredoka);
-    font-size: 1.1rem;
-    font-weight: bold;
+    border-radius: 9999px;
+    padding: 1.25rem 2rem;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    font-size: 1.2rem;
     cursor: pointer;
+    box-shadow: 0 8px 0 #e8728f;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     display: flex;
-    justify-content: center;
     align-items: center;
-    gap: 8px;
-    box-shadow: var(--shadow-chunky-mint);
-    transition: transform 0.1s, box-shadow 0.1s;
-    margin-top: 8px;
+    justify-content: center;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.startBtn:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 0 #e8728f;
 }
 
 .startBtn:active {
     transform: translateY(4px);
-    box-shadow: var(--shadow-chunky-mint-active);
+    box-shadow: 0 2px 0 #e8728f;
 }

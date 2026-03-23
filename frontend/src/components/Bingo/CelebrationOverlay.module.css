@@ -1,24 +1,108 @@
+/* ============================================================
+   CelebrationOverlay — V8 Material Clay Redesign
+   ============================================================ */
+
 .container {
     position: fixed;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    z-index: 9999;
-    pointer-events: none;
+    inset: 0;
+    z-index: 20000;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    background: rgba(42, 26, 26, 0.9); /* Solid dark warm brown overlay */
+    padding: 2rem;
+    overflow: hidden;
 }
 
 .particle {
     position: absolute;
     pointer-events: none;
-    box-shadow: 2px 2px 0 rgba(0,0,0,0.05); /* Very subtle clay shadow */
+    z-index: 20001;
 }
 
 .hero {
-    position: absolute;
-    font-size: 80px;
-    pointer-events: none;
+    position: relative;
+    z-index: 20002;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 360px;
+}
+
+.bingoTitle {
+    font-family: var(--font-display);
+    font-size: 5rem;
+    font-weight: 900;
+    color: #ffffff;
+    margin: 0;
+    text-shadow: 
+        0 4px 0 #b0a0a0,
+        0 8px 0 #8a7070,
+        0 12px 20px rgba(0,0,0,0.3);
+    letter-spacing: -2px;
+}
+
+.rewardCard {
+    background: var(--surface-container-highest, #ece6f0);
+    padding: 2rem 1.5rem;
+    border-radius: 24px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+    text-align: center;
+    box-shadow: 0 12px 0 var(--text-primary), 0 20px 40px rgba(0,0,0,0.25);
+    border: 4px solid var(--text-primary);
+}
+
+.tierLabel {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.rewardIcon {
+    font-size: 4.5rem !important;
+    color: var(--primary, #6750a4);
+    font-variation-settings: 'FILL' 1;
+}
+
+.coinsText {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary, #6750a4);
+    background: var(--primary-container, #eaddff);
+    padding: 8px 16px;
+    border-radius: 99px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.dismissBtn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 16px;
+    border: none;
+    background: var(--primary, #6750a4);
+    color: #ffffff;
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 6px 0 var(--on-surface-variant, #49454f);
+    transition: all 0.2s;
+}
+
+.dismissBtn:active {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 var(--on-surface-variant, #49454f);
 }

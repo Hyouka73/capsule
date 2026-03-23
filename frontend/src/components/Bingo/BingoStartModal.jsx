@@ -1,6 +1,5 @@
-import React from 'react';
-// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
+import { MEMORY_TAGS } from '../../config/constants';
 import styles from './BingoStartModal.module.css';
 
 export default function BingoStartModal({ bingoItem, onClose, onStartCita, defaultMinPhotos = 3 }) {
@@ -13,7 +12,7 @@ export default function BingoStartModal({ bingoItem, onClose, onStartCita, defau
                 bingoLabel: `${bingoItem.emoji} ${bingoItem.title}`,
                 minPhotos: minPhotosVal,
                 description: bingoItem.description,
-                tags: bingoItem.suggestedTags || []
+                tags: (bingoItem.suggestedTags || []).map(t => typeof t === 'string' ? t : t.value)
             });
         }
     };
@@ -23,17 +22,22 @@ export default function BingoStartModal({ bingoItem, onClose, onStartCita, defau
             <motion.div
                 className={styles.card}
                 onClick={e => e.stopPropagation()}
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                initial={{ scale: 0.9, opacity: 0, y: 30 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                exit={{ scale: 0.9, opacity: 0, y: 30 }}
+                transition={{ type: 'spring', damping: 15, stiffness: 120 }}
             >
                 <div className={styles.header}>
-                    <button className={styles.closeBtn} onClick={onClose}>×</button>
+                    <button className={styles.closeBtn} onClick={onClose}>
+                        <span className="material-symbols-outlined">close</span>
+                    </button>
                 </div>
 
                 <div className={styles.content}>
                     <div className={styles.iconWrapper}>
-                        <span className={bingoItem.emoji === 'favorite' || bingoItem.emoji === 'help_outline' ? `material-symbols-outlined ${styles.emoji} ${styles.materialEmoji}` : styles.emoji}>{bingoItem.emoji}</span>
+                        <span className={bingoItem.emoji === 'favorite' || bingoItem.emoji === 'help_outline' ? `${styles.emoji} material-symbols-outlined ${styles.materialEmoji}` : styles.emoji}>
+                            {bingoItem.emoji}
+                        </span>
                     </div>
                     <h2 className={styles.title}>{bingoItem.title}</h2>
 
@@ -41,14 +45,31 @@ export default function BingoStartModal({ bingoItem, onClose, onStartCita, defau
                         <p className={styles.description}>
                             {bingoItem.description || 'Cumple con este reto tomando fotos para documentar el momento.'}
                         </p>
+                        
                         <div className={styles.reqs}>
-                            <span className="material-symbols-outlined">photo_camera</span>
-                            <span>Mínimo {minPhotosVal} fotos requeridas</span>
+                            <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>photo_camera</span>
+                            <span>Mínimo {minPhotosVal} fotos</span>
                         </div>
+
+                        {bingoItem.suggestedTags?.length > 0 && (
+                            <div className={styles.tagsContainer}>
+                                {bingoItem.suggestedTags.map(tag => {
+                                    const tagValue = typeof tag === 'string' ? tag : tag.value;
+                                    const tagLabel = typeof tag === 'string' 
+                                        ? (Object.values(MEMORY_TAGS).find(t => t.value === tag)?.label || tag)
+                                        : tag.label;
+                                    return (
+                                        <span key={tagValue} className={styles.tagPill}>
+                                            {tagLabel}
+                                        </span>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
 
                     <p className={styles.hint}>
-                        Al presionar "Comenzar", se abrirá el mapa para iniciar la cita y tomar la foto de portada.
+                        Inicia la cita para marcar esta casilla.
                     </p>
 
                     <button className={styles.startBtn} onClick={handleStartCita}>

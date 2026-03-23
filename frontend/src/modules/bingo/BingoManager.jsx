@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useBingo } from '../../hooks/useBingo';
+import { MEMORY_TAGS } from '../../config/constants';
 import styles from './BingoManager.module.css';
 
 // Sub-components
@@ -13,15 +14,33 @@ export default function BingoManager() {
     } = useBingo();
 
     const [editingSquare, setEditingSquare] = useState(null);
-    const [formData, setFormData] = useState({ title: '', emoji: '', description: '', minPhotos: 3 });
+    const [formData, setFormData] = useState({ 
+        title: '', 
+        emoji: '', 
+        description: '', 
+        minPhotos: 1,
+        suggestedTags: [] 
+    });
 
     const handleEdit = (square) => {
         setEditingSquare(square);
+        
+        // Sanitize tags: convert strings to objects using MEMORY_TAGS
+        const rawTags = square.suggestedTags || [];
+        const sanitizedTags = rawTags.map(tag => {
+            if (typeof tag === 'string') {
+                const tagInfo = Object.values(MEMORY_TAGS).find(t => t.value === tag);
+                return tagInfo ? { value: tagInfo.value, label: tagInfo.label } : { value: tag, label: tag };
+            }
+            return tag;
+        });
+
         setFormData({
-            title: square.title || square.label || '', // Support both naming variants if they exist
+            title: square.title || square.label || '',
             emoji: square.emoji || '🎯',
             description: square.description || '',
-            minPhotos: square.minPhotos || 3
+            minPhotos: square.minPhotos || 1,
+            suggestedTags: sanitizedTags
         });
     };
 
@@ -44,27 +63,63 @@ export default function BingoManager() {
                 sq.id === id ? { ...sq, isCompleted: false, completedMemoryId: null, completedAt: null } : sq
             );
             await updateBingoBoard(newSquares);
+            setEditingSquare(null);
         }
     };
 
-    const handleMockComplete = async (id) => {
-        // Now it's a real forceful completion from Admin
+    const handleForceComplete = async (id) => {
         const newSquares = squares.map(sq => 
-            sq.id === id ? { ...sq, isCompleted: true, completedMemoryId: 'admin-manual', completedAt: new Date().toISOString() } : sq
+            sq.id === id ? { 
+                ...sq, 
+                isCompleted: true, 
+                completedMemoryId: 'admin-manual', 
+                completedAt: new Date().toISOString() 
+            } : sq
         );
         await updateBingoBoard(newSquares);
+        setEditingSquare(null);
     };
 
     if (isLoading) {
-        return <div className={styles.loading}>Cargando tablero real...</div>;
+        return (
+            <div className={styles.loadingContainer}>
+                <div className={styles.spinner}></div>
+                <p>Cargando tablero...</p>
+            </div>
+        );
     }
 
     return (
         <div className={styles.root}>
-            <div className={styles.header}>
+            <header className={styles.header}>
                 <div>
-                    <h1 className={styles.title}>Bingo del Amor</h1>
-                    <p className={styles.subtitle}>Tablero 4x5 — Administra los retos y visualiza el progreso en tiempo real.</p>
+                    <h1 className={styles.title}>Bingo del Amor 🎯</h1>
+                    <p className={styles.subtitle}>
+                        Administra los 16 retos del tablero y configura los tags automáticos.
+                    </p>
+                </div>
+            </header>
+
+            <div className={styles.boardContainer}>
+                <div className={styles.bingoBoard}>
+                    {squares.map(sq => (
+                        <button 
+                            key={sq.id} 
+                            className={`${styles.square} ${sq.completedMemoryId ? styles.completed : ''} ${editingSquare?.id === sq.id ? styles.active : ''}`}
+                            onClick={() => handleEdit(sq)}
+                            type="button"
+                        >
+                            {sq.completedMemoryId && (
+                                <div className={styles.checkBadge}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check</span>
+                                </div>
+                            )}
+                            <div className={styles.squareContent}>
+                                <span className={styles.emoji}>{sq.emoji || '⭐'}</span>
+                                <span className={styles.squareTitle}>{sq.title || sq.label}</span>
+                            </div>
+                        </button>
+                    ))}
                 </div>
             </div>
 
@@ -74,36 +129,9 @@ export default function BingoManager() {
                 setFormData={setFormData}
                 onSave={handleSave}
                 onClose={() => setEditingSquare(null)}
+                onUncheck={handleUncheck}
+                onForceComplete={handleForceComplete}
             />
-
-            <div className={styles.boardContainer}>
-                <div className={styles.bingoBoard}>
-                    {squares.map(sq => (
-                        <div key={sq.id} className={`${styles.square} ${sq.completedMemoryId ? styles.completed : ''}`}>
-                            <div className={styles.squareContent}>
-                                <div className={styles.emoji}>{sq.emoji}</div>
-                                <div className={styles.squareTitle}>{sq.title || sq.label}</div>
-                            </div>
-
-                            {/* Hover Overlay */}
-                            <div className={styles.overlay}>
-                                {!sq.completedMemoryId ? (
-                                    <>
-                                        <button className={styles.actionBtn} onClick={() => handleEdit(sq)} title="Editar Reto">✏️</button>
-                                        <button className={styles.actionBtn} onClick={() => handleMockComplete(sq.id)} title="Forzar Cumplido">✅</button>
-                                    </>
-                                ) : (
-                                    <>
-                                        <span className={styles.completedBadge}>🏆 Cumplido</span>
-                                        <button className={styles.actionBtn} onClick={() => handleEdit(sq)} title="Editar Reto">✏️</button>
-                                        <button className={styles.actionBtn} onClick={() => handleUncheck(sq.id)} title="Resetear">↻</button>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
         </div>
     );
 }

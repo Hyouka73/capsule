@@ -104,7 +104,7 @@ async function processBingoCompletion(action) {
     const categories = boardData.categories || [];
 
     const updatedCategories = categories.map(cat => {
-        if (cat.id === categoryId && !cat.completedMemoryId) {
+        if (String(cat.id) === String(categoryId) && !cat.completedMemoryId) {
             return {
                 ...cat,
                 completedMemoryId: memoryId || null,

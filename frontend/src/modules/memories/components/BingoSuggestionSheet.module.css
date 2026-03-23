@@ -1,0 +1,72 @@
+.suggestionGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    margin: 1.5rem 0;
+    width: 100%;
+}
+
+.pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: var(--radius-full, 9999px);
+    border: none;
+    background: var(--surface-container-low, #f5efef);
+    color: var(--on-surface, #302e2e);
+    font-family: var(--font-body, "Be Vietnam Pro");
+    font-weight: 500;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: inset 2px 2px 4px rgba(0,0,0,0.03), inset -2px -2px 4px rgba(255,255,255,0.5);
+    transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.pill.selected {
+    background: var(--pastel-rose, #ffadc7) !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(255, 173, 199, 0.25) !important;
+    transform: scale(1.02);
+}
+
+.emoji {
+    font-size: 1.25rem;
+}
+
+.check {
+    margin-left: 4px;
+    font-weight: 800;
+    color: white !important;
+}
+
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    margin-top: 1rem;
+}
+
+.mainBtn {
+    width: 100% !important;
+    font-weight: 800 !important;
+}
+
+.cancelBtn {
+    width: 100% !important;
+    border: none !important;
+    background: transparent !important;
+    color: var(--on-surface-variant, #5e5b5b) !important;
+    box-shadow: none !important;
+    outline: none !important;
+    min-height: 44px !important;
+    font-weight: 500 !important;
+    font-family: var(--font-body, "Be Vietnam Pro") !important;
+}
+
+.ghostOverlay {
+    background: var(--bg-overlay-ghost) !important;
+    backdrop-filter: blur(2px) !important;
+}

@@ -244,7 +244,7 @@ export function useOfflineQueue() {
                             }
                         }
 
-                        await createMemory({
+                        const res = await createMemory({
                             ...memoryModel.toApiPayload(),
                             id: item.id, // Enforce using the same ID as the storage folder
                             offlinePhotoUrls: photoUrls,
@@ -253,6 +253,21 @@ export function useOfflineQueue() {
                             placeLng: memoryModel.placeLng,
                             placeName: memoryModel.placeName,
                         });
+
+                        if (res?.bingoSuggestions?.length > 0) {
+                            try {
+                                const db = await openDB();
+                                const tx = db.transaction('pending_bingo', 'readwrite');
+                                tx.objectStore('pending_bingo').put({
+                                    memoryId: item.id,
+                                    suggestions: res.bingoSuggestions,
+                                    createdAt: Date.now(),
+                                    resolved: false
+                                });
+                            } catch (e) {
+                                console.error('[offlineQueue] Error saving pending_bingo', e);
+                            }
+                        }
 
                         if (item.originalCitaId) {
                             const db = await openDB();

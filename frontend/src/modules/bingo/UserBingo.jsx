@@ -5,6 +5,7 @@ import CelebrationOverlay from '../../components/Bingo/CelebrationOverlay';
 import PhotoViewer from '../../components/ui/PhotoViewer/PhotoViewer';
 import { subscribeToGlobalSettings } from '../../services/settingsService';
 import { useBingo } from '../../hooks/useBingo';
+import { usePendingBingo } from '../../hooks/usePendingBingo';
 import styles from './UserBingo.module.css';
 
 // Sub-components
@@ -25,17 +26,9 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
         return unsub;
     }, []);
 
-    const { categories, completedCount, progressPercent, isLoading } = useBingo();
-    const [showCelebration, setShowCelebration] = useState(false);
+    const { categories, completedCount, progressPercent, isLoading, completeBingoSquare, celebrationEvent, clearCelebrationEvent } = useBingo();
+    const { pendingSuggestions, resolvePendingSuggestion } = usePendingBingo();
     const lastCountRef = useRef(completedCount);
-
-    // Watch for new completions to trigger celebration
-    useEffect(() => {
-        if (completedCount > lastCountRef.current && !isLoading) {
-            setShowCelebration(true);
-        }
-        lastCountRef.current = completedCount;
-    }, [completedCount, isLoading]);
 
     const handleSquareClick = (square) => {
         if (square.completedMemoryId) {
@@ -69,11 +62,13 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
                 categories={categories} 
                 isLoading={isLoading} 
                 onSquareClick={handleSquareClick}
+                pendingSuggestions={pendingSuggestions}
+                resolvePendingSuggestion={resolvePendingSuggestion}
+                completeBingoSquare={completeBingoSquare}
             />
 
             <p className={styles.footerHint}>
-                <span className={`material-symbols-outlined ${styles.footerIcon}`}>favorite</span>
-                Toca las casillas marcadas para recordar ese momento.
+                Toca una casilla para comenzar una aventura 💫
             </p>
 
             <BingoMemoryPolaroid 
@@ -107,8 +102,13 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
                 photos={viewerPhotos}
                 onClose={() => setViewerPhotos(null)}
             />
-            {showCelebration && (
-                <CelebrationOverlay onComplete={() => setShowCelebration(false)} />
+            {celebrationEvent && (
+                <CelebrationOverlay 
+                    tierLabel={celebrationEvent.tierLabel}
+                    reward={celebrationEvent.reward}
+                    coins={celebrationEvent.coins}
+                    onComplete={clearCelebrationEvent}
+                />
             )}
         </div>
     );

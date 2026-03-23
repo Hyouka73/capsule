@@ -20,6 +20,9 @@ import { TABS } from '../../data/dashboardData';
 import { usePendingCitas } from '../../hooks/usePendingCitas';
 import Memory from '../../models/Memory';
 import { useOfflineQueue } from '../../hooks/useOfflineQueue';
+import { usePendingBingo } from '../../hooks/usePendingBingo';
+import { useBingo } from '../../hooks/useBingo';
+import BingoSuggestionSheet from '../memories/components/BingoSuggestionSheet';
 import PhotoViewer from '../../components/ui/PhotoViewer/PhotoViewer';
 import PendingDatesList from '../../components/PendingDates/PendingDatesList';
 import PendingDateForm from '../../components/PendingDates/PendingDateForm';
@@ -30,6 +33,9 @@ export default function UserDashboard() {
     const { isPartner, isAdmin } = useAuth();
     const { isFeatureOn } = useAppConfig();
     const { pendingCount, pendingCitas, removePendingCita, addPendingCita, updatePendingCitaStatus, updatePendingCita, restorePendingCita } = usePendingCitas();
+    const { pendingSuggestions, resolvePendingSuggestion, dismissSuggestion } = usePendingBingo();
+    const { completeBingoSquare, celebrationEvent } = useBingo();
+    const firstPendingSuggestion = pendingSuggestions.find(s => !s.dismissed);
 
     // Map tab IDs to feature flags
     const TAB_FLAGS = {
@@ -73,7 +79,7 @@ export default function UserDashboard() {
 
     // Dynamic check for ANY overlay that should hide the map
     // We EXCLUDE isPlaceSelected because that modal (PlaceDetailDrawer) lives INSIDE MapView
-    const hasAnyOverlayOpen = !!citaContext || isBingoModalOpen || isCouponsModalOpen || isSnapshotOpen || isCameraOpen || isHistoryOpen || isPendingListOpen || !!selectedPendingDate || !!viewerPhotos;
+    const hasAnyOverlayOpen = !!citaContext || isBingoModalOpen || isCouponsModalOpen || isSnapshotOpen || isCameraOpen || isHistoryOpen || isPendingListOpen || !!selectedPendingDate || !!viewerPhotos || !!firstPendingSuggestion || !!celebrationEvent;
 
     // Partículas solo cuando NO es el mapa
     useEffect(() => {
@@ -176,16 +182,40 @@ export default function UserDashboard() {
         }
     };
 
+    const handleAutoSavePendingDate = async (data) => {
+        if (!updatePendingCita || !data.id) return;
+        try {
+            await updatePendingCita(data.id, {
+                title: data.title,
+                eventDate: data.eventDate,
+                tags: data.tags,
+                comments: data.comments,
+                placeId: data.placeId,
+                placeName: data.placeName,
+                coordinates: data.customLocation // Save raw coordinates for potential recovery
+            });
+        } catch (err) {
+            console.warn('[UserDashboard] Auto-save failed:', err);
+        }
+    };
+
     const handleSavePendingDate = async (data) => {
         try {
             const memory = Memory.fromForm(data);
             const payload = memory.toApiPayload();
 
             if (updatePendingCita && data.id) {
+                // Persistent save of ALL form fields in IndexedDB before/during upload
                 await updatePendingCita(data.id, {
                     title: memory.title,
-                    suggestedTags: memory.tags,
+                    tags: memory.tags,
+                    suggestedTags: memory.tags, // Keep for backward compatibility
+                    description: memory.description,
+                    comments: memory.description, // Keep for backward compatibility
+                    eventDate: memory.eventDate,
+                    placeId: memory.placeId,
                     placeName: memory.placeName,
+                    coordinates: data.customLocation,
                     status: 'uploading'
                 });
             }
@@ -238,7 +268,7 @@ export default function UserDashboard() {
                         <div className={styles.dotPattern} />
                     </div>
 
-                    <main className={styles.mainContent}>
+                    <main className={`${styles.mainContent} ${activeTab === 'bingo' ? styles.mainContentBingo : ''}`}>
                         <AnimatePresence mode="wait" custom={direction}>
                             <motion.div
                                 key={activeTab}
@@ -273,6 +303,7 @@ export default function UserDashboard() {
                             tabs={mainTabs}
                             moreTabs={moreTabs}
                             pendingCount={pendingCount}
+                            pendingBingoCount={pendingSuggestions.length}
                         />
                     </motion.div>
                 )}
@@ -370,6 +401,7 @@ export default function UserDashboard() {
                             setIsPendingListOpen(true);
                         }}
                         onSave={handleSavePendingDate}
+                        onAutoSave={handleAutoSavePendingDate}
                         defaultPlaces={places}
                     />
                 )}
@@ -381,6 +413,51 @@ export default function UserDashboard() {
                     onClose={() => setViewerPhotos(null)}
                 />
             )}
+
+            <BingoSuggestionSheet 
+                isOpen={!!firstPendingSuggestion}
+                suggestions={firstPendingSuggestion?.suggestions || []}
+                onConfirm={async (selectedIds) => {
+                    if (!firstPendingSuggestion) return;
+                    for (const id of selectedIds) {
+                        await completeBingoSquare(id, firstPendingSuggestion.memoryId);
+                    }
+                    await resolvePendingSuggestion(firstPendingSuggestion.memoryId);
+                }}
+                onCancel={async () => {
+                    if (!firstPendingSuggestion) return;
+                    
+                    // 1. NO resolve immediately. Instead, dismiss to hide sheet but keep badge.
+                    // 2. Ensure it's in pending_bingo (IndexedDB) with resolved: false
+                    try {
+                        const { openDB } = await import('../../config/dbConfig');
+                        const db = await openDB();
+                        const tx = db.transaction('pending_bingo', 'readwrite');
+                        const store = tx.objectStore('pending_bingo');
+                        
+                        // Use existing memoryId or fallback to UUID if missing
+                        const memoryId = firstPendingSuggestion.memoryId || crypto.randomUUID();
+                        
+                        store.put({
+                            ...firstPendingSuggestion,
+                            memoryId,
+                            resolved: false,
+                            dismissed: true, // Specific flag to hide from sheet
+                            createdAt: firstPendingSuggestion.createdAt || Date.now()
+                        });
+                        
+                        await new Promise((resolve, reject) => {
+                            tx.oncomplete = () => resolve();
+                            tx.onerror = () => reject(tx.error);
+                        });
+                    } catch (err) {
+                        console.error('[BingoSuggestion] Error saving to IndexedDB:', err);
+                    }
+
+                    // 3. Update local state via hook
+                    dismissSuggestion(firstPendingSuggestion.memoryId);
+                }}
+            />
         </div>
     );
 }
