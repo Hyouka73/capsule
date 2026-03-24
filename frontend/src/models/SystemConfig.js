@@ -36,6 +36,12 @@ export default class SystemConfig {
             defaultCenter: { lat: 16.7521, lng: -93.1152 },
             defaultZoom: 12,
             style: 'romantic-vintage',
+            pinTiers: data.mapConfig?.pinTiers || [
+                { minVisits: 1, color: "#FFB6C1", scale: 1.0 },
+                { minVisits: 3, color: "#FF7F7F", scale: 1.3 },
+                { minVisits: 5, color: "#FF4444", scale: 1.5 },
+                { minVisits: 10, color: "#FFD700", scale: 1.8 }
+            ],
             ...data.mapConfig
         };
 

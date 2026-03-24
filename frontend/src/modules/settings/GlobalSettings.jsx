@@ -336,6 +336,95 @@ export default function GlobalSettings() {
                         <motion.div variants={itemVariants}>
                             <Card className={styles.sectionCard} glass>
                                 <div className={styles.sectionHeader}>
+                                    <span className={styles.sectionIcon}>📍</span>
+                                    <h3>Niveles de Pins del Mapa</h3>
+                                </div>
+                                <p className={styles.sectionDesc}>Configura el color y escala de los pins según las visitas.</p>
+                                
+                                <div className={styles.tiersTable}>
+                                    <div className={styles.tiersHeader}>
+                                        <span>Min. Visitas</span>
+                                        <span>Color</span>
+                                        <span>Escala</span>
+                                        <span></span>
+                                    </div>
+                                    <div className={styles.tiersList}>
+                                        {(config.mapConfig.pinTiers || []).map((tier, index) => (
+                                            <div key={index} className={styles.tierRow}>
+                                                <input 
+                                                    type="number" 
+                                                    className={styles.tierInput}
+                                                    value={tier.minVisits}
+                                                    onChange={(e) => {
+                                                        const newTiers = [...config.mapConfig.pinTiers];
+                                                        newTiers[index].minVisits = parseInt(e.target.value) || 0;
+                                                        handleUpdate('mapConfig.pinTiers', newTiers);
+                                                    }}
+                                                />
+                                                <div className={styles.colorPickerWrapper}>
+                                                    <input 
+                                                        type="color" 
+                                                        className={styles.colorPicker}
+                                                        value={tier.color}
+                                                        onChange={(e) => {
+                                                            const newTiers = [...config.mapConfig.pinTiers];
+                                                            newTiers[index].color = e.target.value;
+                                                            handleUpdate('mapConfig.pinTiers', newTiers);
+                                                        }}
+                                                    />
+                                                    <span className={styles.colorHex}>{tier.color}</span>
+                                                </div>
+                                                <div className={styles.scaleWrapper}>
+                                                    <input 
+                                                        type="range" 
+                                                        min="0.5" 
+                                                        max="2.5" 
+                                                        step="0.1"
+                                                        className={styles.tierSlider}
+                                                        value={tier.scale}
+                                                        onChange={(e) => {
+                                                            const newTiers = [...config.mapConfig.pinTiers];
+                                                            newTiers[index].scale = parseFloat(e.target.value) || 1.0;
+                                                            handleUpdate('mapConfig.pinTiers', newTiers);
+                                                        }}
+                                                    />
+                                                    <span className={styles.scaleValue}>{tier.scale}x</span>
+                                                </div>
+                                                <button 
+                                                    className={styles.tierRemoveBtn}
+                                                    onClick={() => {
+                                                        const newTiers = config.mapConfig.pinTiers.filter((_, i) => i !== index);
+                                                        handleUpdate('mapConfig.pinTiers', newTiers);
+                                                    }}
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    
+                                    {(!config.mapConfig.pinTiers || config.mapConfig.pinTiers.length < 10) && (
+                                        <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            className={styles.addTierBtn}
+                                            onClick={() => {
+                                                const newTiers = [...(config.mapConfig.pinTiers || [])];
+                                                const lastMin = newTiers.length > 0 ? newTiers[newTiers.length - 1].minVisits : 0;
+                                                newTiers.push({ minVisits: lastMin + 5, color: "#FFB6C1", scale: 1.0 });
+                                                handleUpdate('mapConfig.pinTiers', newTiers);
+                                            }}
+                                        >
+                                            + Añadir Nivel
+                                        </Button>
+                                    )}
+                                </div>
+                            </Card>
+                        </motion.div>
+
+                        <motion.div variants={itemVariants}>
+                            <Card className={styles.sectionCard} glass>
+                                <div className={styles.sectionHeader}>
                                     <span className={styles.sectionIcon}>🔔</span>
                                     <h3>Notificaciones Push</h3>
                                 </div>
