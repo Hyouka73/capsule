@@ -70,6 +70,7 @@ export function usePendingCitas() {
             status: 'pending',
             context,
             isFromBingo: context?.type === 'bingo',
+            bingoOrigin: context?.type === 'bingo' ? { categoryId: context.categoryId } : null,
             tags: context?.tags || [],
             description: context?.description || ''
         };

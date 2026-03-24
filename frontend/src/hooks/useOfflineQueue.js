@@ -4,6 +4,7 @@ import { createMemory, createSnapshot, findOrCreatePlace } from '../apiClient';
 import { STORAGE_PATHS } from '../config/constants';
 import Memory from '../models/Memory';
 import { toast } from '../components/ui/PastelToast/PastelToast';
+import { useBingo } from './useBingo';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // IndexedDB helpers
@@ -150,6 +151,7 @@ async function syncCitaStatus(citaId, status) {
  * Offline-capable photo upload queue using IndexedDB.
  */
 export function useOfflineQueue() {
+    const { completeBingoSquare } = useBingo();
     const [pendingCount, setPendingCount] = useState(0);
     const [failedCount, setFailedCount] = useState(0);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -162,8 +164,8 @@ export function useOfflineQueue() {
             const failed = await getAllFailed();
             setPendingCount(pending.length);
             setFailedCount(failed.length);
-        } catch {
-            // IndexedDB not available (e.g. private browsing)
+        } catch (err) {
+            console.error('[offlineQueue] Error refreshing count:', err);
         }
     }, []);
 
@@ -254,7 +256,14 @@ export function useOfflineQueue() {
                             placeName: memoryModel.placeName,
                         });
 
-                        if (res?.bingoSuggestions?.length > 0) {
+                        // ── BINGO INTEGRATION ──────────
+                        if (item.bingoOrigin?.categoryId) {
+                            // If this memory was EXPLICITLY started from a bingo square,
+                            // complete it automatically and IGNORE general suggestions.
+                            console.log('[offlineQueue] Auto-completing bingo square:', item.bingoOrigin.categoryId);
+                            await completeBingoSquare(item.bingoOrigin.categoryId, item.id);
+                        } else if (res?.bingoSuggestions?.length > 0) {
+                            // Only save suggestions if it WASN'T an explicit bingo date
                             try {
                                 const db = await openDB();
                                 const tx = db.transaction('pending_bingo', 'readwrite');
@@ -264,6 +273,8 @@ export function useOfflineQueue() {
                                     createdAt: Date.now(),
                                     resolved: false
                                 });
+                                // Trigger update to UI
+                                window.dispatchEvent(new Event('pending_bingo_updated'));
                             } catch (e) {
                                 console.error('[offlineQueue] Error saving pending_bingo', e);
                             }
@@ -315,7 +326,7 @@ export function useOfflineQueue() {
             setIsProcessing(false);
             refreshCount();
         }
-    }, [refreshCount]);
+    }, [refreshCount, completeBingoSquare]);
 
     // Intelligent Sync Triggers
     useEffect(() => {
@@ -415,9 +426,10 @@ export function useOfflineQueue() {
      * @param {object} formData - Memory form fields (title, eventDate, tags, etc.)
      * @param {File[]} photoFiles - Array of raw photo files
      * @param {string} originalCitaId - Optional ID of the pending cita this came from
+     * @param {object} bingoOrigin - Optional { categoryId } metadata
      * @returns {Promise<{queued: boolean}>}
      */
-    const queueMemory = useCallback(async (formData, photoFiles, originalCitaId = null) => {
+    const queueMemory = useCallback(async (formData, photoFiles, originalCitaId = null, bingoOrigin = null) => {
         const compressedPhotos = await Promise.all(
             photoFiles.map(async (file) => {
                 const blob = await compressImage(file, 1200, 0.8);
@@ -431,6 +443,7 @@ export function useOfflineQueue() {
             data: formData,
             photos: compressedPhotos,
             originalCitaId,
+            bingoOrigin,
             status: 'pending',
             retryCount: 0,
             createdAt: Date.now(),
