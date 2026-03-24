@@ -2,7 +2,7 @@ import React from 'react';
 import Input from '../../../components/ui/Input/Input';
 import Button from '../../../components/ui/Button/Button';
 import PlacePickerBottomSheet from '../../../components/PendingDates/PlacePickerBottomSheet';
-import { MEMORY_TAGS_OPTIONS } from '../../../config/constants';
+import { useAppConfig } from '../../../context/AppConfigContext';
 import styles from '../MemoryForm.module.css';
 
 export default function MemoryDetailsForm({
@@ -21,8 +21,10 @@ export default function MemoryDetailsForm({
     places,
     onSelectPlace,
     onLocationSelected,
+    availableTags,
     error
 }) {
+    const { memoryTags } = useAppConfig();
     return (
         <form onSubmit={onSave} className={styles.form}>
             <div className={styles.row}>
@@ -80,16 +82,26 @@ export default function MemoryDetailsForm({
 
             <div className={styles.sectionLabel}>🏷️ Tags</div>
             <div className={styles.tags}>
-                {MEMORY_TAGS_OPTIONS.map(({ value, label }) => (
-                    <button
-                        key={value}
-                        type="button"
-                        className={`${styles.tagBtn} ${form.tags.includes(value) ? styles.tagActive : ''}`}
-                        onClick={() => toggleTag(value)}
-                    >
-                        {label}
-                    </button>
-                ))}
+                {(() => {
+                    // Combine global config tags with dynamic Bingo tags
+                    const allTags = [...(memoryTags || [])];
+                    (availableTags || []).forEach(tag => {
+                        if (!allTags.find(t => t.value === tag.value)) {
+                            allTags.push(tag);
+                        }
+                    });
+
+                    return allTags.map(({ value, label }) => (
+                        <button
+                            key={value}
+                            type="button"
+                            className={`${styles.tagBtn} ${form.tags.includes(value) ? styles.tagActive : ''}`}
+                            onClick={() => toggleTag(value)}
+                        >
+                            {label}
+                        </button>
+                    ));
+                })()}
             </div>
 
             {error && <p className={styles.error}>{error}</p>}

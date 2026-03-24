@@ -9,6 +9,7 @@ import { reverseGeocode } from '../../services/mapService';
 import { PLACE_CATEGORIES } from '../../config/constants';
 import { extractMetadataFromFile } from '../../utils/extractGpsFromFile';
 import { usePlaces } from '../map/hooks/usePlaces';
+import { useBingo } from '../../hooks/useBingo';
 
 import styles from './MemoryForm.module.css';
 
@@ -70,6 +71,7 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
     const [bingoSuggestions, setBingoSuggestions] = useState([]);
     const [showBingoSheet, setShowBingoSheet] = useState(false);
     const { places } = usePlaces();
+    const { availableTags } = useBingo();
 
     // drafts on mount
     useEffect(() => {
@@ -280,6 +282,7 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
                     isEditing={isEditing}
                     isPartner={isPartner}
                     onSave={handleSaveDetails}
+                    availableTags={availableTags}
                     isGeocoding={isGeocoding}
                     selectedPlaceId={selectedPlaceId}
                     setIsPlacePickerOpen={setIsPlacePickerOpen}
@@ -387,6 +390,7 @@ export default function MemoryForm({ initialData = null, onSuccess, onCancel, ro
                             tx.oncomplete = () => resolve();
                             tx.onerror = () => reject(tx.error);
                         });
+                        window.dispatchEvent(new Event('pending_bingo_updated'));
                     } catch (err) {
                         console.error('[MemoryForm] Error saving suggestions to IndexedDB:', err);
                     }

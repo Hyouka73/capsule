@@ -4,11 +4,13 @@ import KawaiiInput from '../ui/KawaiiInput/KawaiiInput';
 import PlacePickerBottomSheet from './PlacePickerBottomSheet';
 import { reverseGeocode } from '../../services/mapService';
 import Carousel from '../ui/Carousel/Carousel';
+import { useBingo } from '../../hooks/useBingo';
+import { useAppConfig } from '../../context/AppConfigContext';
 import styles from './PendingDateForm.module.css';
 
-const MOCK_ALL_TAGS = ['cine', 'comida', 'romántico', 'aventura', 'relajación', 'fiesta', 'misterioso', 'pila'];
-
 export default function PendingDateForm({ pendingDate, onClose, onSave, onAutoSave, defaultPlaces }) {
+    const { availableTags } = useBingo();
+    const { memoryTags } = useAppConfig();
     // Determine initial location from metadata if available
     const [selectedPlaceId, setSelectedPlaceId] = useState(() => 
         pendingDate?.coordinates ? 'custom_map' : ''
@@ -213,15 +215,25 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, onAutoSa
                     <div className={styles.formGroup}>
                         <label className={styles.label}>Etiquetas</label>
                         <div className={styles.tagsContainer}>
-                            {MOCK_ALL_TAGS.map(tag => (
-                                <button
-                                    key={tag}
-                                    className={`${styles.tagBtn} ${selectedTags.includes(tag) ? styles.tagBtnActive : ''}`}
-                                    onClick={() => toggleTag(tag)}
-                                >
-                                    {tag}
-                                </button>
-                            ))}
+                            {(() => {
+                                // Merge global config tags with dynamic Bingo tags
+                                const allTags = [...(memoryTags || [])];
+                                (availableTags || []).forEach(tag => {
+                                    if (!allTags.find(t => t.value === tag.value)) {
+                                        allTags.push(tag);
+                                    }
+                                });
+
+                                return allTags.map(({ value, label }) => (
+                                    <button
+                                        key={value}
+                                        className={`${styles.tagBtn} ${selectedTags.includes(value) ? styles.tagBtnActive : ''}`}
+                                        onClick={() => toggleTag(value)}
+                                    >
+                                        {label}
+                                    </button>
+                                ));
+                            })()}
                         </div>
                     </div>
 
