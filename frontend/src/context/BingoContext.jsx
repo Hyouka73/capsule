@@ -206,7 +206,7 @@ export function BingoProvider({ children }) {
             const { queued, id: actionId } = await queueAction('bingo_completion', payload);
 
             if (navigator.onLine) {
-                toast.success('¡Bingo! 🎉', `Casilla "${existing.label}" marcada`);
+                toast.success('¡Bingo! 🎉', `Casilla "${existing.title || existing.label || 'Casilla'}" marcada`);
             } else {
                 toast.info('Guardado offline 📱', 'Se sincronizará cuando tengas conexión');
             }
@@ -253,10 +253,25 @@ export function BingoProvider({ children }) {
         }
     }, []);
 
+    const availableTags = categories.reduce((acc, cat) => {
+        const catTags = (cat.suggestedTags || []).map(t => {
+            if (typeof t === 'string') return { value: t, label: t.charAt(0).toUpperCase() + t.slice(1) };
+            return t; // It's already an object {value, label}
+        });
+        
+        catTags.forEach(tag => {
+            if (!acc.find(item => item.value === tag.value)) {
+                acc.push(tag);
+            }
+        });
+        return acc;
+    }, []);
+
     const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
     const value = {
         categories,
+        availableTags,
         completedCount,
         totalCount,
         progressPercent,

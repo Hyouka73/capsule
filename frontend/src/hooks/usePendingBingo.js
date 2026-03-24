@@ -32,8 +32,16 @@ export function usePendingBingo() {
         const handleVisibility = () => {
              if (document.visibilityState === 'visible') fetchPending();
         };
+        // Listen to local changes
+        const handleLocalChange = () => fetchPending();
+        
         document.addEventListener('visibilitychange', handleVisibility);
-        return () => document.removeEventListener('visibilitychange', handleVisibility);
+        window.addEventListener('pending_bingo_updated', handleLocalChange);
+        
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibility);
+            window.removeEventListener('pending_bingo_updated', handleLocalChange);
+        };
     }, [fetchPending]);
 
     const resolvePendingSuggestion = useCallback(async (memoryId) => {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import KawaiiInput from '../../../components/ui/KawaiiInput/KawaiiInput';
-import { MEMORY_TAGS_OPTIONS } from '../../../config/constants';
+import { useAppConfig } from '../../../context/AppConfigContext';
 import styles from '../BingoManager.module.css';
 
 export default function BingoEditPanel({ 
@@ -13,6 +13,7 @@ export default function BingoEditPanel({
     onUncheck,
     onForceComplete
 }) {
+    const { memoryTags } = useAppConfig();
     if (!editingSquare) return null;
 
     // formData.suggestedTags is an ARRAY of OBJECTS: { value, label }
@@ -83,7 +84,7 @@ export default function BingoEditPanel({
                             Las fotos con estos "tags" marcarán esta casilla automáticamente.
                         </p>
                         <div className={styles.tagsGrid}>
-                            {MEMORY_TAGS_OPTIONS.map(opt => {
+                            {(memoryTags || []).map(opt => {
                                 const isActive = currentTags.some(t => t.value === opt.value);
                                 return (
                                     <button

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useBingo } from '../../hooks/useBingo';
-import { MEMORY_TAGS } from '../../config/constants';
+import { useAppConfig } from '../../context/AppConfigContext';
 import styles from './BingoManager.module.css';
 
 // Sub-components
@@ -12,6 +12,7 @@ export default function BingoManager() {
         isLoading, 
         updateBingoBoard 
     } = useBingo();
+    const { memoryTags } = useAppConfig();
 
     const [editingSquare, setEditingSquare] = useState(null);
     const [formData, setFormData] = useState({ 
@@ -25,11 +26,11 @@ export default function BingoManager() {
     const handleEdit = (square) => {
         setEditingSquare(square);
         
-        // Sanitize tags: convert strings to objects using MEMORY_TAGS
+        // Sanitize tags: convert strings to objects using config tags
         const rawTags = square.suggestedTags || [];
         const sanitizedTags = rawTags.map(tag => {
             if (typeof tag === 'string') {
-                const tagInfo = Object.values(MEMORY_TAGS).find(t => t.value === tag);
+                const tagInfo = (memoryTags || []).find(t => t.value === tag);
                 return tagInfo ? { value: tagInfo.value, label: tagInfo.label } : { value: tag, label: tag };
             }
             return tag;

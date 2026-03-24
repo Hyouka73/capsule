@@ -9,6 +9,7 @@ export default function BingoStartModal({ bingoItem, onClose, onStartCita, defau
         if (onStartCita) {
             onStartCita({
                 type: 'bingo',
+                categoryId: bingoItem.id,
                 bingoLabel: `${bingoItem.emoji} ${bingoItem.title}`,
                 minPhotos: minPhotosVal,
                 description: bingoItem.description,

@@ -122,7 +122,10 @@ export const createMemory = onCall({ region: 'us-central1', cors: true }, async 
                         
                         // Match por tags
                         const hasTagMatch = (cat.suggestedTags || [])
-                            .some(t => (memoryData.tags || []).includes(t));
+                            .some(t => {
+                                const catTag = typeof t === 'string' ? t : t.value;
+                                return (memoryData.tags || []).includes(catTag);
+                            });
                         
                         // Match especial para películas
                         const isMovieMatch = cat.id === 'movies' 

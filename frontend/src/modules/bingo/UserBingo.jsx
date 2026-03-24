@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import BingoStartModal from '../../components/Bingo/BingoStartModal';
-import CelebrationOverlay from '../../components/Bingo/CelebrationOverlay';
 import PhotoViewer from '../../components/ui/PhotoViewer/PhotoViewer';
 import { subscribeToGlobalSettings } from '../../services/settingsService';
 import { useBingo } from '../../hooks/useBingo';
@@ -26,7 +25,7 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
         return unsub;
     }, []);
 
-    const { categories, completedCount, progressPercent, isLoading, completeBingoSquare, celebrationEvent, clearCelebrationEvent } = useBingo();
+    const { categories, completedCount, progressPercent, isLoading, completeBingoSquare } = useBingo();
     const { pendingSuggestions, resolvePendingSuggestion } = usePendingBingo();
     const lastCountRef = useRef(completedCount);
 
@@ -102,14 +101,6 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
                 photos={viewerPhotos}
                 onClose={() => setViewerPhotos(null)}
             />
-            {celebrationEvent && (
-                <CelebrationOverlay 
-                    tierLabel={celebrationEvent.tierLabel}
-                    reward={celebrationEvent.reward}
-                    coins={celebrationEvent.coins}
-                    onComplete={clearCelebrationEvent}
-                />
-            )}
         </div>
     );
 }
