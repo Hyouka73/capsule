@@ -13,6 +13,7 @@ import seedAuth from './01_auth.js';
 import seedMemories from './02_memories.js';
 import seedBingo from './03_bingo.js';
 import seedCapsules from './04_capsules.js';
+import seedPinTiers from './05_pinTiers.js';
 
 async function runSeeds() {
     console.log('🚀 Iniciando proceso de Seed Global para la APP...');
@@ -22,6 +23,7 @@ async function runSeeds() {
         await seedMemories(admin, db);
         await seedBingo(admin, db);
         await seedCapsules(admin, db);
+        await seedPinTiers(admin, db);
         
         console.log('🎉 Seed global ejecutado exitosamente. Todo listo para QA.');
         process.exit(0);

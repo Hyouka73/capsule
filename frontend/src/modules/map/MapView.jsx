@@ -221,12 +221,28 @@ export default function MapView({
                         const isSelected = selectedPlace?.id === place.id;
                         const zoom = viewport?.zoom || 13;
 
+                        // Calculate dynamic style based on tiers
+                        const getPinStyle = (visitCount, tiers) => {
+                            const fallback = { color: "#FFB6C1", scale: 1.0 };
+                            if (!tiers || tiers.length === 0) return fallback;
+                            
+                            // Find the highest tier that matches the visitCount
+                            const sortedTiers = [...tiers].sort((a, b) => b.minVisits - a.minVisits);
+                            const match = sortedTiers.find(t => visitCount >= t.minVisits);
+                            return match || fallback;
+                        };
+
+                        const tierStyle = getPinStyle(place.visitCount || 0, globalSettings?.mapConfig?.pinTiers);
+
                         let size = 'small';
                         if (place.visitCount >= 5) size = 'large';
                         else if (place.visitCount >= 2) size = 'medium';
                         if (zoom < 10) size = 'micro';
 
-                        const scale = zoom >= 14 ? 1 : zoom >= 12 ? 0.7 : zoom >= 10 ? 0.45 : 0.25;
+                        // Base scale from zoom + additional scale from tier
+                        const zoomScale = zoom >= 14 ? 1 : zoom >= 12 ? 0.7 : zoom >= 10 ? 0.45 : 0.25;
+                        const finalScale = zoomScale * (tierStyle.scale || 1.0);
+                        
                         const hideIcon = zoom < 12;
                         const hidePulse = zoom < 13;
 
@@ -244,9 +260,10 @@ export default function MapView({
                                         justifyContent: 'center',
                                         position: 'relative'
                                     }}>
-                                        <div style={{ transform: `scale(${scale})`, transformOrigin: 'bottom center', display: 'flex' }}>
+                                        <div style={{ transform: `scale(${finalScale})`, transformOrigin: 'bottom center', display: 'flex' }}>
                                             <MapPin
                                                 size={size}
+                                                color={tierStyle.color}
                                                 selected={isSelected}
                                                 hideIcon={hideIcon}
                                                 hidePulse={hidePulse}

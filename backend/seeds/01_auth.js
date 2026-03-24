@@ -70,7 +70,9 @@ export default async function seedAuth(admin, db) {
         email: adminEmail,
         displayName: 'Admin Test',
         teaserCompleted: true,
-        welcomeSeen: true
+        welcomeSeen: true,
+        gameCoins: 0,
+        coinTransactions: []
     }, { merge: true });
 
     await db.collection('users').doc(partnerUid).set({
@@ -78,7 +80,9 @@ export default async function seedAuth(admin, db) {
         email: partnerEmail,
         displayName: 'Partner Test',
         teaserCompleted: false, // Para probar redirecciones (Bloque A)
-        welcomeSeen: false      // Para probar redirecciones (Bloque B)
+        welcomeSeen: false,      // Para probar redirecciones (Bloque B)
+        gameCoins: 0,
+        coinTransactions: []
     }, { merge: true });
     
     console.log(`✅ Usuarios (y claims) creados: Admin(${adminEmail}) y Partner(${partnerEmail}).`);

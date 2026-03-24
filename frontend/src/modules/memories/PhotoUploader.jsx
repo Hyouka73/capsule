@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useAuth } from '../../hooks/useAuth';
 import { compressImage } from '../../services/storage';
 import { autoDetectMetadata } from '../../utils/extractGpsFromFile';
 import Button from '../../components/ui/Button/Button';
@@ -11,6 +12,7 @@ export default function PhotoUploader({
     onMetadataDetected, 
     onPhotosChange
 }) {
+    const { isPartner } = useAuth();
     const [uploads, setUploads] = useState([]);
     const [isProcessing, setIsProcessing] = useState(false);
 
