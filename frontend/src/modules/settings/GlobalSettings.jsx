@@ -65,6 +65,8 @@ export default function GlobalSettings() {
                 mapConfig: { ...prev.mapConfig },
                 notifications: { ...prev.notifications },
                 snapshotConfig: { ...prev.snapshotConfig },
+                partner: { ...prev.partner },
+                memoryTags: [...prev.memoryTags],
                 teaser: { ...prev.teaser },
                 inviteConfig: { ...prev.inviteConfig },
                 citaConfig: { ...prev.citaConfig },
@@ -140,6 +142,18 @@ export default function GlobalSettings() {
 
     // Removed full-screen LoadingScreen return to support skeleton states
 
+    const [activeTab, setActiveTab] = useState('modules'); // 'modules', 'services', 'custom', 'multimedia', 'security'
+
+    const TABS = [
+        { id: 'modules', label: '🧩 Módulos' },
+        { id: 'services', label: '🗺️ Servicios' },
+        { id: 'custom', label: '🏷️ Personalización' },
+        { id: 'multimedia', label: '🎬 Multimedia' },
+        { id: 'security', label: '🔒 Seguridad' },
+    ];
+
+    if (isLoading) return <LoadingScreen message="Cargando configuración..." />;
+
     return (
         <motion.div 
             className={styles.root}
@@ -152,370 +166,420 @@ export default function GlobalSettings() {
                 <p className={styles.subtitle}>Configuración técnica del núcleo de la aplicación.</p>
             </motion.header>
 
-            <div className={styles.grid}>
-                {/* Modules Toggle */}
-                <motion.div variants={itemVariants}>
-                    <Card className={styles.sectionCard} glass>
-                        <div className={styles.sectionHeader}>
-                            <span className={styles.sectionIcon}>🧩</span>
-                            <h3>Módulos del Sistema</h3>
-                        </div>
-                        <p className={styles.sectionDesc}>Habilita o deshabilita secciones principales.</p>
+            {/* ── Tabs Navigation ── */}
+            <div className={styles.tabsNav}>
+                {TABS.map(tab => (
+                    <button
+                        key={tab.id}
+                        className={`${styles.tabBtn} ${activeTab === tab.id ? styles.tabActive : ''}`}
+                        onClick={() => setActiveTab(tab.id)}
+                    >
+                        <span className={styles.tabLabel}>{tab.label}</span>
+                        {activeTab === tab.id && (
+                            <motion.div 
+                                layoutId="activeTabUnderline" 
+                                className={styles.tabUnderline} 
+                                transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                            />
+                        )}
+                    </button>
+                ))}
+            </div>
 
-                        <div className={styles.togglesList}>
-                            <ToggleRow
-                                label="Mapa"
-                                desc="Visualización geográfica de vuestras citas."
-                                checked={config.features.memoryMap}
-                                onChange={() => handleUpdate('features.memoryMap', !config.features.memoryMap)}
-                            />
-                            <ToggleRow
-                                label="Galería"
-                                desc="Acceso directo a todo el contenido multimedia."
-                                checked={config.features.photoGallery}
-                                onChange={() => handleUpdate('features.photoGallery', !config.features.photoGallery)}
-                            />
-                            <ToggleRow
-                                label="Cápsulas"
-                                desc="Línea temporal de momentos programados."
-                                checked={config.features.timeCapsules}
-                                onChange={() => handleUpdate('features.timeCapsules', !config.features.timeCapsules)}
-                            />
-                            <ToggleRow
-                                label="Cupones"
-                                desc="Favores canjeables y regalos digitales."
-                                checked={config.features.coupons}
-                                onChange={() => handleUpdate('features.coupons', !config.features.coupons)}
-                            />
-                            <ToggleRow
-                                label="Bingo"
-                                desc="Juego interactivo de misiones en pareja."
-                                checked={config.features.bingoBoard}
-                                onChange={() => handleUpdate('features.bingoBoard', !config.features.bingoBoard)}
-                            />
-                        </div>
-
-                        <div className={styles.divider}></div>
-                        
-                        <div className={styles.togglesList}>
-                            <ToggleRow
-                                label="Ejercicio"
-                                desc="Seguimiento de actividad y rachas físicas."
-                                checked={config.features.exercise}
-                                onChange={() => handleUpdate('features.exercise', !config.features.exercise)}
-                            />
-                            <ToggleRow
-                                label="Películas"
-                                desc="Lista de películas para ver y comentar."
-                                checked={config.features.movieTracking}
-                                onChange={() => handleUpdate('features.movieTracking', !config.features.movieTracking)}
-                            />
-                            <ToggleRow
-                                label="Juegos"
-                                desc="Minijuegos y dinámicas interactivas."
-                                checked={config.features.games}
-                                onChange={() => handleUpdate('features.games', !config.features.games)}
-                            />
-                            <ToggleRow
-                                label="Huevos de Pascua"
-                                desc="Animaciones y sorpresas ocultas en la UI."
-                                checked={config.features.easterEggs}
-                                onChange={() => handleUpdate('features.easterEggs', !config.features.easterEggs)}
-                            />
-                            <ToggleRow
-                                label="Onboarding"
-                                desc="Guía interactiva para nuevos usuarios."
-                                checked={config.features.onboarding}
-                                onChange={() => handleUpdate('features.onboarding', !config.features.onboarding)}
-                            />
-                        </div>
-                    </Card>
-                </motion.div>
-
-                {/* Map & Visual Settings */}
-                <motion.div variants={itemVariants}>
-                    <Card className={styles.sectionCard} glass>
-                        <div className={styles.sectionHeader}>
-                            <span className={styles.sectionIcon}>🗺️</span>
-                            <h3>Configuración del Mapa</h3>
-                        </div>
-                        
-                        <div className={styles.formGroup}>
-                            <label>Centro por Defecto</label>
-                            <div className={styles.citaInputs}>
-                                <div className={styles.inputField}>
-                                    <KawaiiInput
-                                        type="number"
-                                        label="Latitud"
-                                        value={config.mapConfig.defaultCenter.lat}
-                                        onChange={e => handleUpdate('mapConfig.defaultCenter.lat', parseFloat(e.target.value) || 0)}
-                                    />
-                                </div>
-                                <div className={styles.inputField}>
-                                    <KawaiiInput
-                                        type="number"
-                                        label="Longitud"
-                                        value={config.mapConfig.defaultCenter.lng}
-                                        onChange={e => handleUpdate('mapConfig.defaultCenter.lng', parseFloat(e.target.value) || 0)}
-                                    />
-                                </div>
+            <motion.div
+                className={styles.grid}
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                key={activeTab} // Unique key to trigger animation on tab change
+            >
+                {/* ── Tab: Modules ── */}
+                {activeTab === 'modules' && (
+                    <motion.div variants={itemVariants} className={styles.fullWidth}>
+                        <Card className={styles.sectionCard} glass>
+                            <div className={styles.sectionHeader}>
+                                <span className={styles.sectionIcon}>🧩</span>
+                                <h3>Módulos del Sistema</h3>
                             </div>
-                        </div>
+                            <p className={styles.sectionDesc}>Habilita o deshabilita secciones principales.</p>
 
-                        <div className={styles.formGroup} style={{ marginTop: '1rem' }}>
-                            <div className={styles.citaInputs}>
-                                <div className={styles.inputField}>
-                                    <KawaiiInput
-                                        type="number"
-                                        label="Zoom Inicial"
-                                        value={config.mapConfig.defaultZoom}
-                                        onChange={e => handleUpdate('mapConfig.defaultZoom', parseInt(e.target.value) || 12)}
+                            <div className={styles.togglesList}>
+                                <ToggleRow
+                                    label="Mapa"
+                                    desc="Visualización geográfica de vuestras citas."
+                                    checked={config.features.memoryMap}
+                                    onChange={() => handleUpdate('features.memoryMap', !config.features.memoryMap)}
+                                />
+                                <ToggleRow
+                                    label="Galería"
+                                    desc="Acceso directo a todo el contenido multimedia."
+                                    checked={config.features.photoGallery}
+                                    onChange={() => handleUpdate('features.photoGallery', !config.features.photoGallery)}
+                                />
+                                <ToggleRow
+                                    label="Cápsulas"
+                                    desc="Línea temporal de momentos programados."
+                                    checked={config.features.timeCapsules}
+                                    onChange={() => handleUpdate('features.timeCapsules', !config.features.timeCapsules)}
+                                />
+                                <ToggleRow
+                                    label="Cupones"
+                                    desc="Favores canjeables y regalos digitales."
+                                    checked={config.features.coupons}
+                                    onChange={() => handleUpdate('features.coupons', !config.features.coupons)}
+                                />
+                                <ToggleRow
+                                    label="Bingo"
+                                    desc="Juego interactivo de misiones en pareja."
+                                    checked={config.features.bingoBoard}
+                                    onChange={() => handleUpdate('features.bingoBoard', !config.features.bingoBoard)}
+                                />
+                            </div>
+
+                            <div className={styles.divider}></div>
+                            
+                            <div className={styles.togglesList}>
+                                <ToggleRow
+                                    label="Ejercicio"
+                                    desc="Seguimiento de actividad y rachas físicas."
+                                    checked={config.features.exercise}
+                                    onChange={() => handleUpdate('features.exercise', !config.features.exercise)}
+                                />
+                                <ToggleRow
+                                    label="Películas"
+                                    desc="Lista de películas para ver y comentar."
+                                    checked={config.features.movieTracking}
+                                    onChange={() => handleUpdate('features.movieTracking', !config.features.movieTracking)}
+                                />
+                                <ToggleRow
+                                    label="Juegos"
+                                    desc="Minijuegos y dinámicas interactivas."
+                                    checked={config.features.games}
+                                    onChange={() => handleUpdate('features.games', !config.features.games)}
+                                />
+                                <ToggleRow
+                                    label="Huevos de Pascua"
+                                    desc="Animaciones y sorpresas ocultas en la UI."
+                                    checked={config.features.easterEggs}
+                                    onChange={() => handleUpdate('features.easterEggs', !config.features.easterEggs)}
+                                />
+                                <ToggleRow
+                                    label="Onboarding"
+                                    desc="Guía interactiva para nuevos usuarios."
+                                    checked={config.features.onboarding}
+                                    onChange={() => handleUpdate('features.onboarding', !config.features.onboarding)}
+                                />
+                            </div>
+                        </Card>
+                    </motion.div>
+                )}
+
+                {/* ── Tab: Services ── */}
+                {activeTab === 'services' && (
+                    <>
+                        <motion.div variants={itemVariants}>
+                            <Card className={styles.sectionCard} glass>
+                                <div className={styles.sectionHeader}>
+                                    <span className={styles.sectionIcon}>🗺️</span>
+                                    <h3>Configuración del Mapa</h3>
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label>Centro por Defecto</label>
+                                    <div className={styles.citaInputs}>
+                                        <div className={styles.inputField}>
+                                            <KawaiiInput
+                                                type="number"
+                                                label="Latitud"
+                                                value={config.mapConfig.defaultCenter.lat}
+                                                onChange={e => handleUpdate('mapConfig.defaultCenter.lat', parseFloat(e.target.value) || 0)}
+                                            />
+                                        </div>
+                                        <div className={styles.inputField}>
+                                            <KawaiiInput
+                                                type="number"
+                                                label="Longitud"
+                                                value={config.mapConfig.defaultCenter.lng}
+                                                onChange={e => handleUpdate('mapConfig.defaultCenter.lng', parseFloat(e.target.value) || 0)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className={styles.formGroup} style={{ marginTop: '1rem' }}>
+                                    <div className={styles.citaInputs}>
+                                        <div className={styles.inputField}>
+                                            <KawaiiInput
+                                                type="number"
+                                                label="Zoom Inicial"
+                                                value={config.mapConfig.defaultZoom}
+                                                onChange={e => handleUpdate('mapConfig.defaultZoom', parseInt(e.target.value) || 12)}
+                                            />
+                                        </div>
+                                        <div className={styles.inputField}>
+                                            <KawaiiInput
+                                                type="select"
+                                                label="Estilo Visual"
+                                                value={config.mapConfig.style}
+                                                onChange={e => handleUpdate('mapConfig.style', e.target.value)}
+                                                options={[
+                                                    { id: 'romantic-vintage', name: '🌹 Romantic Vintage' },
+                                                    { id: 'pastel-dream', name: '☁️ Pastel Dream' },
+                                                    { id: 'dark-luxury', name: '🎬 Dark Luxury' },
+                                                    { id: 'standard', name: '🗺️ Standard Map' }
+                                                ]}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </Card>
+                        </motion.div>
+
+                        <motion.div variants={itemVariants}>
+                            <Card className={styles.sectionCard} glass>
+                                <div className={styles.sectionHeader}>
+                                    <span className={styles.sectionIcon}>🔔</span>
+                                    <h3>Notificaciones Push</h3>
+                                </div>
+                                <div className={styles.togglesList}>
+                                    <ToggleRow
+                                        label="FCM para la Pareja"
+                                        desc="Enviar avisos de nuevas fotos o mensajes al partner."
+                                        checked={config.notifications.partnerFcmEnabled}
+                                        onChange={() => handleUpdate('notifications.partnerFcmEnabled', !config.notifications.partnerFcmEnabled)}
+                                    />
+                                    <ToggleRow
+                                        label="Log de Actividad Admin"
+                                        desc="Notificar al administrador sobre cambios en el sistema."
+                                        checked={config.notifications.adminActivityLogEnabled}
+                                        onChange={() => handleUpdate('notifications.adminActivityLogEnabled', !config.notifications.adminActivityLogEnabled)}
                                     />
                                 </div>
-                                <div className={styles.inputField}>
+                            </Card>
+                        </motion.div>
+                    </>
+                )}
+
+                {/* ── Tab: Customization ── */}
+                {activeTab === 'custom' && (
+                    <>
+                        <motion.div variants={itemVariants}>
+                            <Card className={styles.sectionCard} glass>
+                                <div className={styles.sectionHeader}>
+                                    <span className={styles.sectionIcon}>📅</span>
+                                    <h3>Fechas Críticas</h3>
+                                </div>
+                                <p className={styles.sectionDesc}>Eventos detonantes del sistema.</p>
+                                <div className={styles.formGroup}>
+                                    <KawaiiInput
+                                        type="datetime-local"
+                                        label="🚀 Fecha y hora de lanzamiento"
+                                        value={config.teaser?.unlockAt ? config.teaser.unlockAt.substring(0, 16) : ''}
+                                        onChange={e => handleUpdate('teaser.unlockAt', e.target.value)}
+                                        helpText="Fecha en que ella podrá entrar a la app por primera vez."
+                                    />
+                                </div>
+                                <div className={styles.togglesList} style={{ marginTop: '1rem' }}>
+                                    <ToggleRow
+                                        label="Habilitar Teaser"
+                                        desc="Mostrar la cuenta regresiva antes del lanzamiento."
+                                        checked={config.teaser?.isEnabled ?? true}
+                                        onChange={() => handleUpdate('teaser.isEnabled', !(config.teaser?.isEnabled ?? true))}
+                                    />
+                                </div>
+                            </Card>
+                        </motion.div>
+
+                        <motion.div variants={itemVariants}>
+                            <Card className={styles.sectionCard} glass>
+                                <div className={styles.sectionHeader}>
+                                    <span className={styles.sectionIcon}>🏷️</span>
+                                    <h3>Gestión de Tags</h3>
+                                </div>
+                                <p className={styles.sectionDesc}>Personaliza las etiquetas para vuestros recuerdos.</p>
+                                <div className={styles.tagsContainer}>
+                                    <div className={styles.tagsList}>
+                                        {config.memoryTags.map((tag, index) => (
+                                            <div key={index} className={styles.tagEditRow}>
+                                                <input 
+                                                    type="text" 
+                                                    className={styles.tagInputEmoji}
+                                                    value={tag.label.split(' ').pop()} 
+                                                    onChange={(e) => {
+                                                        const newTags = [...config.memoryTags];
+                                                        const text = tag.label.split(' ').slice(0, -1).join(' ');
+                                                        newTags[index].label = `${text} ${e.target.value}`;
+                                                        handleUpdate('memoryTags', newTags);
+                                                    }}
+                                                />
+                                                <input 
+                                                    type="text" 
+                                                    className={styles.tagInputLabel}
+                                                    value={tag.label.split(' ').slice(0, -1).join(' ')} 
+                                                    onChange={(e) => {
+                                                        const newTags = [...config.memoryTags];
+                                                        const emoji = tag.label.split(' ').pop();
+                                                        newTags[index].label = `${e.target.value} ${emoji}`;
+                                                        newTags[index].value = e.target.value.toLowerCase().replace(/\s+/g, '_');
+                                                        handleUpdate('memoryTags', newTags);
+                                                    }}
+                                                />
+                                                <button 
+                                                    className={styles.tagRemoveBtn}
+                                                    onClick={() => {
+                                                        const newTags = config.memoryTags.filter((_, i) => i !== index);
+                                                        handleUpdate('memoryTags', newTags);
+                                                    }}
+                                                >✕</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className={styles.addTagBtn}
+                                        onClick={() => handleUpdate('memoryTags', [...config.memoryTags, { value: 'nuevo', label: 'Nuevo ✨' }])}
+                                    >
+                                        + Añadir Etiqueta
+                                    </Button>
+                                </div>
+                            </Card>
+                        </motion.div>
+                    </>
+                )}
+
+                {/* ── Tab: Multimedia ── */}
+                {activeTab === 'multimedia' && (
+                    <>
+                        <motion.div variants={itemVariants}>
+                            <Card className={styles.sectionCard} glass>
+                                <div className={styles.sectionHeader}>
+                                    <span className={styles.sectionIcon}>✨</span>
+                                    <h3>Configuración de Wrapped</h3>
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <div className={styles.citaInputs}>
+                                        <div className={styles.inputField}>
+                                            <KawaiiInput
+                                                type="text"
+                                                label="Fecha Aniversario"
+                                                placeholder="MM-DD"
+                                                value={config.wrappedConfig.anniversaryDate}
+                                                onChange={e => handleUpdate('wrappedConfig.anniversaryDate', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className={styles.inputField}>
+                                            <KawaiiInput
+                                                type="number"
+                                                label="Año de Inicio"
+                                                value={config.wrappedConfig.anniversaryYear}
+                                                onChange={e => handleUpdate('wrappedConfig.anniversaryYear', parseInt(e.target.value) || 2022)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className={styles.formGroup} style={{ marginTop: '1rem' }}>
                                     <KawaiiInput
                                         type="select"
-                                        label="Estilo Visual"
-                                        value={config.mapConfig.style}
-                                        onChange={e => handleUpdate('mapConfig.style', e.target.value)}
+                                        label="Criterio de Estadísticas"
+                                        value={config.wrappedConfig.defaultStatsMode}
+                                        onChange={e => handleUpdate('wrappedConfig.defaultStatsMode', e.target.value)}
                                         options={[
-                                            { id: 'romantic-vintage', name: '🌹 Romantic Vintage' },
-                                            { id: 'pastel-dream', name: '☁️ Pastel Dream' },
-                                            { id: 'dark-luxury', name: '🎬 Dark Luxury' },
-                                            { id: 'standard', name: '🗺️ Standard Map' }
+                                            { id: 'eventDate', name: '📅 Fecha del Suceso' },
+                                            { id: 'createdDate', name: '☁️ Fecha de Subida' }
                                         ]}
                                     />
                                 </div>
+                            </Card>
+                        </motion.div>
+
+                        <motion.div variants={itemVariants}>
+                            <Card className={styles.sectionCard} glass>
+                                <div className={styles.sectionHeader}>
+                                    <span className={styles.sectionIcon}>📸</span>
+                                    <h3>Reglas y Instantáneas</h3>
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label>Fotos Mínimas</label>
+                                    <div className={styles.citaInputs}>
+                                        <div className={styles.inputField}>
+                                            <KawaiiInput
+                                                type="number"
+                                                label="Espontánea"
+                                                value={config.citaConfig.minPhotosSpontaneous}
+                                                onChange={e => handleUpdate('citaConfig.minPhotosSpontaneous', parseInt(e.target.value) || 1)}
+                                            />
+                                        </div>
+                                        <div className={styles.inputField}>
+                                            <KawaiiInput
+                                                type="number"
+                                                label="Modo Bingo"
+                                                value={config.citaConfig.minPhotosBingoDefault}
+                                                onChange={e => handleUpdate('citaConfig.minPhotosBingoDefault', parseInt(e.target.value) || 1)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className={styles.divider} />
+                                <div className={styles.formGroup}>
+                                    <KawaiiInput
+                                        type="number"
+                                        label="Timer Segundos"
+                                        value={config.snapshotConfig.timerSeconds}
+                                        onChange={e => handleUpdate('snapshotConfig.timerSeconds', Math.max(1, parseInt(e.target.value) || 1))}
+                                    />
+                                </div>
+                            </Card>
+                        </motion.div>
+                    </>
+                )}
+
+                {/* ── Tab: Security ── */}
+                {activeTab === 'security' && (
+                    <motion.div variants={itemVariants} className={styles.fullWidth}>
+                        <Card className={styles.sectionCard} glass>
+                            <div className={styles.sectionHeader}>
+                                <span className={styles.sectionIcon}>🔒</span>
+                                <h3>Acceso y Seguridad</h3>
                             </div>
-                        </div>
-
-                        <div className={styles.divider}></div>
-
-                        <div className={styles.sectionHeader}>
-                            <span className={styles.sectionIcon}>🔔</span>
-                            <h3>Notificaciones Push</h3>
-                        </div>
-                        <div className={styles.togglesList}>
-                            <ToggleRow
-                                label="FCM para la Pareja"
-                                desc="Enviar avisos de nuevas fotos o mensajes al partner."
-                                checked={config.notifications.partnerFcmEnabled}
-                                onChange={() => handleUpdate('notifications.partnerFcmEnabled', !config.notifications.partnerFcmEnabled)}
-                            />
-                            <ToggleRow
-                                label="Log de Actividad Admin"
-                                desc="Notificar al administrador sobre cambios en el sistema."
-                                checked={config.notifications.adminActivityLogEnabled}
-                                onChange={() => handleUpdate('notifications.adminActivityLogEnabled', !config.notifications.adminActivityLogEnabled)}
-                            />
-                        </div>
-                    </Card>
-
-                    <Card className={styles.sectionCard} glass style={{ marginTop: '2rem' }}>
-                        <div className={styles.sectionHeader}>
-                            <span className={styles.sectionIcon}>🔒</span>
-                            <h3>Acceso y Seguridad</h3>
-                        </div>
-
-                        <div className={styles.inviteContainer}>
-                            <div className={styles.inviteHeader}>
-                                <label className={styles.inviteLabel}>Enlace de Invitación</label>
-                                {config.inviteConfig.generatedAt && (
-                                    <span className={styles.inviteDate}>
-                                        Generado el {new Date(config.inviteConfig.generatedAt).toLocaleDateString()}
-                                    </span>
-                                )}
-                            </div>
-
-                            <div className={styles.inviteGroup}>
-                                <div className={styles.inviteInputWrapper}>
-                                    {isLoading || isRegenerating ? (
-                                        <Skeleton height="48px" className={styles.skeletonRadius} />
-                                    ) : (
+                            <div className={styles.inviteContainer}>
+                                <div className={styles.inviteHeader}>
+                                    <label className={styles.inviteLabel}>Enlace de Invitación</label>
+                                    {config.inviteConfig.generatedAt && (
+                                        <span className={styles.inviteDate}>
+                                            Desde {new Date(config.inviteConfig.generatedAt).toLocaleDateString()}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className={styles.inviteGroup}>
+                                    <div className={styles.inviteInputWrapper}>
                                         <KawaiiInput 
                                             type="text" 
                                             readOnly 
-                                            placeholder="Pulsa regenerar para crear uno..."
                                             value={config.inviteConfig.inviteLink}
                                             className={styles.cleanInput}
                                         />
-                                    )}
+                                    </div>
+                                    <Button variant="primary" onClick={handleCopyInvite} className={styles.copyBtn}>📋</Button>
+                                    <Button variant="ghost" onClick={() => setShowInviteConfirm(true)} className={styles.miniRevokeBtn}>↻</Button>
                                 </div>
-                                <Button 
-                                    variant="primary" 
-                                    onClick={handleCopyInvite} 
-                                    disabled={isLoading || !config.inviteConfig.inviteLink}
-                                    className={styles.copyBtn}
-                                >
-                                    📋 Copiar
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setShowInviteConfirm(true)}
-                                    disabled={isRegenerating || isLoading}
-                                    className={styles.miniRevokeBtn}
-                                    title="Regenerar enlace"
-                                >
-                                    {isRegenerating ? '↻' : '↻'}
-                                </Button>
                             </div>
-                        </div>
-                        
-                        <div className={styles.divider}></div>
-
-                        <ToggleRow
-                            label="Notas del Administrador"
-                            desc="Permitir que ella lea las anotaciones internas."
-                            checked={config.visibility.showAdminNotes}
-                            onChange={() => handleUpdate('visibility.showAdminNotes', !config.visibility.showAdminNotes)}
-                        />
-                    </Card>
-                </motion.div>
-
-                {/* Critical Dates Section */}
-                <motion.div variants={itemVariants}>
-                    <Card className={styles.sectionCard} glass>
-                        <div className={styles.sectionHeader}>
-                            <span className={styles.sectionIcon}>📅</span>
-                            <h3>Fechas Críticas</h3>
-                        </div>
-                        <p className={styles.sectionDesc}>Eventos detonantes del sistema.</p>
-
-                        <div className={styles.formGroup}>
-                            <KawaiiInput
-                                type="datetime-local"
-                                label="🚀 Fecha y hora de lanzamiento"
-                                value={config.teaser?.unlockAt ? config.teaser.unlockAt.substring(0, 16) : ''}
-                                onChange={e => handleUpdate('teaser.unlockAt', e.target.value)}
-                                helpText="Fecha en que ella podrá entrar a la app por primera vez."
-                            />
-                            {config.teaser?.unlockAt && (
-                                <p className={styles.helpText} style={{ marginTop: '0.5rem', fontWeight: 'bold' }}>
-                                    Configurado para: {new Date(config.teaser.unlockAt).toLocaleString()}
-                                </p>
-                            )}
-                        </div>
-                        
-                        <div className={styles.togglesList} style={{ marginTop: '1rem' }}>
+                            <div className={styles.divider} />
                             <ToggleRow
-                                label="Habilitar Teaser"
-                                desc="Mostrar la cuenta regresiva antes del lanzamiento."
-                                checked={config.teaser?.isEnabled ?? true}
-                                onChange={() => handleUpdate('teaser.isEnabled', !(config.teaser?.isEnabled ?? true))}
+                                label="Notas del Administrador"
+                                desc="Visibilidad de anotaciones internas para ella."
+                                checked={config.visibility.showAdminNotes}
+                                onChange={() => handleUpdate('visibility.showAdminNotes', !config.visibility.showAdminNotes)}
                             />
-                        </div>
-                    </Card>
-                </motion.div>
-
-                {/* Wrapped & Multimedia */}
-                <motion.div variants={itemVariants}>
-                    <Card className={styles.sectionCard} glass>
-                        <div className={styles.sectionHeader}>
-                            <span className={styles.sectionIcon}>✨</span>
-                            <h3>Configuración de Wrapped</h3>
-                        </div>
-
-                        <div className={styles.formGroup}>
-                            <div className={styles.citaInputs}>
-                                <div className={styles.inputField}>
-                                    <KawaiiInput
-                                        type="text"
-                                        label="Fecha Aniversario"
-                                        placeholder="MM-DD"
-                                        value={config.wrappedConfig.anniversaryDate}
-                                        onChange={e => handleUpdate('wrappedConfig.anniversaryDate', e.target.value)}
-                                    />
-                                </div>
-                                <div className={styles.inputField}>
-                                    <KawaiiInput
-                                        type="number"
-                                        label="Año de Inicio"
-                                        value={config.wrappedConfig.anniversaryYear}
-                                        onChange={e => handleUpdate('wrappedConfig.anniversaryYear', parseInt(e.target.value) || 2022)}
-                                    />
-                                </div>
-                                <div className={styles.inputField}>
-                                    <KawaiiInput
-                                        type="text"
-                                        label="Próximo Lanzamiento"
-                                        placeholder="YYYY-MM-DD"
-                                        value={config.wrappedConfig.nextWrappedDate}
-                                        onChange={e => handleUpdate('wrappedConfig.nextWrappedDate', e.target.value)}
-                                    />
+                            <div className={styles.dangerZone}>
+                                <h4>Zona de Peligro</h4>
+                                <div className={styles.dangerActions}>
+                                    <Button className={styles.dangerBtn} onClick={() => toast.info('Beta', 'Backup en desarrollo')}>📥 Backup</Button>
+                                    <Button className={styles.dangerBtn} onClick={() => toast.success('Caché', 'Limpieza OK')}>🗑️ Limpiar</Button>
                                 </div>
                             </div>
-                        </div>
-
-                        <div className={styles.formGroup} style={{ marginTop: '1rem' }}>
-                            <KawaiiInput
-                                type="select"
-                                label="Criterio de Estadísticas"
-                                value={config.wrappedConfig.defaultStatsMode}
-                                onChange={e => handleUpdate('wrappedConfig.defaultStatsMode', e.target.value)}
-                                options={[
-                                    { id: 'eventDate', name: '📅 Fecha del Suceso (Lo que pasó)' },
-                                    { id: 'createdDate', name: '☁️ Fecha de Subida (Cuando se guardó)' }
-                                ]}
-                            />
-                            <p className={styles.helpText}>Define cómo se agrupan los recuerdos en el resumen anual.</p>
-                        </div>
-
-                        <div className={styles.divider}></div>
-
-                        <div className={styles.sectionHeader}>
-                            <span className={styles.sectionIcon}>📸</span>
-                            <h3>Reglas de Multimedia</h3>
-                        </div>
-
-                        <div className={styles.formGroup}>
-                            <label>Fotos Mínimas por Cita</label>
-                            <div className={styles.citaInputs}>
-                                <div className={styles.inputField}>
-                                    <KawaiiInput
-                                        type="number"
-                                        label="Espontánea"
-                                        value={config.citaConfig.minPhotosSpontaneous}
-                                        onChange={e => handleUpdate('citaConfig.minPhotosSpontaneous', parseInt(e.target.value) || 1)}
-                                    />
-                                </div>
-                                <div className={styles.inputField}>
-                                    <KawaiiInput
-                                        type="number"
-                                        label="Modo Bingo"
-                                        value={config.citaConfig.minPhotosBingoDefault}
-                                        onChange={e => handleUpdate('citaConfig.minPhotosBingoDefault', parseInt(e.target.value) || 1)}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className={styles.formGroup} style={{ marginTop: '1rem' }}>
-                            <label>⏱️ Timer de Instantáneas</label>
-                            <div style={{ maxWidth: 160 }}>
-                                <KawaiiInput
-                                    type="number"
-                                    label="Segundos"
-                                    value={config.snapshotConfig.timerSeconds}
-                                    onChange={e => handleUpdate('snapshotConfig.timerSeconds', Math.max(1, parseInt(e.target.value) || 1))}
-                                />
-                            </div>
-                        </div>
-
-                        <div className={styles.dangerZone}>
-                            <h4>Acciones Críticas</h4>
-                            <div className={styles.dangerActions}>
-                                <Button className={styles.dangerBtn} onClick={() => toast.info('Beta', 'Backup en desarrollo')}>
-                                    📥 Backup BD
-                                </Button>
-                                <Button className={styles.dangerBtn} onClick={() => toast.success('Caché', 'Limpieza completada')}>
-                                    🗑️ Limpiar Caché
-                                </Button>
-                            </div>
-                        </div>
-                    </Card>
-                </motion.div>
-            </div>
+                        </Card>
+                    </motion.div>
+                )}
+            </motion.div>
 
             {/* Sticky Save Bar */}
             <motion.div 
@@ -527,14 +591,14 @@ export default function GlobalSettings() {
                 <div className={styles.footerContent}>
                     <div className={styles.statusIndicator}>
                         <span className={styles.dot}></span>
-                        <span>Configuración del Núcleo v1.6.15</span>
+                        <span>v1.6.15 — {activeTab.toUpperCase()}</span>
                     </div>
                     <Button 
                         className={styles.saveBtn} 
                         onClick={handleSave} 
                         disabled={isSaving}
                     >
-                        {isSaving ? 'Aplicando cambios...' : '✨ Guardar Cambios del Sistema'}
+                        {isSaving ? 'Aplicando...' : '✨ Guardar Cambios'}
                     </Button>
                 </div>
             </motion.div>
