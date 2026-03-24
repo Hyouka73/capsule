@@ -79,24 +79,16 @@ export default function CelebrationOverlay({ onComplete, type = 'confetti', rewa
                         </motion.h1>
 
                         <div className={styles.rewardCard}>
-                            <h2 className={styles.tierLabel}>{tierLabel || '¡Tablero Completo!'}</h2>
+                            <h2 className={styles.tierLabel}>{tierLabel || '¡Logro Desbloqueado!'}</h2>
                             
-                            <span className={`material-symbols-outlined ${styles.rewardIcon}`}>
-                                {reward ? 'card_giftcard' : 'stars'}
-                            </span>
+                            <div className={styles.coinsAmount}>
+                                <span className={`material-symbols-outlined ${styles.coinIcon}`}>monetization_on</span>
+                                <span className={styles.coinsValue}>+{coins}</span>
+                            </div>
 
-                            {coins > 0 && (
-                                <div className={styles.coinsText}>
-                                    <span className="material-symbols-outlined" style={{ fontSize: '1.5rem' }}>monetization_on</span>
-                                    + {coins} Monedas
-                                </div>
-                            )}
-
-                            {reward && (
-                                <p style={{ fontSize: '1rem', color: '#847377', fontWeight: '600', margin: 0 }}>
-                                    ¡Premio Especial Desbloqueado! 💝
-                                </p>
-                            )}
+                            <p className={styles.rewardText}>
+                                {reward || '¡Felicidades por tu progreso!'}
+                            </p>
 
                             <button className={styles.dismissBtn} onClick={handleDismiss}>
                                 ¡Genial!

@@ -20,7 +20,10 @@ export default function BingoManager() {
         emoji: '', 
         description: '', 
         minPhotos: 1,
-        suggestedTags: [] 
+        suggestedTags: [],
+        suggestedPlace: '',
+        isSpecial: false,
+        isEnabled: true
     });
 
     const handleEdit = (square) => {
@@ -41,7 +44,10 @@ export default function BingoManager() {
             emoji: square.emoji || '🎯',
             description: square.description || '',
             minPhotos: square.minPhotos || 1,
-            suggestedTags: sanitizedTags
+            suggestedTags: sanitizedTags,
+            suggestedPlace: square.suggestedPlace || '',
+            isSpecial: !!square.isSpecial,
+            isEnabled: square.isEnabled !== false
         });
     };
 

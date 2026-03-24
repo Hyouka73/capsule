@@ -48,7 +48,7 @@
 
 .bingoBoard {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 1.25rem;
     width: 100%;
     max-width: 800px;
@@ -230,6 +230,47 @@
     font-size: 0.9rem;
     font-weight: 600;
     color: #847377;
+}
+
+/* ── Checkbox Group ── */
+.checkboxGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.checkboxLabel {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    background: #ffffff;
+    padding: 0.85rem 1rem;
+    border-radius: 1.25rem;
+    border: 2.5px solid #f2eced;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 3px 0 #f2eced;
+}
+
+.checkboxLabel:hover {
+    border-color: #ffdad6;
+    background: #fef8f9;
+    transform: translateY(-1px);
+}
+
+.checkboxLabel input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: #8b4a61;
+    cursor: pointer;
+}
+
+.checkboxLabel span {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #4a3232;
 }
 
 /* ── Tags Grid ── */

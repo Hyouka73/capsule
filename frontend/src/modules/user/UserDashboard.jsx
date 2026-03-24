@@ -35,7 +35,7 @@ export default function UserDashboard() {
     const { isFeatureOn } = useAppConfig();
     const { pendingCount, pendingCitas, removePendingCita, addPendingCita, updatePendingCitaStatus, updatePendingCita, restorePendingCita } = usePendingCitas();
     const { pendingSuggestions, resolvePendingSuggestion, dismissSuggestion } = usePendingBingo();
-    const { completeBingoSquare, celebrationEvent, clearCelebrationEvent } = useBingo();
+    const { completeBingoSquare, celebrationEvent, clearCelebrationEvent, resetBingoBoard } = useBingo();
     const firstPendingSuggestion = pendingSuggestions.find(s => !s.dismissed);
 
     // Map tab IDs to feature flags
@@ -481,7 +481,12 @@ export default function UserDashboard() {
                     tierLabel={celebrationEvent.tierLabel}
                     reward={celebrationEvent.reward}
                     coins={celebrationEvent.coins}
-                    onComplete={clearCelebrationEvent}
+                    onComplete={() => {
+                        if (celebrationEvent.isFullBoard) {
+                            resetBingoBoard();
+                        }
+                        clearCelebrationEvent();
+                    }}
                 />
             )}
         </div>

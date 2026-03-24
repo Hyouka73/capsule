@@ -113,6 +113,36 @@ export default function BingoEditPanel({
 
                     <div className={styles.formGroup}>
                         <KawaiiInput
+                            type="text"
+                            label="Lugar Sugerido"
+                            value={formData.suggestedPlace || ''}
+                            onChange={e => setFormData({ ...formData, suggestedPlace: e.target.value })}
+                            placeholder="Ej. Restaurante Italiano Luigi"
+                        />
+                    </div>
+
+                    <div className={styles.checkboxGroup}>
+                        <label className={styles.checkboxLabel}>
+                            <input 
+                                type="checkbox" 
+                                checked={!!formData.isSpecial} 
+                                onChange={e => setFormData({ ...formData, isSpecial: e.target.checked })} 
+                            />
+                            <span>✨ ¿Casilla Especial? (+5 monedas)</span>
+                        </label>
+
+                        <label className={styles.checkboxLabel}>
+                            <input 
+                                type="checkbox" 
+                                checked={formData.isEnabled !== false} 
+                                onChange={e => setFormData({ ...formData, isEnabled: e.target.checked })} 
+                            />
+                            <span>✅ Habilitada (visible para Partner)</span>
+                        </label>
+                    </div>
+
+                    <div className={styles.formGroup}>
+                        <KawaiiInput
                             type="number"
                             label="Mínimo de fotos"
                             min="1"

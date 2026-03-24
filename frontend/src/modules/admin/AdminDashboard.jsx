@@ -44,7 +44,7 @@ export default function AdminDashboard() {
 
     // Bingo Integration for Admin (when creating memories from here)
     const { pendingSuggestions, resolvePendingSuggestion, dismissSuggestion } = usePendingBingo();
-    const { completeBingoSquare, celebrationEvent, clearCelebrationEvent } = useBingo();
+    const { completeBingoSquare, celebrationEvent, clearCelebrationEvent, resetBingoBoard } = useBingo();
     const [sheetDismissed, setSheetDismissed] = useState(false);
     const firstPendingSuggestion = pendingSuggestions.find(s => !s.dismissed);
 
@@ -232,7 +232,12 @@ export default function AdminDashboard() {
                     tierLabel={celebrationEvent.tierLabel}
                     reward={celebrationEvent.reward}
                     coins={celebrationEvent.coins}
-                    onComplete={clearCelebrationEvent}
+                    onComplete={() => {
+                        if (celebrationEvent.isFullBoard) {
+                            resetBingoBoard();
+                        }
+                        clearCelebrationEvent();
+                    }}
                 />
             )}
         </div>
