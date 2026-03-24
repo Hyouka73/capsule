@@ -3,6 +3,9 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { COLLECTIONS, SINGLETON_DOCS } from '../config/constants';
 import SystemConfig from '../models/SystemConfig';
+import { openDB } from '../config/dbConfig';
+
+const APP_CONFIG_CACHE_KEY = 'system_config';
 
 const AppConfigContext = createContext(null);
 
@@ -20,23 +23,54 @@ export function AppConfigProvider({ children }) {
             SINGLETON_DOCS.APP_CONFIG
         );
 
+        // Load from cache first
+        const loadCache = async () => {
+            try {
+                const idb = await openDB();
+                const tx = idb.transaction('app_cache', 'readonly');
+                const store = tx.objectStore('app_cache');
+                const req = store.get(APP_CONFIG_CACHE_KEY);
+                req.onsuccess = () => {
+                    if (req.result?.data) {
+                        console.log('[AppConfig] Loaded from IndexedDB');
+                        setConfig(SystemConfig.fromFirestore(req.result.data));
+                        setIsConfigLoaded(true);
+                    }
+                };
+            } catch (err) {
+                console.warn('[AppConfig] IndexedDB Cache Error:', err);
+            }
+        };
+        loadCache();
+
         const unsubscribe = onSnapshot(
             configRef,
-            (snapshot) => {
+            async (snapshot) => {
                 if (snapshot.exists()) {
                     const data = snapshot.data();
-                    // Use model to merge Firestore data with defaults
-                    setConfig(SystemConfig.fromFirestore(data));
+                    const newConfig = SystemConfig.fromFirestore(data);
+                    setConfig(newConfig);
+                    
+                    // Persist to IndexedDB
+                    try {
+                        const idb = await openDB();
+                        const tx = idb.transaction('app_cache', 'readwrite');
+                        tx.objectStore('app_cache').put({ 
+                            key: APP_CONFIG_CACHE_KEY, 
+                            data, 
+                            savedAt: Date.now() 
+                        });
+                    } catch (err) {
+                        console.warn('[AppConfig] Failed to cache to IndexedDB:', err);
+                    }
                 } else {
-                    // Document doesn't exist yet — use defaults
                     setConfig(new SystemConfig());
                 }
                 setIsConfigLoaded(true);
             },
             (error) => {
-                // Firestore error (e.g. offline) — fall back to defaults
-                console.warn('[AppConfig] Firestore unavailable, using local defaults:', error.code);
-                setConfig(new SystemConfig());
+                console.warn('[AppConfig] Firestore unavailable:', error.code);
+                // If not already loaded from cache, we'll keep the defaults
                 setIsConfigLoaded(true);
             }
         );

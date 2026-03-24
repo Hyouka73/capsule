@@ -88,6 +88,25 @@ export default class SystemConfig {
             welcomeMessage: data.partner?.welcomeMessage ?? '¡Bienvenida a nuestro espacio! 💖',
             displayName: data.partner?.displayName ?? ''
         };
+
+        this.memoryTags = data.memoryTags || [
+            { value: 'viaje', label: 'Viaje ✈️' },
+            { value: 'cita', label: 'Cita 🍷' },
+            { value: 'aniversario', label: 'Aniversario 💝' },
+            { value: 'random', label: 'Random 🤪' },
+            { value: 'logro', label: 'Logro 🎯' },
+            { value: 'hito', label: 'Hito 🌟' },
+            { value: 'familia', label: 'Familia 👨‍👩‍👦' },
+            { value: 'amigos', label: 'Amigos 👯‍♂️' },
+            { value: 'cine', label: 'Cine 🍿' },
+            { value: 'comida', label: 'Comida 🍝' },
+            { value: 'aventura', label: 'Aventura 🌲' },
+            { value: 'musica', label: 'Música 🎵' },
+            { value: 'relax', label: 'Relax 💆‍♂️' },
+            { value: 'deporte', label: 'Deporte 🏃‍♀️' },
+            { value: 'arte', label: 'Arte 🎨' },
+            { value: 'casa', label: 'En Casa 🏠' }
+        ];
     }
 
     /**
@@ -106,6 +125,7 @@ export default class SystemConfig {
             citaConfig: this.citaConfig,
             onboarding: this.onboarding,
             partner: this.partner,
+            memoryTags: this.memoryTags,
             updatedAt: new Date().toISOString()
         };
     }
@@ -128,6 +148,7 @@ export default class SystemConfig {
             citaConfig: data.citaConfig,
             onboarding: data.onboarding,
             partner: data.partner,
+            memoryTags: data.memoryTags,
             updatedAt: data.updatedAt
         });
     }
