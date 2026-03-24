@@ -17,6 +17,8 @@ export default class User {
 
         // Messaging
         this.fcmTokens = Array.isArray(data.fcmTokens) ? data.fcmTokens : [];
+        this.gameCoins = data.gameCoins || 0;
+        this.coinTransactions = Array.isArray(data.coinTransactions) ? data.coinTransactions : [];
 
         // Preferences
         this.preferences = {

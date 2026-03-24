@@ -12,6 +12,8 @@ export default class User {
         this.userAgent = data.userAgent || '';
         this.deviceInfo = data.deviceInfo || {};
         this.fcmTokens = Array.isArray(data.fcmTokens) ? data.fcmTokens : [];
+        this.gameCoins = data.gameCoins || 0;
+        this.coinTransactions = Array.isArray(data.coinTransactions) ? data.coinTransactions : [];
         this.preferences = {
             theme: data.preferences?.theme || 'dark',
             language: data.preferences?.language || 'es',
@@ -59,6 +61,8 @@ export default class User {
             onboardingCompleted: this.onboardingCompleted,
             welcomeSeen: this.welcomeSeen,
             teaserCompleted: this.teaserCompleted,
+            gameCoins: this.gameCoins,
+            coinTransactions: this.coinTransactions,
             lastActiveAt: this.lastActiveAt,
             lastSeenAt: this.lastSeenAt,
             registeredAt: this.registeredAt,

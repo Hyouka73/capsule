@@ -3,10 +3,15 @@ import {
     doc,
     onSnapshot,
     updateDoc,
+    setDoc,
+    increment,
+    arrayUnion,
     serverTimestamp,
 } from 'firebase/firestore';
 import { db as firestoreDb } from '../services/firebase';
+import { useAuth } from '../hooks/useAuth';
 import { useOfflineActions } from '../hooks/useOfflineActions';
+import { logActivity } from '../apiClient';
 import { COLLECTIONS, SINGLETON_DOCS } from '../config/constants';
 import { toast } from '../components/ui/PastelToast/PastelToast';
 import BingoAction from '../models/BingoAction';
@@ -48,59 +53,121 @@ export function BingoProvider({ children }) {
     const [totalCount, setTotalCount] = useState(20);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const { user } = useAuth();
 
     const { queueAction } = useOfflineActions();
     const optimisticPending = useRef(new Set());
     const [celebrationEvent, setCelebrationEvent] = useState(null);
 
-    const checkBingoAchievements = useCallback((prevCats, nextCats, categoryId) => {
-        const size = Math.sqrt(nextCats.length);
-        if (!Number.isInteger(size)) {
-            console.log('earnPick(tier: 1)');
-            return;
-        }
+    const checkBingoAchievements = useCallback(async (prevCats, nextCats, categoryId) => {
+        if (!user) return;
+        
+        const ROWS = 4;
+        const COLS = 5;
 
-        const to2D = (arr) => {
-            let m = [];
-            for (let i = 0; i < size; i++) m.push(arr.slice(i * size, (i + 1) * size));
-            return m;
-        };
-
-        const hasFullLine = (cats) => {
-            const m = to2D(cats);
+        const getLinesCount = (cats) => {
             let lines = 0;
-            for (let i = 0; i < size; i++) {
-                if (m[i].every(c => c.completedMemoryId)) lines++;
-                if (m.every(r => r[i].completedMemoryId)) lines++;
+            // Rows (4 rows of 5)
+            for (let r = 0; r < ROWS; r++) {
+                let rowFull = true;
+                for (let c = 0; c < COLS; c++) {
+                    if (!cats[r * COLS + c].completedMemoryId) { rowFull = false; break; }
+                }
+                if (rowFull) lines++;
             }
-            if (m.every((r, i) => r[i].completedMemoryId)) lines++;
-            if (m.every((r, i) => r[size - 1 - i].completedMemoryId)) lines++;
+            // Cols (5 cols of 4)
+            for (let c = 0; c < COLS; c++) {
+                let colFull = true;
+                for (let r = 0; r < ROWS; r++) {
+                    if (!cats[r * COLS + c].completedMemoryId) { colFull = false; break; }
+                }
+                if (colFull) lines++;
+            }
+            // Diagonals (4 cells each)
+            if ([0, 6, 12, 18].every(i => cats[i]?.completedMemoryId)) lines++;
+            if ([4, 8, 12, 16].every(i => cats[i]?.completedMemoryId)) lines++;
+            
             return lines;
         };
 
-        const prevLines = hasFullLine(prevCats);
-        const nextLines = hasFullLine(nextCats);
+        const prevLines = getLinesCount(prevCats);
+        const nextLines = getLinesCount(nextCats);
+        const newLines = nextLines - prevLines;
+        
         const isBoardFull = nextCats.every(c => c.completedMemoryId);
         const wasBoardFull = prevCats.every(c => c.completedMemoryId);
 
+        let totalCoins = 0;
         let eventToTrigger = null;
 
-        if (isBoardFull && !wasBoardFull) {
-            console.log('earnPick(tier: 3)');
-            console.log('bingo_complete');
-            eventToTrigger = { tierLabel: '¡Tablero Completo! 🏆', reward: '+1 Pick Oro', coins: 50 };
-        } else if (nextLines > prevLines) {
-            console.log('earnPick(tier: 2)');
-            eventToTrigger = { tierLabel: '¡Línea Completada! 🔥', reward: '+1 Pick Plata', coins: 15 };
-        } else {
-            console.log('earnPick(tier: 1)');
-            eventToTrigger = { tierLabel: '¡Casilla Completada! ✨', reward: '+1 Pick Bronce', coins: 5 };
+        // 1. Line Logic
+        if (newLines > 0) {
+            totalCoins += newLines * 15;
+            eventToTrigger = { 
+                tierLabel: newLines > 1 ? '¡MULTIBINGO! 🔥' : '¡LÍNEA COMPLETADA! 🔥', 
+                reward: '¡Tus monedas han sido añadidas a tu saldo! ✨', 
+                coins: totalCoins 
+            };
         }
 
-        if (eventToTrigger) {
-            setCelebrationEvent(eventToTrigger);
+        // 2. Full Board Logic
+        if (isBoardFull && !wasBoardFull) {
+            totalCoins += 50;
+            eventToTrigger = { 
+                tierLabel: '¡TABLERO COMPLETO! 🏆', 
+                reward: '¡Increíble! Has completado el board. Admin ha sido avisado. 🎁', 
+                coins: totalCoins,
+                isFullBoard: true
+            };
         }
-    }, []);
+
+        // 3. Special Square Logic (+5)
+        if (categoryId) {
+            const square = nextCats.find(c => c.id === categoryId);
+            if (square?.isSpecial) {
+                totalCoins += 5;
+                if (!eventToTrigger) {
+                    eventToTrigger = { 
+                        tierLabel: '¡CASILLA ESPECIAL! ✨', 
+                        reward: '¡Bono de monedas por casilla especial! 💖', 
+                        coins: 5 
+                    };
+                } else {
+                    eventToTrigger.coins = totalCoins;
+                    eventToTrigger.reward = `✨ ¡Incluye bono especial! ${eventToTrigger.reward}`;
+                }
+            }
+        }
+
+        if (totalCoins > 0) {
+            try {
+                const userRef = doc(firestoreDb, COLLECTIONS.USERS, user.uid);
+                const trans = {
+                    type: "earned",
+                    source: isBoardFull && !wasBoardFull ? "bingo_full" : "bingo_line",
+                    amount: totalCoins,
+                    timestamp: new Date().toISOString()
+                };
+
+                await updateDoc(userRef, {
+                    gameCoins: increment(totalCoins),
+                    coinTransactions: arrayUnion(trans)
+                });
+
+                if (isBoardFull && !wasBoardFull) {
+                    logActivity({ 
+                        type: 'bingoBoardCompleted', 
+                        userId: user.uid,
+                        timestamp: new Date().toISOString() 
+                    });
+                }
+
+                setCelebrationEvent(eventToTrigger);
+            } catch (err) {
+                console.error('[BingoContext] Error updating rewards:', err);
+            }
+        }
+    }, [user]);
 
 
     const applyServerState = useCallback((data) => {
@@ -283,6 +350,38 @@ export function BingoProvider({ children }) {
         isCategoryAvailable,
         getCategory,
         updateBingoBoard,
+        resetBingoBoard: useCallback(async () => {
+            if (!categories.length) return;
+            
+            // 1. Archive current board
+            try {
+                const historyId = `${SINGLETON_DOCS.BINGO_BOARD}_${Date.now()}`;
+                await setDoc(doc(firestoreDb, COLLECTIONS.BINGO_HISTORY, historyId), {
+                    categories,
+                    completedCount,
+                    totalCount,
+                    archivedAt: new Date().toISOString(),
+                    userId: user?.uid
+                });
+
+                // 2. Clear current board
+                const resetCats = categories.map(c => ({
+                    ...c,
+                    completedMemoryId: null,
+                    completedAt: null
+                }));
+                
+                await updateDoc(boardRef, {
+                    categories: resetCats,
+                    updatedAt: serverTimestamp()
+                });
+                
+                toast.info('Tablero reseteado 🔄', '¡Es hora de nuevos retos!');
+            } catch (err) {
+                console.error('[BingoContext] Error resetting board:', err);
+                toast.error('Error al resetear board', err.message);
+            }
+        }, [categories, completedCount, totalCount, user]),
         celebrationEvent,
         clearCelebrationEvent: () => setCelebrationEvent(null)
     };

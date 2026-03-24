@@ -16,6 +16,7 @@ export const COLLECTIONS = {
     ACTIVITY_LOG: 'activityLog',
     APP_CONFIG: 'appConfig',
     INSTANTANEAS: 'instantaneas',
+    BINGO_HISTORY: 'bingoHistory',
 };
 
 export const CAPSULE_TYPES = {

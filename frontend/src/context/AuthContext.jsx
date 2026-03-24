@@ -10,6 +10,7 @@ import {
 } from '../services/auth';
 import { ROLES, COLLECTIONS } from '../config/constants';
 import User from '../models/User';
+import { toast } from '../components/ui/PastelToast/PastelToast';
 
 const AuthContext = createContext(null);
 
@@ -20,6 +21,7 @@ export function AuthProvider({ children }) {
     const [onboardingCompleted, setOnboardingCompleted] = useState(null);
     const [welcomeSeen, setWelcomeSeen] = useState(null);
     const [teaserCompleted, setTeaserCompleted] = useState(null);
+    const [gameCoins, setGameCoins] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
 
     // Register FCM Token for partners
@@ -97,6 +99,7 @@ export function AuthProvider({ children }) {
                     setOnboardingCompleted(data.onboardingCompleted ?? null);
                     setWelcomeSeen(data.welcomeSeen ?? false);
                     setTeaserCompleted(data.teaserCompleted ?? false);
+                    setGameCoins(data.gameCoins ?? 0);
 
                     // Fallback: If role wasn't in claims, take it from Firestore
                     if (!claims.role && data.role) {
@@ -121,6 +124,7 @@ export function AuthProvider({ children }) {
                 setOnboardingCompleted(null);
                 setWelcomeSeen(null);
                 setTeaserCompleted(null);
+                setGameCoins(0);
                 setIsLoading(false); // No user, stop loading
             }
         });
@@ -141,7 +145,14 @@ export function AuthProvider({ children }) {
             if (messagingInstance) {
                 unsubscribeMessaging = onMessage(messagingInstance, (payload) => {
                     console.log('Message received in foreground: ', payload);
-                    // Trigger global toast or similar
+                    try {
+                        const { title, body } = payload.notification || {};
+                        if (title || body) {
+                            toast.info(title || 'Nueva notificación', body || '');
+                        }
+                    } catch (err) {
+                        console.error('[AuthContext] Failed to show foreground toast:', err);
+                    }
                 });
             }
         };
@@ -164,12 +175,13 @@ export function AuthProvider({ children }) {
         onboardingCompleted,
         welcomeSeen,
         teaserCompleted,
+        gameCoins,
         isLoading,
         isAuthenticated: !!user,
         isAdmin: role === ROLES.ADMIN,
         isPartner: role === ROLES.PARTNER,
         signOut,
-    }), [user, role, deviceId, onboardingCompleted, welcomeSeen, teaserCompleted, isLoading, signOut]);
+    }), [user, role, deviceId, onboardingCompleted, welcomeSeen, teaserCompleted, gameCoins, isLoading, signOut]);
 
     return (
         <AuthContext.Provider value={value}>
