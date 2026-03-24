@@ -3,7 +3,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { AnimatePresence } from 'framer-motion';
 import { useActivityLog } from '../../hooks/useActivityLog';
 import MemoryManager from '../memories/MemoryManager';
-// ... other managers remains same ...
 import CapsuleManager from '../capsules/CapsuleManager';
 import CouponManager from '../coupons/CouponManager';
 import BingoManager from '../bingo/BingoManager';
@@ -15,6 +14,10 @@ import SnapshotOverlay from '../snapshots/components/SnapshotOverlay';
 import SnapshotCreator from '../snapshots/components/SnapshotCreator';
 import SnapshotHistory from '../snapshots/components/SnapshotHistory';
 import Button from '../../components/ui/Button/Button';
+import { usePendingBingo } from '../../hooks/usePendingBingo';
+import { useBingo } from '../../hooks/useBingo';
+import BingoSuggestionSheet from '../memories/components/BingoSuggestionSheet';
+import CelebrationOverlay from '../../components/Bingo/CelebrationOverlay';
 import styles from './AdminDashboard.module.css';
 
 const SECTIONS = [
@@ -31,7 +34,6 @@ export default function AdminDashboard() {
     const { signOut, user } = useAuth();
     const { unreadCount } = useActivityLog();
     const [activeSection, setActiveSection] = useState('activity');
-    // ... rest same ...
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
     // Snapshot state — mirrors UserDashboard
@@ -39,6 +41,18 @@ export default function AdminDashboard() {
     const [activeSnapshots, setActiveSnapshots] = useState([]);
     const [isCameraOpen, setIsCameraOpen] = useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+    // Bingo Integration for Admin (when creating memories from here)
+    const { pendingSuggestions, resolvePendingSuggestion, dismissSuggestion } = usePendingBingo();
+    const { completeBingoSquare, celebrationEvent, clearCelebrationEvent } = useBingo();
+    const [sheetDismissed, setSheetDismissed] = useState(false);
+    const firstPendingSuggestion = pendingSuggestions.find(s => !s.dismissed);
+
+    useEffect(() => {
+        if (firstPendingSuggestion) {
+            setSheetDismissed(false);
+        }
+    }, [firstPendingSuggestion?.memoryId]);
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -176,7 +190,51 @@ export default function AdminDashboard() {
                     />
                 )}
             </AnimatePresence>
+
+            <BingoSuggestionSheet 
+                isOpen={!!firstPendingSuggestion && !sheetDismissed}
+                suggestions={firstPendingSuggestion?.suggestions || []}
+                onConfirm={async (selectedIds) => {
+                    if (!firstPendingSuggestion) return;
+                    setSheetDismissed(true);
+                    for (const id of selectedIds) {
+                        completeBingoSquare(id, firstPendingSuggestion.memoryId);
+                    }
+                    resolvePendingSuggestion(firstPendingSuggestion.memoryId);
+                }}
+                onCancel={async () => {
+                    if (!firstPendingSuggestion) return;
+                    setSheetDismissed(true);
+                    try {
+                        const { openDB } = await import('../../config/dbConfig');
+                        const db = await openDB();
+                        const tx = db.transaction('pending_bingo', 'readwrite');
+                        const store = tx.objectStore('pending_bingo');
+                        const memoryId = firstPendingSuggestion.memoryId || crypto.randomUUID();
+                        store.put({
+                            ...firstPendingSuggestion,
+                            memoryId,
+                            resolved: false,
+                            dismissed: true,
+                            createdAt: firstPendingSuggestion.createdAt || Date.now()
+                        });
+                        await new Promise((resolve, reject) => {
+                            tx.oncomplete = () => resolve();
+                            tx.onerror = () => reject(tx.error);
+                        });
+                    } catch (err) {}
+                    dismissSuggestion(firstPendingSuggestion.memoryId);
+                }}
+            />
+
+            {celebrationEvent && (
+                <CelebrationOverlay 
+                    tierLabel={celebrationEvent.tierLabel}
+                    reward={celebrationEvent.reward}
+                    coins={celebrationEvent.coins}
+                    onComplete={clearCelebrationEvent}
+                />
+            )}
         </div>
     );
 }
-

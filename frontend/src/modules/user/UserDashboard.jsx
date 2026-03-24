@@ -28,13 +28,14 @@ import PendingDatesList from '../../components/PendingDates/PendingDatesList';
 import PendingDateForm from '../../components/PendingDates/PendingDateForm';
 import { usePlaces } from '../map/hooks/usePlaces';
 import { toast } from '../../components/ui/PastelToast/PastelToast';
+import CelebrationOverlay from '../../components/Bingo/CelebrationOverlay';
 
 export default function UserDashboard() {
     const { isPartner, isAdmin } = useAuth();
     const { isFeatureOn } = useAppConfig();
     const { pendingCount, pendingCitas, removePendingCita, addPendingCita, updatePendingCitaStatus, updatePendingCita, restorePendingCita } = usePendingCitas();
     const { pendingSuggestions, resolvePendingSuggestion, dismissSuggestion } = usePendingBingo();
-    const { completeBingoSquare, celebrationEvent } = useBingo();
+    const { completeBingoSquare, celebrationEvent, clearCelebrationEvent } = useBingo();
     const firstPendingSuggestion = pendingSuggestions.find(s => !s.dismissed);
 
     // Map tab IDs to feature flags
@@ -76,10 +77,11 @@ export default function UserDashboard() {
     const [selectedPendingDate, setSelectedPendingDate] = useState(null);
     const [viewerPhotos, setViewerPhotos] = useState(null);
     const [isPendingListOpen, setIsPendingListOpen] = useState(false);
+    const [sheetDismissed, setSheetDismissed] = useState(false);
 
     // Dynamic check for ANY overlay that should hide the map
     // We EXCLUDE isPlaceSelected because that modal (PlaceDetailDrawer) lives INSIDE MapView
-    const hasAnyOverlayOpen = !!citaContext || isBingoModalOpen || isCouponsModalOpen || isSnapshotOpen || isCameraOpen || isHistoryOpen || isPendingListOpen || !!selectedPendingDate || !!viewerPhotos || !!firstPendingSuggestion || !!celebrationEvent;
+    const hasAnyOverlayOpen = !!citaContext || isBingoModalOpen || isCouponsModalOpen || isSnapshotOpen || isCameraOpen || isHistoryOpen || isPendingListOpen || !!selectedPendingDate || !!viewerPhotos || (!!firstPendingSuggestion && !sheetDismissed) || !!celebrationEvent;
 
     // Partículas solo cuando NO es el mapa
     useEffect(() => {
@@ -119,6 +121,14 @@ export default function UserDashboard() {
         // Reset modals when changing tabs
         setIsCouponsModalOpen(false);
     };
+
+    // Reset indicator when a NEW pending suggestion arrives
+    useEffect(() => {
+        if (firstPendingSuggestion) {
+            setSheetDismissed(false);
+        }
+    }, [firstPendingSuggestion?.memoryId]);
+
 
     // Calcular dirección para la animación
     const getDirection = () => {
@@ -223,7 +233,7 @@ export default function UserDashboard() {
             const files = (data.photos || []).map(p => p.file);
 
             if (files.length > 0) {
-                await queueMemory(payload, files, data.id);
+                await queueMemory(payload, files, data.id, data.bingoOrigin);
             }
             setSelectedPendingDate(null);
             if (pendingCitas.length > 1) {
@@ -415,14 +425,21 @@ export default function UserDashboard() {
             )}
 
             <BingoSuggestionSheet 
-                isOpen={!!firstPendingSuggestion}
+                isOpen={!!firstPendingSuggestion && !sheetDismissed}
                 suggestions={firstPendingSuggestion?.suggestions || []}
                 onConfirm={async (selectedIds) => {
                     if (!firstPendingSuggestion) return;
+                    
+                    // 1. Cerrar visualmente de inmediato
+                    setSheetDismissed(true);
+
+                    // 2. Ejecutar lógica de bingo (dispara celebración internamente)
                     for (const id of selectedIds) {
-                        await completeBingoSquare(id, firstPendingSuggestion.memoryId);
+                        completeBingoSquare(id, firstPendingSuggestion.memoryId);
                     }
-                    await resolvePendingSuggestion(firstPendingSuggestion.memoryId);
+                    
+                    // 3. Resolver sugerencia en background (sin await bloqueante)
+                    resolvePendingSuggestion(firstPendingSuggestion.memoryId);
                 }}
                 onCancel={async () => {
                     if (!firstPendingSuggestion) return;
@@ -458,6 +475,15 @@ export default function UserDashboard() {
                     dismissSuggestion(firstPendingSuggestion.memoryId);
                 }}
             />
+
+            {celebrationEvent && (
+                <CelebrationOverlay 
+                    tierLabel={celebrationEvent.tierLabel}
+                    reward={celebrationEvent.reward}
+                    coins={celebrationEvent.coins}
+                    onComplete={clearCelebrationEvent}
+                />
+            )}
         </div>
     );
 }

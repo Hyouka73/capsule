@@ -93,7 +93,7 @@ export default function App() {
         } />
         <Route path="/admin/*" element={
           isAdmin
-            ? <><AdminDashboard /><VersionBadge /></>
+            ? <BingoProvider><AdminDashboard /><VersionBadge /></BingoProvider>
             : <><AdminLogin /><VersionBadge /></>
         } />
 
@@ -107,7 +107,7 @@ export default function App() {
                 ? <Navigate to="/teaser" replace />
                 : welcomeSeen === false
                   ? <Navigate to="/welcome" replace />
-                  : <><UserDashboard /><VersionBadge /></>
+                  : <BingoProvider><UserDashboard /><VersionBadge /></BingoProvider>
         } />
 
         {/* Fallback: redirigir a raíz para que el dispatcher decida */}
