@@ -7,6 +7,9 @@ import { useAuth } from '../../hooks/useAuth';
 import styles from './MapView.module.css';
 import { usePlaces } from './hooks/usePlaces';
 import { getMemories } from '../../apiClient';
+import SystemConfig from '../../models/SystemConfig';
+import { useOnlineStatus } from './hooks/useOnlineStatus';
+import { getMapConfigCache, setMapConfigCache } from '../../utils/offlineCache';
 
 // Sub-components
 import PlaceDetailDrawer from './components/PlaceDetailDrawer/PlaceDetailDrawer';
@@ -32,6 +35,9 @@ export default function MapView({
     const [globalSettings, setGlobalSettings] = useState(null);
     const [placeMemories, setPlaceMemories] = useState([]);
     const [loadingMemories, setLoadingMemories] = useState(false);
+    const isOnline = useOnlineStatus();
+    const [syncStatus, setSyncStatus] = useState('syncing'); // 'synced', 'cached', 'offline', 'syncing'
+    const [isUsingCache, setIsUsingCache] = useState(false);
 
     // Tuxtla Gutiérrez, Chiapas
     const [viewport, setViewport] = useState({
@@ -40,8 +46,40 @@ export default function MapView({
     });
 
     useEffect(() => {
-        const unsub = subscribeToGlobalSettings(data => {
-            if (data) setGlobalSettings(data);
+        // 1. Zero-Latency Cache: Cargar cache local inmediatamente para evitar parpadeos
+        async function initCache() {
+            const cached = await getMapConfigCache();
+            if (cached) {
+                setGlobalSettings(SystemConfig.fromFirestore(cached));
+                setSyncStatus('cached');
+                setIsUsingCache(true);
+            }
+        }
+        initCache();
+
+        // 2. Suscribirse a Firestore
+        const unsub = subscribeToGlobalSettings(async data => {
+            if (data) {
+                const config = SystemConfig.fromFirestore(data);
+                
+                const cached = await getMapConfigCache();
+                const remoteTs = config.mapConfig?.lastActTimestamp;
+                const localTs = cached?.mapConfig?.lastActTimestamp;
+
+                const remoteDate = remoteTs ? (typeof remoteTs.toDate === 'function' ? remoteTs.toDate() : new Date(remoteTs)) : null;
+                const localDate = localTs ? new Date(localTs) : null;
+
+                if (!cached || !localDate || (remoteDate && remoteDate > localDate)) {
+                    await setMapConfigCache(data);
+                }
+
+                setGlobalSettings(config);
+                setSyncStatus('synced');
+                setIsUsingCache(false);
+            } else {
+                setSyncStatus('offline');
+                setIsUsingCache(true);
+            }
         });
 
         if (navigator.geolocation) {
@@ -221,18 +259,8 @@ export default function MapView({
                         const isSelected = selectedPlace?.id === place.id;
                         const zoom = viewport?.zoom || 13;
 
-                        // Calculate dynamic style based on tiers
-                        const getPinStyle = (visitCount, tiers) => {
-                            const fallback = { color: "#FFB6C1", scale: 1.0 };
-                            if (!tiers || tiers.length === 0) return fallback;
-                            
-                            // Find the highest tier that matches the visitCount
-                            const sortedTiers = [...tiers].sort((a, b) => b.minVisits - a.minVisits);
-                            const match = sortedTiers.find(t => visitCount >= t.minVisits);
-                            return match || fallback;
-                        };
+                        const tierStyle = place.getMarkerStyle(globalSettings?.mapConfig);
 
-                        const tierStyle = getPinStyle(place.visitCount || 0, globalSettings?.mapConfig?.pinTiers);
 
                         let size = 'small';
                         if (place.visitCount >= 5) size = 'large';

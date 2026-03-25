@@ -2,12 +2,12 @@ export default async function seedAuth(admin, db) {
     console.log('--- Seeding Auth & Config ---');
     
     // 1. AppConfig
-    const futureDate = new Date();
-    futureDate.setMinutes(futureDate.getMinutes() + 2); // 2 minutos en el futuro para testing del Teaser
+    const pastDate = new Date();
+    pastDate.setDate(pastDate.getDate() - 1); // Ayer
     
     await db.collection('appConfig').doc('main').set({
         teaser: {
-            unlockAt: futureDate.toISOString(),
+            unlockAt: pastDate.toISOString(),
             isEnabled: true
         },
         features: {
@@ -24,7 +24,7 @@ export default async function seedAuth(admin, db) {
         },
         inviteConfig: { 
             inviteLink: null, 
-            generatedAt: null 
+            generatedAt: admin.firestore.FieldValue.serverTimestamp()
         },
         snapshotConfig: { 
             timerSeconds: 9 
@@ -37,15 +37,15 @@ export default async function seedAuth(admin, db) {
             displayName: "Test Partner",
             welcomeMessage: "¡Bienvenida a nuestra cápsula!"
         },
-        updatedAt: new Date().toISOString()
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
-    console.log('✅ AppConfig configurado con unlockAt en +2 mins.');
+    console.log(`✅ AppConfig configurado. Teaser desbloqueado (fecha en el pasado).`);
 
-    // 2. Usuarios: Admin y Partner
+    // 2. Usuarios: Solo Admin
     const adminEmail = 'admin@test.com';
-    const partnerEmail = 'partner@test.com';
-    let adminUid, partnerUid;
+    let adminUid;
 
+    // 2.1 Admin Creation (Password)
     try {
         const aRecord = await admin.auth().getUserByEmail(adminEmail);
         adminUid = aRecord.uid;
@@ -55,15 +55,6 @@ export default async function seedAuth(admin, db) {
     }
     await admin.auth().setCustomUserClaims(adminUid, { role: 'admin' });
     
-    try {
-        const pRecord = await admin.auth().getUserByEmail(partnerEmail);
-        partnerUid = pRecord.uid;
-    } catch {
-        const pRecord = await admin.auth().createUser({ email: partnerEmail, password: 'password', displayName: 'Partner' });
-        partnerUid = pRecord.uid;
-    }
-    await admin.auth().setCustomUserClaims(partnerUid, { role: 'partner' });
-
     // 3. Documentos de usuario en Firestore
     await db.collection('users').doc(adminUid).set({
         role: 'admin',
@@ -75,15 +66,6 @@ export default async function seedAuth(admin, db) {
         coinTransactions: []
     }, { merge: true });
 
-    await db.collection('users').doc(partnerUid).set({
-        role: 'partner',
-        email: partnerEmail,
-        displayName: 'Partner Test',
-        teaserCompleted: false, // Para probar redirecciones (Bloque A)
-        welcomeSeen: false,      // Para probar redirecciones (Bloque B)
-        gameCoins: 0,
-        coinTransactions: []
-    }, { merge: true });
-    
-    console.log(`✅ Usuarios (y claims) creados: Admin(${adminEmail}) y Partner(${partnerEmail}).`);
+    console.log(`✅ Admin (${adminEmail}) creado/verificado.`);
 }
+

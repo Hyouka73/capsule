@@ -14,7 +14,7 @@ import SnapshotOverlay from '../snapshots/components/SnapshotOverlay';
 import SnapshotCreator from '../snapshots/components/SnapshotCreator';
 import SnapshotHistory from '../snapshots/components/SnapshotHistory';
 import Button from '../../components/ui/Button/Button';
-import { usePendingBingo } from '../../hooks/usePendingBingo';
+import Card from '../../components/ui/Card/Card';
 import { useBingo } from '../../hooks/useBingo';
 import BingoSuggestionSheet from '../memories/components/BingoSuggestionSheet';
 import CelebrationOverlay from '../../components/Bingo/CelebrationOverlay';
@@ -32,9 +32,13 @@ const SECTIONS = [
 
 export default function AdminDashboard() {
     const { signOut, user } = useAuth();
-    const { unreadCount } = useActivityLog();
+    const { logs, unreadCount, isLoading: loadingLogs } = useActivityLog();
     const [activeSection, setActiveSection] = useState('activity');
+    const [filterType, setFilterType] = useState('all');
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+    // Filtered unread count for the sidebar badge
+    const filteredUnreadCount = logs.filter(l => !l.isReadByAdmin && (filterType === 'all' || l.targetType === filterType)).length;
 
     // Snapshot state — mirrors UserDashboard
     const [isSnapshotOpen, setIsSnapshotOpen] = useState(false);
@@ -43,16 +47,16 @@ export default function AdminDashboard() {
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
     // Bingo Integration for Admin (when creating memories from here)
-    const { pendingSuggestions, resolvePendingSuggestion, dismissSuggestion } = usePendingBingo();
-    const { completeBingoSquare, celebrationEvent, clearCelebrationEvent, resetBingoBoard } = useBingo();
-    const [sheetDismissed, setSheetDismissed] = useState(false);
-    const firstPendingSuggestion = pendingSuggestions.find(s => !s.dismissed);
+    const { 
+        completeBingoSquare, 
+        celebrationEvent, 
+        clearCelebrationEvent, 
+        resetBingoBoard,
+        bingoQueue,
+        resolveBingoSuggestion,
+        isResolving
+    } = useBingo();
 
-    useEffect(() => {
-        if (firstPendingSuggestion) {
-            setSheetDismissed(false);
-        }
-    }, [firstPendingSuggestion?.memoryId]);
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -62,14 +66,24 @@ export default function AdminDashboard() {
 
     const renderContent = () => {
         switch (activeSection) {
+            case 'activity': return (
+                <ActivityPanel 
+                    filterType={filterType} 
+                    setFilterType={setFilterType} 
+                />
+            );
             case 'memories': return <MemoryManager />;
             case 'capsules': return <CapsuleManager />;
             case 'coupons': return <CouponManager />;
             case 'bingo': return <BingoManager />;
-            case 'activity': return <ActivityPanel />;
             case 'wrapped': return <WrappedManager />;
             case 'settings': return <GlobalSettings />;
-            default: return <ActivityPanel />;
+            default: return (
+                <ActivityPanel 
+                    filterType={filterType} 
+                    setFilterType={setFilterType} 
+                />
+            );
         }
     };
 
@@ -97,14 +111,14 @@ export default function AdminDashboard() {
                         >
                             <span className={styles.navIcon}>{section.icon}</span>
                             <span className={styles.navLabel}>{section.label}</span>
-                            {section.id === 'activity' && unreadCount > 0 && (
-                                <span className={styles.unreadBadge}>{unreadCount}</span>
+                            {section.id === 'activity' && filteredUnreadCount > 0 && (
+                                <span className={styles.unreadBadge}>{filteredUnreadCount}</span>
                             )}
                         </button>
                     ))}
                 </nav>
 
-                <div className={styles.footer}>
+                <div className={styles.sidebarFooter}>
                     <div className={styles.userInfo}>
                         <span className={styles.userEmail}>{user?.email?.split('@')[0]}</span>
                     </div>
@@ -123,24 +137,33 @@ export default function AdminDashboard() {
 
             {/* ── Main Content Area ── */}
             <main className={styles.main}>
+                {/* ── Admin Header (Dynamic Title + Snapshot) ── */}
+                <header className={styles.adminHeader}>
+                    <div className={styles.headerLeft}>
+                        <span className={styles.sectionIcon}>
+                            {SECTIONS.find(s => s.id === activeSection)?.icon}
+                        </span>
+                        <h1 className={styles.headerTitle}>
+                            {SECTIONS.find(s => s.id === activeSection)?.label}
+                        </h1>
+                    </div>
+
+                    <div className={styles.headerRight}>
+                        <SnapshotButton 
+                            onOpenSnapshot={(snaps) => {
+                                setActiveSnapshots(snaps);
+                                setIsSnapshotOpen(true);
+                            }}
+                            onOpenCamera={() => setIsCameraOpen(true)}
+                        />
+                    </div>
+                </header>
                 <div className={styles.contentWrapper}>
                     {renderContent()}
                 </div>
             </main>
 
-            {/* ── Snapshot button (top-right) — ver fotos que envió el partner ── */}
-            {!isSnapshotOpen && !isCameraOpen && (
-                <div className={styles.snapshotBtnWrapper}>
-                    <SnapshotButton
-                        onOpenSnapshot={(snapshotsArray) => {
-                            setActiveSnapshots(snapshotsArray);
-                            setIsSnapshotOpen(true);
-                        }}
-                        onOpenCamera={() => setIsCameraOpen(true)}
-                    />
-                </div>
-            )}
-
+            {/* Snapshot Button removido por petición (Solo se ve en Mapa) */}
             {/* ── Camera FAB — tomar nueva instantánea para el partner ── */}
             {!isSnapshotOpen && !isCameraOpen && (
                 <button
@@ -192,39 +215,17 @@ export default function AdminDashboard() {
             </AnimatePresence>
 
             <BingoSuggestionSheet 
-                isOpen={!!firstPendingSuggestion && !sheetDismissed}
-                suggestions={firstPendingSuggestion?.suggestions || []}
+                isOpen={bingoQueue.length > 0}
+                suggestions={bingoQueue[0]?.suggestions || []}
                 onConfirm={async (selectedIds) => {
-                    if (!firstPendingSuggestion) return;
-                    setSheetDismissed(true);
-                    for (const id of selectedIds) {
-                        completeBingoSquare(id, firstPendingSuggestion.memoryId);
-                    }
-                    resolvePendingSuggestion(firstPendingSuggestion.memoryId);
+                    if (bingoQueue.length === 0) return;
+                    await resolveBingoSuggestion(bingoQueue[0].memoryId, selectedIds);
                 }}
                 onCancel={async () => {
-                    if (!firstPendingSuggestion) return;
-                    setSheetDismissed(true);
-                    try {
-                        const { openDB } = await import('../../config/dbConfig');
-                        const db = await openDB();
-                        const tx = db.transaction('pending_bingo', 'readwrite');
-                        const store = tx.objectStore('pending_bingo');
-                        const memoryId = firstPendingSuggestion.memoryId || crypto.randomUUID();
-                        store.put({
-                            ...firstPendingSuggestion,
-                            memoryId,
-                            resolved: false,
-                            dismissed: true,
-                            createdAt: firstPendingSuggestion.createdAt || Date.now()
-                        });
-                        await new Promise((resolve, reject) => {
-                            tx.oncomplete = () => resolve();
-                            tx.onerror = () => reject(tx.error);
-                        });
-                    } catch (err) {}
-                    dismissSuggestion(firstPendingSuggestion.memoryId);
+                    if (bingoQueue.length === 0) return;
+                    await resolveBingoSuggestion(bingoQueue[0].memoryId);
                 }}
+                isSaving={isResolving}
             />
 
             {celebrationEvent && (

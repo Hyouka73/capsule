@@ -15,6 +15,7 @@ const AppConfigContext = createContext(null);
 export function AppConfigProvider({ children }) {
     const [config, setConfig] = useState(new SystemConfig());
     const [isConfigLoaded, setIsConfigLoaded] = useState(false);
+    const [isFromCache, setIsFromCache] = useState(false);
 
     useEffect(() => {
         const configRef = doc(
@@ -35,6 +36,7 @@ export function AppConfigProvider({ children }) {
                         console.log('[AppConfig] Loaded from IndexedDB');
                         setConfig(SystemConfig.fromFirestore(req.result.data));
                         setIsConfigLoaded(true);
+                        setIsFromCache(true);
                     }
                 };
             } catch (err) {
@@ -50,6 +52,7 @@ export function AppConfigProvider({ children }) {
                     const data = snapshot.data();
                     const newConfig = SystemConfig.fromFirestore(data);
                     setConfig(newConfig);
+                    setIsFromCache(false);
                     
                     // Persist to IndexedDB
                     try {
@@ -81,6 +84,7 @@ export function AppConfigProvider({ children }) {
     const value = useMemo(() => ({
         ...config,
         isConfigLoaded,
+        isFromCache,
         /**
          * Check if a feature is enabled
          * @param {string} featureName

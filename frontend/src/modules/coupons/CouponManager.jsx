@@ -17,26 +17,34 @@ export default function CouponManager() {
         deleteCoupon 
     } = useCoupons({ adminMode: true });
 
+    const [activeTab, setActiveTab] = useState('active'); // 'active', 'inactive', 'claimed'
     const [showForm, setShowForm] = useState(false);
     const [editingCoupon, setEditingCoupon] = useState(null);
+    const [assigningCoupon, setAssigningCoupon] = useState(null);
 
     // Form state
     const [formData, setFormData] = useState({ 
-        emoji: '🎁', title: '', type: 'wish', description: '', instructions: '', expiryDate: '', isActive: true 
+        emoji: '🎁', title: '', type: 'wish', description: '', instructions: '', expiryDate: '', isActive: true, maxRedemptions: 1 
     });
 
     const handleCreated = async (e) => {
         e.preventDefault();
         
         try {
+            const couponData = {
+                ...formData,
+                status: formData.isActive ? 'activo' : 'inactivo',
+                redemptionsLeft: formData.maxRedemptions
+            };
+
             if (editingCoupon) {
-                await toast.promise(updateCoupon(editingCoupon.id, formData), {
+                await toast.promise(updateCoupon(editingCoupon.id, couponData), {
                     loading: 'Guardando cambios...',
                     success: 'Cupón actualizado ✨',
                     error: 'Error al actualizar'
                 });
             } else {
-                await toast.promise(createCoupon(formData), {
+                await toast.promise(createCoupon(couponData), {
                     loading: 'Creando cupón...',
                     success: '¡Cupón creado con éxito! 🎁',
                     error: 'Error al crear'
@@ -44,7 +52,7 @@ export default function CouponManager() {
             }
             setShowForm(false);
             setEditingCoupon(null);
-            setFormData({ emoji: '🎁', title: '', type: 'wish', description: '', instructions: '', expiryDate: '', isActive: true });
+            setFormData({ emoji: '🎁', title: '', type: 'wish', description: '', instructions: '', expiryDate: '', isActive: true, maxRedemptions: 1 });
         } catch (err) {
             console.error('[CouponManager] Form error:', err);
         }
@@ -53,8 +61,9 @@ export default function CouponManager() {
     const handleEdit = (c) => {
         setEditingCoupon(c);
         setFormData({
-            emoji: c.emoji, title: c.title, type: c.type, description: c.description,
-            instructions: c.instructions, expiryDate: c.expiryDate || '', isActive: c.isActive
+            emoji: c.emoji, title: c.title || c.name, type: c.type, description: c.description,
+            instructions: c.instructions || '', expiryDate: c.expiryDate || '', 
+            isActive: c.status === 'activo', maxRedemptions: c.maxRedemptions || 1
         });
         setShowForm(true);
     };
@@ -75,34 +84,79 @@ export default function CouponManager() {
 
     const toggleActive = async (coupon) => {
         try {
-            await updateCoupon(coupon.id, { isActive: !coupon.isActive });
+            const newStatus = coupon.status === 'activo' ? 'inactivo' : 'activo';
+            await updateCoupon(coupon.id, { 
+                status: newStatus,
+                isActive: newStatus === 'activo'
+            });
         } catch (err) {
             toast.error('Error al cambiar estado');
         }
     };
 
-    const availableCoupons = coupons.filter(c => !c.isUsed);
-    const redeemedCoupons = coupons.filter(c => c.isUsed);
+    const handleAssign = async (userId) => {
+        if (!assigningCoupon) return;
+        try {
+            // This will be implemented in useCoupons or a direct service call
+            await toast.promise(assignCouponDirectly(assigningCoupon.id, userId), {
+                loading: 'Asignando cupón...',
+                success: 'Cupón asignado con éxito 🎁',
+                error: 'Error al asignar'
+            });
+            setAssigningCoupon(null);
+        } catch (err) {
+            console.error('[CouponManager] Assign error:', err);
+        }
+    };
+
+    // Filter coupons based on activeTab
+    const filteredCoupons = coupons.filter(c => {
+        if (activeTab === 'active') return c.status === 'activo' || (c.isActive && c.status !== 'cobrado' && c.status !== 'inactivo');
+        if (activeTab === 'inactive') return c.status === 'inactivo' || (!c.isActive && c.status !== 'cobrado');
+        if (activeTab === 'claimed') return c.status === 'cobrado' || c.isUsed;
+        return true;
+    });
 
     return (
         <div className={styles.root}>
             <PageHeader
-                title="Talonario de Cupones"
-                subtitle={`${availableCoupons.length} disponibles, ${redeemedCoupons.length} canjeados`}
+                title="Gestión de Cupones"
+                subtitle="Configura recompensas y asigna detalles especiales."
                 actionLabel="Nuevo Cupón"
                 actionIcon="✨"
                 onAction={() => { 
                     setEditingCoupon(null); 
-                    setFormData({ emoji: '🎁', title: '', type: 'wish', description: '', instructions: '', expiryDate: '', isActive: true }); 
+                    setFormData({ emoji: '🎁', title: '', type: 'wish', description: '', instructions: '', expiryDate: '', isActive: true, maxRedemptions: 1 }); 
                     setShowForm(true); 
                 }}
             />
+
+            <div className={styles.tabsContainer}>
+                <button 
+                    className={`${styles.tab} ${activeTab === 'active' ? styles.tabActive : ''}`}
+                    onClick={() => setActiveTab('active')}
+                >
+                    🟢 Activos
+                </button>
+                <button 
+                    className={`${styles.tab} ${activeTab === 'inactive' ? styles.tabActive : ''}`}
+                    onClick={() => setActiveTab('inactive')}
+                >
+                    ⚪ Inactivos
+                </button>
+                <button 
+                    className={`${styles.tab} ${activeTab === 'claimed' ? styles.tabActive : ''}`}
+                    onClick={() => setActiveTab('claimed')}
+                >
+                    ✅ Cobrados
+                </button>
+            </div>
 
             {/* Form panel */}
             {showForm && (
                 <Card className={styles.formPanel} glass>
                     <div className={styles.formPanelHeader}>
-                        <h2>{editingCoupon ? '✍️ Editar Cupón' : '✨ Nuevo Cupón Real'}</h2>
+                        <h2>{editingCoupon ? '✍️ Editar Cupón' : '✨ Nuevo Cupón'}</h2>
                         <button type="button" onClick={() => setShowForm(false)} className={styles.closeBtn} title="Cerrar">✕</button>
                     </div>
                     <form onSubmit={handleCreated} className={styles.form}>
@@ -120,7 +174,7 @@ export default function CouponManager() {
                             <div className={styles.formGroup} style={{ flex: '1' }}>
                                 <KawaiiInput 
                                     type="text" 
-                                    label="Título del Cupón" 
+                                    label="Título" 
                                     required 
                                     placeholder="Ej. Vale por un abrazo..." 
                                     value={formData.title} 
@@ -147,10 +201,11 @@ export default function CouponManager() {
                             </div>
                             <div className={styles.formGroup} style={{ flex: '1' }}>
                                 <KawaiiInput 
-                                    type="date" 
-                                    label="Expiración (Opcional)" 
-                                    value={formData.expiryDate} 
-                                    onChange={e => setFormData({ ...formData, expiryDate: e.target.value })} 
+                                    type="number" 
+                                    label="Max Canjes" 
+                                    min="1"
+                                    value={formData.maxRedemptions} 
+                                    onChange={e => setFormData({ ...formData, maxRedemptions: parseInt(e.target.value) || 1 })} 
                                 />
                             </div>
                         </div>
@@ -158,7 +213,7 @@ export default function CouponManager() {
                         <div className={styles.formGroup}>
                             <KawaiiInput 
                                 type="textarea" 
-                                label="Descripción corta" 
+                                label="Descripción" 
                                 required 
                                 rows="2" 
                                 placeholder="¿Qué incluye este cupón?" 
@@ -167,20 +222,10 @@ export default function CouponManager() {
                             />
                         </div>
 
-                        <div className={styles.formGroup}>
-                            <KawaiiInput 
-                                type="text" 
-                                label="Reglas o instrucciones" 
-                                placeholder="Ej. Válido solo los fines de semana" 
-                                value={formData.instructions} 
-                                onChange={e => setFormData({ ...formData, instructions: e.target.value })} 
-                            />
-                        </div>
-
                         <div className={styles.toggleGroup}>
                             <KawaiiInput 
                                 type="toggle" 
-                                label="Cupón Activo (Visible para ella)" 
+                                label="Cupón Activo" 
                                 value={formData.isActive} 
                                 onChange={e => setFormData({ ...formData, isActive: e.target.checked || e.target.value === true })} 
                             />
@@ -188,7 +233,7 @@ export default function CouponManager() {
 
                         <div className={styles.formActions}>
                             <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>Cancelar</Button>
-                            <Button type="submit">{editingCoupon ? 'Guardar Cambios' : 'Crear Cupón'}</Button>
+                            <Button type="submit">{editingCoupon ? 'Guardar' : 'Crear'}</Button>
                         </div>
                     </form>
                 </Card>
@@ -198,87 +243,95 @@ export default function CouponManager() {
             {isLoading ? (
                 <div className={styles.loading}>
                     <div className={styles.spinner}></div>
-                    <p>Conectando con Firestore...</p>
+                    <p>Cargando cupones...</p>
                 </div>
-            ) : availableCoupons.length === 0 ? (
+            ) : filteredCoupons.length === 0 ? (
                 <EmptyState
-                    icon="🎟️"
-                    title="El talonario está vacío"
-                    description="Crea cupones reales que ella podrá ver en su dashboard de inmediato."
+                    icon={activeTab === 'active' ? '🎟️' : activeTab === 'inactive' ? '⚪' : '✅'}
+                    title={activeTab === 'active' ? 'Sin cupones activos' : activeTab === 'inactive' ? 'Sin cupones inactivos' : 'Sin historial de cobros'}
+                    description={activeTab === 'active' ? 'Crea cupones para que tu partner pueda canjearlos.' : ''}
                 />
             ) : (
                 <div className={styles.grid}>
-                    {availableCoupons.map(coupon => (
+                    {filteredCoupons.map(coupon => (
                         <CouponCard 
                             key={coupon.id} 
                             coupon={coupon} 
                             onEdit={() => handleEdit(coupon)} 
                             onDelete={() => handleDelete(coupon.id)} 
                             onToggleActive={() => toggleActive(coupon)} 
+                            onAssign={() => setAssigningCoupon(coupon)}
+                            showAssign={activeTab === 'active'}
                         />
                     ))}
                 </div>
             )}
 
-            {/* Redemption History */}
-            {redeemedCoupons.length > 0 && (
-                <div className={styles.historySection}>
-                    <h3 className={styles.historyTitle}>📓 Historial de Canjes (Real)</h3>
-                    <div className={styles.historyList}>
-                        {redeemedCoupons.map(coupon => (
-                            <div key={coupon.id} className={styles.historyItem}>
-                                <div className={styles.historyItemIcon}>{coupon.emoji}</div>
-                                <div className={styles.historyItemContent}>
-                                    <h4>{coupon.title}</h4>
-                                    <p>Canjeado el {coupon.usedAt ? new Date(coupon.usedAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Fecha desconocida'}</p>
-                                </div>
-                                <Button 
-                                    size="sm" 
-                                    variant="ghost" 
-                                    className={styles.reactivateBtn} 
-                                    onClick={() => updateCoupon(coupon.id, { isUsed: false, isActive: true, usedAt: null })}
-                                >
-                                    Reactivar
-                                </Button>
-                            </div>
-                        ))}
-                    </div>
+            {/* Assignment Modal (Future-proof Selector) */}
+            {assigningCoupon && (
+                <div className={styles.modalOverlay} onClick={() => setAssigningCoupon(null)}>
+                    <Card className={styles.assignModal} onClick={e => e.stopPropagation()}>
+                        <h3>🎁 Asignar "{assigningCoupon.title || assigningCoupon.name}"</h3>
+                        <p>El cupón aparecerá directamente en "Disponibles" del Partner.</p>
+                        
+                        <div className={styles.partnerList}>
+                            {/* For now we assume one partner, but could be fetched from a useUsers hook */}
+                            <button className={styles.partnerBtn} onClick={() => handleAssign('partner_uid')}>
+                                <span className={styles.partnerAvatar}>💖</span>
+                                <span className={styles.partnerName}>Partner</span>
+                            </button>
+                        </div>
+                        
+                        <Button variant="ghost" className={styles.cancelModal} onClick={() => setAssigningCoupon(null)}>Cancelar</Button>
+                    </Card>
                 </div>
             )}
         </div>
     );
 }
 
-function CouponCard({ coupon, onEdit, onDelete, onToggleActive }) {
+function CouponCard({ coupon, onEdit, onDelete, onToggleActive, onAssign, showAssign }) {
     const typeLabels = {
         massage: 'Relax', date_night: 'Cita', free_pass: 'Pase Libre', wish: 'Deseo', naughty: 'Intimo'
     };
 
+    const isInactive = coupon.status === 'inactivo' || !coupon.isActive;
+    const isClaimed = coupon.status === 'cobrado' || coupon.isUsed;
+
     return (
-        <Card className={`${styles.card} ${!coupon.isActive ? styles.cardInactive : ''}`}>
+        <Card className={`${styles.card} ${isInactive ? styles.cardInactive : ''} ${isClaimed ? styles.cardClaimed : ''}`}>
             <div className={styles.cardHeader}>
                 <div className={styles.couponIcon}>{coupon.emoji}</div>
                 <div className={styles.cardHeaderActions}>
                     <span className={styles.typeBadge}>{typeLabels[coupon.type] || coupon.type}</span>
-                    <button className={`${styles.toggleBtn} ${coupon.isActive ? styles.toggleOn : styles.toggleOff}`} onClick={onToggleActive} title={coupon.isActive ? "Desactivar" : "Activar"}>
-                        {coupon.isActive ? '👁️' : '🙈'}
+                    <button className={`${styles.toggleBtn} ${!isInactive ? styles.toggleOn : styles.toggleOff}`} onClick={onToggleActive} title={!isInactive ? "Desactivar" : "Activar"}>
+                        {!isInactive ? '👁️' : '🙈'}
                     </button>
                 </div>
             </div>
 
-            <h3 className={styles.cardTitle}>{coupon.title}</h3>
+            <h3 className={styles.cardTitle}>{coupon.title || coupon.name}</h3>
             <p className={styles.cardDesc}>{coupon.description}</p>
-
-            <div className={styles.cardFooter}>
-                <div className={styles.expiryLabel}>
-                    {coupon.expiryDate ? (<span>⏳ Hasta: <strong>{new Date(coupon.expiryDate).toLocaleDateString()}</strong></span>) : (<span>✨ Sin caducidad</span>)}
-                </div>
+            
+            <div className={styles.cardStats}>
+                {coupon.maxRedemptions > 1 && (
+                    <span className={styles.statBadge}>
+                        🔢 {coupon.redemptionsLeft} / {coupon.maxRedemptions}
+                    </span>
+                )}
+                {isClaimed && <span className={styles.claimedBadge}>COBRADO</span>}
             </div>
 
-            {/* Hover actions */}
-            <div className={styles.cardActionsOverlay}>
-                <button className={styles.actionBtn} onClick={onEdit} title="Editar">✏️</button>
-                <button className={`${styles.actionBtn} ${styles.deleteBtn}`} onClick={onDelete} title="Eliminar">🗑️</button>
+            <div className={styles.cardFooter}>
+                {showAssign && !isClaimed && (
+                    <Button size="sm" className={styles.assignBtn} onClick={onAssign}>
+                        🎁 Asignar
+                    </Button>
+                )}
+                <div className={styles.footerActions}>
+                    <button className={styles.miniBtn} onClick={onEdit} title="Editar">✏️</button>
+                    <button className={`${styles.miniBtn} ${styles.deleteBtn}`} onClick={onDelete} title="Eliminar">🗑️</button>
+                </div>
             </div>
 
             <div className={styles.tearLine}></div>

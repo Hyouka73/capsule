@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from './PlaceDetailDrawer.module.css';
 import Carousel from '../../../../components/ui/Carousel/Carousel';
+import { useCacheThumbnail } from '../../../../hooks/useCacheThumbnail';
 
 /**
  * PlaceDetailDrawer
@@ -98,11 +99,11 @@ export default function PlaceDetailDrawer({
                                                 }}
                                             >
                                                 <div className={styles.memoryPhotoWrap}>
-                                                    {memory.mainPhotoUrl ? (
-                                                        <img src={memory.mainPhotoUrl} className={styles.memoryPhoto} alt="" />
-                                                    ) : (
-                                                        <div className={styles.memoryPhotoPlaceholder}>📸</div>
-                                                    )}
+                                                    <MemoryPhoto 
+                                                        placeId={selectedPlace.id} 
+                                                        originalUrl={memory.mainPhotoUrl} 
+                                                        className={styles.memoryPhoto} 
+                                                    />
                                                     {memory.photoCount > 1 && (
                                                         <div className={styles.photoCountBadge}>
                                                             {memory.photoCount} fotos
@@ -157,5 +158,22 @@ export default function PlaceDetailDrawer({
                 )}
             </AnimatePresence>
         </div>
+    );
+}
+
+function MemoryPhoto({ placeId, originalUrl, className }) {
+    const displayUrl = useCacheThumbnail(placeId, originalUrl);
+
+    if (!originalUrl) {
+        return <div className="memory-photo-placeholder">📸</div>;
+    }
+
+    return (
+        <img 
+            src={displayUrl} 
+            className={className} 
+            alt="Memoria" 
+            loading="lazy" 
+        />
     );
 }

@@ -10,8 +10,8 @@ export default async function seedBingo(admin, db) {
         { id: 'relax', title: 'Tarde de spa', emoji: '💆‍♂️', minPhotos: 1, completedMemoryId: null, suggestedTags: [{ value: 'relax', label: 'Relax 💆‍♂️' }], completedAt: null, isSpecial: true, isEnabled: true }
     ];
     
-    // Rellenamos el resto para armar un board de 20 casillas (4x5)
-    for (let i = categories.length + 1; i <= 20; i++) {
+    // Rellenamos el resto para armar un board de 16 casillas (4x4)
+    for (let i = categories.length + 1; i <= 16; i++) {
         categories.push({ 
             id: `cat${i}`, 
             title: `Reto ${i}`, 
@@ -30,5 +30,5 @@ export default async function seedBingo(admin, db) {
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
     
-    console.log('✅ Tablero de Bingo inicializado (20 casillas, 4x5).');
+    console.log('✅ Tablero de Bingo inicializado (16 casillas, 4x4).');
 }

@@ -151,7 +151,7 @@ async function syncCitaStatus(citaId, status) {
  * Offline-capable photo upload queue using IndexedDB.
  */
 export function useOfflineQueue() {
-    const { completeBingoSquare } = useBingo();
+    const { completeBingoSquare, enqueueBingoSuggestion } = useBingo();
     const [pendingCount, setPendingCount] = useState(0);
     const [failedCount, setFailedCount] = useState(0);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -190,6 +190,7 @@ export function useOfflineQueue() {
         setIsProcessing(true);
 
         const DELAY_BETWEEN_UPLOADS = 3000;
+        let newBingoSuggestionsCount = 0;
 
         try {
             // Sort FIFO (oldest first)
@@ -273,8 +274,12 @@ export function useOfflineQueue() {
                                     createdAt: Date.now(),
                                     resolved: false
                                 });
-                                // Trigger update to UI
+                                // Trigger update to UI (for lightbulbs)
                                 window.dispatchEvent(new Event('pending_bingo_updated'));
+                                
+                                // NEW: Enqueue for sequential UI Queue
+                                enqueueBingoSuggestion(item.id, res.bingoSuggestions);
+                                newBingoSuggestionsCount++;
                             } catch (e) {
                                 console.error('[offlineQueue] Error saving pending_bingo', e);
                             }
@@ -325,6 +330,13 @@ export function useOfflineQueue() {
             isProcessingGlobal = false;
             setIsProcessing(false);
             refreshCount();
+
+            if (newBingoSuggestionsCount > 0) {
+                toast.success(
+                    '🎉 Nuevas sugerencias', 
+                    `Tienes ${newBingoSuggestionsCount} sugerencias de bingo pendientes.`
+                );
+            }
         }
     }, [refreshCount, completeBingoSquare]);
 

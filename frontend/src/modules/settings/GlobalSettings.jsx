@@ -403,7 +403,7 @@ export default function GlobalSettings() {
                                         ))}
                                     </div>
                                     
-                                    {(!config.mapConfig.pinTiers || config.mapConfig.pinTiers.length < 10) && (
+                                    {(!config.mapConfig.pinTiers || config.mapConfig.pinTiers.length < 5) && (
                                         <Button 
                                             variant="ghost" 
                                             size="sm" 

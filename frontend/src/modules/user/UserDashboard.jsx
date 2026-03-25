@@ -20,7 +20,7 @@ import { TABS } from '../../data/dashboardData';
 import { usePendingCitas } from '../../hooks/usePendingCitas';
 import Memory from '../../models/Memory';
 import { useOfflineQueue } from '../../hooks/useOfflineQueue';
-import { usePendingBingo } from '../../hooks/usePendingBingo';
+// import { usePendingBingo } from '../../hooks/usePendingBingo';
 import { useBingo } from '../../hooks/useBingo';
 import BingoSuggestionSheet from '../memories/components/BingoSuggestionSheet';
 import PhotoViewer from '../../components/ui/PhotoViewer/PhotoViewer';
@@ -29,14 +29,23 @@ import PendingDateForm from '../../components/PendingDates/PendingDateForm';
 import { usePlaces } from '../map/hooks/usePlaces';
 import { toast } from '../../components/ui/PastelToast/PastelToast';
 import CelebrationOverlay from '../../components/Bingo/CelebrationOverlay';
+import LaLaLandIris from '../../components/Bingo/LaLaLandIris';
 
 export default function UserDashboard() {
     const { isPartner, isAdmin } = useAuth();
     const { isFeatureOn } = useAppConfig();
     const { pendingCount, pendingCitas, removePendingCita, addPendingCita, updatePendingCitaStatus, updatePendingCita, restorePendingCita } = usePendingCitas();
-    const { pendingSuggestions, resolvePendingSuggestion, dismissSuggestion } = usePendingBingo();
-    const { completeBingoSquare, celebrationEvent, clearCelebrationEvent, resetBingoBoard } = useBingo();
-    const firstPendingSuggestion = pendingSuggestions.find(s => !s.dismissed);
+    const { 
+        completeBingoSquare, 
+        markBatchComplete, 
+        celebrationEvent, 
+        clearCelebrationEvent, 
+        irisEvent, 
+        resetBingoBoard,
+        bingoQueue,
+        resolveBingoSuggestion,
+        isResolving
+    } = useBingo();
 
     // Map tab IDs to feature flags
     const TAB_FLAGS = {
@@ -79,9 +88,17 @@ export default function UserDashboard() {
     const [isPendingListOpen, setIsPendingListOpen] = useState(false);
     const [sheetDismissed, setSheetDismissed] = useState(false);
 
+
     // Dynamic check for ANY overlay that should hide the map
     // We EXCLUDE isPlaceSelected because that modal (PlaceDetailDrawer) lives INSIDE MapView
-    const hasAnyOverlayOpen = !!citaContext || isBingoModalOpen || isCouponsModalOpen || isSnapshotOpen || isCameraOpen || isHistoryOpen || isPendingListOpen || !!selectedPendingDate || !!viewerPhotos || (!!firstPendingSuggestion && !sheetDismissed) || !!celebrationEvent;
+    const hasAnyOverlayOpen = !!citaContext || isBingoModalOpen || isCouponsModalOpen || isSnapshotOpen || isCameraOpen || isHistoryOpen || isPendingListOpen || !!selectedPendingDate || !!viewerPhotos || bingoQueue.length > 0 || !!celebrationEvent;
+
+    // Check specifically for nav hiding (includes map selection)
+    const shouldHideNav = hasAnyOverlayOpen;
+
+    
+    // Check for map rendering (should NOT hide when a place is selected)
+    const shouldShowMap = activeTab === 'lugares' && (!hasAnyOverlayOpen || isPlaceSelected);
 
     // Partículas solo cuando NO es el mapa
     useEffect(() => {
@@ -122,13 +139,15 @@ export default function UserDashboard() {
         setIsCouponsModalOpen(false);
     };
 
-    // Reset indicator when a NEW pending suggestion arrives
-    useEffect(() => {
-        if (firstPendingSuggestion) {
-            setSheetDismissed(false);
-        }
-    }, [firstPendingSuggestion?.memoryId]);
 
+
+    // Al completar el tablero, forzar cambio a pestaña de Bingo para ver la animación
+    useEffect(() => {
+        if (celebrationEvent?.isFullBoard && activeTab !== 'bingo') {
+            console.log('[Dashboard] Full board detected! Switching to Bingo tab.');
+            setActiveTab('bingo');
+        }
+    }, [celebrationEvent?.isFullBoard, activeTab]);
 
     // Calcular dirección para la animación
     const getDirection = () => {
@@ -249,8 +268,8 @@ export default function UserDashboard() {
     return (
         <div className={styles.appContainer}>
 
-            {/* ── MAPA: va directo al appContainer, sin padding ni wrappers ── */}
-            {activeTab === 'lugares' && !hasAnyOverlayOpen && (
+            {/* ── MAPA ── */}
+            {shouldShowMap && (
                 <div className={styles.mapWrapper}>
                     <MapView
                         onPlaceSelected={setIsPlaceSelected}
@@ -313,30 +332,14 @@ export default function UserDashboard() {
                             tabs={mainTabs}
                             moreTabs={moreTabs}
                             pendingCount={pendingCount}
-                            pendingBingoCount={pendingSuggestions.length}
+                            pendingBingoCount={bingoQueue.length}
                         />
                     </motion.div>
                 )}
             </AnimatePresence>
 
             {/* ── Persist Camera FAB across specific views ── */}
-            {/* ── Global Snapshot FAB (Solo en tabs que NO son mapa y sin overlays) ── */}
-            {(isPartner || isAdmin) && !hasAnyOverlayOpen && activeTab !== 'lugares' && (
-                <motion.div
-                    className={styles.cameraFabWrapper}
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
-                >
-                    <SnapshotButton
-                        onOpenSnapshot={(snapshotsArray) => {
-                            setActiveSnapshots(snapshotsArray);
-                            setIsSnapshotOpen(true);
-                        }}
-                        onOpenCamera={() => setIsCameraOpen(true)}
-                    />
-                </motion.div>
-            )}
+            {/* ── Global Snapshot FAB removido por petición (Solo se ve en Mapa) ── */}
 
             <AnimatePresence>
                 {isSnapshotOpen && activeSnapshots.length > 0 && (
@@ -425,70 +428,42 @@ export default function UserDashboard() {
             )}
 
             <BingoSuggestionSheet 
-                isOpen={!!firstPendingSuggestion && !sheetDismissed}
-                suggestions={firstPendingSuggestion?.suggestions || []}
+                isOpen={bingoQueue.length > 0}
+                suggestions={bingoQueue[0]?.suggestions || []}
                 onConfirm={async (selectedIds) => {
-                    if (!firstPendingSuggestion) return;
-                    
-                    // 1. Cerrar visualmente de inmediato
-                    setSheetDismissed(true);
-
-                    // 2. Ejecutar lógica de bingo (dispara celebración internamente)
-                    for (const id of selectedIds) {
-                        completeBingoSquare(id, firstPendingSuggestion.memoryId);
-                    }
-                    
-                    // 3. Resolver sugerencia en background (sin await bloqueante)
-                    resolvePendingSuggestion(firstPendingSuggestion.memoryId);
+                    if (bingoQueue.length === 0) return;
+                    await resolveBingoSuggestion(bingoQueue[0].memoryId, selectedIds);
                 }}
                 onCancel={async () => {
-                    if (!firstPendingSuggestion) return;
-                    
-                    // 1. NO resolve immediately. Instead, dismiss to hide sheet but keep badge.
-                    // 2. Ensure it's in pending_bingo (IndexedDB) with resolved: false
-                    try {
-                        const { openDB } = await import('../../config/dbConfig');
-                        const db = await openDB();
-                        const tx = db.transaction('pending_bingo', 'readwrite');
-                        const store = tx.objectStore('pending_bingo');
-                        
-                        // Use existing memoryId or fallback to UUID if missing
-                        const memoryId = firstPendingSuggestion.memoryId || crypto.randomUUID();
-                        
-                        store.put({
-                            ...firstPendingSuggestion,
-                            memoryId,
-                            resolved: false,
-                            dismissed: true, // Specific flag to hide from sheet
-                            createdAt: firstPendingSuggestion.createdAt || Date.now()
-                        });
-                        
-                        await new Promise((resolve, reject) => {
-                            tx.oncomplete = () => resolve();
-                            tx.onerror = () => reject(tx.error);
-                        });
-                    } catch (err) {
-                        console.error('[BingoSuggestion] Error saving to IndexedDB:', err);
-                    }
-
-                    // 3. Update local state via hook
-                    dismissSuggestion(firstPendingSuggestion.memoryId);
+                    if (bingoQueue.length === 0) return;
+                    await resolveBingoSuggestion(bingoQueue[0].memoryId);
                 }}
+                isSaving={isResolving}
             />
 
             {celebrationEvent && (
                 <CelebrationOverlay 
                     tierLabel={celebrationEvent.tierLabel}
                     reward={celebrationEvent.reward}
-                    coins={celebrationEvent.coins}
+                    coins={celebrationEvent.totalCoins} /* Total display */
+                    isCombo={celebrationEvent.isCombo}
+                    achievements={celebrationEvent.achievements}
+                    totalCoins={celebrationEvent.totalCoins}
+                    isFullBoard={celebrationEvent.isFullBoard}
                     onComplete={() => {
                         if (celebrationEvent.isFullBoard) {
+                            // First phase complete, reset board after transition
                             resetBingoBoard();
                         }
                         clearCelebrationEvent();
                     }}
                 />
             )}
+
+            {/* Global Easter Egg Transition (Top of everything) */}
+            <AnimatePresence>
+                {irisEvent && <LaLaLandIris key="la-la-land-iris" />}
+            </AnimatePresence>
         </div>
     );
 }

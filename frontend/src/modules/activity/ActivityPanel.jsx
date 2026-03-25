@@ -1,19 +1,74 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import Card from '../../components/ui/Card/Card';
 import Button from '../../components/ui/Button/Button';
-import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
 import { useActivityLog } from '../../hooks/useActivityLog';
+import { useCoupons } from '../../hooks/useCoupons';
+import { db } from '../../services/firebase';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import SnapshotButton from '../snapshots/components/SnapshotButton';
 import styles from './ActivityPanel.module.css';
 
-export default function ActivityPanel() {
-    const { logs, isLoading, markAsRead, markAllAsRead, unreadCount } = useActivityLog();
+export default function ActivityPanel({ filterType, setFilterType, onOpenSnapshot, onOpenCamera }) {
+    const { logs, isLoading: loadingLogs, markAsRead, markAllAsRead, unreadCount } = useActivityLog();
+    const { coupons, redemptions, updateCoupon, claimRedemption } = useCoupons({ adminMode: true });
     
-    // Filters
-    const [filterType, setFilterType] = useState('all');
+    // Local state for sidebar toggle (legacy) or other filters
     const [onlyUnread, setOnlyUnread] = useState(false);
+    const scrollRef = useRef(null);
+
+    useEffect(() => {
+        const slider = scrollRef.current;
+        if (!slider) return;
+
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+
+        const startDragging = (e) => {
+            isDown = true;
+            slider.style.cursor = 'grabbing';
+            startX = e.pageX - slider.offsetLeft;
+            scrollLeft = slider.scrollLeft;
+        };
+
+        const stopDragging = () => {
+            isDown = false;
+            slider.style.cursor = 'grab';
+        };
+
+        const move = (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - slider.offsetLeft;
+            const walk = (x - startX) * 2;
+            slider.scrollLeft = scrollLeft - walk;
+        };
+
+        slider.addEventListener('mousedown', startDragging);
+        slider.addEventListener('mouseleave', stopDragging);
+        slider.addEventListener('mouseup', stopDragging);
+        slider.addEventListener('mousemove', move);
+
+        return () => {
+            slider.removeEventListener('mousedown', startDragging);
+            slider.removeEventListener('mouseleave', stopDragging);
+            slider.removeEventListener('mouseup', stopDragging);
+            slider.removeEventListener('mousemove', move);
+        };
+    }, []);
+
+    const pendingRedemptions = useMemo(() => {
+        return (redemptions || []).filter(r => r.status === 'pending_approval').map(r => {
+            const coupon = coupons.find(c => c.id === r.couponId);
+            return { ...r, coupon };
+        }).filter(r => r.coupon);
+    }, [redemptions, coupons]);
 
     const filteredLogs = useMemo(() => {
         return logs.filter(log => {
+            // Remove snapshots from logs
+            if (log.targetType === 'snapshot') return false;
+            
             const matchesType = filterType === 'all' || log.targetType === filterType;
             const matchesUnread = !onlyUnread || !log.isReadByAdmin;
             return matchesType && matchesUnread;
@@ -21,36 +76,82 @@ export default function ActivityPanel() {
     }, [logs, filterType, onlyUnread]);
 
     const groupedLogs = useMemo(() => {
-        const groups = {};
-        filteredLogs.forEach(log => {
-            const date = new Date(log.createdAt);
-            const dateKey = date.toDateString();
-            if (!groups[dateKey]) {
-                groups[dateKey] = {
-                    date,
-                    label: getFriendlyDate(date),
-                    items: []
-                };
-            }
-            groups[dateKey].items.push(log);
-        });
-        return Object.values(groups).sort((a, b) => b.date - a.date);
-    }, [filteredLogs]);
-
-    function getFriendlyDate(date) {
-        const today = new Date();
-        const yesterday = new Date();
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const yesterday = new Date(today);
         yesterday.setDate(today.getDate() - 1);
 
-        if (date.toDateString() === today.toDateString()) return 'Hoy';
-        if (date.toDateString() === yesterday.toDateString()) return 'Ayer';
+        // Monday of current week
+        const day = today.getDay();
+        const diff = today.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+        const monday = new Date(today.setDate(diff));
+        // Reset today's date after mutation if needed, but easier to use timestamp
+        const todayTs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const yesterdayTs = todayTs - 86400000;
+        const mondayTs = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate()).getTime();
+
+        const groups = {};
         
-        return date.toLocaleDateString('es-ES', { 
-            day: 'numeric', 
-            month: 'long', 
-            year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined 
+        filteredLogs.forEach(log => {
+            const d = new Date(log.createdAt);
+            const ts = d.getTime();
+            let label = '';
+
+            if (ts >= todayTs) {
+                label = 'Hoy';
+            } else if (ts >= yesterdayTs) {
+                label = 'Ayer';
+            } else if (ts >= mondayTs) {
+                label = 'Esta semana';
+            } else {
+                label = d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+                // Capitalize month
+                label = label.charAt(0).toUpperCase() + label.slice(1);
+            }
+
+            if (!groups[label]) groups[label] = [];
+            groups[label].push(log);
         });
-    }
+
+        // Ensure Hoy, Ayer, Esta semana appear in order
+        const orderedLabels = ['Hoy', 'Ayer', 'Esta semana'];
+        const result = [];
+        
+        orderedLabels.forEach(l => {
+            if (groups[l]) result.push({ label: l, items: groups[l] });
+        });
+
+        // Add Month Year groups (sorted)
+        Object.keys(groups)
+            .filter(l => !orderedLabels.includes(l))
+            .sort((a, b) => {
+                // Approximate sort by string or parse back to date
+                return 0; // Keeping it simple for now as most will be recent
+            })
+            .forEach(l => {
+                result.push({ label: l, items: groups[l] });
+            });
+
+        return result;
+    }, [filteredLogs]);
+
+    const handleApprove = async (redemption) => {
+        await updateCoupon(redemption.couponId, {
+            redemptionsLeft: (redemption.coupon.redemptionsLeft || redemption.coupon.maxRedemptions || 1) - 1
+        });
+        
+        await updateDoc(doc(db, 'redemptions', redemption.id), {
+            status: 'approved',
+            approvedAt: serverTimestamp()
+        });
+    };
+
+    const handlePostpone = async (redemption) => {
+        await updateDoc(doc(db, 'redemptions', redemption.id), {
+            status: 'postponed',
+            postponedAt: serverTimestamp()
+        });
+    };
 
     const getTimeAgo = (date) => {
         const seconds = Math.floor((new Date() - date) / 1000);
@@ -75,8 +176,30 @@ export default function ActivityPanel() {
         }
     };
 
-    if (isLoading) {
-        return <div className={styles.loading}>Cargando feed de actividad real...</div>;
+    const getLabel = (type) => {
+        switch (type) {
+            case 'memory': return 'Recuerdo';
+            case 'photo': return 'Foto';
+            case 'capsule': return 'Cápsula';
+            case 'coupon': return 'Cupón';
+            case 'bingo': return 'Bingo';
+            case 'wrapped': return 'Wrapped';
+            case 'snapshot': return 'Instantánea';
+            default: return 'Actividad';
+        }
+    };
+
+    const CATEGORIES = [
+        { id: 'all', label: 'Todos', icon: '♡' },
+        { id: 'memory', label: 'Recuerdos', icon: '📸' },
+        { id: 'photo', label: 'Fotos', icon: '🖼️' },
+        { id: 'capsule', label: 'Cápsulas', icon: '⏳' },
+        { id: 'coupon', label: 'Cupones', icon: '🎁' },
+        { id: 'bingo', label: 'Bingo', icon: '🎯' },
+    ];
+
+    if (loadingLogs) {
+        return <div className={styles.loading}>Cargando feed de actividad...</div>;
     }
 
     return (
@@ -84,60 +207,34 @@ export default function ActivityPanel() {
             <header className={styles.header}>
                 <div className={styles.titleGroup}>
                     <h1 className={styles.title}>Panel de Actividad</h1>
-                    <p className={styles.subtitle}>Monitorea las acciones de tu partner en tiempo real.</p>
+                    <p className={styles.subtitle}>Monitorea las acciones de tu partner.</p>
                 </div>
                 {unreadCount > 0 && (
-                    <Button variant="ghost" size="sm" onClick={markAllAsRead}>
+                    <Button variant="primary" size="md" onClick={markAllAsRead} className={styles.markAllBtn}>
                         Marcar todo como leído ({unreadCount})
                     </Button>
                 )}
             </header>
 
             <div className={styles.dashboardGrid}>
-                {/* ── Desktop Filters ── */}
-                <aside className={styles.filtersSidebar}>
-                    <Card className={styles.filterCard}>
-                        <h3 className={styles.filterTitle}>Filtros</h3>
-                        
-                        <div className={styles.filterGroup}>
-                            <KawaiiInput 
-                                type="toggle" 
-                                label="Solo no leídos" 
-                                value={onlyUnread} 
-                                onChange={e => setOnlyUnread(e.target.checked)} 
-                            />
-                        </div>
-
-                        <div className={styles.filterGroup}>
-                            <label className={styles.label}>Por tipo</label>
-                            <div className={styles.filterOptions}>
-                                {['all', 'memory', 'photo', 'capsule', 'coupon', 'bingo', 'snapshot'].map(type => (
-                                    <button 
-                                        key={type}
-                                        className={`${styles.filterBtn} ${filterType === type ? styles.activeFilter : ''}`}
-                                        onClick={() => setFilterType(type)}
-                                    >
-                                        {type === 'all' ? 'Todos' : type.charAt(0).toUpperCase() + type.slice(1)}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </Card>
-
-                    <Card className={styles.statsCard}>
-                        <div className={styles.stat}>
-                            <span className={styles.statLabel}>Total Logs</span>
-                            <span className={styles.statValue}>{logs.length}</span>
-                        </div>
-                        <div className={styles.stat}>
-                            <span className={styles.statLabel}>Sin leer</span>
-                            <span className={styles.statValue}>{unreadCount}</span>
-                        </div>
-                    </Card>
-                </aside>
-
                 {/* ── Main Feed ── */}
                 <div className={styles.feedContainer}>
+                    {/* Filter Header Row */}
+                    <div className={styles.filterHeader}>
+                        <div className={styles.filterChips} ref={scrollRef}>
+                            {CATEGORIES.map(cat => (
+                                <button 
+                                    key={cat.id}
+                                    className={`${styles.chip} ${filterType === cat.id ? styles.activeChip : ''}`}
+                                    onClick={() => setFilterType(cat.id)}
+                                >
+                                    <span className={styles.chipIcon}>{cat.icon}</span>
+                                    {cat.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     {groupedLogs.length === 0 ? (
                         <div className={styles.emptyFeed}>
                             <span>📭</span>
@@ -154,9 +251,8 @@ export default function ActivityPanel() {
                                     {group.items.map(log => (
                                         <div 
                                             key={log.id} 
-                                            className={`${styles.feedItem} ${!log.isReadByAdmin ? styles.unread : ''}`}
+                                            className={`${styles.feedItem} ${log.isReadByAdmin ? styles.read : styles.unread}`}
                                             onClick={() => !log.isReadByAdmin && markAsRead(log.id)}
-                                            style={{ cursor: !log.isReadByAdmin ? 'pointer' : 'default' }}
                                         >
                                             <div className={`${styles.itemIcon} ${styles[log.targetType]}`}>
                                                 {getIcon(log.targetType)}
@@ -167,11 +263,13 @@ export default function ActivityPanel() {
                                                     <span className={styles.itemTime}>{getTimeAgo(log.createdAt)}</span>
                                                 </div>
                                                 <div className={styles.itemFooter}>
-                                                    <span className={styles.itemType}>{log.targetType}</span>
-                                                    <span className={styles.itemId}>ID: {log.targetId}</span>
+                                                    <span className={styles.itemType}>{getLabel(log.targetType)}</span>
+                                                    <span className={styles.itemId}>#{log.targetId?.slice(-6)}</span>
                                                 </div>
                                             </div>
-                                            {!log.isReadByAdmin && <div className={styles.unreadDot} />}
+                                            <div className={styles.statusIndicator}>
+                                                {log.isReadByAdmin ? '○' : '●'}
+                                            </div>
                                         </div>
                                     ))}
                                 </section>
@@ -179,6 +277,39 @@ export default function ActivityPanel() {
                         </div>
                     )}
                 </div>
+
+                {/* ── Desktop Sidebar Extensions ── */}
+                <aside className={styles.filtersSidebar}>
+                    {pendingRedemptions.length > 0 && (
+                        <Card className={styles.pendingRedemptionsCard}>
+                            <h3>🎟️ Solicitudes ({pendingRedemptions.length})</h3>
+                            <div className={styles.pendingList}>
+                                {pendingRedemptions.map(r => (
+                                    <div key={r.id} className={styles.pendingItem}>
+                                        <div className={styles.pendingInfo}>
+                                            <span className={styles.pendingEmoji}>{r.coupon.emoji}</span>
+                                            <div>
+                                                <p className={styles.pendingTitle}>{r.coupon.title}</p>
+                                                <span className={styles.pendingTime}>{getTimeAgo(r.requestedAt?.toDate() || new Date())}</span>
+                                            </div>
+                                        </div>
+                                        <div className={styles.pendingActions}>
+                                            <Button size="xs" onClick={() => handleApprove(r)}>✅</Button>
+                                            <Button variant="ghost" size="xs" onClick={() => handlePostpone(r)}>⏳</Button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </Card>
+                    )}
+
+                    <Card className={styles.statsCard}>
+                        <div className={styles.stat}>
+                            <span className={styles.statLabel}>Sin leer</span>
+                            <span className={styles.unreadCountBadge}>{unreadCount}</span>
+                        </div>
+                    </Card>
+                </aside>
             </div>
         </div>
     );

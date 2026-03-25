@@ -325,6 +325,170 @@
     opacity: 1;
 }
 
+/* ── Tabs ── */
+.tabsContainer {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.25rem;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+    width: fit-content;
+}
+
+.tab {
+    padding: 0.6rem 1.2rem;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tabActive {
+    background: white;
+    color: var(--text-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* ── Modals ── */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.assignModal {
+    width: 90%;
+    max-width: 400px;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.assignModal h3 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+}
+
+.assignModal p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.partnerList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.partnerBtn {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bg-card);
+    border: 3px solid var(--text-primary);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.partnerBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+}
+
+.partnerAvatar {
+    font-size: 2rem;
+}
+
+.partnerName {
+    font-weight: 900;
+    font-family: var(--font-display);
+}
+
+.cancelModal {
+    align-self: center;
+}
+
+/* ── Card Extras ── */
+.cardClaimed {
+    filter: grayscale(0.8);
+    opacity: 0.7;
+}
+
+.cardStats {
+    margin: 0.75rem 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.statBadge {
+    padding: 0.2rem 0.6rem;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 800;
+}
+
+.claimedBadge {
+    padding: 0.2rem 0.6rem;
+    background: #FFDDE2;
+    color: #FF1744;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 900;
+}
+
+.assignBtn {
+    flex: 1;
+}
+
+.footerActions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.miniBtn {
+    padding: 0.5rem;
+    border: 1px solid var(--glass-border);
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    line-height: 1;
+}
+
+.miniBtn:hover {
+    background: #f8f9fa;
+    transform: translateY(-1px);
+}
+
+.statValue { font-weight: 900; }
+
 @media (max-width: 600px) {
     .header {
         flex-direction: column;

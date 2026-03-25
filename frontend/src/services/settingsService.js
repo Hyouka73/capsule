@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
 
 const SETTINGS_DOC_PATH = 'appConfig/main';
@@ -8,10 +8,14 @@ const SETTINGS_DOC_PATH = 'appConfig/main';
  */
 export async function saveGlobalSettings(settings) {
     const docRef = doc(db, SETTINGS_DOC_PATH);
-    await setDoc(docRef, {
-        ...settings,
-        updatedAt: new Date().toISOString()
-    }, { merge: true });
+    const data = { ...settings, updatedAt: serverTimestamp() };
+    
+    // Si se están guardando ajustes del mapa, actualizamos el timestamp de sincronización
+    if (data.map) {
+        data.map.lastActTimestamp = serverTimestamp();
+    }
+    
+    await setDoc(docRef, data, { merge: true });
 }
 
 /**
@@ -19,10 +23,13 @@ export async function saveGlobalSettings(settings) {
  */
 export async function updateConfig(partialSettings) {
     const docRef = doc(db, SETTINGS_DOC_PATH);
-    await setDoc(docRef, {
-        ...partialSettings,
-        updatedAt: new Date().toISOString()
-    }, { merge: true });
+    const data = { ...partialSettings, updatedAt: serverTimestamp() };
+    
+    if (data.map) {
+        data.map.lastActTimestamp = serverTimestamp();
+    }
+    
+    await setDoc(docRef, data, { merge: true });
 }
 
 /**

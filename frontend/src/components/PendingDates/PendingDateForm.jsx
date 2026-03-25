@@ -256,7 +256,7 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, onAutoSa
                     {(pendingDate.isFromBingo || pendingDate.context?.type === 'bingo') && (
                         <div className={styles.bingoBanner}>
                             <span className="material-symbols-outlined">casino</span>
-                            ¡Esta cita desbloquea un logro del Bingo! 🎰
+                            ¡Esta cita desbloquea un reto! ✨
                         </div>
                     )}
                 </div>

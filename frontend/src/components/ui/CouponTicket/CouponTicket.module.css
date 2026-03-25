@@ -3,28 +3,27 @@
     display: flex;
     flex-direction: row;
     min-height: 150px;
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    box-shadow: var(--clay-shadow-md);
+    border-radius: 24px;
+    box-shadow: 0 8px 0 rgba(0,0,0,0.05);
     background: transparent;
-    border: none;
+    border: 3px solid var(--text-primary);
     padding: 0;
+    margin-bottom: 12px;
 }
 
 /* Lado izquierdo (.ticketStub) */
 .ticketStub {
-    width: 100px;
-    min-height: 150px;
-    /* Misma altura */
-    background: var(--gradient-mint);
+    width: 90px;
+    min-height: 140px;
+    background: var(--gradient-pastel-mint, #b7e4c7);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     position: relative;
     z-index: 1;
-    /* Para que las mordidas queden arriba */
     flex-shrink: 0;
+    border-right: 3px dashed var(--text-primary);
 }
 
 /* Las mordidas de perforación (Top and Bottom) */
@@ -32,152 +31,146 @@
 .ticketStub::after {
     content: '';
     position: absolute;
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     background: var(--bg-main);
-    right: -12px;
+    right: -11.5px;
     z-index: 5;
+    border: 3px solid var(--text-primary);
 }
 
 .ticketStub::before {
-    top: -12px;
+    top: -11.5px;
 }
 
 .ticketStub::after {
-    bottom: -12px;
+    bottom: -11.5px;
 }
 
 .serialNumber {
     position: absolute;
-    left: 12px;
+    left: 8px;
     top: 50%;
     transform: translateY(-50%) rotate(-90deg);
     font-family: var(--font-display);
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.9);
-    letter-spacing: 2px;
+    font-size: 10px;
+    font-weight: 800;
+    color: rgba(0, 0, 0, 0.4);
+    letter-spacing: 1px;
     white-space: nowrap;
 }
 
 .couponIcon {
-    width: 48px;
-    height: 48px;
+    font-size: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
-    /* Move it slightly right to balance visual center since serial number uses the left padding */
-    transform: translateX(8px);
-}
-
-.svgIcon {
-    width: 100%;
-    height: 100%;
+    filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.1));
 }
 
 /* Lado derecho (.ticketBody) */
 .ticketBody {
     flex: 1;
-    background: var(--clay-bg-white);
-    border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
-    border: var(--border-mint);
-    border-left: 2px dashed rgba(183, 228, 199, 0.5);
-    padding: 16px 20px;
+    background: white;
+    padding: 16px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: unset;
-    height: auto;
-    box-shadow: inset 2px 2px 6px rgba(255,255,255,0.7);
-}
-
-.couponText {
-    width: 100%;
 }
 
 .couponText h3 {
     font-family: var(--font-display);
-    font-size: 16px;
-    font-weight: bold;
+    font-size: 18px;
+    font-weight: 900;
     color: var(--text-primary);
     margin: 0 0 4px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    line-height: 1.2;
 }
 
 .couponText p {
     font-family: var(--font-body);
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.4;
     color: var(--text-muted);
     margin: 0;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+}
+
+/* Multi-use tracker */
+.redemptionTracker {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed #eee;
+}
+
+.punchHole {
+    font-size: 16px;
+    color: #eee;
+    line-height: 1;
+}
+
+.punched {
+    color: var(--color-mint, #b7e4c7);
+    filter: drop-shadow(1px 1px 0 rgba(0,0,0,0.1));
+}
+
+.redemptionCount {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-left: 4px;
 }
 
 .ticketAction {
     display: flex;
     justify-content: flex-end;
-    align-items: flex-end;
-    margin-top: 12px;
+    align-items: center;
+    margin-top: 8px;
 }
 
 .redeemBtn {
-    width: auto;
-    background: var(--gradient-mint);
+    background: var(--text-primary);
     color: white;
-    border: 1px solid rgba(255, 255, 255, 0.40);
-    padding: 8px 18px;
-    border-radius: var(--radius-pill);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 12px;
     font-family: var(--font-display);
-    font-weight: 700;
+    font-weight: 900;
     font-size: 14px;
     cursor: pointer;
-    box-shadow: var(--clay-shadow-mint);
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
-    white-space: nowrap;
-    touch-action: manipulation;
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
 }
 
 .redeemBtn:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--clay-shadow-mint-hover);
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 rgba(0,0,0,0.1);
 }
 
 .redeemBtn:active {
-    transform: translateY(1px) scale(0.97);
-    box-shadow: var(--clay-shadow-pressed);
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 rgba(0,0,0,0.1);
 }
 
 /* Used State */
+.couponUsed {
+    opacity: 0.8;
+}
+
 .couponUsed .ticketStub {
-    background: rgba(183, 228, 199, 0.3);
-}
-
-.couponUsed .ticketBody {
-    background: rgba(255, 255, 255, 0.8);
-    border-color: rgba(183, 228, 199, 0.3);
-}
-
-.couponUsed .couponIcon {
-    opacity: 0.6;
-}
-
-.couponUsed .serialNumber {
-    color: rgba(0, 0, 0, 0.3);
+    background: #e9ecef;
+    filter: grayscale(1);
 }
 
 .usedStamp {
     color: var(--text-muted);
     font-family: var(--font-display);
-    font-size: 12px;
-    font-weight: bold;
-    padding: 0;
-}
+    font-size: 14px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}

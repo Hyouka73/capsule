@@ -32,17 +32,20 @@ export default class SystemConfig {
             ...data.wrappedConfig
         };
 
+        const rawMap = data.mapConfig || data.map || {};
         this.mapConfig = {
             defaultCenter: { lat: 16.7521, lng: -93.1152 },
             defaultZoom: 12,
             style: 'romantic-vintage',
-            pinTiers: data.mapConfig?.pinTiers || [
-                { minVisits: 1, color: "#FFB6C1", scale: 1.0 },
-                { minVisits: 3, color: "#FF7F7F", scale: 1.3 },
-                { minVisits: 5, color: "#FF4444", scale: 1.5 },
-                { minVisits: 10, color: "#FFD700", scale: 1.8 }
-            ],
-            ...data.mapConfig
+            pinTiers: (rawMap.pinTiers || [
+                { minVisits: 1, color: "#FFB6C1", scale: 0.8 },
+                { minVisits: 3, color: "#BF7DB1", scale: 1.0 },
+                { minVisits: 5, color: "#F38686", scale: 1.2 },
+                { minVisits: 10, color: "#F3E595", scale: 1.4 },
+                { minVisits: 15, color: "#CCFFF7", scale: 1.6 }
+            ]).slice(0, 5),
+            lastActTimestamp: this._toDate(rawMap.lastActTimestamp),
+            ...rawMap
         };
 
         this.notifications = {
@@ -114,13 +117,19 @@ export default class SystemConfig {
             { value: 'casa', label: 'En Casa 🏠' }
         ];
     }
+    
+    _toDate(val) {
+        if (!val) return null;
+        if (typeof val.toDate === 'function') return val.toDate();
+        return new Date(val);
+    }
 
     toFirestore() {
         return {
             features: this.features,
             visibility: this.visibility,
             wrapped: this.wrappedConfig,
-            map: this.mapConfig,
+            mapConfig: this.mapConfig,
             notifications: this.notifications,
             snapshotConfig: this.snapshotConfig,
             teaser: this.teaser,
@@ -131,5 +140,27 @@ export default class SystemConfig {
             memoryTags: this.memoryTags,
             updatedAt: new Date().toISOString()
         };
+    }
+    /**
+     * static fromFirestore
+     */
+    static fromFirestore(data) {
+        if (!data) return new SystemConfig();
+        
+        return new SystemConfig({
+            features: data.features,
+            visibility: data.visibility,
+            wrappedConfig: data.wrapped,
+            mapConfig: data.mapConfig || data.map,
+            notifications: data.notifications,
+            snapshotConfig: data.snapshotConfig,
+            teaser: data.teaser,
+            inviteConfig: data.inviteConfig,
+            citaConfig: data.citaConfig,
+            onboarding: data.onboarding,
+            partner: data.partner,
+            memoryTags: data.memoryTags,
+            updatedAt: data.updatedAt
+        });
     }
 }

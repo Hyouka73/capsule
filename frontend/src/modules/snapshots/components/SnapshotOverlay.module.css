@@ -96,26 +96,44 @@
     display: block;
 }
 
-/* ── Message overlay (active card only) ── */
+/* ── Message overlay (active card only) — Floating Text Style ── */
 .messageOverlay {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: var(--clay-bg-white);
-    border-top: 4px solid var(--pastel-rose-light);
-    padding: 32px 18px 16px;
+    bottom: 3.5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    width: 75%; /* Más angosto para evitar las esquinas redondas del squircle */
+    max-width: 280px;
+    padding: 0 1rem;
     pointer-events: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    flex-wrap: wrap; /* Permitir saltos de línea */
+    overflow-wrap: break-word; /* Para palabras muy largas */
+    z-index: 20;
+    opacity: 0;
+    animation: slideUpFade 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    animation-delay: 0.2s;
+}
+
+@keyframes slideUpFade {
+    to { transform: translateX(-50%) translateY(0); opacity: 1; }
 }
 
 .messageText {
-    font-family: var(--font-body, 'Inter', sans-serif);
-    font-size: 0.95rem;
-    font-weight: 500;
-    color: var(--pastel-text);
-    text-shadow: none;
+    font-family: 'Fredoka', var(--font-display, sans-serif);
+    font-size: 1.1rem;
+    font-weight: 400; /* Más delgada como pediste */
+    color: #ffffff;
     margin: 0;
-    letter-spacing: 0.01em;
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+    /* Sombra para lectura sobre cualquier fondo */
+    text-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.5),
+        0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* ── Conic-gradient progress ring (active card only) ──

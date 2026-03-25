@@ -14,30 +14,45 @@ export default function CouponTicket({ coupon, onRedeem }) {
         >
             <div className={styles.ticketStub}>
                 <div className={styles.serialNumber}>
-                    #{coupon.id.padStart(3, '0')}
+                    #{coupon.id?.slice(-3).toUpperCase() || '000'}
                 </div>
                 <div className={styles.couponIcon}>
-                    {CouponIcons[coupon.icon] ? CouponIcons[coupon.icon]({ className: styles.svgIcon }) : '🎟️'}
+                    {coupon.emoji || '🎁'}
                 </div>
             </div>
 
             <div className={styles.ticketBody}>
                 <div className={styles.couponText}>
-                    <h3>{coupon.title}</h3>
+                    <h3>{coupon.title || coupon.name}</h3>
                     <p>{coupon.description}</p>
+                    {coupon.maxRedemptions > 1 && (
+                        <div className={styles.redemptionTracker}>
+                            {Array.from({ length: coupon.maxRedemptions }).map((_, i) => (
+                                <span 
+                                    key={i} 
+                                    className={`${styles.punchHole} ${i < (coupon.maxRedemptions - coupon.redemptionsLeft) ? styles.punched : ''}`}
+                                >
+                                    ●
+                                </span>
+                            ))}
+                            <span className={styles.redemptionCount}>
+                                {coupon.redemptionsLeft} de {coupon.maxRedemptions} disponibles
+                            </span>
+                        </div>
+                    )}
                 </div>
 
                 <div className={styles.ticketAction}>
-                    {!coupon.isUsed ? (
+                    {(!coupon.isUsed && (coupon.redemptionsLeft === undefined || coupon.redemptionsLeft > 0)) ? (
                         <button
                             className={styles.redeemBtn}
                             onClick={() => onRedeem(coupon)}
                         >
-                            Canjear
+                            Canjear 💌
                         </button>
                     ) : (
                         <div className={styles.usedStamp}>
-                            Cobrado ✓
+                            {coupon.maxRedemptions > 1 ? 'Agotado 🎫' : 'Cobrado ✓'}
                         </div>
                     )}
                 </div>

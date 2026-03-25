@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { subscribeToCollection } from '../../../services/firestore';
 import { COLLECTIONS } from '../../../config/constants';
 import Place from '../../../models/Place';
+import { cachePlaceThumbnail } from '../../../utils/offlineCache';
 
 /**
  * Hook to manage real-time subscription to Places collection.
@@ -32,8 +33,22 @@ export function usePlaces() {
                 globalUnsubscribe = subscribeToCollection(
                     COLLECTIONS.PLACES,
                     (docs) => {
-                        globalPlacesCache = (docs || []).map(doc => Place.fromFirestore(doc.id, doc));
+                        const newPlaces = (docs || []).map(doc => Place.fromFirestore(doc.id, doc));
+                        globalPlacesCache = newPlaces;
                         globalLoading = false;
+                        
+                        // Lógica de caché de thumbnails (silenciosa)
+                        // Cacheamos solo los 50 lugares más visitados para no saturar storage
+                        const popularPlaces = [...newPlaces]
+                            .sort((a, b) => (b.visitCount || 0) - (a.visitCount || 0))
+                            .slice(0, 50);
+                            
+                        popularPlaces.forEach(place => {
+                            if (place.coverPhotoUrl && !place.coverPhotoUrl.startsWith('blob:')) {
+                                cachePlaceThumbnail(place.id, place.coverPhotoUrl);
+                            }
+                        });
+
                         listeners.forEach(l => l());
                     },
                     [],

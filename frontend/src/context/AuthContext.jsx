@@ -60,20 +60,27 @@ export function AuthProvider({ children }) {
     }, []);
 
     useEffect(() => {
-        let unsubscribeDoc = () => { };
+        let isMounted = true;
+        let unsubscribeDoc = null;
+        let unsubscribeMessaging = null;
 
         const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
             // Clean up previous doc listener if user changes
-            unsubscribeDoc();
+            if (unsubscribeDoc) {
+                unsubscribeDoc();
+                unsubscribeDoc = null;
+            }
 
             if (firebaseUser) {
-                setIsLoading(true); // Ensure stays loading while getting claims
+                if (isMounted) setIsLoading(true);
                 let claims = { role: null, deviceId: null };
                 try {
                     claims = await getCurrentUserClaims(true);
                 } catch (err) {
                     console.error('[Auth] Error fetching claims:', err);
                 }
+
+                if (!isMounted) return;
 
                 setUser(firebaseUser);
                 setRole(claims.role);
@@ -83,11 +90,11 @@ export function AuthProvider({ children }) {
                 // Start real-time listener for user document
                 const userRef = doc(db, COLLECTIONS.USERS, firebaseUser.uid);
                 unsubscribeDoc = onSnapshot(userRef, (snapshot) => {
+                    if (!isMounted) return;
                     let data = {};
                     if (snapshot.exists()) {
                         data = snapshot.data();
                     } else {
-                        // Fallback to User model defaults
                         const defaultUser = new User({ uid: firebaseUser.uid });
                         data = {
                             onboardingCompleted: defaultUser.onboardingCompleted,
@@ -101,36 +108,39 @@ export function AuthProvider({ children }) {
                     setTeaserCompleted(data.teaserCompleted ?? false);
                     setGameCoins(data.gameCoins ?? 0);
 
-                    // Fallback: If role wasn't in claims, take it from Firestore
                     if (!claims.role && data.role) {
-                        console.log('[Auth] Role fallback from Firestore:', data.role);
                         setRole(data.role);
                     }
                     
-                    setIsLoading(false); // Only stop loading after doc is loaded
-                }, (err) => {
-                    console.error('[Auth] User document listener error:', err);
                     setIsLoading(false);
+                }, (err) => {
+                    if (isMounted) {
+                        console.error('[Auth] User document listener error:', err);
+                        setIsLoading(false);
+                    }
                 });
 
-                // If partner, try registering FCM
+                if (!isMounted) {
+                    unsubscribeDoc?.();
+                    unsubscribeDoc = null;
+                }
+
                 if (claims.role === ROLES.PARTNER) {
                     registerFCM(firebaseUser.uid);
                 }
             } else {
-                setUser(null);
-                setRole(null);
-                setDeviceId(null);
-                setOnboardingCompleted(null);
-                setWelcomeSeen(null);
-                setTeaserCompleted(null);
-                setGameCoins(0);
-                setIsLoading(false); // No user, stop loading
+                if (isMounted) {
+                    setUser(null);
+                    setRole(null);
+                    setDeviceId(null);
+                    setOnboardingCompleted(null);
+                    setWelcomeSeen(null);
+                    setTeaserCompleted(null);
+                    setGameCoins(0);
+                    setIsLoading(false);
+                }
             }
         });
-
-        // Listen for foreground messages
-        let unsubscribeMessaging = () => { };
 
         const setupMessagingListener = async () => {
             let messagingInstance = messaging;
@@ -142,8 +152,9 @@ export function AuthProvider({ children }) {
                 }
             }
 
-            if (messagingInstance) {
+            if (messagingInstance && isMounted) {
                 unsubscribeMessaging = onMessage(messagingInstance, (payload) => {
+                    if (!isMounted) return;
                     console.log('Message received in foreground: ', payload);
                     try {
                         const { title, body } = payload.notification || {};
@@ -155,14 +166,16 @@ export function AuthProvider({ children }) {
                     }
                 });
             }
+            if (!isMounted) unsubscribeMessaging?.();
         };
 
         setupMessagingListener();
 
         return () => {
+            isMounted = false;
             unsubscribeAuth();
-            unsubscribeDoc();
-            unsubscribeMessaging();
+            if (unsubscribeDoc) unsubscribeDoc();
+            if (unsubscribeMessaging) unsubscribeMessaging();
         };
     }, [registerFCM]);
 

@@ -56,13 +56,19 @@ export const getMemories = onCall({ region: 'us-central1', cors: true }, async (
                 logger.warn(`Error fetching photos for ${doc.id}:`, err);
             }
 
+            const parseDate = (d) => {
+                if (!d) return null;
+                if (typeof d.toDate === 'function') return d.toDate().toISOString();
+                return new Date(d).toISOString();
+            };
+
             memories.push({
                 id: doc.id,
                 ...data,
                 photos,
-                eventDate: data.eventDate?.toDate()?.toISOString(),
-                createdAt: data.createdAt?.toDate()?.toISOString(),
-                updatedAt: data.updatedAt?.toDate()?.toISOString(),
+                eventDate: parseDate(data.eventDate),
+                createdAt: parseDate(data.createdAt),
+                updatedAt: parseDate(data.updatedAt),
             });
         }
 

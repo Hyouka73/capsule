@@ -43,30 +43,43 @@
     top: calc(20px + env(safe-area-inset-top, 0px));
     left: 14px;
     right: 14px;
-    display: flex;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     overflow: visible;
 }
 
 .snapshotMapBtn {
-    margin-left: auto;
     flex-shrink: 0;
+    z-index: 10;
+    /* Remove absolute to let grid handle it */
 }
 
-/* Contenedor scrollable de chips — padding para que la sombra inferior no se corte */
+/* Contenedor scrollable de chips */
 .filtersScroll {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     overflow-x: auto;
     overflow-y: visible;
-    padding: 12px 2px; /* Más padding para que la sombra no se corte */
-    flex: 1;
-    height: 58px; /* Altura suficiente para botón de 48px + sombra */
-    /* Ocultar scrollbar manteniendo funcionalidad */
+    padding: 10px 0;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    mask-image: none;
+    transition: mask-image 0.2s ease;
+}
+
+.hasLeftGradient {
+    mask-image: linear-gradient(to right, transparent 0%, black 15%, black 100%) !important;
+}
+
+.hasRightGradient {
+    mask-image: linear-gradient(to left, transparent 0%, black 15%, black 100%) !important;
+}
+
+.hasLeftGradient.hasRightGradient {
+    mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%) !important;
 }
 
 .filtersScroll::-webkit-scrollbar {
@@ -78,19 +91,21 @@
     width: 48px; 
     height: 48px;
     flex-shrink: 0;
-    border-radius: var(--radius-pill);
-    background: var(--clay-bg-white);
-    border: 2px solid var(--pastel-rose-light);
+    border-radius: 50%;
+    background: white;
+    border: 3px solid var(--pastel-rose-light);
     box-shadow: 0 4px 0 var(--pastel-rose-light);
     overflow: hidden;
     display: flex;
     align-items: center;
-    position: relative;
+    justify-content: center;
     cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .searchWrapperActive {
-    flex: 1;
+    grid-column: 1 / span 2; /* Take search + chips space when active */
+    border-radius: var(--radius-pill);
     cursor: default;
 }
 
@@ -101,89 +116,63 @@
     align-items: center;
 }
 
-/* Ajuste para que el input dentro del wrapper no tenga sombras dobles */
-.searchContainer :global(.KawaiiInput_inputWrapper__fD_6V) {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 12px !important;
-    height: 100% !important;
-}
-
 .searchFabBtn {
     width: 48px;
     height: 48px;
-    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     background: transparent !important;
     border: none !important;
-    color: var(--pastel-rose-light);
+    color: var(--pastel-rose); /* Pink icon */
     cursor: pointer;
     box-shadow: none !important;
-    transition: transform 0.2s ease;
 }
 
 .searchFabBtn .material-symbols-outlined {
-    font-size: 22px;
-    font-variation-settings: 'FILL' 1, 'wght' 600;
-}
-
-.searchFabBtn:hover {
-    transform: scale(1.1);
-}
-
-.searchFabBtn:active {
-    transform: scale(0.95);
+    font-size: 26px;
+    font-variation-settings: 'FILL' 0, 'wght' 600; /* No fill to match image outline style if needed, or fill 1 for bolder */
 }
 
 
 .chip {
     display: flex;
     align-items: center;
-    gap: 7px;
-    padding: 10px 20px;
+    gap: 8px;
+    padding: 10px 22px;
     border-radius: var(--radius-pill);
-    background: var(--clay-bg-white);
-    border: 2.5px solid var(--pastel-mint);
+    background: white;
+    border: 3px solid var(--pastel-rose-light);
     color: var(--text-primary);
     font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 13px;
+    font-weight: 800;
+    font-size: 14px;
     cursor: pointer;
     white-space: nowrap;
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 0 5px 0 var(--pastel-mint-dark);
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 4px 0 var(--pastel-rose-light);
     user-select: none;
 }
 
 .chip:hover {
     transform: translateY(-2px);
-    box-shadow: 0 7px 0 var(--pastel-mint-dark);
-    background: var(--clay-bg-mint);
-}
-
-.chip:active {
-    transform: translateY(4px) scale(0.96);
-    box-shadow: 0 1px 0 var(--pastel-mint-dark);
+    box-shadow: 0 6px 0 var(--pastel-rose-light);
 }
 
 .chipActive {
-    background: var(--pastel-mint);
-    color: #ffffff !important;
-    border-color: var(--pastel-mint-dark);
-    box-shadow: 0 5px 0 var(--pastel-mint-dark);
-}
-
-.chipActive:hover {
-    background: var(--pastel-mint);
-    box-shadow: 0 7px 0 var(--pastel-mint-dark);
+    background: var(--pastel-rose);
+    color: white !important;
+    border-color: var(--pastel-rose-dark);
+    box-shadow: 0 4px 0 var(--pastel-rose-dark);
 }
 
 .chipIcon {
-    font-size: 16px;
-    font-variation-settings: 'FILL' 1, 'wght' 500;
+    font-size: 18px;
+    color: var(--text-secondary);
+}
+
+.chipActive .chipIcon {
+    color: white;
 }
 
 /* =========================================================================
@@ -388,4 +377,34 @@
 
 :global(.mapboxgl-popup-tip), :global(.maplibregl-popup-tip) {
     border-top-color: white !important;
+}
+
+/* =========================================================================
+   OFFLINE / SYNC BADGE
+   ========================================================================= */
+.offlineBadge {
+    position: absolute;
+    top: calc(85px + env(safe-area-inset-top, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1001;
+    background: var(--clay-bg-white);
+    padding: 6px 16px;
+    border-radius: var(--radius-pill);
+    border: 3px solid var(--pastel-rose-light);
+    box-shadow: 0 4px 0 var(--pastel-rose-light);
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 12px;
+    color: var(--pastel-rose);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+    animation: slideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes slideDown {
+    from { transform: translate(-50%, -20px); opacity: 0; }
+    to { transform: translate(-50%, 0); opacity: 1; }
 }

@@ -25,6 +25,7 @@ export default class Capsule {
         this.unlockedAt = data.unlockedAt ? new Date(data.unlockedAt) : null;
 
         // Metadata
+        this.source = data.source || 'admin_pick'; // admin_pick | slot_machine
         this.createdBy = data.createdBy || null;
         this.createdAt = data.createdAt ? new Date(data.createdAt) : null;
         this.updatedAt = data.updatedAt ? new Date(data.updatedAt) : null;

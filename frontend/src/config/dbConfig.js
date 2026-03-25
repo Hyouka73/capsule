@@ -1,5 +1,5 @@
 export const DB_NAME = 'capsule_offline_queue';
-export const DB_VERSION = 6;
+export const DB_VERSION = 7;
 
 /**
  * Abre la base de datos IndexedDB centralizada creando todos los stores necesarios.
@@ -39,6 +39,13 @@ export function openDB() {
             if (!db.objectStoreNames.contains('pending_bingo')) {
                 db.createObjectStore('pending_bingo', { keyPath: 'memoryId' });
             }
+
+            // 6. Miniaturas de lugares (Caché local de imágenes)
+            if (!db.objectStoreNames.contains('place_thumbnails')) {
+                const s = db.createObjectStore('place_thumbnails', { keyPath: 'placeId' });
+                s.createIndex('cachedAt', 'cachedAt', { unique: false });
+            }
+            
         };
 
         request.onsuccess = () => resolve(request.result);

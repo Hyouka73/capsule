@@ -20,16 +20,84 @@ export default function SearchOverlay({
     onOpenSnapshot,
     onOpenCamera
 }) {
+    const scrollRef = React.useRef(null);
+
+    const [scrollState, setScrollState] = React.useState({
+        left: false,
+        right: true
+    });
+
+    const updateScrollState = React.useCallback((el) => {
+        if (!el) return;
+        const { scrollLeft, scrollWidth, clientWidth } = el;
+        setScrollState({
+            left: scrollLeft > 10,
+            right: scrollLeft < (scrollWidth - clientWidth - 10)
+        });
+    }, []);
+
+    const handleScroll = (e) => {
+        updateScrollState(e.target);
+    };
+
+    React.useEffect(() => {
+        const slider = scrollRef.current;
+        if (!slider) return;
+
+        // Initial check and observer for content changes
+        updateScrollState(slider);
+        
+        const observer = new ResizeObserver(() => updateScrollState(slider));
+        observer.observe(slider);
+
+        let isDown = false;
+        let startX;
+        let scrollLeftPos;
+
+        const startDragging = (e) => {
+            isDown = true;
+            slider.style.cursor = 'grabbing';
+            startX = e.pageX - slider.offsetLeft;
+            scrollLeftPos = slider.scrollLeft;
+        };
+
+        const stopDragging = () => {
+            isDown = false;
+            slider.style.cursor = 'grab';
+        };
+
+        const move = (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - slider.offsetLeft;
+            const walk = (x - startX) * 2;
+            slider.scrollLeft = scrollLeftPos - walk;
+            updateScrollState(slider);
+        };
+
+        slider.addEventListener('mousedown', startDragging);
+        slider.addEventListener('mouseleave', stopDragging);
+        slider.addEventListener('mouseup', stopDragging);
+        slider.addEventListener('mousemove', move);
+
+        return () => {
+            observer.disconnect();
+            slider.removeEventListener('mousedown', startDragging);
+            slider.removeEventListener('mouseleave', stopDragging);
+            slider.removeEventListener('mouseup', stopDragging);
+            slider.removeEventListener('mousemove', move);
+        };
+    }, [updateScrollState]);
+
     return (
         <motion.div layout className={styles.topControls}>
-            {/* Search Container - Liquid Growth */}
+            {/* Grid Item 1: Search Wrapper */}
             <motion.div 
                 layout
                 className={`${styles.searchWrapper} ${isSearchActive ? styles.searchWrapperActive : ''}`}
                 transition={{ type: 'spring', stiffness: 260, damping: 25 }}
                 onClick={!isSearchActive ? () => setIsSearchActive(true) : undefined}
             >
-                {/* Search Icon - Stays as a guide */}
                 <div className={styles.searchFabBtn}>
                     <span className="material-symbols-outlined">search</span>
                 </div>
@@ -58,48 +126,50 @@ export default function SearchOverlay({
                 </AnimatePresence>
             </motion.div>
 
-            {/* Filters and Snapshot - Slide out effect */}
-            <AnimatePresence>
-                {!isSearchActive && (
-                    <motion.div 
-                        key="controls-right"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        style={{ display: 'flex', gap: '10px', alignItems: 'center', flex: 1, overflow: 'visible' }}
-                    >
-                        <div className={styles.filtersScroll}>
-                            {activeFilters.map(opt => (
-                                <button
-                                    key={opt.id}
-                                    className={`${styles.chip} ${activeFilter === opt.id ? styles.chipActive : ''}`}
-                                    onClick={() => {
-                                        setActiveFilter(opt.id);
-                                        if (onPlaceSelected) onPlaceSelected(false);
-                                    }}
-                                >
-                                    <span
-                                        className={`material-symbols-outlined ${styles.chipIcon}`}
-                                        style={activeFilter === opt.id ? { fontVariationSettings: "'FILL' 1" } : {}}
-                                    >
-                                        {opt.icon}
-                                    </span>
-                                    {opt.label}
-                                </button>
-                            ))}
-                        </div>
+            {/* Grid Item 2: Filters Scroll */}
+            {!isSearchActive && (
+                <motion.div 
+                    key="filters-area"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className={`${styles.filtersScroll} ${scrollState.left ? styles.hasLeftGradient : ''} ${scrollState.right ? styles.hasRightGradient : ''}`} 
+                    ref={scrollRef}
+                    onScroll={handleScroll}
+                >
+                    {activeFilters.map(opt => (
+                        <button
+                            key={opt.id}
+                            className={`${styles.chip} ${activeFilter === opt.id ? styles.chipActive : ''}`}
+                            onClick={() => {
+                                setActiveFilter(opt.id);
+                                if (onPlaceSelected) onPlaceSelected(false);
+                            }}
+                        >
+                            <span
+                                className={`material-symbols-outlined ${styles.chipIcon}`}
+                                style={activeFilter === opt.id ? { fontVariationSettings: "'FILL' 1" } : {}}
+                            >
+                                {opt.icon}
+                            </span>
+                            {opt.label}
+                        </button>
+                    ))}
+                </motion.div>
+            )}
 
-                        {(isPartner || isAdmin) && (
-                            <div className={styles.snapshotMapBtn}>
-                                <SnapshotButton
-                                    onOpenSnapshot={onOpenSnapshot}
-                                    onOpenCamera={onOpenCamera}
-                                />
-                            </div>
-                        )}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {/* Grid Item 3: Snapshot Button */}
+            {(isPartner || isAdmin) && (
+                <motion.div 
+                    className={styles.snapshotMapBtn}
+                    layout
+                >
+                    <SnapshotButton
+                        onOpenSnapshot={onOpenSnapshot}
+                        onOpenCamera={onOpenCamera}
+                    />
+                </motion.div>
+            )}
         </motion.div>
     );
 }

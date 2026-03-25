@@ -36,4 +36,23 @@ export default class Place {
     get coordinates() {
         return { lat: this.lat, lng: this.lng };
     }
+
+    /**
+     * Calculates marker style based on visit count and system config tiers.
+     * @param {Object} config Map configuration with pinTiers
+     * @returns {Object} { color: string, scale: number }
+     */
+    getMarkerStyle(config) {
+        const tiers = config?.pinTiers || [];
+        const fallback = { color: "#FFB6C1", scale: 1.0 };
+        
+        if (tiers.length === 0) return fallback;
+
+        // Find highest matching tier (sorted descending by minVisits)
+        const sortedTiers = [...tiers].sort((a, b) => b.minVisits - a.minVisits);
+        const match = sortedTiers.find(t => this.visitCount >= t.minVisits);
+
+        return match || fallback;
+    }
 }
+

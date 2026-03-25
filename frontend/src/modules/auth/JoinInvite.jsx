@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { signInWithCustomToken } from 'firebase/auth';
-import { auth } from '../../services/firebase';
+import { auth, db } from '../../services/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
+import { COLLECTIONS } from '../../config/constants';
 import {
     exchangeInviteToken,
     generateDeviceFingerprint
@@ -44,13 +46,16 @@ export default function JoinInvite() {
             const { customToken } = await exchangeInviteToken(token, fingerprint);
 
             // 3. Sign in to Firebase
-            await signInWithCustomToken(auth, customToken);
+            const userCredential = await signInWithCustomToken(auth, customToken);
+            const user = userCredential.user;
+
 
             // 4. Success! Redirect to /app
             setStatus('exito');
             setTimeout(() => {
                 navigate('/app');
-            }, 1500);
+            }, 1000);
+
 
         } catch (err) {
             console.error('[JoinInvite] Error:', err);

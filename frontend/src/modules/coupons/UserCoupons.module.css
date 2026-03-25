@@ -49,6 +49,13 @@
     padding: 0 1.5rem 2rem;
 }
 
+.gridContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 100%;
+}
+
 .emptyState {
     text-align: center;
     color: var(--text-muted);

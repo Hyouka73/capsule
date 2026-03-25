@@ -4,19 +4,21 @@ import BingoStartModal from '../../components/Bingo/BingoStartModal';
 import PhotoViewer from '../../components/ui/PhotoViewer/PhotoViewer';
 import { subscribeToGlobalSettings } from '../../services/settingsService';
 import { useBingo } from '../../hooks/useBingo';
-import { usePendingBingo } from '../../hooks/usePendingBingo';
+import { useAppConfig } from '../../hooks/useAppConfig';
 import styles from './UserBingo.module.css';
 
 // Sub-components
 import BingoProgress from './components/BingoProgress';
 import BingoBoardGrid from './components/BingoBoardGrid';
 import BingoMemoryPolaroid from './components/BingoMemoryPolaroid';
+import BingoSuggestionSheet from '../memories/components/BingoSuggestionSheet';
 
 export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsModalOpen }) {
     const [selectedSquare, setSelectedSquare] = useState(null);
     const [selectedStartSquare, setSelectedStartSquare] = useState(null);
     const [viewerPhotos, setViewerPhotos] = useState(null);
     const [globalSettings, setGlobalSettings] = useState(null);
+    const { isFromCache } = useAppConfig();
 
     useEffect(() => {
         const unsub = subscribeToGlobalSettings(data => {
@@ -25,8 +27,17 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
         return unsub;
     }, []);
 
-    const { categories, completedCount, progressPercent, isLoading, completeBingoSquare } = useBingo();
-    const { pendingSuggestions, resolvePendingSuggestion } = usePendingBingo();
+    const { 
+        categories, 
+        completedCount, 
+        progressPercent, 
+        isLoading, 
+        completeBingoSquare,
+        bingoQueue,
+        resolveBingoSuggestion,
+        isResolving
+    } = useBingo();
+    
     const lastCountRef = useRef(completedCount);
 
     const handleSquareClick = (square) => {
@@ -46,9 +57,21 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
 
     return (
         <div className={styles.root}>
+            
             <div className={styles.header}>
-                <h1 className={styles.title}>Bingo</h1>
-                <p className={styles.subtitle}>Aventuras juntos por desbloquear.</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
+                    <h1 className={styles.title}>Bingo</h1>
+                    {isFromCache && (
+                        <div className={styles.offlineBadge} title="Usando configuración local guardada">
+                            📡 Config guardada
+                        </div>
+                    )}
+                </div>
+                <p className={styles.subtitle}>
+                    {bingoQueue.length > 0 
+                      ? `💡 Tienes ${bingoQueue.length} sugerencias pendientes`
+                      : 'Aventuras juntos por desbloquear.'}
+                </p>
             </div>
 
             <BingoProgress 
@@ -61,8 +84,8 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
                 categories={categories} 
                 isLoading={isLoading} 
                 onSquareClick={handleSquareClick}
-                pendingSuggestions={pendingSuggestions}
-                resolvePendingSuggestion={resolvePendingSuggestion}
+                bingoQueue={bingoQueue}
+                resolveBingoSuggestion={resolveBingoSuggestion}
                 completeBingoSquare={completeBingoSquare}
             />
 
@@ -100,6 +123,14 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
             <PhotoViewer
                 photos={viewerPhotos}
                 onClose={() => setViewerPhotos(null)}
+            />
+
+            <BingoSuggestionSheet
+                isOpen={bingoQueue.length > 0}
+                suggestions={bingoQueue[0]?.suggestions || []}
+                onConfirm={(selectedIds) => resolveBingoSuggestion(bingoQueue[0].memoryId, selectedIds)}
+                onCancel={() => resolveBingoSuggestion(bingoQueue[0].memoryId)}
+                isSaving={isResolving}
             />
         </div>
     );

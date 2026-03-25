@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmModal from '../../../components/ui/ConfirmModal/ConfirmModal';
 import styles from '../UserBingo.module.css';
 
@@ -31,8 +31,8 @@ export default function BingoBoardGrid({
     categories, 
     isLoading, 
     onSquareClick, 
-    pendingSuggestions = [], 
-    resolvePendingSuggestion, 
+    bingoQueue = [], 
+    resolveBingoSuggestion, 
     completeBingoSquare 
 }) {
     const [confirmingSquare, setConfirmingSquare] = useState(null);
@@ -51,7 +51,7 @@ export default function BingoBoardGrid({
         <div className={styles.boardCard}>
             <div className={styles.grid}>
                 {categories.map((square, index) => {
-                    const matchedPending = pendingSuggestions.find(p => p.suggestions.some(s => s.categoryId === square.id));
+                    const matchedPending = bingoQueue.find(p => p.suggestions.some(s => s.categoryId === square.id));
                     const isCompleted = !!square.completedMemoryId;
 
                     return (
@@ -65,15 +65,19 @@ export default function BingoBoardGrid({
                             transition={{ delay: index * 0.02 }}
                         >
                             {/* Completion Marker */}
-                            {isCompleted && (
-                                <motion.div 
-                                    className={styles.checkMark}
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                >
-                                    <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>check</span>
-                                </motion.div>
-                            )}
+                            <AnimatePresence>
+                                {isCompleted && (
+                                    <motion.div 
+                                        className={styles.checkMark}
+                                        initial={{ scale: 0, rotate: -45 }}
+                                        animate={{ scale: 1, rotate: 0 }}
+                                        exit={{ scale: 0, opacity: 0, rotate: 45 }}
+                                        transition={{ type: 'spring', damping: 10, stiffness: 200 }}
+                                    >
+                                        <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>check</span>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
                             {matchedPending && !isCompleted && (
                                 <div className={styles.suggestionIndicator}>
@@ -109,12 +113,16 @@ export default function BingoBoardGrid({
                 confirmText="¡Sí, marcar!"
                 cancelText="Ahora no"
                 onConfirm={() => {
-                    if (completeBingoSquare) completeBingoSquare(confirmingSquare.squareId, confirmingSquare.memoryId);
-                    if (resolvePendingSuggestion) resolvePendingSuggestion(confirmingSquare.memoryId);
+                    if (resolveBingoSuggestion) {
+                        resolveBingoSuggestion(confirmingSquare.memoryId, [confirmingSquare.squareId]);
+                    } else if (completeBingoSquare) {
+                        // Fallback for direct completion if resolve fn not passed
+                        completeBingoSquare(confirmingSquare.squareId, confirmingSquare.memoryId);
+                    }
                     setConfirmingSquare(null);
                 }}
                 onCancel={() => {
-                    if (resolvePendingSuggestion) resolvePendingSuggestion(confirmingSquare.memoryId);
+                    // Just close, don't auto-resolve/dismiss without user action
                     setConfirmingSquare(null);
                 }}
                 emoji="🎯"
