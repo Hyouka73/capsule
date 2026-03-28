@@ -48,8 +48,11 @@ export const onPhotoUploaded = onObjectFinalized({
         if (parts.length < 3) return;
         memoryId = parts[1];
         photoId = path.parse(parts[2]).name;
-    } else if (rootFolder === 'snapshots') {
-        snapshotId = path.parse(parts[1]).name;
+    } else if (rootFolder === 'snapshots' || parts[1] === 'snapshots') {
+        // Handle both: snapshots/id.jpg AND relId/snapshots/id.jpg
+        const filename = parts[0] === 'snapshots' ? parts[1] : parts[2];
+        if (!filename) return;
+        snapshotId = path.parse(filename).name;
         photoId = snapshotId;
     } else if (rootFolder === 'capsules') {
         if (parts.length < 3) return;

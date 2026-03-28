@@ -33,8 +33,8 @@ export const SINGLETON_DOCS = {
 export const STORAGE_PATHS = {
     PHOTO_ORIGINAL: (memoryId, photoId) => `memories/${memoryId}/${photoId}.jpg`,
     PHOTO_THUMB: (memoryId, photoId) => `memories/${memoryId}/thumb_${photoId}.jpg`,
-    SNAPSHOT_ORIGINAL: (snapshotId) => `snapshots/${snapshotId}.jpg`,
-    SNAPSHOT_THUMB: (snapshotId) => `snapshots/thumb_${snapshotId}.jpg`,
+    SNAPSHOT_ORIGINAL: (relationshipId, snapshotId) => `${relationshipId}/snapshots/${snapshotId}.jpg`,
+    SNAPSHOT_THUMB: (relationshipId, snapshotId) => `${relationshipId}/snapshots/thumb_${snapshotId}.jpg`,
     CAPSULE_ORIGINAL: (relationshipId, capsuleId, fileId) => `${relationshipId}/capsules/${capsuleId}/${fileId}.webp`
 };
 

@@ -144,3 +144,18 @@ export async function compressImage(file, options = {}) {
         URL.revokeObjectURL(url);
     }
 }
+
+/**
+ * Processes an image and returns both a high-quality original (optimized) 
+ * and a small lightweight thumbnail.
+ * 
+ * @param {File|Blob} file 
+ * @returns {Promise<{blob: Blob, thumb: Blob}>}
+ */
+export async function processImagePair(file) {
+    const original = await compressImage(file, { maxWidth: 1080, initialQuality: 0.8, maxWeightKb: 500 });
+    const thumb = await compressImage(file, { maxWidth: 400, initialQuality: 0.5, maxWeightKb: 50 });
+
+    return { blob: original, thumb };
+}
+

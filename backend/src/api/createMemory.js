@@ -63,20 +63,18 @@ export const createMemory = onCall({ region: 'us-central1', cors: true }, async 
         let mainPhotoUrl = null;
 
         if (offlinePhotoUrls.length > 0) {
-            offlinePhotoUrls.forEach((p, index) => {
-                const photoId = p.photoId || db.collection('dummy').doc().id;
-                if (index === 0) mainPhotoUrl = p.url;
-                photoCount++;
-            });
+            // Priority: Explicit isMain flag, or fall back to first photo
+            const mainPhoto = offlinePhotoUrls.find(p => p.isMain) || offlinePhotoUrls[0];
+            
+            // Use thumbUrl for mainPhotoUrl if available (optimized for map/list)
+            mainPhotoUrl = mainPhoto.thumbUrl || mainPhoto.url;
+            photoCount = offlinePhotoUrls.length;
         }
 
         // SEGUNDO: Crear el documento padre (Memory)
-        // photoCount debe iniciar en 0 — el trigger onPhotoUploaded se encarga de incrementarlo
-        // para evitar doble conteo o inconsistencias.
-        // onPhotoUploaded.js incrementa atómicamente por cada archivo
         await memoryRef.set({
             ...memoryData,
-            photoCount: 0,
+            photoCount: photoCount, // Set initial count
             mainPhotoUrl: mainPhotoUrl,
         });
 
@@ -89,7 +87,9 @@ export const createMemory = onCall({ region: 'us-central1', cors: true }, async 
 
                 batch.set(photoRef, {
                     url: p.url,
+                    thumbUrl: p.thumbUrl || null,
                     storagePath: p.storagePath,
+                    isMain: !!p.isMain,
                     uploadStatus: 'completed',
                     isSnapshot: false,
                     createdAt: FieldValue.serverTimestamp(),
@@ -142,8 +142,7 @@ export const createMemory = onCall({ region: 'us-central1', cors: true }, async 
             }
         }
 
-        // 6. Bingo Autodetection — Solo sugerencias, 
-        //    sin mutar el tablero
+        // 6. Bingo Autodetection
         let bingoSuggestions = [];
         try {
             const bingoRef = db.doc(`relationships/${relationshipId}/bingo/board`);
@@ -151,43 +150,38 @@ export const createMemory = onCall({ region: 'us-central1', cors: true }, async 
 
             if (bingoDoc.exists) {
                 const categories = bingoDoc.data().categories || [];
+                const memoryTagsLower = (memoryData.tags || []).map(t => t.toLowerCase());
                 
                 bingoSuggestions = categories
                     .filter(cat => {
-                        // Solo categorías sin completar
                         if (cat.completedMemoryId) return false;
                         
-                        // Match por tags
-                        const hasTagMatch = (cat.suggestedTags || [])
-                            .some(t => {
-                                const catTag = typeof t === 'string' ? t : t.value;
-                                return (memoryData.tags || []).includes(catTag);
+                        const hasTagMatch = (cat.suggestedTags || []).length > 0 && 
+                            (cat.suggestedTags || []).every(t => {
+                                const catTag = (typeof t === 'string' ? t : t.value).toLowerCase();
+                                return memoryTagsLower.includes(catTag);
                             });
                         
-                        // Match especial para películas
-                        const isMovieMatch = cat.id === 'movies' 
-                            && request.data.movieData;
-                        
+                        const isMovieMatch = cat.id === 'movies' && request.data.movieData;
                         return hasTagMatch || isMovieMatch;
                     })
                     .map(cat => ({
                         categoryId: cat.id,
-                        label: cat.label || cat.title,
+                        label: cat.title,
                         emoji: cat.emoji
                     }));
             }
         } catch (bingoErr) {
             logger.warn('Bingo suggestion check failed:', bingoErr);
-            // No falla createMemory si esto falla
         }
 
-        // 7. Retornar solo lo que el Frontend necesita saber
         return {
             success: true,
             memoryId: memoryId,
             bingoSuggestions: bingoSuggestions,
             message: 'Recuerdo creado correctamente.'
         };
+
     } catch (error) {
         logger.error('Error in createMemory:', error);
         throw new HttpsError('internal', 'Falló la creación del recuerdo en la base de datos.');
