@@ -1,32 +1,43 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import Carousel from '../../../components/ui/Carousel/Carousel';
 import styles from './PhotoDetailOverlay.module.css';
 
 /**
- * PhotoDetailOverlay — Full screen photo viewer with metadata and swipe support
+ * PhotoDetailOverlay — Full screen photo viewer using the project's standard Carousel
  */
 export default function PhotoDetailOverlay({ photos, initialIndex, onClose }) {
-    const [currentIndex, setCurrentIndex] = useState(initialIndex);
+    if (!photos || photos.length === 0) return null;
 
-    const currentPhoto = photos[currentIndex];
+    const renderPhotoItem = (photo) => (
+        <div className={styles.slideContent}>
+            <img
+                src={photo.url || photo.storagePath}
+                alt={photo.caption || ''}
+                className={styles.mainPhoto}
+            />
 
-    const handleNext = () => {
-        if (currentIndex < photos.length - 1) {
-            setCurrentIndex(prev => prev + 1);
-        }
-    };
+            <div className={styles.metadata}>
+                {photo.caption && <p className={styles.caption}>{photo.caption}</p>}
+                {photo.title && <h3 className={styles.photoTitle}>{photo.title}</h3>}
+                {photo.description && <p className={styles.description}>{photo.description}</p>}
 
-    const handlePrev = () => {
-        if (currentIndex > 0) {
-            setCurrentIndex(prev => prev - 1);
-        }
-    };
-
-    // Swipe logic with framer-motion
-    const swipeConfidenceThreshold = 10000;
-    const swipePower = (offset, velocity) => {
-        return Math.abs(offset) * velocity;
-    };
+                <div className={styles.infoRow}>
+                    {photo.createdAt && (
+                        <div className={styles.infoItem}>
+                            <span className="material-symbols-rounded">calendar_month</span>
+                            <span>{new Date(photo.createdAt).toLocaleDateString()}</span>
+                        </div>
+                    )}
+                    {(photo.placeName || photo.location) && (
+                        <div className={styles.infoItem}>
+                            <span className="material-symbols-rounded">location_on</span>
+                            <span>{photo.placeName || photo.location?.name || 'Ubicación'}</span>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
 
     return (
         <motion.div
@@ -35,74 +46,12 @@ export default function PhotoDetailOverlay({ photos, initialIndex, onClose }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
         >
-            <button className={styles.closeBtn} onClick={onClose}>
-                <span className="material-symbols-rounded">close</span>
-            </button>
-
-            <div className={styles.content}>
-                <AnimatePresence mode="wait">
-                    <motion.div
-                        key={currentPhoto.id}
-                        className={styles.slide}
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        drag="x"
-                        dragConstraints={{ left: 0, right: 0 }}
-                        dragElastic={1}
-                        onDragEnd={(e, { offset, velocity }) => {
-                            const swipe = swipePower(offset.x, velocity.x);
-
-                            if (swipe < -swipeConfidenceThreshold) {
-                                handleNext();
-                            } else if (swipe > swipeConfidenceThreshold) {
-                                handlePrev();
-                            }
-                        }}
-                    >
-                        <img
-                            src={currentPhoto.detailUrl || currentPhoto.url || currentPhoto.storagePath}
-                            alt={currentPhoto.caption || ''}
-                            className={styles.mainPhoto}
-                        />
-
-                        <div className={styles.metadata}>
-                            {currentPhoto.caption && <p className={styles.caption}>{currentPhoto.caption}</p>}
-
-                            <div className={styles.infoRow}>
-                                {currentPhoto.createdAt && (
-                                    <div className={styles.infoItem}>
-                                        <span className="material-symbols-rounded">calendar_month</span>
-                                        <span>{currentPhoto.createdAt.toDate?.().toLocaleDateString() || new Date(currentPhoto.createdAt).toLocaleDateString()}</span>
-                                    </div>
-                                )}
-                                {currentPhoto.location && (
-                                    <div className={styles.infoItem}>
-                                        <span className="material-symbols-rounded">location_on</span>
-                                        <span>{currentPhoto.location.name || 'Ubicación'}</span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </motion.div>
-                </AnimatePresence>
-
-                {/* Navigation Arrows (for desktop/accessibility) */}
-                {currentIndex > 0 && (
-                    <button className={`${styles.navBtn} ${styles.prevBtn}`} onClick={handlePrev}>
-                        <span className="material-symbols-rounded">chevron_left</span>
-                    </button>
-                )}
-                {currentIndex < photos.length - 1 && (
-                    <button className={`${styles.navBtn} ${styles.nextBtn}`} onClick={handleNext}>
-                        <span className="material-symbols-rounded">chevron_right</span>
-                    </button>
-                )}
-            </div>
-
-            <div className={styles.counter}>
-                {currentIndex + 1} / {photos.length}
-            </div>
+            <Carousel 
+                items={photos}
+                initialIndex={initialIndex}
+                onBack={onClose}
+                renderItem={renderPhotoItem}
+            />
         </motion.div>
     );
 }

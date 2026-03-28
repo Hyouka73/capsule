@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useGallery } from './hooks/useGallery';
 import PhotoDetailOverlay from './components/PhotoDetailOverlay';
@@ -6,14 +6,32 @@ import LoadingScreen from '../../components/ui/LoadingScreen/LoadingScreen';
 import styles from './GalleryView.module.css';
 
 /**
- * GalleryView — Chronological photogrid for all memories
+ * GalleryView — Optimized for Photos (Minimal UI)
  */
-export default function GalleryView() {
+export default function GalleryView({ onOverlayStateChange }) {
     const { photos, loading, hasMore, loadMore, error } = useGallery(24);
+    const [filter, setFilter] = useState('all'); // all, memory, snapshot
     const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(null);
     const observerTarget = useRef(null);
 
-    // Infinite scroll observer
+    // Filter and process photos
+    const filteredPhotos = useMemo(() => {
+        if (filter === 'all') return photos;
+        return photos.filter(p => p._type === filter);
+    }, [photos, filter]);
+
+    // Handle overlay state for Navbar hiding
+    useEffect(() => {
+        if (onOverlayStateChange) {
+            onOverlayStateChange(selectedPhotoIndex !== null);
+        }
+        // Cleanup when unmounting the gallery tab
+        return () => {
+            if (onOverlayStateChange) onOverlayStateChange(false);
+        };
+    }, [selectedPhotoIndex, onOverlayStateChange]);
+
+    // Infinite Scroll Observer
     useEffect(() => {
         const observer = new IntersectionObserver(
             entries => {
@@ -21,127 +39,102 @@ export default function GalleryView() {
                     loadMore();
                 }
             },
-            { threshold: 1.0 }
+            { threshold: 0.1, rootMargin: '200px' }
         );
 
-        if (observerTarget.current) {
-            observer.observe(observerTarget.current);
-        }
-
+        if (observerTarget.current) observer.observe(observerTarget.current);
         return () => observer.disconnect();
     }, [hasMore, loading, loadMore]);
 
-    if (loading && photos.length === 0) {
-        return <LoadingScreen message="Cargando sus momentos... ✨" />;
-    }
-
-    if (error) {
-        return (
-            <div className={styles.errorContainer}>
-                <span className="material-symbols-rounded">error</span>
-                <p>Ups, no pudimos cargar las fotos</p>
-                <button onClick={() => window.location.reload()}>Reintentar</button>
-            </div>
-        );
-    }
-
-    // Filter out utility files (thumb_, detail_, etc)
-    const displayPhotos = photos.filter(p => {
-        const name = p.name || p.storagePath || p.id || '';
-        const fileName = name.split('/').pop();
-        return !fileName.startsWith('thumb_') && !fileName.startsWith('detail_');
-    });
+    if (loading && photos.length === 0) return <LoadingScreen message="Cargando tu universo..." />;
 
     return (
         <div className={styles.container}>
-            <header className={styles.header}>
-                <h1>Nuestra Galería</h1>
-                <p className={styles.subtitle}>Un recorrido por nuestros momentos</p>
-            </header>
+            {/* Minimal Filter Bar */}
+            <div className={styles.filterSection}>
+                <div className={styles.filterWrapper}>
+                    <button 
+                        className={`${styles.filterBtn} ${filter === 'all' ? styles.filterBtnActive : ''}`}
+                        onClick={() => setFilter('all')}
+                    >
+                        Todo
+                    </button>
+                    <button 
+                        className={`${styles.filterBtn} ${filter === 'memory' ? styles.filterBtnActive : ''}`}
+                        onClick={() => setFilter('memory')}
+                    >
+                        Recuerdos
+                    </button>
+                    <button 
+                        className={`${styles.filterBtn} ${filter === 'snapshot' ? styles.filterBtnActive : ''}`}
+                        onClick={() => setFilter('snapshot')}
+                    >
+                        Instantes
+                    </button>
+                </div>
+            </div>
 
-            {displayPhotos.length === 0 ? (
-                <motion.div
-                    className={styles.emptyState}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                >
-                    <div className={styles.emptyCard}>
-                        <div className={styles.emptyIcon}>
-                            <span className="material-symbols-rounded">auto_awesome_motion</span>
-                            <div className={styles.sparkle}>✨</div>
-                        </div>
-                        <h2>Aquí vivirán sus recuerdos 🌸</h2>
-                        <p>Cada foto que suban en sus citas aparecerá aquí para que siempre puedan volver a ella.</p>
-                        <div className={styles.emptyDecoration}>
-                            <div className={styles.dot} />
-                            <div className={styles.dot} />
-                            <div className={styles.dot} />
-                        </div>
-                    </div>
-                </motion.div>
-            ) : (
-                <motion.div 
-                    className={styles.grid}
-                    variants={{
-                        hidden: { opacity: 0 },
-                        show: {
-                            opacity: 1,
-                            transition: {
-                                staggerChildren: 0.05
-                            }
-                        }
-                    }}
-                    initial="hidden"
-                    animate="show"
-                >
-                    {displayPhotos.map((photo, index) => (
-                        <motion.div
-                            key={`${photo.id}-${index}`}
-                            className={styles.photoThumb}
-                            onClick={() => setSelectedPhotoIndex(index)}
-                            variants={{
-                                hidden: { opacity: 0, y: 20, scale: 0.9 },
-                                show: { 
-                                    opacity: 1, y: 0, scale: 1,
-                                    transition: { type: 'spring', damping: 25, stiffness: 200 }
-                                }
-                            }}
-                        >
-                            <img
-                                src={photo.thumbnailUrl || photo.url || photo.storagePath}
-                                alt={photo.caption || ''}
-                                loading="lazy"
-                            />
-                            {photo.isSpecial && (
-                                <div className={styles.specialBadge}>
-                                    <span className="material-symbols-rounded">favorite</span>
+            <main className={styles.galleryWrapper}>
+                {filteredPhotos.length > 0 ? (
+                    <motion.div 
+                        className={styles.masonryGrid}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                    >
+                        {filteredPhotos.map((photo, index) => (
+                            <motion.div
+                                key={photo.id || index}
+                                className={styles.photoCard}
+                                layout
+                                onClick={() => setSelectedPhotoIndex(index)}
+                                whileTap={{ scale: 0.98 }}
+                            >
+                                <div className={styles.imageContainer}>
+                                    <img src={photo.thumbnail || photo.url} alt="Recuerdo" loading="lazy" />
+                                    {photo.isNew && <div className={styles.newTag}>Nuevo</div>}
+                                    {photo._type === 'snapshot' && (
+                                        <div className={styles.specialBadge}>
+                                            <span className="material-symbols-rounded">photo_camera</span>
+                                        </div>
+                                    )}
+                                    {photo.isSpecial && (
+                                        <div className={styles.specialIndicator}>
+                                            <span className="material-symbols-rounded">star</span>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                            {photo._type === 'snapshot' && (
-                                <div className={styles.snapshotBadge}>📸</div>
-                            )}
-                            {photo.wasUnseen && (
-                                <div className={styles.unseenBadge}>📥</div>
-                            )}
-                        </motion.div>
-                    ))}
-
-                    {/* Intersection Observer Target */}
-                    <div ref={observerTarget} className={styles.loaderTarget}>
-                        {loading && (
-                            <div className={styles.miniLoader}>
-                                <div className={styles.spinner} />
+                            </motion.div>
+                        ))}
+                    </motion.div>
+                ) : (
+                    <div className={styles.emptyState}>
+                        <div className={styles.emptyCard}>
+                            <div className={styles.emptyIcon}>
+                                <span className="material-symbols-rounded">photo_library</span>
+                                <div className={styles.sparkle}>✨</div>
                             </div>
-                        )}
+                            <h3>Aún no hay fotos aquí</h3>
+                            <p>¡Capturen nuevos momentos juntos para llenar su galería!</p>
+                        </div>
                     </div>
-                </motion.div>
-            )}
+                )}
 
-            {/* Photo Detail Modal */}
+                {/* Observer Target for load more */}
+                <div ref={observerTarget} className={styles.loaderTarget}>
+                    {loading && hasMore && (
+                        <div className={styles.miniLoader}>
+                            <div className={styles.spinner} />
+                        </div>
+                    )}
+                </div>
+            </main>
+
+            {/* Photo Detail Viewer */}
             <AnimatePresence>
                 {selectedPhotoIndex !== null && (
                     <PhotoDetailOverlay
-                        photos={displayPhotos}
+                        photos={filteredPhotos}
                         initialIndex={selectedPhotoIndex}
                         onClose={() => setSelectedPhotoIndex(null)}
                     />
