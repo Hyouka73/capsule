@@ -1,285 +1,270 @@
-/* ─────────────────────────────────────────────────
-   SnapshotCreator — Instagram-style camera overlay
-───────────────────────────────────────────────── */
-
 .overlay {
     position: fixed;
     inset: 0;
     z-index: 4000;
-    background: var(--bg-overlay-soft);
-    backdrop-filter: blur(8px);
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 20px 0;
+    justify-content: flex-end; /* Mobile-first: controls at bottom */
+    padding-bottom: 3rem;
     overflow: hidden;
 }
 
-/* ── Close button (Top Left) ── */
+.backdrop {
+    position: absolute;
+    inset: 0;
+    background: #000;
+    z-index: -1;
+}
+
 .closeBtn {
     position: absolute;
-    top: 24px;
-    left: 20px;
+    top: 2rem;
+    left: 1.2rem;
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    background: var(--pastel-bg);
-    border: 3px solid var(--pastel-rose-light);
-    color: var(--pastel-rose-dark);
+    background: rgba(40, 40, 45, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 1.2rem;
     cursor: pointer;
-    z-index: 5000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
+    z-index: 50;
 }
 
-.closeBtn:active {
-    transform: scale(0.9);
-    background: var(--pastel-rose-light);
-}
-
-/* ── History/Clock badge (Top Right) ── */
-.clockBadge {
-    position: absolute;
-    top: 22px;
-    right: 20px;
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    background: var(--clay-bg-white);
-    border: 3px solid var(--pastel-rose-light);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    z-index: 5000;
-}
-
-.clockIcon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--pastel-rose-dark);
-}
-
-.clockThumb {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-/* ── Flying Animation ── */
 .flyImg {
     position: fixed;
     top: 50%;
     left: 50%;
-    width: 300px;
-    height: 300px;
-    translate: -50% -50%;
+    width: 320px;
+    height: 320px;
     object-fit: cover;
     pointer-events: none;
     z-index: 6000;
-    will-change: transform, opacity;
     clip-path: url(#pillowClipCreator);
-    -webkit-clip-path: url(#pillowClipCreator);
 }
 
-/* ── Content Wrapper ── */
 .content {
-    flex: 1;
+    width: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 100%;
-    gap: 32px;
 }
 
-/* ── Viewfinder ── */
-.squircle {
-    width: 100vw;
-    height: 100vw;
-    max-width: 420px;
-    max-height: 420px;
-    background: #111;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    clip-path: url(#pillowClipCreator);
-    -webkit-clip-path: url(#pillowClipCreator);
-    overflow: hidden;
+.viewfinderContainer {
     position: relative;
-    box-shadow: var(--clay-shadow-lg);
+    width: 90vw;
+    height: 90vw;
+    max-width: 380px;
+    max-height: 380px;
+    margin-bottom: 2rem;
+    transition: all 0.3s ease;
 }
 
-.squircleSending {
-    opacity: 0.7;
+.sending {
+    opacity: 0.5;
+    transform: scale(0.95);
+    filter: blur(4px);
+}
+
+.squircle {
+    width: 100%;
+    height: 100%;
+    background: #000;
+    clip-path: url(#pillowClipCreator);
+    position: relative;
+    overflow: hidden;
+}
+
+.viewfinderGlow {
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    clip-path: url(#pillowClipCreator);
+    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.2);
+    pointer-events: none;
+    z-index: 2;
 }
 
 .video {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    display: block;
 }
 
 .videoMirrored {
     transform: scaleX(-1);
 }
 
-/* Camera loading */
 .loader {
     position: absolute;
     inset: 0;
     background: #000;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    color: #888;
+    gap: 1rem;
 }
 
-.loaderText {
-    font-family: var(--font-display, 'Playfair Display', serif);
-    font-size: 0.95rem;
-    color: var(--pastel-text-muted);
-    margin: 0;
-}
-
-/* Flip button — inside viewfinder */
-.flipBtn {
-    position: absolute;
-    bottom: 18px;
-    right: 18px;
-    width: 46px;
-    height: 46px;
+.loaderSpinner {
+    width: 30px;
+    height: 30px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-top-color: var(--pastel-rose);
     border-radius: 50%;
-    background: var(--clay-bg-white);
-    border: 3px solid var(--pastel-mint);
-    color: var(--pastel-mint-dark);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 5;
-    transition: transform 0.2s;
+    animation: rotate 0.8s infinite linear;
 }
 
-.flipBtn:active {
-    transform: scale(0.9) rotate(45deg);
+@keyframes rotate {
+    to { transform: rotate(360deg); }
 }
 
-/* Message chip overlay on viewfinder */
-.messageChip {
+.messagePreview {
     position: absolute;
-    bottom: 18px;
-    left: 18px;
-    right: 70px;
-    background: var(--clay-bg-white);
-    border: 3px solid var(--pastel-rose-light);
-    border-radius: 999px;
-    padding: 6px 14px;
-    color: var(--pastel-text);
-    font-size: 0.82rem;
-    font-family: var(--font-body, 'Inter', sans-serif);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    bottom: 13%;
+    left: 12.5%;
+    width: 75%;
+    background: none;
+    border: none;
+    padding: 0;
+    color: #fff;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: center;
+    z-index: 10;
+    pointer-events: none;
+    word-wrap: break-word;
+    word-break: break-word;
+    white-space: pre-wrap;
+    line-height: 1.35;
+    text-shadow: 0 4px 12px rgba(0, 0, 0, 1), 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.shutterFlash {
+    position: absolute;
+    inset: 0;
+    background: #fff;
+    z-index: 10;
     pointer-events: none;
 }
 
-/* ── Controls row (message toggle | shutter | spacer) ── */
+.footer {
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: center;
+    padding: 0 1rem;
+}
+
 .controls {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 28px;
+    justify-content: space-evenly;
     width: 100%;
+    gap: 1.5rem;
 }
 
-/* Message toggle button */
-.msgToggle {
+.historyBtn {
+    position: absolute;
+    top: 2rem;
+    right: 1.2rem;
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    background: var(--clay-bg-white);
-    border: 3px solid var(--pastel-rose-light);
-    color: var(--pastel-rose);
+    background: rgba(40, 40, 45, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: background 0.15s ease;
+    z-index: 50;
+    transition: all 0.2s ease;
 }
 
-.msgToggle:active {
-    background: var(--pastel-rose-light);
-}
-
-/* ── Shutter button ── */
-.shutterBtn {
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    background: var(--clay-bg-white);
-    border: 4px solid var(--pastel-rose-light);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: transform 0.12s ease, background 0.12s ease;
-    box-shadow: 0 0 0 4px var(--pastel-rose-light);
-}
-
-.shutterBtn:active:not(:disabled) {
+.historyBtn:active {
     transform: scale(0.9);
-    background: var(--pastel-rose-light);
+    background: rgba(255, 255, 255, 0.2);
 }
 
-.shutterBtn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+.iconBtn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(45, 45, 50, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+}
+
+.iconBtn:active {
+    transform: scale(0.9);
+    background: rgba(255, 255, 255, 0.25);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.iconBtn span {
+    font-size: 28px !important;
+}
+
+.shutterBtn {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    border: 4px solid #fff;
+    padding: 4px;
+    cursor: pointer;
+    transition: all 0.1s ease;
 }
 
 .shutterInner {
-    width: 52px;
-    height: 52px;
+    width: 100%;
+    height: 100%;
+    background: #fff;
     border-radius: 50%;
-    background: white;
-    transition: transform 0.12s ease;
+    transition: all 0.1s ease;
 }
 
-.shutterBtn:active:not(:disabled) .shutterInner {
-    transform: scale(0.85);
+.shutterBtn:active .shutterInner {
+    transform: scale(0.9);
+    background: var(--pastel-rose);
 }
 
-/* ── Optional message input row ── */
 .messageRow {
-    width: min(88vmin, 380px);
+    width: 100%;
     overflow: hidden;
 }
 
 .messageInput {
     width: 100%;
-    box-sizing: border-box;
-    padding: 12px 18px;
-    border: none;
-    border-radius: 999px;
-    background: var(--clay-bg-white);
-    border: 3px solid var(--pastel-rose-light);
-    color: var(--pastel-text);
-    font-family: var(--font-body, 'Inter', sans-serif);
-    font-size: 0.9rem;
+    background: #1a1a1c;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 24px;
+    padding: 14px 20px;
+    color: #fff;
+    font-size: 1rem;
     outline: none;
-    /* placeholder styled via ::placeholder below */
-}
-
-.messageInput::placeholder {
-    color: var(--pastel-text-muted);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
 .messageInput:focus {
+    background: rgba(255, 255, 255, 0.15);
     border-color: var(--pastel-rose);
-    background: var(--clay-bg-white);
 }

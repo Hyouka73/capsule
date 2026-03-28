@@ -1,165 +1,190 @@
-/* ─────────────────────────────────────────────────
-   SnapshotOverlay — full-screen snapshot viewer
-   with stacked-deck visual (max 3 cards visible).
-───────────────────────────────────────────────── */
-
 .overlay {
     position: fixed;
-    inset: 0;
-    z-index: 2100;
-    background: var(--pastel-text); /* Solid dark warm brown */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     overflow: hidden;
 }
 
-/* ── Counter badge (top-right) ── */
-.counter {
-    position: fixed;
-    top: 22px;
-    right: 20px;
-    background: var(--clay-bg-white);
-    border: 3px solid var(--pastel-rose-light);
-    border-radius: 999px;
-    padding: 0.3rem 0.85rem;
-    color: var(--pastel-text);
-    font-size: 0.78rem;
-    font-weight: 800;
-    font-family: var(--font-body, 'Inter', sans-serif);
-    z-index: 2110;
-    letter-spacing: 0.04em;
-}
-
-/* ── Close button (top-left) ── */
-.closeBtn, .closeBtnOverlay {
-    position: fixed;
-    top: 16px;
-    right: 16px;
-    width: 44px;
-    height: 44px;
-    border-radius: 22px; /* Smoother squircle-like circle */
-    background: var(--clay-bg-white);
-    border: 3px solid var(--pastel-rose-light);
-    color: white;
-    font-size: 1.2rem;
-    cursor: pointer;
-    z-index: 2200;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-}
-
-.closeBtn:active, .closeBtnOverlay:active {
-    transform: scale(0.9);
-    background: var(--pastel-rose-light);
-}
-
-/* ── Deck stage — centered, provides the stacking context ── */
-.stage {
-    position: relative;
-    width: min(86vmin, 370px);
-    height: min(86vmin, 370px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: visible;
-}
-
-/* ── Individual card slot — absolutely positioned in the stage ── */
-.cardSlot {
+.backdrop {
     position: absolute;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    /* transform-origin center so scale keeps card centered */
-    transform-origin: center center;
-    will-change: transform, opacity;
+    right: 0;
+    bottom: 0;
+    background: rgba(10, 10, 12, 0.95);
+    z-index: -1;
 }
 
-/* ── Squircle photo wrapper ── */
-.photoWrapper {
+.topBar {
+    position: absolute;
+    top: 2rem;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 1.5rem;
+    z-index: 10;
+}
+
+.counter {
+    background: rgba(40, 40, 45, 0.8);
+    padding: 6px 14px;
+    border-radius: 999px;
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.closeBtn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(40, 40, 45, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.closeBtn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: rotate(90deg);
+}
+
+.stage {
     position: relative;
     width: 100%;
+    max-width: 400px;
+    aspect-ratio: 0.8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cardSlot {
+    position: absolute;
+    width: 75%;
+    max-width: 300px;
+    aspect-ratio: 1;
+    cursor: pointer;
+    filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.4));
+}
+
+.photoWrapper {
+    width: 100%;
     height: 100%;
+    position: relative;
     clip-path: url(#pillowClip);
-    -webkit-clip-path: url(#pillowClip);
-    overflow: hidden;
+    background: #1a1a1a;
+}
+
+.photoInner {
+    width: 100%;
+    height: 100%;
+    position: relative;
 }
 
 .photo {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    display: block;
+    transition: transform 0.5s ease;
 }
 
-/* ── Message overlay (active card only) — Floating Text Style ── */
 .messageOverlay {
     position: absolute;
-    bottom: 3.5rem;
-    left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    width: 75%; /* Más angosto para evitar las esquinas redondas del squircle */
-    max-width: 280px;
-    padding: 0 1rem;
-    pointer-events: none;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    bottom: 13%;
+    left: 12.5%;
+    width: 75%;
+    padding: 0;
+    background: none;
+    border: none;
+    color: #fff;
     text-align: center;
-    flex-wrap: wrap; /* Permitir saltos de línea */
-    overflow-wrap: break-word; /* Para palabras muy largas */
-    z-index: 20;
-    opacity: 0;
-    animation: slideUpFade 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    animation-delay: 0.2s;
-}
-
-@keyframes slideUpFade {
-    to { transform: translateX(-50%) translateY(0); opacity: 1; }
+    z-index: 10;
+    pointer-events: none;
+    word-wrap: break-word;
+    word-break: break-word;
+    white-space: pre-wrap;
+    line-height: 1.35;
+    text-shadow: 0 4px 12px rgba(0, 0, 0, 1), 0 2px 4px rgba(0, 0, 0, 1);
 }
 
 .messageText {
-    font-family: 'Fredoka', var(--font-display, sans-serif);
-    font-size: 1.1rem;
-    font-weight: 400; /* Más delgada como pediste */
-    color: #ffffff;
     margin: 0;
-    line-height: 1.2;
-    letter-spacing: 0.02em;
-    /* Sombra para lectura sobre cualquier fondo */
-    text-shadow: 
-        0 2px 4px rgba(0, 0, 0, 0.5),
-        0 1px 2px rgba(0, 0, 0, 0.3);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.35;
+    text-shadow: 0 4px 8px rgba(0,0,0,0.6);
 }
 
-/* ── Conic-gradient progress ring (active card only) ──
-   Sits outside .photoWrapper so it appears OVER the squircle edge.
-   Uses the same pillowClip but is larger (inset: -7px).
-─────────────────────────────────────────────────────── */
 .progressRingSvg {
     position: absolute;
-    inset: 1px; /* Movido adentro */
-    width: calc(100% - 2px); /* Ajustado para estar dentro */
-    height: calc(100% - 2px);
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
     pointer-events: none;
     z-index: 5;
-    overflow: visible;
 }
 
 .timerTrack {
     fill: none;
-    stroke: var(--pastel-rose-light); /* Se mantiene tenue pero sólido */
-    stroke-width: 0.01; /* Más delgado */
+    stroke: rgba(255, 255, 255, 0.1);
+    stroke-width: 0.008;
 }
 
 .timerFill {
     fill: none;
-    stroke: var(--pastel-rose); /* Sólido */
-    stroke-width: 0.01;
+    stroke: var(--pastel-rose);
+    stroke-width: 0.008;
     stroke-linecap: round;
-    /* stroke-dasharray y stroke-dashoffset se manejan desde el componente */
+}
+
+.replyPrompt {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    text-align: center;
+    padding: 2rem;
+}
+
+.tulipIcon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    animation: float 3s infinite ease-in-out;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+}
+
+.replyPrompt h3 {
+    font-family: 'Bodoni Moda', serif;
+    font-size: 2rem;
+    margin: 0 0 0.5rem;
+    font-style: italic;
+}
+
+.replyPrompt p {
+    font-size: 1.1rem;
+    opacity: 0.8;
+    margin: 0;
 }
