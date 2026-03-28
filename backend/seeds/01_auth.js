@@ -1,11 +1,15 @@
 export default async function seedAuth(admin, db) {
     console.log('--- Seeding Auth & Config ---');
     
-    // 1. AppConfig
+    // 0. Fixed Relationship ID for development
+    const REL_ID = 'capsule_development_rel_123';
+
+    // 1. AppConfig (Mover a Subcolección de relación)
     const pastDate = new Date();
     pastDate.setDate(pastDate.getDate() - 1); // Ayer
     
-    await db.collection('appConfig').doc('main').set({
+    const configRef = db.doc(`relationships/${REL_ID}/config/main`);
+    await configRef.set({
         teaser: {
             unlockAt: pastDate.toISOString(),
             isEnabled: true
@@ -17,10 +21,10 @@ export default async function seedAuth(admin, db) {
             coupons: true, 
             photoGallery: true,
             onboarding: true,
-            movieTracking: false,
-            easterEggs: false,
-            games: false,
-            exercise: false
+            movieTracking: true, // Habilitar por defecto en dev
+            easterEggs: true,
+            games: true,
+            exercise: true
         },
         inviteConfig: { 
             inviteLink: null, 
@@ -30,8 +34,8 @@ export default async function seedAuth(admin, db) {
             timerSeconds: 9 
         },
         citaConfig: {
-            minPhotosSpontaneous: 5,
-            minPhotosBingoDefault: 3,
+            minPhotosSpontaneous: 2, // Más fácil para probar en dev
+            minPhotosBingoDefault: 1,
         },
         partner: {
             displayName: "Test Partner",
@@ -39,7 +43,7 @@ export default async function seedAuth(admin, db) {
         },
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
-    console.log(`✅ AppConfig configurado. Teaser desbloqueado (fecha en el pasado).`);
+    console.log(`✅ AppConfig configurado en subcolección para ${REL_ID}.`);
 
     // 2. Usuarios: Solo Admin
     const adminEmail = 'admin@test.com';
@@ -53,19 +57,25 @@ export default async function seedAuth(admin, db) {
         const aRecord = await admin.auth().createUser({ email: adminEmail, password: 'password', displayName: 'Admin' });
         adminUid = aRecord.uid;
     }
-    await admin.auth().setCustomUserClaims(adminUid, { role: 'admin' });
+    
+    // 2.2 Asignar Custom Claims (Crucial para acceso a subcolecciones)
+    await admin.auth().setCustomUserClaims(adminUid, { 
+        role: 'admin',
+        relationshipId: REL_ID
+    });
     
     // 3. Documentos de usuario en Firestore
     await db.collection('users').doc(adminUid).set({
         role: 'admin',
         email: adminEmail,
         displayName: 'Admin Test',
+        relationshipId: REL_ID, // AISLACIÓN
         teaserCompleted: true,
         welcomeSeen: true,
-        gameCoins: 0,
+        gameCoins: 100, // Dar algunas monedas para probar
         coinTransactions: []
     }, { merge: true });
 
-    console.log(`✅ Admin (${adminEmail}) creado/verificado.`);
+    console.log(`✅ Admin (${adminEmail}) creado/verificado con Relationship ID: ${REL_ID}.`);
 }
 

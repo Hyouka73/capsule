@@ -10,34 +10,28 @@
 
 export default async function seedBingoTest(admin, db) {
     console.log('--- Seeding Bingo Test (Combo Épico) ---');
+    const REL_ID = 'capsule_development_rel_123';
 
     const ROWS = 4;
     const COLS = 4;
     const TOTAL_TILES = ROWS * COLS;
-    const partnerUid = 'partner-test-uid'; // UID para pruebas manuales
+    const partnerUid = 'partner-test-uid';
 
     // 1. Crear el usuario Partner si no existe o actualizarlo
     await db.collection('users').doc(partnerUid).set({
         role: 'partner',
         displayName: 'Test Partner',
         email: 'partner@test.com',
-        gameCoins: 0,
-        coinTransactions: [],
-        onboardingCompleted: true,
-        welcomeSeen: true,
-        teaserCompleted: true,
+        relationshipId: REL_ID, // AISLACIÓN
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
 
-    console.log(`✅ Partner (${partnerUid}) configurado con 0 monedas.`);
-
-    // 2. Construir las categorías para el tablero 4x4
+    // Guardar en relationships/{REL_ID}/bingo/board
     const categories = [];
     const now = new Date().toISOString();
 
     for (let i = 0; i < TOTAL_TILES; i++) {
-        const isTarget = (i === 0); // La casilla (0,0) es el índice 0
-        
+        const isTarget = (i === 0);
         categories.push({
             id: `bingo_tile_${i}`,
             title: isTarget ? 'EL GRAN RETO 🚀' : `Reto ${i}`,
@@ -45,21 +39,21 @@ export default async function seedBingoTest(admin, db) {
             minPhotos: 1,
             completedMemoryId: isTarget ? null : `mock_memory_${i}`,
             completedAt: isTarget ? null : now,
-            isSpecial: isTarget, // (0,0) es especial
+            isSpecial: isTarget,
             isEnabled: true,
             suggestedTags: [{ value: 'test', label: 'Test' }]
         });
     }
 
-    // 3. Guardar en bingoBoard/board (Ruta detectada en BingoContext.jsx)
-    await db.collection('bingoBoard').doc('board').set({
+    const bingoRef = db.doc(`relationships/${REL_ID}/bingo/board`);
+    await bingoRef.set({
         categories: categories,
         completedCount: TOTAL_TILES - 1,
         totalCount: TOTAL_TILES,
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    console.log('✅ Tablero 4x4 configurado para Combo Épico (15/16 completadas).');
+    console.log(`✅ Tablero 4x4 configurado para Combo Épico en ${REL_ID}.`);
     console.log('👉 INSTRUCCIONES:');
     console.log('   1. Loguearse como partner@test.com');
     console.log('   2. Ir a la pestaña de Bingo');

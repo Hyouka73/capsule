@@ -1,5 +1,6 @@
 export default async function seedCapsules(admin, db) {
     console.log('--- Seeding Capsules ---');
+    const REL_ID = 'capsule_development_rel_123';
     
     // Admin needed as creator
     const adminRecord = await admin.auth().getUserByEmail('admin@test.com');
@@ -20,7 +21,8 @@ export default async function seedCapsules(admin, db) {
             unlockTrigger: 'date',
             unlockDate: admin.firestore.Timestamp.fromDate(future30),
             autoDestruct: false, hasAttachments: false, notifyOnUnlock: true,
-            createdBy: adminUid
+            createdBy: adminUid,
+            relationshipId: REL_ID
         },
         {
             id: 'locked-soon',
@@ -32,7 +34,8 @@ export default async function seedCapsules(admin, db) {
             unlockTrigger: 'date',
             unlockDate: admin.firestore.Timestamp.fromDate(future7),
             autoDestruct: false, hasAttachments: false, notifyOnUnlock: true,
-            createdBy: adminUid
+            createdBy: adminUid,
+            relationshipId: REL_ID
         },
         {
             id: 'unlocked-message',
@@ -45,7 +48,8 @@ export default async function seedCapsules(admin, db) {
             unlockDate: admin.firestore.Timestamp.fromDate(now),
             unlockedAt: admin.firestore.Timestamp.fromDate(now),
             autoDestruct: false, hasAttachments: false, notifyOnUnlock: true,
-            createdBy: adminUid
+            createdBy: adminUid,
+            relationshipId: REL_ID
         },
         {
             id: 'autodestruct-message',
@@ -59,19 +63,23 @@ export default async function seedCapsules(admin, db) {
             unlockedAt: admin.firestore.Timestamp.fromDate(now),
             autoDestruct: true, hasAttachments: false,
             notifyOnUnlock: true,
-            createdBy: adminUid
+            createdBy: adminUid,
+            relationshipId: REL_ID
         }
     ];
 
+    const relRef = db.collection('relationships').doc(REL_ID);
+    const capsCollection = relRef.collection('capsules');
+
     const batch = db.batch();
     
-    // Wipe existing capsules (clean slate for this collection logic)
-    const existing = await db.collection('capsules').get();
+    // Wipe existing capsules in subcollection
+    const existing = await capsCollection.get();
     existing.docs.forEach(doc => batch.delete(doc.ref));
 
     for (const cap of capsules) {
         const { id, ...data } = cap;
-        const ref = db.collection('capsules').doc(id);
+        const ref = capsCollection.doc(id);
         batch.set(ref, {
             ...data,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -80,5 +88,5 @@ export default async function seedCapsules(admin, db) {
     }
     
     await batch.commit();
-    console.log(`✅ ${capsules.length} cápsulas creadas.`);
+    console.log(`✅ ${capsules.length} cápsulas creadas para ${REL_ID}.`);
 }

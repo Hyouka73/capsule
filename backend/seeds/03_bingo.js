@@ -1,5 +1,6 @@
 export default async function seedBingo(admin, db) {
     console.log('--- Seeding Bingo ---');
+    const REL_ID = 'capsule_development_rel_123';
 
     const categories = [
         { id: 'cine', title: 'Ir al cine', emoji: '🍿', minPhotos: 1, completedMemoryId: null, suggestedTags: [{ value: 'cine', label: 'Cine 🍿' }], completedAt: null, isSpecial: false, isEnabled: true },
@@ -10,7 +11,6 @@ export default async function seedBingo(admin, db) {
         { id: 'relax', title: 'Tarde de spa', emoji: '💆‍♂️', minPhotos: 1, completedMemoryId: null, suggestedTags: [{ value: 'relax', label: 'Relax 💆‍♂️' }], completedAt: null, isSpecial: true, isEnabled: true }
     ];
     
-    // Rellenamos el resto para armar un board de 16 casillas (4x4)
     for (let i = categories.length + 1; i <= 16; i++) {
         categories.push({ 
             id: `cat${i}`, 
@@ -19,16 +19,15 @@ export default async function seedBingo(admin, db) {
             minPhotos: 1, 
             completedMemoryId: null, 
             suggestedTags: [], 
-            completedAt: null,
-            isSpecial: i % 8 === 0,
-            isEnabled: true
+            enabled: true
         });
     }
 
-    await db.collection('bingoBoard').doc('board').set({
+    const bingoRef = db.doc(`relationships/${REL_ID}/bingo/board`);
+    await bingoRef.set({
         categories: categories,
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
     
-    console.log('✅ Tablero de Bingo inicializado (16 casillas, 4x4).');
+    console.log(`✅ Tablero de Bingo inicializado para ${REL_ID}.`);
 }
