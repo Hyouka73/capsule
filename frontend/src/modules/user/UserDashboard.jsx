@@ -20,6 +20,7 @@ import { TABS } from '../../data/dashboardData';
 import { usePendingCitas } from '../../hooks/usePendingCitas';
 import Memory from '../../models/Memory';
 import { useOfflineQueue } from '../../hooks/useOfflineQueue';
+import { useScrollNavbar } from '../../hooks/useScrollNavbar';
 // import { usePendingBingo } from '../../hooks/usePendingBingo';
 import { useBingo } from '../../hooks/useBingo';
 import BingoSuggestionSheet from '../memories/components/BingoSuggestionSheet';
@@ -86,18 +87,11 @@ export default function UserDashboard() {
     const [selectedPendingDate, setSelectedPendingDate] = useState(null);
     const [viewerPhotos, setViewerPhotos] = useState(null);
     const [isPendingListOpen, setIsPendingListOpen] = useState(false);
-    const [sheetDismissed, setSheetDismissed] = useState(false);
+    const [isGalleryDetailOpen, setIsGalleryDetailOpen] = useState(false);
 
-
-    // Dynamic check for ANY overlay that should hide the map
-    // We EXCLUDE isPlaceSelected because that modal (PlaceDetailDrawer) lives INSIDE MapView
-    const hasAnyOverlayOpen = !!citaContext || isBingoModalOpen || isCouponsModalOpen || isSnapshotOpen || isCameraOpen || isHistoryOpen || isPendingListOpen || !!selectedPendingDate || !!viewerPhotos || bingoQueue.length > 0 || !!celebrationEvent;
-
-    // Check specifically for nav hiding (includes map selection)
+    // ── NAVBAR VISIBILITY & OVERLAYS ──
+    const hasAnyOverlayOpen = !!citaContext || isBingoModalOpen || isCouponsModalOpen || isSnapshotOpen || isCameraOpen || isHistoryOpen || isPendingListOpen || !!selectedPendingDate || !!viewerPhotos || bingoQueue.length > 0 || !!celebrationEvent || isGalleryDetailOpen;
     const shouldHideNav = hasAnyOverlayOpen;
-
-    
-    // Check for map rendering (should NOT hide when a place is selected)
     const shouldShowMap = activeTab === 'lugares' && (!hasAnyOverlayOpen || isPlaceSelected);
 
     // Partículas solo cuando NO es el mapa
@@ -175,7 +169,7 @@ export default function UserDashboard() {
 
     const renderContent = () => {
         switch (activeTab) {
-            case 'galeria': return <GalleryView />;
+            case 'galeria': return <GalleryView onOverlayStateChange={setIsGalleryDetailOpen} />;
             case 'sorpresas': return <UserCapsules />;
             case 'caprichos': return <UserCoupons onModalStateChange={setIsCouponsModalOpen} />;
             case 'bingo': return (
@@ -297,7 +291,7 @@ export default function UserDashboard() {
                         <div className={styles.dotPattern} />
                     </div>
 
-                    <main className={`${styles.mainContent} ${activeTab === 'bingo' ? styles.mainContentBingo : ''}`}>
+<main className={`${styles.mainContent} ${activeTab === 'bingo' ? styles.mainContentBingo : ''}`}>
                         <AnimatePresence mode="wait" custom={direction}>
                             <motion.div
                                 key={activeTab}
@@ -321,10 +315,18 @@ export default function UserDashboard() {
             <AnimatePresence>
                 {!hasAnyOverlayOpen && (
                     <motion.div
+                        className={styles.bottomNavWrapper}
                         initial={{ y: 100, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
+                        animate={{ 
+                            y: shouldHideNav ? 120 : 0, 
+                            opacity: shouldHideNav ? 0 : 1 
+                        }}
                         exit={{ y: 100, opacity: 0 }}
-                        transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                        transition={{ 
+                            type: 'spring', 
+                            stiffness: 260, 
+                            damping: shouldHideNav ? 28 : 22 
+                        }}
                     >
                         <BottomNav
                             activeTab={activeTab}

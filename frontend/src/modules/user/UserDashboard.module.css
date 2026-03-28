@@ -94,20 +94,18 @@
 /* --- Contenido Principal (tabs que NO son el mapa) --- */
 .mainContent {
     position: relative;
-    z-index: 1;
+    z-index: 10;
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 1.5rem 1.5rem 6.5rem 1.5rem;
+    padding: 0 !important; /* Remove padding from scroll container */
     overflow-y: auto;
     overflow-x: hidden;
     height: 100%;
 }
 
 .mainContentBingo {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    padding-top: 0 !important;
+    padding: 0 !important;
 }
 
 /* FIX: El mapa ocupa TODO el viewport — fixed en lugar de absolute
@@ -125,7 +123,8 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    height: 100%;
+    padding: 1.5rem 1.5rem 6.5rem 1.5rem; /* MOVED padding here */
+    min-height: min-content;
 }
 
 /* Home Tab */
@@ -237,6 +236,19 @@
     font-weight: 700;
     font-family: var(--font-display);
     box-shadow: var(--clay-shadow-rose);
-    cursor: pointer;
-    touch-action: manipulation;
 }
+
+.bottomNavWrapper {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    pointer-events: none; /* Let events pass through the empty areas of the fixed wrapper */
+}
+
+/* Re-enable pointer events for the actual nav inside */
+.bottomNavWrapper > * {
+    pointer-events: auto;
+}
+
