@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { uploadFile, compressImage } from '../services/storage';
+import { uploadFile, compressImage, processImagePair } from '../services/storage';
 import { createMemory, createSnapshot, findOrCreatePlace, updateBingoSquare } from '../apiClient';
 import { STORAGE_PATHS } from '../config/constants';
 import Memory from '../models/Memory';
@@ -236,13 +236,28 @@ export function useOfflineQueue() {
                             const photo = item.photos[i];
                             const photoId = crypto.randomUUID();
                             const tempMemoryId = item.id;
-                            // Requirement: {relationshipId}/memories/{memoryId}/{photoId}.webp
+                            
+                            // 1. Upload Original
                             const storagePath = `${relationshipId}/memories/${item.originalId || tempMemoryId}/${photoId}.webp`;
                             const url = await uploadFile(photo.blob, storagePath, { 
                                 isMain: String(!!photo.isMain),
                                 originalName: photo.fileName || ''
                             });
-                            photoUrls.push({ url, storagePath, photoId, isMain: !!photo.isMain });
+
+                            // 2. Upload Thumbnail if exists
+                            let thumbUrl = null;
+                            if (photo.thumb) {
+                                const thumbPath = `${relationshipId}/memories/${item.originalId || tempMemoryId}/${photoId}_thumb.webp`;
+                                thumbUrl = await uploadFile(photo.thumb, thumbPath, { isThumb: 'true' });
+                            }
+
+                            photoUrls.push({ 
+                                url, 
+                                thumbUrl, 
+                                storagePath, 
+                                photoId, 
+                                isMain: !!photo.isMain 
+                            });
 
                             if (i < item.photos.length - 1) {
                                 await new Promise(r => setTimeout(r, DELAY_BETWEEN_UPLOADS));
@@ -351,6 +366,13 @@ export function useOfflineQueue() {
                     }
 
                     await removeFromQueue(item.id);
+                    
+                    // Broadcast successful sync to other tabs/hooks
+                    if (window.BroadcastChannel) {
+                        const channel = new BroadcastChannel('capsule_sync');
+                        channel.postMessage({ type: 'SYNC_COMPLETE', id: item.id, itemType: item.type });
+                        channel.close();
+                    }
                 } catch (err) {
                     // Fail silently in prod
                     const currentRetries = item.retryCount ?? 0;
@@ -491,16 +513,33 @@ export function useOfflineQueue() {
      */
     const queueMemory = useCallback(async (formData, photoMetadata, originalCitaId = null, bingoOrigin = null) => {
         const compressedPhotos = await Promise.all(
-            photoMetadata.map(async (p) => {
+            photoMetadata.map(async (p, index) => {
                 const file = p.file || p;
-                const blob = await compressImage(file, 1200, 0.8);
-                return { 
-                    blob, 
-                    fileName: file.name, 
-                    size: blob.size, 
-                    mimeType: 'image/jpeg',
-                    isMain: !!p.isMain
-                };
+                
+                // First photo (index 0) is always the camera one in Citations
+                // We generate a thumbnail for it as requested
+                const isMain = index === 0 || !!p.isMain;
+                
+                if (isMain) {
+                    const { blob, thumb } = await processImagePair(file);
+                    return { 
+                        blob, 
+                        thumb,
+                        fileName: file.name, 
+                        size: blob.size, 
+                        mimeType: 'image/webp',
+                        isMain: true
+                    };
+                } else {
+                    const blob = await compressImage(file, { maxWidth: 1200, initialQuality: 0.8 });
+                    return { 
+                        blob, 
+                        fileName: file.name, 
+                        size: blob.size, 
+                        mimeType: 'image/webp',
+                        isMain: false
+                    };
+                }
             })
         );
 

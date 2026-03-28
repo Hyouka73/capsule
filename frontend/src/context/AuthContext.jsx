@@ -110,6 +110,9 @@ export function AuthProvider({ children }) {
                     setGameCoins(data.gameCoins ?? 0);
                     setAccountStatus(data.accountStatus || (data.isRevoked ? 'revoked' : 'active'));
                     setRelationshipId(data.relationshipId || null);
+                    if (data.relationshipId) {
+                        localStorage.setItem('capsule_relationship_id', data.relationshipId);
+                    }
                     
                     // Fallback: If role is not in claims, take it from Firestore
                     if (!role && data.role) {
@@ -133,6 +136,9 @@ export function AuthProvider({ children }) {
                     setUser(firebaseUser);
                     setRole(claims.role);
                     setRelationshipId(claims.relationshipId);
+                    if (claims.relationshipId) {
+                        localStorage.setItem('capsule_relationship_id', claims.relationshipId);
+                    }
                     setDeviceId(claims.deviceId);
 
                     // Register FCM
@@ -157,6 +163,7 @@ export function AuthProvider({ children }) {
                     setTeaserCompleted(null);
                     setGameCoins(0);
                     setIsLoading(false);
+                    localStorage.removeItem('capsule_relationship_id');
                 }
             }
         });

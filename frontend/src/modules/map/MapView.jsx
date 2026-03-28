@@ -110,6 +110,8 @@ export default function MapView({
 
     const filteredPlaces = useMemo(() => {
         return places.filter(p => {
+            // Requirement: Only show pins with at least one visit for THIS relationship
+            // The Place model already handles specific relationship visitCount
             const hasCitas = (p.visitCount || 0) > 0;
             const matchesFilter = activeFilter === 'todos' || p.tags?.includes(activeFilter);
             const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());

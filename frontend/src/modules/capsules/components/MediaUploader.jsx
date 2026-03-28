@@ -14,20 +14,26 @@ export default function MediaUploader({ files = [], onChange }) {
     const [previews, setPreviews] = useState([]);
     const fileInputRef = useRef(null);
 
-    // Sincronizar previsualizaciones con los archivos
+    // Sincronizar previsualizaciones con los archivos (pueden ser File o String URLs)
     useEffect(() => {
-        const newPreviews = files.map(file => ({
-            id: Math.random().toString(36).substr(2, 9),
-            file,
-            url: URL.createObjectURL(file),
-            type: file.type.startsWith('video/') ? 'video' : 'image'
-        }));
+        const newPreviews = files.map(file => {
+            const isFile = file instanceof File || file instanceof Blob;
+            return {
+                id: Math.random().toString(36).substr(2, 9),
+                file: isFile ? file : null,
+                url: isFile ? URL.createObjectURL(file) : file,
+                type: isFile ? (file.type.startsWith('video/') ? 'video' : 'image') : 'image', // Fallback a image para URLs
+                isExisting: !isFile
+            };
+        });
 
         setPreviews(newPreviews);
 
         // Cleanup
         return () => {
-            newPreviews.forEach(p => URL.revokeObjectURL(p.url));
+            newPreviews.forEach(p => {
+                if (p.file) URL.revokeObjectURL(p.url);
+            });
         };
     }, [files]);
 
@@ -50,7 +56,7 @@ export default function MediaUploader({ files = [], onChange }) {
             <div className={styles.header}>
                 <span className={styles.icon}>📎</span>
                 <span className={styles.label}>Archivos Multimedia</span>
-                <span className={styles.count}>{files.length} / 10</span>
+                <span className={styles.count}>{files.length} adjuntos</span>
             </div>
 
             <div className={styles.grid}>
@@ -73,16 +79,14 @@ export default function MediaUploader({ files = [], onChange }) {
                     </div>
                 ))}
 
-                {files.length < 10 && (
-                    <button 
-                        type="button" 
-                        className={styles.addBtn}
-                        onClick={() => fileInputRef.current?.click()}
-                    >
-                        <span className={styles.plus}>+</span>
-                        <span className={styles.addLabel}>Añadir</span>
-                    </button>
-                )}
+                <button 
+                    type="button" 
+                    className={styles.addBtn}
+                    onClick={() => fileInputRef.current?.click()}
+                >
+                    <span className={styles.plus}>+</span>
+                    <span className={styles.addLabel}>Añadir</span>
+                </button>
             </div>
 
             <input 

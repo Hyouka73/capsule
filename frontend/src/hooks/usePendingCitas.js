@@ -54,6 +54,17 @@ export function usePendingCitas() {
 
     useEffect(() => {
         refreshPending();
+        
+        // Listen for background sync completions to refresh UI
+        if (window.BroadcastChannel) {
+            const channel = new BroadcastChannel('capsule_sync');
+            channel.onmessage = (event) => {
+                if (event.data?.type === 'SYNC_COMPLETE') {
+                    refreshPending();
+                }
+            };
+            return () => channel.close();
+        }
     }, [refreshPending]);
 
     const addPendingCita = useCallback(async (files, context = null) => {

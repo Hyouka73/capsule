@@ -53,6 +53,7 @@ export default class Memory {
             placeLat: formData.customLocation?.lat || formData.placeLat,
             placeLng: formData.customLocation?.lng || formData.placeLng,
             placeName: formData.placeName || null,
+            isSpecial: formData.isSpecial
         });
     }
 
