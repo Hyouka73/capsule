@@ -14,13 +14,19 @@ export const getGallery = onCall({ region: 'us-central1', cors: true }, async (r
     const db = getFirestore();
 
     try {
+        const relationshipId = request.auth.token.relationshipId;
+
         // 1. Fetch memory photos via Collection Group
+        // Depth doesn't matter for collectionGroup as long as collection name matches
         let photosQuery = db.collectionGroup(COLLECTIONS.PHOTOS)
+            .where('relationshipId', '==', relationshipId)
             .where('isSnapshot', '==', false)
             .orderBy('createdAt', 'desc');
 
-        // 2. Fetch snapshots
-        let snapshotsQuery = db.collection(COLLECTIONS.INSTANTANEAS)
+        // 2. Fetch snapshots from relationship subcollection
+        let snapshotsQuery = db.collection('relationships')
+            .doc(relationshipId)
+            .collection(COLLECTIONS.INSTANTANEAS)
             .where('isArchived', '==', true)
             .orderBy('createdAt', 'desc');
 

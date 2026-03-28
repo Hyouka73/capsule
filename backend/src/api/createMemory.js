@@ -25,6 +25,11 @@ export const createMemory = onCall({ region: 'us-central1', cors: true }, async 
 
     const db = getFirestore();
 
+    const relationshipId = request.auth.token.relationshipId;
+    if (!relationshipId) {
+        throw new HttpsError('failed-precondition', 'El usuario no tiene una relación asignada.');
+    }
+
     // 3. Preparar el mapping de entidad para Firestore
     const memoryData = {
         title: title || 'Recuerdo sin título',
@@ -36,6 +41,7 @@ export const createMemory = onCall({ region: 'us-central1', cors: true }, async 
         placeName: placeName || null,
         placeLat: placeLat ? parseFloat(placeLat) : null,
         placeLng: placeLng ? parseFloat(placeLng) : null,
+        relationshipId, // Aislación por relación
         uploadedBy: uid,
         photoCount: 0,
         mainPhotoUrl: null,
@@ -47,8 +53,9 @@ export const createMemory = onCall({ region: 'us-central1', cors: true }, async 
 
     try {
         // 4. Escribir a DB desde el lado del servidor
-        // Usar el ID proporcionado por el cliente si existe (importante para evitar duplicados con el trigger de Storage)
-        const memoryRef = id ? db.collection(COLLECTIONS.MEMORIES).doc(id) : db.collection(COLLECTIONS.MEMORIES).doc();
+        // USAR SUBCOLECCIÓN: relationships/{relationshipId}/memories/{id}
+        const relationshipRef = db.collection('relationships').doc(relationshipId);
+        const memoryRef = id ? relationshipRef.collection(COLLECTIONS.MEMORIES).doc(id) : relationshipRef.collection(COLLECTIONS.MEMORIES).doc();
         const memoryId = memoryRef.id;
 
         const { offlinePhotoUrls = [] } = request.data;
@@ -64,12 +71,13 @@ export const createMemory = onCall({ region: 'us-central1', cors: true }, async 
         }
 
         // SEGUNDO: Crear el documento padre (Memory)
-        // Esto asegura que cuando los documentos de fotos se creen abajo, 
-        // el padre ya existe para los triggers de Storage/Firestore.
+        // photoCount debe iniciar en 0 — el trigger onPhotoUploaded se encarga de incrementarlo
+        // para evitar doble conteo o inconsistencias.
+        // onPhotoUploaded.js incrementa atómicamente por cada archivo
         await memoryRef.set({
             ...memoryData,
-            photoCount,
-            mainPhotoUrl,
+            photoCount: 0,
+            mainPhotoUrl: mainPhotoUrl,
         });
 
         // TERCERO: Crear los documentos de fotos en Batch
@@ -91,13 +99,43 @@ export const createMemory = onCall({ region: 'us-central1', cors: true }, async 
             await batch.commit();
         }
 
-        // 5. Incrementar visitCount del lugar si existe
+        // 5. Incrementar visitCount del lugar si existe (Específico por relación)
         if (memoryData.placeId) {
             try {
                 const placeRef = db.collection(COLLECTIONS.PLACES).doc(memoryData.placeId);
-                await placeRef.update({
-                    visitCount: FieldValue.increment(1),
-                    updatedAt: FieldValue.serverTimestamp()
+                await db.runTransaction(async (transaction) => {
+                    const placeSnap = await transaction.get(placeRef);
+                    if (!placeSnap.exists) return;
+
+                    const placeData = placeSnap.data();
+                    const vBy = placeData.visitedBy || [];
+                    const vIndex = vBy.findIndex(v => v.relationshipId === relationshipId);
+                    
+                    let updatedVisitedBy = [...vBy];
+                    if (vIndex !== -1) {
+                        updatedVisitedBy[vIndex] = {
+                            ...updatedVisitedBy[vIndex],
+                            count: (updatedVisitedBy[vIndex].count || 0) + 1,
+                            timestamp: new Date().toISOString()
+                        };
+                    } else {
+                        updatedVisitedBy.push({
+                            relationshipId,
+                            count: 1,
+                            timestamp: new Date().toISOString()
+                        });
+                    }
+
+                    const updates = {
+                        visitedBy: updatedVisitedBy,
+                        updatedAt: FieldValue.serverTimestamp()
+                    };
+
+                    if (!placeData.visitedByRelationshipIds?.includes(relationshipId)) {
+                        updates.visitedByRelationshipIds = FieldValue.arrayUnion(relationshipId);
+                    }
+
+                    transaction.update(placeRef, updates);
                 });
             } catch (placeErr) {
                 logger.warn(`Could not update visitCount for place ${memoryData.placeId}:`, placeErr);
@@ -108,8 +146,7 @@ export const createMemory = onCall({ region: 'us-central1', cors: true }, async 
         //    sin mutar el tablero
         let bingoSuggestions = [];
         try {
-            const bingoRef = db.collection(COLLECTIONS.BINGO_BOARD)
-                .doc(SINGLETON_DOCS.BINGO_BOARD);
+            const bingoRef = db.doc(`relationships/${relationshipId}/bingo/board`);
             const bingoDoc = await bingoRef.get();
 
             if (bingoDoc.exists) {

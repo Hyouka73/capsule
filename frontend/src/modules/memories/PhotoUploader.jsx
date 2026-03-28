@@ -6,13 +6,18 @@ import Button from '../../components/ui/Button/Button';
 import styles from './PhotoUploader.module.css';
 import { logToVercel } from '../../utils/vercelLogger';
 import CameraPermissionGate from '../../components/ui/CameraPermissionGate/CameraPermissionGate';
+import { toast } from '../../components/ui/PastelToast/PastelToast';
+
+// Solo imágenes permitidas — ver 03_FLUJOS_REFINADOS.txt Módulo 8
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'];
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic'];
 
 export default function PhotoUploader({ 
     onDone, 
     onMetadataDetected, 
     onPhotosChange
 }) {
-    const { isPartner } = useAuth();
+    const { user } = useAuth();
     const [uploads, setUploads] = useState([]);
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -34,6 +39,17 @@ export default function PhotoUploader({
         const processedFiles = [];
 
         for (const file of files) {
+            // 0. Validation
+            const extension = file.name.split('.').pop().toLowerCase();
+            const isValidExtension = ALLOWED_EXTENSIONS.includes(extension);
+            const isValidMime = ALLOWED_MIME_TYPES.includes(file.type);
+
+            if (!isValidExtension || !isValidMime) {
+                toast.error("⚠️ Solo se permiten imágenes", "JPG, PNG o WebP son los formatos ideales.");
+                logToVercel('PhotoUploader', 'INVALID_FILE_TYPE', `Ext: ${extension}, Type: ${file.type}`);
+                continue;
+            }
+
             const id = Math.random().toString(36).substring(7);
             
             // 1. Immediate Compression (RAM optimization)
@@ -57,7 +73,8 @@ export default function PhotoUploader({
                 file: finalFile,
                 previewUrl,
                 originalName: file.name,
-                status: 'ready'
+                status: 'ready',
+                isMain: uploads.length === 0 && processedFiles.length === 0
             };
 
             processedFiles.push(photoItem);
@@ -76,7 +93,11 @@ export default function PhotoUploader({
 
         // Notify parent to save in Draft
         if (onPhotosChange) {
-            onPhotosChange(processedFiles.map(p => p.file));
+            onPhotosChange(processedFiles.map(p => ({ 
+                file: p.file, 
+                isMain: p.isMain,
+                originalName: p.originalName
+            })));
         }
 
         setIsProcessing(false);

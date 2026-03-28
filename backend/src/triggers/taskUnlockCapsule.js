@@ -1,6 +1,7 @@
 import { onTaskDispatched } from 'firebase-functions/v2/tasks';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
+import { logger } from 'firebase-functions';
 import { COLLECTIONS } from '../config/constants.js';
 
 /**
@@ -20,14 +21,14 @@ export const taskUnlockCapsule = onTaskDispatched(
         },
     },
     async (request) => {
-        const { capsuleId } = request.data;
-        if (!capsuleId) {
-            console.error('No capsuleId provided to taskUnlockCapsule');
+        const { capsuleId, relationshipId } = request.data;
+        if (!capsuleId || !relationshipId) {
+            logger.error('Missing capsuleId or relationshipId in taskUnlockCapsule payload');
             return;
         }
 
         const db = getFirestore();
-        const capsuleRef = db.collection(COLLECTIONS.CAPSULES).doc(capsuleId);
+        const capsuleRef = db.collection('relationships').doc(relationshipId).collection(COLLECTIONS.CAPSULES).doc(capsuleId);
 
         try {
             let notifyData = null;
@@ -36,13 +37,13 @@ export const taskUnlockCapsule = onTaskDispatched(
             await db.runTransaction(async (t) => {
                 const docSnap = await t.get(capsuleRef);
                 if (!docSnap.exists) {
-                    console.log(`Capsule ${capsuleId} not found, may have been deleted.`);
+                    logger.info(`Capsule ${capsuleId} not found, may have been deleted.`);
                     return;
                 }
 
                 const data = docSnap.data();
                 if (data.isUnlocked) {
-                    console.log(`Capsule ${capsuleId} already unlocked.`);
+                    logger.info(`Capsule ${capsuleId} already unlocked.`);
                     return;
                 }
 
@@ -61,6 +62,7 @@ export const taskUnlockCapsule = onTaskDispatched(
             if (notifyData) {
                 const partnerQuery = await db.collection(COLLECTIONS.USERS)
                     .where('role', '==', 'partner')
+                    .where('relationshipId', '==', notifyData.relationshipId) 
                     .limit(1)
                     .get();
 
@@ -87,7 +89,7 @@ export const taskUnlockCapsule = onTaskDispatched(
             }
 
         } catch (error) {
-            console.error(`Error unlocking capsule ${capsuleId}:`, error);
+            logger.error(`Error unlocking capsule ${capsuleId}:`, error);
             throw error; // Let Cloud Tasks retry
         }
     }

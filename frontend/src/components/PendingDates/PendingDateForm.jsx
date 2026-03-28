@@ -28,7 +28,7 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, onAutoSa
                 if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
             }
         } catch (e) {
-            console.error('Error parsing date:', e);
+            // silent fail
         }
         return new Date().toISOString().split('T')[0];
     });
@@ -70,7 +70,7 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, onAutoSa
                         setCustomPlaceName(res.name);
                     }
                 })
-                .catch(err => console.warn('[PendingDateForm] Failed to auto-resolve name:', err));
+                .catch(err => { /* silent fail */ });
         }
     }, [customLocation, customPlaceName]);
 

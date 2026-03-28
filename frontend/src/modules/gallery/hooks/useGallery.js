@@ -59,7 +59,7 @@ export function useGallery(pageSize = 20) {
                 throw new Error(result.error || 'Failed to fetch gallery');
             }
         } catch (err) {
-            console.error('Error fetching gallery photos:', err);
+            // silent fail
             setError(err.message);
         } finally {
             setLoading(false);

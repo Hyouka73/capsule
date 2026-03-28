@@ -1,57 +1,30 @@
-import { doc, getDoc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
-import { db } from './firebase';
-
-const SETTINGS_DOC_PATH = 'appConfig/main';
+import { getAppConfig, updateAppConfig as updateAppConfigApi } from '../apiClient';
 
 /**
- * Persist global application settings
+ * Persist global application settings via BFF
  */
 export async function saveGlobalSettings(settings) {
-    const docRef = doc(db, SETTINGS_DOC_PATH);
-    const data = { ...settings, updatedAt: serverTimestamp() };
-    
-    // Si se están guardando ajustes del mapa, actualizamos el timestamp de sincronización
-    if (data.map) {
-        data.map.lastActTimestamp = serverTimestamp();
-    }
-    
-    await setDoc(docRef, data, { merge: true });
+    return updateAppConfigApi({ config: settings });
 }
 
 /**
- * Update partial settings
+ * Update partial settings via BFF
  */
 export async function updateConfig(partialSettings) {
-    const docRef = doc(db, SETTINGS_DOC_PATH);
-    const data = { ...partialSettings, updatedAt: serverTimestamp() };
-    
-    if (data.map) {
-        data.map.lastActTimestamp = serverTimestamp();
-    }
-    
-    await setDoc(docRef, data, { merge: true });
+    return updateAppConfigApi({ config: partialSettings });
 }
 
 /**
- * Fetch global application settings once
+ * Fetch global application settings once via BFF
  */
 export async function getGlobalSettings() {
-    const docRef = doc(db, SETTINGS_DOC_PATH);
-    const snap = await getDoc(docRef);
-    if (snap.exists()) return snap.data();
-    return null;
+    return getAppConfig();
 }
 
 /**
- * Subscribe to global application settings
+ * Deprecated: Real-time settings should be handled via AppConfigContext
  */
 export function subscribeToGlobalSettings(callback) {
-    const docRef = doc(db, SETTINGS_DOC_PATH);
-    return onSnapshot(docRef, (snap) => {
-        if (snap.exists()) {
-            callback(snap.data());
-        } else {
-            callback(null);
-        }
-    });
+    console.warn('[settingsService] subscribeToGlobalSettings is deprecated. Use AppConfigContext.');
+    return () => {};
 }

@@ -45,6 +45,13 @@ export default function GalleryView() {
         );
     }
 
+    // Filter out utility files (thumb_, detail_, etc)
+    const displayPhotos = photos.filter(p => {
+        const name = p.name || p.storagePath || p.id || '';
+        const fileName = name.split('/').pop();
+        return !fileName.startsWith('thumb_') && !fileName.startsWith('detail_');
+    });
+
     return (
         <div className={styles.container}>
             <header className={styles.header}>
@@ -52,7 +59,7 @@ export default function GalleryView() {
                 <p className={styles.subtitle}>Un recorrido por nuestros momentos</p>
             </header>
 
-            {photos.length === 0 ? (
+            {displayPhotos.length === 0 ? (
                 <motion.div
                     className={styles.emptyState}
                     initial={{ opacity: 0, y: 20 }}
@@ -87,7 +94,7 @@ export default function GalleryView() {
                     initial="hidden"
                     animate="show"
                 >
-                    {photos.map((photo, index) => (
+                    {displayPhotos.map((photo, index) => (
                         <motion.div
                             key={`${photo.id}-${index}`}
                             className={styles.photoThumb}
@@ -134,7 +141,7 @@ export default function GalleryView() {
             <AnimatePresence>
                 {selectedPhotoIndex !== null && (
                     <PhotoDetailOverlay
-                        photos={photos}
+                        photos={displayPhotos}
                         initialIndex={selectedPhotoIndex}
                         onClose={() => setSelectedPhotoIndex(null)}
                     />

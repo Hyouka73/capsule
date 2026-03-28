@@ -1,63 +1,53 @@
-import { createContext, useContext, useCallback, useEffect, useRef, useState } from 'react';
-import {
-    doc,
-    onSnapshot,
-    updateDoc,
-    setDoc,
-    increment,
-    arrayUnion,
-    serverTimestamp,
-} from 'firebase/firestore';
-import { db as firestoreDb } from '../services/firebase';
+import { createContext, useContext, useCallback, useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useOfflineActions } from '../hooks/useOfflineActions';
-import { logActivity } from '../apiClient';
-import { COLLECTIONS, SINGLETON_DOCS } from '../config/constants';
+import { 
+    updateBingoSquare, 
+    getBingoBoard, 
+    updateBingoBoard as updateBingoBoardApi, 
+    resetBingoBoard as resetBingoBoardApi 
+} from '../apiClient';
 import { toast } from '../components/ui/PastelToast/PastelToast';
 import BingoAction from '../models/BingoAction';
 import { openDB } from '../config/dbConfig';
 
 const BingoContext = createContext();
+const BINGO_QUEUE_KEY = 'bingo_suggestions_queue';
 
-const BINGO_CACHE_KEY = 'bingo_board_cache';
-const BINGO_QUEUE_KEY = 'capsule_bingoQueue';
+const getBingoCacheKey = (rid) => `bingo_${rid}`;
 
-async function saveBingoCache(boardData) {
+async function saveBingoCache(boardData, rid) {
+    if (!rid) return;
     try {
         const db = await openDB();
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction('app_cache', 'readwrite');
-            tx.objectStore('app_cache').put({ key: BINGO_CACHE_KEY, data: boardData, savedAt: Date.now() });
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error);
-        });
+        const tx = db.transaction('app_cache', 'readwrite');
+        tx.objectStore('app_cache').put({ key: getBingoCacheKey(rid), data: boardData, savedAt: Date.now() });
     } catch { /* falla silenciosa */ }
 }
 
-async function loadBingoCache() {
+async function loadBingoCache(rid) {
+    if (!rid) return null;
     try {
         const db = await openDB();
         return new Promise((resolve) => {
             const tx = db.transaction('app_cache', 'readonly');
-            const req = tx.objectStore('app_cache').get(BINGO_CACHE_KEY);
-            req.onsuccess = () => resolve(req.result?.data ?? null);
+            const req = tx.objectStore('app_cache').get(getBingoCacheKey(rid));
+            req.onsuccess = () => resolve(req.result ?? null);
             req.onerror = () => resolve(null);
         });
     } catch { return null; }
 }
 
-const boardRef = doc(firestoreDb, COLLECTIONS.BINGO_BOARD, SINGLETON_DOCS.BINGO_BOARD);
-
 export function BingoProvider({ children }) {
-    const [categories, setCategories] = useState([]);
+    const [allCategories, setAllCategories] = useState([]);
     const [completedCount, setCompletedCount] = useState(0);
     const [totalCount, setTotalCount] = useState(16);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    const { user } = useAuth();
+    const { relationshipId: rid } = useAuth();
 
     const { queueAction } = useOfflineActions();
-    const optimisticPending = useRef(new Set());
+
     const [celebrationEvent, setCelebrationEvent] = useState(null);
     const [irisEvent, setIrisEvent] = useState(false);
     
@@ -67,471 +57,235 @@ export function BingoProvider({ children }) {
 
     const triggerIris = useCallback(() => {
         setIrisEvent(true);
-        setTimeout(() => setIrisEvent(false), 4500); // Cinematic duration
+        setTimeout(() => setIrisEvent(false), 4500);
     }, []);
 
     const clearCelebrationEvent = useCallback(() => setCelebrationEvent(null), []);
 
-    const checkBingoAchievements = useCallback(async (prevCats, nextCats, categoryId) => {
-        if (!user) return;
-        
-        const ROWS = 4;
-        const COLS = 4;
-
-        // 1. Detection Logic
-        const getLinesDetails = (cats) => {
-            const lines = [];
-            // Rows
-            for (let r = 0; r < ROWS; r++) {
-                let rowFull = true;
-                for (let c = 0; c < COLS; c++) {
-                    if (!cats[r * COLS + c].completedMemoryId) { rowFull = false; break; }
-                }
-                if (rowFull) lines.push({ type: 'line', label: `Fila ${r + 1} ✅`, coins: 15 });
+    const fetchBoard = useCallback(async () => {
+        if (!rid) return;
+        try {
+            const res = await getBingoBoard();
+            if (res.success) {
+                const cats = Array.isArray(res.categories) ? res.categories : (Array.isArray(res.squares) ? res.squares : []);
+                setAllCategories(cats);
+                setCompletedCount(res.completedCount || 0);
+                setTotalCount(res.totalCount || 16);
+                saveBingoCache(res, rid);
             }
-            // Cols
-            for (let c = 0; c < COLS; c++) {
-                let colFull = true;
-                for (let r = 0; r < ROWS; r++) {
-                    if (!cats[r * COLS + c].completedMemoryId) { colFull = false; break; }
-                }
-                if (colFull) lines.push({ type: 'line', label: `Columna ${c + 1} ✅`, coins: 15 });
-            }
-            // Diagonals (4x4 indices: 0,5,10,15 and 3,6,9,12)
-            if ([0, 5, 10, 15].every(i => cats[i]?.completedMemoryId)) {
-                lines.push({ type: 'diagonal', label: 'Diagonal Principal ✅', coins: 15 });
-            }
-            if ([3, 6, 9, 12].every(i => cats[i]?.completedMemoryId)) {
-                lines.push({ type: 'diagonal', label: 'Diagonal Secundaria ✅', coins: 15 });
-            }
-            return lines;
-        };
-
-        const prevLines = getLinesDetails(prevCats);
-        const nextLines = getLinesDetails(nextCats);
-        
-        // Find NEW lines by filtering those that weren't in prev
-        // Using label and type as key
-        const newAchievements = nextLines.filter(nl => 
-            !prevLines.some(pl => pl.label === nl.label && pl.type === nl.type)
-        );
-
-        const isBoardFull = nextCats.every(c => c.completedMemoryId);
-        const wasBoardFull = prevCats.every(c => c.completedMemoryId);
-
-        if (isBoardFull && !wasBoardFull) {
-            newAchievements.push({ type: 'full_board', label: '¡TABLERO COMPLETO! 🏆', coins: 50 });
+        } catch (err) {
+            // silent fail
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
         }
-
-        // Special Square Logic (+5)
-        if (categoryId) {
-            const square = nextCats.find(c => c.id === categoryId);
-            const wasSquareComplete = prevCats.find(c => c.id === categoryId)?.completedMemoryId;
-            if (square?.isSpecial && !wasSquareComplete) {
-                newAchievements.push({ type: 'special', label: 'Casilla Especial ✨', coins: 5 });
-            }
-        }
-
-        if (newAchievements.length > 0) {
-            const totalCoins = newAchievements.reduce((sum, ac) => sum + ac.coins, 0);
-            
-            try {
-                const userRef = doc(firestoreDb, COLLECTIONS.USERS, user.uid);
-                
-                // Register EACH transaction separately for auditing
-                const newTransactions = newAchievements.map(ac => ({
-                    type: "earned",
-                    source: `bingo_${ac.type}`,
-                    label: ac.label,
-                    amount: ac.coins,
-                    timestamp: new Date().toISOString()
-                }));
-
-                await updateDoc(userRef, {
-                    gameCoins: increment(totalCoins),
-                    coinTransactions: arrayUnion(...newTransactions)
-                });
-
-                if (isBoardFull && !wasBoardFull) {
-                    logActivity({ 
-                        action: 'bingoBoardCompleted', 
-                        targetType: 'bingo',
-                        targetId: SINGLETON_DOCS.BINGO_BOARD,
-                        displayText: '¡Completó el tablero de Bingo! 🎯',
-                        metadata: { 
-                            userId: user.uid,
-                            timestamp: new Date().toISOString() 
-                        }
-                    });
-                }
-
-                // Prepare event for overlay
-                setCelebrationEvent({
-                    isCombo: newAchievements.length > 1,
-                    achievements: newAchievements,
-                    totalCoins,
-                    tierLabel: newAchievements.length > 1 ? '¡COMBO ÉPICO! 🎊' : newAchievements[0].label,
-                    reward: isBoardFull && !wasBoardFull ? '¡Tablero completado! Se reseteará automáticamente.' : '¡Tus monedas han sido añadidas! ✨',
-                    isFullBoard: isBoardFull && !wasBoardFull
-                });
-            } catch (err) {
-                console.error('[BingoContext] Error updating rewards:', err);
-            }
-        }
-    }, [user]);
-
-
-    const applyServerState = useCallback((data) => {
-        if (!data) return;
-
-        setCategories(prev => {
-            if (optimisticPending.current.size > 0) {
-                const merged = (data.categories || []).map(serverCat => {
-                    const localCat = prev.find(c => c.id === serverCat.id);
-                    if (localCat?.completedMemoryId && !serverCat.completedMemoryId) {
-                        return localCat;
-                    }
-                    return serverCat;
-                });
-                return merged;
-            }
-            return data.categories || [];
-        });
-
-        setCompletedCount(data.completedCount ?? 0);
-        setTotalCount(data.totalCount ?? 20);
-        saveBingoCache(data);
-    }, []);
+    }, [rid]);
 
     useEffect(() => {
+        if (!rid) return;
+        
         let isMounted = true;
-        let unsubscribe = null;
-        setIsLoading(true);
-
+        
         const init = async () => {
-            const cached = await loadBingoCache();
+            const result = await loadBingoCache(rid);
             if (!isMounted) return;
 
-            if (cached) {
-                applyServerState(cached);
+            // 1. Cargar lo que haya en cache (rápido!)
+            if (result && result.data) {
+                const cached = result.data;
+                const cats = Array.isArray(cached.categories) ? cached.categories : (Array.isArray(cached.squares) ? cached.squares : []);
+                setAllCategories(cats);
+                setCompletedCount(cached.completedCount || 0);
+                setTotalCount(cached.totalCount || 16);
                 setIsLoading(false);
             }
 
             // Hydrate Queue from localStorage
             try {
-                const savedQueue = localStorage.getItem(BINGO_QUEUE_KEY);
+                const savedQueue = localStorage.getItem(`${BINGO_QUEUE_KEY}_${rid}`);
                 if (savedQueue) {
-                    const parsed = JSON.parse(savedQueue);
-                    setBingoQueue(parsed);
+                    setBingoQueue(JSON.parse(savedQueue));
                 }
-            } catch (err) {
-                console.error('[BingoProvider] Error hydrating queue:', err);
-            }
+            } catch (err) { /* silent */ }
 
-            if (navigator.onLine) {
-                try {
-                    // One last check before setting the listener
-                    if (!isMounted) return;
-
-                    unsubscribe = onSnapshot(
-                        boardRef,
-                        (snap) => {
-                            if (!isMounted) return;
-                            if (snap.exists()) {
-                                applyServerState(snap.data());
-                            }
-                            setIsLoading(false);
-                            setError(null);
-                        },
-                        (err) => {
-                            if (!isMounted) return;
-                            console.error('[BingoProvider] Error en snapshot:', err);
-                            setError(err.message);
-                            setIsLoading(false);
-                        }
-                    );
-
-                    // If we unmounted exactly while calling onSnapshot
-                    if (!isMounted) {
-                        unsubscribe?.();
-                        unsubscribe = null;
-                    }
-                } catch (err) {
-                    if (isMounted) {
-                        setError(err.message);
-                        setIsLoading(false);
-                    }
-                }
-            } else {
-                if (isMounted) {
-                    if (!cached) setError('Sin conexión y sin datos guardados localmente.');
-                    setIsLoading(false);
-                }
+            // 2. Solo fetch si el cache tiene más de 5 minutos o no existe
+            const CACHE_STALE_TIME = 5 * 60 * 1000;
+            const isStale = !result || !result.savedAt || (Date.now() - result.savedAt > CACHE_STALE_TIME);
+            
+            if (navigator.onLine && isStale) {
+                fetchBoard();
             }
         };
 
         init();
 
         const handleOnline = () => {
-            if (!isMounted) return;
-            if (!unsubscribe) {
-                unsubscribe = onSnapshot(boardRef, (snap) => {
-                    if (!isMounted) return;
-                    if (snap.exists()) applyServerState(snap.data());
-                });
-                if (!isMounted) unsubscribe?.();
-            }
+            if (isMounted) fetchBoard();
         };
 
         window.addEventListener('online', handleOnline);
         return () => {
             isMounted = false;
-            unsubscribe?.();
             window.removeEventListener('online', handleOnline);
         };
-    }, [applyServerState]);
+    }, [rid, fetchBoard]);
 
-    // Persist queue changes
+    // Persist queue
     useEffect(() => {
-        if (!isLoading) {
-            localStorage.setItem(BINGO_QUEUE_KEY, JSON.stringify(bingoQueue));
+        if (!isLoading && rid) {
+            localStorage.setItem(`${BINGO_QUEUE_KEY}_${rid}`, JSON.stringify(bingoQueue));
         }
-    }, [bingoQueue, isLoading]);
-
-    // Thorough zombie filter once categories are loaded
-    useEffect(() => {
-        if (categories.length > 0 && bingoQueue.length > 0) {
-            setBingoQueue(prev => prev.filter(item => {
-                // Keep if at least one suggested category is NOT yet completed in current state
-                return item.suggestions.some(s => {
-                    const cat = categories.find(c => c.id === s.categoryId);
-                    return cat && !cat.completedMemoryId;
-                });
-            }));
-        }
-    }, [categories]); // Only run when categories change (e.g. after sync)
+    }, [bingoQueue, isLoading, rid]);
 
     const markComplete = useCallback(async (categoryId, memoryId = null) => {
-        const existing = categories.find(c => c.id === categoryId);
+        if (!rid) return { success: false, error: 'Auth required' };
+        
+        const existing = allCategories.find(c => c.id === categoryId);
         if (!existing) return { success: false, error: 'Categoría no encontrada' };
         if (existing.completedMemoryId) return { success: false, error: 'Casilla ya completada' };
 
         const completedAt = new Date().toISOString();
 
         try {
-            const action = new BingoAction({ categoryId, memoryId, completedAt });
-            const payload = action.toQueuePayload();
-
-            optimisticPending.current.add(categoryId);
-            setCategories(prev => {
-                const nextCats = prev.map(cat =>
-                    cat.id === categoryId
-                        ? { ...cat, completedMemoryId: memoryId || 'pending', completedAt }
-                        : cat
-                );
-                checkBingoAchievements(prev, nextCats, categoryId);
-                return nextCats;
-            });
+            // Optimistic Update
+            setAllCategories(prev => prev.map(cat =>
+                cat.id === categoryId
+                    ? { ...cat, completedMemoryId: memoryId || 'pending', completedAt }
+                    : cat
+            ));
             setCompletedCount(prev => prev + 1);
 
-            const { queued, id: actionId } = await queueAction('bingo_completion', payload);
-
+            // API Call (or queue if offline)
             if (navigator.onLine) {
-                toast.success('¡Casilla marcada! ✅', `Reto "${existing.title || existing.label || 'Reto'}" logrado`);
+                const res = await updateBingoSquare({ categoryId, memoryId, completedAt });
+                if (res.success) {
+                    if (res.newAchievements?.length > 0) {
+                        setCelebrationEvent({
+                            isCombo: res.newAchievements.length > 1,
+                            achievements: res.newAchievements,
+                            totalCoins: res.totalCoinsEarned,
+                            tierLabel: res.newAchievements.length > 1 ? '¡COMBO ÉPICO! 🎊' : res.newAchievements[0].label,
+                            reward: res.isFullBoard ? '¡Tablero completado! Se reseteará automáticamente.' : '¡Tus monedas han sido añadidas! ✨',
+                            isFullBoard: res.isFullBoard
+                        });
+                    }
+                    toast.success('¡Casilla marcada! ✅');
+                    fetchBoard(); // Refresh for final state
+                }
+                return res;
             } else {
+                const action = new BingoAction({ categoryId, memoryId, completedAt, relationshipId: rid });
+                const { queued, id: actionId } = await queueAction('bingo_completion', action.toQueuePayload());
                 toast.info('Guardado offline 📱', 'Se sincronizará cuando tengas conexión');
+                return { success: true, queued, actionId };
             }
-
-            setTimeout(() => {
-                optimisticPending.current.delete(categoryId);
-            }, 10000);
-
-            return { success: true, queued, actionId };
         } catch (err) {
-            console.error('[BingoProvider] Error al encolar acción:', err);
+            // silent fail
             toast.error('Error', err.message);
+            fetchBoard(); // Rollback simple
             return { success: false, error: err.message };
         }
-    }, [categories, queueAction, checkBingoAchievements]);
-
-    const markBatchComplete = useCallback(async (categoryIds, memoryId = null) => {
-        if (!categoryIds || categoryIds.length === 0) return;
-        
-        const completedAt = new Date().toISOString();
-        const existingCats = categories;
-        
-        try {
-            optimisticPending.current = new Set([...optimisticPending.current, ...categoryIds]);
-            
-            setCategories(prev => {
-                const nextCats = prev.map(cat => 
-                    categoryIds.includes(cat.id)
-                        ? { ...cat, completedMemoryId: memoryId || 'pending', completedAt }
-                        : cat
-                );
-                // Trigger achievements ONCE for the whole batch
-                checkBingoAchievements(prev, nextCats, categoryIds[0]); 
-                return nextCats;
-            });
-            
-            setCompletedCount(prev => prev + categoryIds.length);
-
-            // Queue each one
-            for (const catId of categoryIds) {
-                const action = new BingoAction({ categoryId: catId, memoryId, completedAt });
-                queueAction('bingo_completion', action.toQueuePayload());
-            }
-
-            toast.success('¡Retos completados! ✨', `Has logrado ${categoryIds.length} casillas`);
-            
-            setTimeout(() => {
-                categoryIds.forEach(id => optimisticPending.current.delete(id));
-            }, 10000);
-
-            return { success: true };
-        } catch (err) {
-            console.error('[BingoProvider] Error in batch mark:', err);
-            return { success: false, error: err.message };
-        }
-    }, [categories, queueAction, checkBingoAchievements]);
-
-    const isCategoryComplete = useCallback((categoryId) => {
-        return categories.find(c => c.id === categoryId)?.completedMemoryId != null;
-    }, [categories]);
-
-    const isCategoryAvailable = useCallback((categoryId) => {
-        return !isCategoryComplete(categoryId);
-    }, [isCategoryComplete]);
-
-    const getCategory = useCallback((categoryId) => {
-        return categories.find(c => c.id === categoryId) ?? null;
-    }, [categories]);
+    }, [allCategories, rid, queueAction, fetchBoard]);
 
     const updateBingoBoard = useCallback(async (newCategories) => {
         try {
             setIsLoading(true);
-            await updateDoc(boardRef, {
-                categories: newCategories,
-                updatedAt: serverTimestamp()
-            });
-            toast.success('¡Tablero Guardado! 🎯', 'Los retos han sido actualizados.');
-            return { success: true };
+            const res = await updateBingoBoardApi({ categories: newCategories });
+            if (res.success) {
+                toast.success('¡Tablero Guardado! 🎯');
+                fetchBoard();
+            }
+            return res;
         } catch (err) {
-            console.error('[BingoProvider] Error al guardar tablero:', err);
+            // silent fail
             toast.error('Error al guardar', err.message);
             return { success: false, error: err.message };
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [fetchBoard]);
 
-    const availableTags = categories.reduce((acc, cat) => {
-        const catTags = (cat.suggestedTags || []).map(t => {
-            if (typeof t === 'string') return { value: t, label: t.charAt(0).toUpperCase() + t.slice(1) };
-            return t; // It's already an object {value, label}
-        });
-        
-        catTags.forEach(tag => {
-            if (!acc.find(item => item.value === tag.value)) {
-                acc.push(tag);
-            }
-        });
-        return acc;
-    }, []);
-
-    const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-
-    const enqueueBingoSuggestion = useCallback((memoryId, suggestions) => {
-        if (!memoryId || !suggestions?.length) return;
-
-        setBingoQueue(prev => {
-            if (prev.some(item => item.memoryId === memoryId)) return prev;
-            return [...prev, { 
-                memoryId, 
-                suggestions, 
-                createdAt: new Date().toISOString() 
-            }];
-        });
-    }, []);
-
-    const resolveBingoSuggestion = useCallback(async (memoryId, selectedCategoryIds = []) => {
-        if (isResolving) return;
-        setIsResolving(true);
-
+    const resetBingoBoard = useCallback(async () => {
+        if (!rid) return;
         try {
-            if (selectedCategoryIds.length > 0) {
-                await markBatchComplete(selectedCategoryIds, memoryId);
+            const res = await resetBingoBoardApi();
+            if (res.success) {
+                triggerIris();
+                toast.info('Tablero reseteado 🔄');
+                fetchBoard();
             }
-
-            // Remove from queue
-            setBingoQueue(prev => prev.filter(item => item.memoryId !== memoryId));
+            return res;
         } catch (err) {
-            console.error('[BingoProvider] Error resolving suggestion:', err);
-            toast.error('Error', 'No se pudo procesar la sugerencia.');
-        } finally {
-            setIsResolving(false);
+            // silent fail
+            toast.error('Error al resetear', err.message);
+            return { success: false, error: err.message };
         }
-    }, [isResolving, markBatchComplete]);
+    }, [rid, fetchBoard, triggerIris]);
+
+    const availableTags = useMemo(() => {
+        const safeArr = Array.isArray(allCategories) ? allCategories : [];
+        return safeArr.reduce((acc, cat) => {
+            const catTags = (cat.suggestedTags || []).map(t => {
+                if (typeof t === 'string') return { value: t, label: t.charAt(0).toUpperCase() + t.slice(1) };
+                return t;
+            });
+            catTags.forEach(tag => {
+                if (!acc.find(item => item.value === tag.value)) acc.push(tag);
+            });
+            return acc;
+        }, []);
+    }, [allCategories]);
+
+    const categories = useMemo(() => {
+        return allCategories
+            .filter(c => c.isEnabled !== false)
+            .sort((a, b) => {
+                const dateA = a.createdAt ? new Date(a.createdAt) : 0;
+                const dateB = b.createdAt ? new Date(b.createdAt) : 0;
+                return dateA - dateB;
+            })
+            .slice(0, 16);
+    }, [allCategories]);
 
     const value = {
         categories,
+        allCategories,
         availableTags,
         completedCount,
         totalCount,
-        progressPercent,
+        progressPercent: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0,
         isLoading,
         error,
-        markBatchComplete,
         markComplete,
         completeBingoSquare: markComplete,
-        isCategoryComplete,
-        isCategoryAvailable,
-        getCategory,
         updateBingoBoard,
-        resetBingoBoard: useCallback(async () => {
-            if (!categories.length) return;
-            
-            // 1. Archive current board
-            try {
-                const historyId = `${SINGLETON_DOCS.BINGO_BOARD}_${Date.now()}`;
-                await setDoc(doc(firestoreDb, COLLECTIONS.BINGO_HISTORY, historyId), {
-                    categories,
-                    completedCount,
-                    totalCount,
-                    archivedAt: new Date().toISOString(),
-                    userId: user?.uid
-                });
-
-                // 2. Clear current board
-                const resetCats = categories.map(c => ({
-                    ...c,
-                    completedMemoryId: null,
-                    completedAt: null
-                }));
-                
-                await updateDoc(boardRef, {
-                    categories: resetCats,
-                    completedCount: 0,
-                    updatedAt: serverTimestamp()
-                });
-                
-                // Cinematic Iris Transition
-                triggerIris();
-                
-                toast.info('Tablero reseteado 🔄', '¡Es hora de nuevos retos!');
-            } catch (err) {
-                console.error('[BingoContext] Error resetting board:', err);
-                toast.error('Error al resetear board', err.message);
-            }
-        }, [categories, completedCount, totalCount, user, triggerIris]),
+        resetBingoBoard,
         celebrationEvent,
-        clearCelebrationEvent: () => setCelebrationEvent(null),
+        clearCelebrationEvent,
         irisEvent,
         triggerIris,
         bingoQueue,
         isResolving,
-        enqueueBingoSuggestion,
-        resolveBingoSuggestion
+        enqueueBingoSuggestion: useCallback((memoryId, suggestions) => {
+            setBingoQueue(prev => {
+                if (prev.some(item => item.memoryId === memoryId)) return prev;
+                return [...prev, { memoryId, suggestions, createdAt: new Date().toISOString() }];
+            });
+        }, []),
+        resolveBingoSuggestion: useCallback(async (memoryId, selectedCategoryIds = []) => {
+            if (isResolving) return;
+            setIsResolving(true);
+            try {
+                if (selectedCategoryIds.length > 0) {
+                    for (const catId of selectedCategoryIds) {
+                        await markComplete(catId, memoryId);
+                    }
+                }
+                setBingoQueue(prev => prev.filter(item => item.memoryId !== memoryId));
+            } finally {
+                setIsResolving(false);
+            }
+        }, [isResolving, markComplete])
     };
 
     return (
@@ -541,10 +295,5 @@ export function BingoProvider({ children }) {
     );
 }
 
-export const useBingoContext = () => {
-    const context = useContext(BingoContext);
-    if (!context) {
-        throw new Error('useBingoContext must be used within a BingoProvider');
-    }
-    return context;
-};
+// eslint-disable-next-line react-refresh/only-export-components
+export const useBingoContext = () => useContext(BingoContext);

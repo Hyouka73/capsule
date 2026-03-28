@@ -92,8 +92,10 @@ export default function MapView({
                     }));
                 },
                 (err) => {
-                    if (err.code === 3) console.warn('[MapView] Geolocation timeout');
-                    else console.log('[MapView] Geolocation error:', err);
+                    // SILENT TOAST: Solo informar si es denegado o error real
+                    if (err.code === 1) { // PERMISSION_DENIED
+                        toast.info('Ubicación desactivada. El mapa se centrará en el lugar por defecto.', { duration: 2000 });
+                    }
                 },
                 { enableHighAccuracy: false, timeout: 30000, maximumAge: 300000 }
             );
@@ -220,7 +222,7 @@ export default function MapView({
                         setPlaceMemories(result.docs || []);
                     }
                 } catch (err) {
-                    console.error('[MapView] Error fetching memories for place:', err);
+                    // toast.error('[MapView] Error fetching memories');
                 } finally {
                     setLoadingMemories(false);
                 }

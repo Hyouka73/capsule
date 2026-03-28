@@ -11,6 +11,7 @@ export default class Snapshot {
 
         // Status
         this.isSeen = !!data.isSeen;
+        this.relationshipId = data.relationshipId || null;
 
         // Timestamps
         this.seenAt = data.seenAt ? new Date(data.seenAt) : null;

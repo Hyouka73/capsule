@@ -43,13 +43,9 @@ export default function SnapshotOverlay({ snapshots = [], onClose }) {
         if (!currentSnapshot) return;
 
         try {
-            const snapshotRef = doc(db, 'instantaneas', currentSnapshot.id);
-            await updateDoc(snapshotRef, {
-                isSeen: true,
-                seenAt: serverTimestamp(),
-            });
+            await markSnapshotAsSeen({ snapshotId: currentSnapshot.id });
         } catch (err) {
-            console.error('Error marking snapshot as seen:', err);
+            // silent fail
         }
 
         if (isLast) {
@@ -63,11 +59,7 @@ export default function SnapshotOverlay({ snapshots = [], onClose }) {
     /* ─── close immediately ─── */
     const handleClose = () => {
         if (currentSnapshot) {
-            const snapshotRef = doc(db, 'instantaneas', currentSnapshot.id);
-            updateDoc(snapshotRef, {
-                isSeen: true,
-                seenAt: serverTimestamp(),
-            }).catch(() => { });
+            markSnapshotAsSeen({ snapshotId: currentSnapshot.id }).catch(() => { });
         }
         onClose();
     };

@@ -697,7 +697,7 @@ function MapControls({
         onLocate?.(coords);
         setWaitingForLocation(false);
       }, (error) => {
-        console.error("Error getting location:", error);
+        // silent fail
         setWaitingForLocation(false);
       });
     }

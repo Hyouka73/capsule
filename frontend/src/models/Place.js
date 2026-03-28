@@ -3,7 +3,7 @@
  * Represents a location (lugar) on the map.
  */
 export default class Place {
-    constructor(data = {}) {
+    constructor(data = {}, currentRelationshipId = null) {
         this.id = data.id || null;
         this.name = data.name || '';
         this.city = data.city || '';
@@ -11,15 +11,23 @@ export default class Place {
         this.tags = Array.isArray(data.tags) ? data.tags : [];
         this.emoji = data.emoji || '📍';
 
-        // Coordinates (handle multiple formats: top-level, coordinates object, or location object)
+        // Coordinates (handle multiple formats)
         const latVal = data.lat ?? data.coordinates?.lat ?? data.coordinates?.latitude ?? data.location?.lat ?? null;
         const lngVal = data.lng ?? data.lon ?? data.longitude ?? data.coordinates?.lng ?? data.coordinates?.longitude ?? data.location?.lng ?? null;
 
         this.lat = latVal !== null ? parseFloat(latVal) : null;
         this.lng = lngVal !== null ? parseFloat(lngVal) : null;
 
-        // Stats
-        this.visitCount = data.visitCount || 0;
+        /**
+         * ⚠️ MIGRATION: visitCount is now isolated per relationship in the visitedBy array.
+         * Fallback to top-level visitCount for legacy data.
+         */
+        const relationshipId = currentRelationshipId || localStorage.getItem('capsule_relationship_id');
+        const visitedEntry = Array.isArray(data.visitedBy) 
+            ? data.visitedBy.find(v => v.relationshipId === relationshipId)
+            : null;
+
+        this.visitCount = visitedEntry ? (visitedEntry.count || 0) : (data.visitCount || 0);
         this.photoCount = data.photoCount || 0;
         this.coverPhotoUrl = data.coverPhotoUrl || null;
 
@@ -29,8 +37,8 @@ export default class Place {
         this.updatedAt = data.updatedAt ? new Date(data.updatedAt) : null;
     }
 
-    static fromFirestore(id, data) {
-        return new Place({ id, ...data });
+    static fromFirestore(id, data, currentRelationshipId = null) {
+        return new Place({ id, ...data }, currentRelationshipId);
     }
 
     get coordinates() {

@@ -2,15 +2,22 @@ import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Countdown from './Countdown';
 import { useAppConfig } from '../../context/AppConfigContext';
+import { useAuth } from '../../hooks/useAuth';
 import LoadingScreen from '../ui/LoadingScreen/LoadingScreen';
 import './TimeLock.css';
 
 function TimeLock({ children }) {
-    const { teaser, isConfigLoaded } = useAppConfig();
+    const { teaserLock: globalLock, isConfigLoaded } = useAppConfig();
+    const { role, teaserLock: userLock } = useAuth();
     const [isLocked, setIsLocked] = useState(true);
 
-    const unlockDate = teaser?.unlockAt 
-        ? new Date(teaser.unlockAt) 
+    // Individual Lock Logic: Partner uses User.teaserLock (if exists), Admin uses AppConfig.teaserLock
+    const activeLock = role === 'partner' && userLock 
+        ? userLock 
+        : globalLock;
+
+    const unlockDate = activeLock 
+        ? new Date(activeLock) 
         : null;
 
     useEffect(() => {
@@ -31,10 +38,15 @@ function TimeLock({ children }) {
         }
     }, [isConfigLoaded, unlockDate, teaser?.isEnabled]);
 
+    const isMounted = useRef(true);
+    useEffect(() => {
+        return () => { isMounted.current = false; };
+    }, []);
+
     const handleUnlock = () => {
         // Wait a moment for the countdown hitting 0 visual state
         setTimeout(() => {
-            setIsLocked(false);
+            if (isMounted.current) setIsLocked(false);
         }, 1000);
     };
 

@@ -48,7 +48,7 @@ export function usePendingCitas() {
                 setPendingCount(results.length);
             };
         } catch (err) {
-            console.error('[usePendingCitas] Error refreshing:', err);
+            // silent fail
         }
     }, []);
 

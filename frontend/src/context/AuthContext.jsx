@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
 import { getToken, onMessage } from 'firebase/messaging';
 import { arrayUnion, doc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { auth, messaging, db } from '../services/firebase';
@@ -7,6 +7,8 @@ import firebaseConfig from '../config/firebase';
 import {
     getCurrentUserClaims,
     signOut as authSignOut,
+    registerWithEmail,
+    callSetupRelationship,
 } from '../services/auth';
 import { ROLES, COLLECTIONS } from '../config/constants';
 import User from '../models/User';
@@ -21,7 +23,10 @@ export function AuthProvider({ children }) {
     const [onboardingCompleted, setOnboardingCompleted] = useState(null);
     const [welcomeSeen, setWelcomeSeen] = useState(null);
     const [teaserCompleted, setTeaserCompleted] = useState(null);
+    const [teaserLock, setTeaserLock] = useState(null);
     const [gameCoins, setGameCoins] = useState(0);
+    const [accountStatus, setAccountStatus] = useState('active'); // 'active' | 'revoked' | 'pending'
+    const [relationshipId, setRelationshipId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
     // Register FCM Token for partners
@@ -29,7 +34,6 @@ export function AuthProvider({ children }) {
         try {
             // SKIP FCM in emulator mode to avoid logs and SW evaluation errors
             if (import.meta.env.VITE_USE_EMULATORS === 'true') {
-                console.log('[Auth] FCM skipping in emulator mode');
                 return;
             }
 
@@ -55,7 +59,7 @@ export function AuthProvider({ children }) {
                 });
             }
         } catch (err) {
-            console.error('FCM Registration failed:', err);
+            // error logged silently or handled by caller
         }
     }, []);
 
@@ -73,60 +77,75 @@ export function AuthProvider({ children }) {
 
             if (firebaseUser) {
                 if (isMounted) setIsLoading(true);
-                let claims = { role: null, deviceId: null };
-                try {
-                    claims = await getCurrentUserClaims(true);
-                } catch (err) {
-                    console.error('[Auth] Error fetching claims:', err);
-                }
-
-                if (!isMounted) return;
-
-                setUser(firebaseUser);
-                setRole(claims.role);
-                setDeviceId(claims.deviceId);
-                console.log('[Auth] User identified:', { uid: firebaseUser.uid, role: claims.role, deviceId: claims.deviceId });
-
-                // Start real-time listener for user document
+                
+                // 1. Iniciar listener de Firestore INMEDIATAMENTE (paralelo)
                 const userRef = doc(db, COLLECTIONS.USERS, firebaseUser.uid);
                 unsubscribeDoc = onSnapshot(userRef, (snapshot) => {
                     if (!isMounted) return;
-                    let data = {};
-                    if (snapshot.exists()) {
-                        data = snapshot.data();
-                    } else {
-                        const defaultUser = new User({ uid: firebaseUser.uid });
-                        data = {
-                            onboardingCompleted: defaultUser.onboardingCompleted,
-                            welcomeSeen: defaultUser.welcomeSeen,
-                            teaserCompleted: defaultUser.teaserCompleted
-                        };
+                    
+                    if (!snapshot.exists()) {
+                        // GHOST SESSION FIX: Only force sign out if the SERVER confirms the document is missing.
+                        // We ignore "missing" states from the local cache (metadata.fromCache: true) 
+                        // as they are often false positives during the initial sync after login.
+                        if (!snapshot.metadata.fromCache) {
+                            console.warn('[AuthContext] User document missing on server. Forcing sign out.');
+                            authSignOut();
+                            setIsLoading(false);
+                        }
+                        return;
                     }
+
+                    const data = snapshot.data();
+                    console.log(`[AuthContext] User document loaded for UID: ${firebaseUser.uid}`, {
+                        role: data.role,
+                        teaserCompleted: data.teaserCompleted,
+                        welcomeSeen: data.welcomeSeen,
+                        relationshipId: data.relationshipId
+                    });
 
                     setOnboardingCompleted(data.onboardingCompleted ?? null);
                     setWelcomeSeen(data.welcomeSeen ?? false);
                     setTeaserCompleted(data.teaserCompleted ?? false);
+                    setTeaserLock(data.teaserLock || null);
                     setGameCoins(data.gameCoins ?? 0);
-
-                    if (!claims.role && data.role) {
+                    setAccountStatus(data.accountStatus || (data.isRevoked ? 'revoked' : 'active'));
+                    setRelationshipId(data.relationshipId || null);
+                    
+                    // Fallback: If role is not in claims, take it from Firestore
+                    if (!role && data.role) {
                         setRole(data.role);
                     }
-                    
+
+                    // Defensive: If role is ADMIN, they shouldn't be blocked by teaser/welcome flags
+                    if (data.role === 'admin' || role === 'admin') {
+                        setTeaserCompleted(true);
+                        setWelcomeSeen(true);
+                    }
+
                     setIsLoading(false);
                 }, (err) => {
-                    if (isMounted) {
-                        console.error('[Auth] User document listener error:', err);
-                        setIsLoading(false);
+                    if (isMounted) setIsLoading(false);
+                });
+
+                // 2. Obtener claims (sin forzar refresh, mucho más rápido)
+                getCurrentUserClaims(false).then((claims) => {
+                    if (!isMounted) return;
+                    setUser(firebaseUser);
+                    setRole(claims.role);
+                    setRelationshipId(claims.relationshipId);
+                    setDeviceId(claims.deviceId);
+
+                    // Register FCM
+                    if (claims.role === ROLES.PARTNER || claims.role === ROLES.ADMIN) {
+                        registerFCM(firebaseUser.uid);
                     }
+                }).catch(() => {
+                    // if claims fail, we still wait for snapshot
                 });
 
                 if (!isMounted) {
                     unsubscribeDoc?.();
                     unsubscribeDoc = null;
-                }
-
-                if (claims.role === ROLES.PARTNER) {
-                    registerFCM(firebaseUser.uid);
                 }
             } else {
                 if (isMounted) {
@@ -155,14 +174,13 @@ export function AuthProvider({ children }) {
             if (messagingInstance && isMounted) {
                 unsubscribeMessaging = onMessage(messagingInstance, (payload) => {
                     if (!isMounted) return;
-                    console.log('Message received in foreground: ', payload);
                     try {
                         const { title, body } = payload.notification || {};
                         if (title || body) {
                             toast.info(title || 'Nueva notificación', body || '');
                         }
                     } catch (err) {
-                        console.error('[AuthContext] Failed to show foreground toast:', err);
+                        // error logged silently
                     }
                 });
             }
@@ -181,6 +199,95 @@ export function AuthProvider({ children }) {
 
     const signOut = useCallback(() => authSignOut(), []);
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Registration Methods (OVERRIDE SKILL.md — controlled refactor)
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * registerAdmin — Creates Admin Firebase Auth account + scaffolds the relationship.
+     * Calls setupRelationship Cloud Function to:
+     *   - Generate relationshipId + partnerToken
+     *   - Create placeholder partner user doc (accountStatus: 'pending')
+     *   - Create appConfig/main
+     *   - Set Admin custom claims including relationshipId
+     *
+     * @param {string} email
+     * @param {string} password
+     * @returns {Promise<{ relationshipId: string, inviteUrl: string, partnerToken: string }>}
+     */
+    const registerAdmin = useCallback(async (email, password) => {
+        try {
+            // 1. Create Firebase Auth account for Admin
+            const credential = await registerWithEmail(email, password);
+            const adminUid = credential.user.uid;
+
+            // 2. Scaffold the relationship (partner placeholder + appConfig)
+            const result = await callSetupRelationship(adminUid);
+
+            // 3. Force token refresh to pick up new custom claims (role + relationshipId)
+            await credential.user.getIdToken(true);
+
+            return {
+                relationshipId: result.relationshipId,
+                inviteUrl: result.inviteUrl,
+                partnerToken: result.partnerToken,
+            };
+        } catch (err) {
+            // error logged silently
+            throw err;
+        }
+    }, []);
+
+    /**
+     * exchangeToken — Passwordless Join.
+     * Exchange an invite token for a Custom Auth token locked to this device.
+     * 
+     * @param {string} inviteToken
+     * @param {string} deviceFingerprint
+     */
+    const exchangeToken = useCallback(async (inviteToken, deviceFingerprint) => {
+        try {
+            const { exchangeInviteToken } = await import('../services/auth');
+            const result = await exchangeInviteToken(inviteToken, deviceFingerprint);
+
+            if (result.customToken) {
+                await signInWithCustomToken(auth, result.customToken);
+            }
+        } catch (err) {
+            console.error('[AuthContext] Exchange error:', err);
+            throw err;
+        }
+    }, []);
+
+    const completeTeaser = useCallback(async () => {
+        if (!user?.uid) return;
+        // Optimistic update: trigger navigation immediately
+        setTeaserCompleted(true);
+        try {
+            const userRef = doc(db, COLLECTIONS.USERS, user.uid);
+            await updateDoc(userRef, { teaserCompleted: true });
+        } catch (err) {
+            console.error("Error updating teaser:", err);
+            // Rollback if critical (though for teaser, we usually want to let them in)
+            // setTeaserCompleted(false); 
+            throw err;
+        }
+    }, [user?.uid]);
+
+    const completeWelcome = useCallback(async () => {
+        if (!user?.uid) return;
+        // Optimistic update: trigger navigation immediately
+        setWelcomeSeen(true);
+        try {
+            const userRef = doc(db, COLLECTIONS.USERS, user.uid);
+            await updateDoc(userRef, { welcomeSeen: true });
+        } catch (err) {
+            console.error("Error updating welcome:", err);
+            // setWelcomeSeen(false);
+            throw err;
+        }
+    }, [user?.uid]);
+
     const value = useMemo(() => ({
         user,
         role,
@@ -188,13 +295,21 @@ export function AuthProvider({ children }) {
         onboardingCompleted,
         welcomeSeen,
         teaserCompleted,
+        teaserLock,
         gameCoins,
+        accountStatus,
+        relationshipId,
         isLoading,
         isAuthenticated: !!user,
+        isRevoked: accountStatus === 'revoked',
         isAdmin: role === ROLES.ADMIN,
         isPartner: role === ROLES.PARTNER,
         signOut,
-    }), [user, role, deviceId, onboardingCompleted, welcomeSeen, teaserCompleted, gameCoins, isLoading, signOut]);
+        registerAdmin,
+        exchangeToken,
+        completeTeaser,
+        completeWelcome,
+    }), [user, role, deviceId, onboardingCompleted, welcomeSeen, teaserCompleted, teaserLock, gameCoins, accountStatus, relationshipId, isLoading, signOut, registerAdmin, exchangeToken, completeTeaser, completeWelcome]);
 
     return (
         <AuthContext.Provider value={value}>
@@ -203,6 +318,7 @@ export function AuthProvider({ children }) {
     );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
     const context = useContext(AuthContext);
     if (context === null) {

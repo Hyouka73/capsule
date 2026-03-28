@@ -13,8 +13,8 @@ function getTimeUntil(targetDate) {
     };
 }
 
-// April 4, 2026, 00:00:00 CST (UTC-6) by default
-const DEFAULT_TARGET = new Date('2026-04-04T00:00:00-06:00');
+// April 4, 2026, 00:00:00 local time by default (ms)
+const DEFAULT_TARGET_MS = new Date('2026-04-04T00:00:00').getTime();
 
 const FlipUnit = ({ value, label }) => {
     // Helper para formato 00
@@ -84,12 +84,23 @@ const FlipUnit = ({ value, label }) => {
 };
 
 function Countdown({ visible, targetDate, onComplete, title = "Algo especial está en camino…" }) {
-    // Fix: Memoize the Date object to prevent it from being a new reference on every render,
-    // which causes the useEffect below to trigger an infinite loop.
-    const finalDate = useMemo(() => targetDate ? new Date(targetDate) : DEFAULT_TARGET, [targetDate]);
+    // Resolve targetDate to a stable numeric timestamp (ms) to avoid unstable Date object references.
+    // If targetDate is already a number, use it directly. If it's a Date, call getTime().
+    const targetMs = targetDate instanceof Date
+        ? targetDate.getTime()
+        : (typeof targetDate === 'number' ? targetDate : DEFAULT_TARGET_MS);
+
+    const finalDate = useMemo(() => new Date(targetMs), [targetMs]);
 
     const [time, setTime] = useState(() => getTimeUntil(finalDate));
     const shouldReduceMotion = typeof window !== 'undefined' ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : false;
+
+    const onCompleteRef = useRef(onComplete);
+    useEffect(() => {
+        onCompleteRef.current = onComplete;
+    }, [onComplete]);
+
+    const hasTriggered = useRef(false);
 
     useEffect(() => {
         if (!visible) return;
@@ -97,10 +108,15 @@ function Countdown({ visible, targetDate, onComplete, title = "Algo especial est
         // Check immediately
         const initial = getTimeUntil(finalDate);
         setTime(initial);
-
+        
         // If already passed, trigger complete and stop.
         if (initial.days <= 0 && initial.hours <= 0 && initial.minutes <= 0 && initial.seconds <= 0) {
-            onComplete?.();
+            if (!hasTriggered.current) {
+                hasTriggered.current = true;
+                setTimeout(() => {
+                    onCompleteRef.current?.();
+                }, 0);
+            }
             return;
         }
 
@@ -109,12 +125,17 @@ function Countdown({ visible, targetDate, onComplete, title = "Algo especial est
             setTime(t);
             if (t.days <= 0 && t.hours <= 0 && t.minutes <= 0 && t.seconds <= 0) {
                 clearInterval(interval);
-                onComplete?.();
+                if (!hasTriggered.current) {
+                    hasTriggered.current = true;
+                    setTimeout(() => {
+                        onCompleteRef.current?.();
+                    }, 0);
+                }
             }
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [visible, finalDate]); // Removed onComplete from dependency to avoid loop if parent recreates it without useCallback
+    }, [visible, finalDate]);
 
     if (!visible) return null;
 

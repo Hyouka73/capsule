@@ -378,3 +378,40 @@
     font-size: 1.5rem;
     color: var(--pastel-rose);
 }
+.itemActions {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.markReadBtn {
+    background: white;
+    border: 2px solid var(--pastel-rose-light);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.9rem;
+    box-shadow: 0 3px 0 var(--pastel-rose-light);
+    transition: all 0.2s ease;
+}
+
+.markReadBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 0 var(--pastel-rose-light);
+    background: var(--pastel-rose-light);
+}
+
+.loadMoreContainer {
+    display: flex;
+    justify-content: center;
+    padding: 1rem 0;
+}
+
+.loadMoreBtn {
+    width: 100%;
+    max-width: 300px;
+}

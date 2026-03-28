@@ -144,7 +144,6 @@ export default function UserDashboard() {
     // Al completar el tablero, forzar cambio a pestaña de Bingo para ver la animación
     useEffect(() => {
         if (celebrationEvent?.isFullBoard && activeTab !== 'bingo') {
-            console.log('[Dashboard] Full board detected! Switching to Bingo tab.');
             setActiveTab('bingo');
         }
     }, [celebrationEvent?.isFullBoard, activeTab]);
@@ -224,7 +223,7 @@ export default function UserDashboard() {
                 coordinates: data.customLocation // Save raw coordinates for potential recovery
             });
         } catch (err) {
-            console.warn('[UserDashboard] Auto-save failed:', err);
+            // Silent fail for auto-save as it already has retries
         }
     };
 
@@ -260,7 +259,7 @@ export default function UserDashboard() {
             }
             toast.success('¡Cita guardada! 💾', 'Se está subiendo ✨');
         } catch (err) {
-            console.error('[UserDashboard] Error saving:', err);
+            // error logged silently
             toast.error('Error al guardar');
         }
     };

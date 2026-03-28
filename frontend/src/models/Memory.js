@@ -26,9 +26,13 @@ export default class Memory {
         // Metadata
         this.photoCount = data.photoCount || 0;
         this.mainPhotoUrl = data.mainPhotoUrl || null;
+        this.mainPhotoThumb = data.mainPhotoThumb || null;
+        this.mainPhotoDetail = data.mainPhotoDetail || null;
+        this.photos = Array.isArray(data.photos) ? data.photos : [];
         this.isSpecial = !!data.isSpecial;
         this.isHidden = !!data.isHidden;
         this.uploadedBy = data.uploadedBy || null;
+        this.relationshipId = data.relationshipId || null; // Isolation ID
 
         // Timestamps (from Firestore)
         this.createdAt = data.createdAt ? new Date(data.createdAt) : null;
@@ -68,6 +72,11 @@ export default class Memory {
             placeLng: this.placeLng,
             isSpecial: this.isSpecial,
             isHidden: this.isHidden,
+            mainPhotoUrl: this.mainPhotoUrl,
+            mainPhotoThumb: this.mainPhotoThumb,
+            mainPhotoDetail: this.mainPhotoDetail,
+            relationshipId: this.relationshipId,
+            photos: this.photos
         };
     }
 }

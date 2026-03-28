@@ -2,7 +2,11 @@ import { openDB } from '../config/dbConfig';
 
 const APP_CACHE_STORE = 'app_cache';
 const THUMBNAILS_STORE = 'place_thumbnails';
-const MAP_CONFIG_KEY = 'capsule_mapConfig';
+const getMapConfigKey = () => {
+    const rid = localStorage.getItem('capsule_relationship_id');
+    return rid ? `mapConfig_${rid}` : 'capsule_mapConfig';
+};
+
 const THUMBNAIL_EXPIRATION_DAYS = 7;
 const MAX_THUMBNAILS = 100;
 
@@ -15,12 +19,12 @@ export async function getMapConfigCache() {
         return new Promise((resolve) => {
             const tx = db.transaction(APP_CACHE_STORE, 'readonly');
             const store = tx.objectStore(APP_CACHE_STORE);
-            const request = store.get(MAP_CONFIG_KEY);
+            const request = store.get(getMapConfigKey());
             request.onsuccess = () => resolve(request.result?.data || null);
             request.onerror = () => resolve(null);
         });
     } catch (err) {
-        console.error('[offlineCache] Error getting mapConfig:', err);
+        // silent fail
         return null;
     }
 }
@@ -34,13 +38,13 @@ export async function setMapConfigCache(config) {
         const tx = db.transaction(APP_CACHE_STORE, 'readwrite');
         const store = tx.objectStore(APP_CACHE_STORE);
         store.put({
-            key: MAP_CONFIG_KEY,
+            key: getMapConfigKey(),
             data: config,
             updatedAt: Date.now()
         });
         return true;
     } catch (err) {
-        console.error('[offlineCache] Error saving mapConfig:', err);
+        // silent fail
         return false;
     }
 }
@@ -66,14 +70,14 @@ export async function getThumbnail(placeId) {
         const isExpired = (now - item.cachedAt) > (THUMBNAIL_EXPIRATION_DAYS * 24 * 60 * 60 * 1000);
         
         if (isExpired) {
-            console.warn(`[offlineCache] Thumbnail for ${placeId} expired.`);
+            // silent warn
             return null;
         }
 
         // Convert Blob to URL
         return URL.createObjectURL(item.blob);
     } catch (err) {
-        console.error('[offlineCache] Error getting thumbnail:', err);
+        // silent fail
         return null;
     }
 }
@@ -97,7 +101,7 @@ export async function cacheThumbnail(placeId, blob) {
         });
         return true;
     } catch (err) {
-        console.error('[offlineCache] Error caching thumbnail:', err);
+        // silent fail
         return false;
     }
 }
@@ -154,6 +158,7 @@ async function cleanOldThumbnails(dbInstance) {
             // If over limit, delete the oldest 10%
             const toDelete = Math.ceil(MAX_THUMBNAILS * 0.1);
             let deletedCount = 0;
+            // silent fail
             const cursorRequest = index.openCursor();
             cursorRequest.onsuccess = (e) => {
                 const cursor = e.target.result;

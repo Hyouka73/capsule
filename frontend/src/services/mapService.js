@@ -110,7 +110,7 @@ async function fetchNominatim(lat, lng, zoom, isRetry = false) {
     });
 
     if (res.status === 429 && !isRetry) {
-        console.warn('[mapService] Nominatim 429 (Too Many Requests), retrying in 2s...');
+        // Silent retry
         await delay(2000);
         return fetchNominatim(lat, lng, zoom, true);
     }
@@ -281,6 +281,7 @@ async function queryOverpass(lat, lng, radius) {
             const aScore = PRIORITY_TAGS.findIndex(t => a.tags[t]);
             const bScore = PRIORITY_TAGS.findIndex(t => b.tags[t]);
             const aVal = aScore === -1 ? 999 : aScore;
+            // error logged silently
             const bVal = bScore === -1 ? 999 : bScore;
 
             if (aVal !== bVal) return aVal - bVal;
@@ -323,7 +324,7 @@ export async function reverseGeocode(lat, lng) {
     try {
         // ── Step 1: Fine-grained query (zoom=18) ────────────────────────────
         const fine = await fetchNominatim(lat, lng, 18);
-        const fineScore = poiScore(fine);
+        // Deprecated
 
         let best = fine;
 
@@ -342,7 +343,7 @@ export async function reverseGeocode(lat, lng) {
                 }
             } catch (innerErr) {
                 // Area call failed – stick with the fine result
-                console.warn('[mapService] Area zoom call failed, using fine result', innerErr);
+                // silent fail
             }
         }
 
@@ -370,7 +371,7 @@ export async function reverseGeocode(lat, lng) {
                     // Skip following name extraction since we already have it
                 }
             } catch (overpassErr) {
-                console.warn('[mapService] Overpass fallback failed', overpassErr);
+                // silent fail
             }
         }
 
@@ -416,7 +417,7 @@ export async function reverseGeocode(lat, lng) {
         return finalResult;
 
     } catch (err) {
-        console.error('[mapService] reverseGeocode failed:', err);
+        // silent fail
         return null;
     }
 }

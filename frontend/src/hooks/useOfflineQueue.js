@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { uploadFile, compressImage } from '../services/storage';
-import { createMemory, createSnapshot, findOrCreatePlace } from '../apiClient';
+import { createMemory, createSnapshot, findOrCreatePlace, updateBingoSquare } from '../apiClient';
 import { STORAGE_PATHS } from '../config/constants';
 import Memory from '../models/Memory';
 import { toast } from '../components/ui/PastelToast/PastelToast';
@@ -10,48 +10,54 @@ import { useBingo } from './useBingo';
 // IndexedDB helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { openDB } from '../config/dbConfig';
+import { openDB, getStoreKey } from '../config/dbConfig';
+import { useAuth } from './useAuth';
 const STORE_NAME = 'upload_queue';
 
 // Global lock to prevent multiple hook instances from running sync concurrently
 let isProcessingGlobal = false;
 
-async function getAllPending() {
+async function getAllPending(relationshipId) {
+    if (!relationshipId) return [];
     const db = await openDB();
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, 'readonly');
-        const store = tx.objectStore(STORE_NAME);
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    
+    // Efficiently get all items
+    const all = await new Promise((resolve, reject) => {
         const req = store.getAll();
-        req.onsuccess = () => {
-            const results = req.result || [];
-            // Filter for items that are 'pending' or 'uploading' 
-            // We EXCLUDE 'failed' items from the automatic background sync
-            resolve(results.filter(item =>
-                item.status === 'pending' ||
-                item.status === 'uploading'
-            ));
-        };
+        req.onsuccess = () => resolve(req.result || []);
         req.onerror = () => reject(req.error);
     });
+
+    // Filter by relationshipId and status
+    return all.filter(item => 
+        item.relationshipId === relationshipId &&
+        (item.status === 'pending' || item.status === 'uploading')
+    );
 }
 
-async function getAllFailed() {
+async function getAllFailed(relationshipId) {
+    if (!relationshipId) return [];
     const db = await openDB();
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, 'readonly');
-        const store = tx.objectStore(STORE_NAME);
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const all = await new Promise((resolve, reject) => {
         const req = store.getAll();
-        req.onsuccess = () => {
-            const results = req.result || [];
-            resolve(results.filter(item => item.status === 'failed'));
-        };
+        req.onsuccess = () => resolve(req.result || []);
         req.onerror = () => reject(req.error);
     });
+
+    return all.filter(item => 
+        item.relationshipId === relationshipId && 
+        item.status === 'failed'
+    );
 }
 
-async function clearFailedFromDB() {
+async function clearFailedFromDB(relationshipId) {
+    if (!relationshipId) return;
     const db = await openDB();
-    const failed = await getAllFailed();
+    const failed = await getAllFailed(relationshipId);
     const tx = db.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
     for (const item of failed) {
@@ -64,6 +70,10 @@ async function clearFailedFromDB() {
 }
 
 async function saveToQueue(item) {
+    if (!item.relationshipId) {
+        throw new Error('[useOfflineQueue] Cannot save item without relationshipId');
+    }
+
     const db = await openDB();
 
     // If this item is associated with a citation, clean up existing queue items for that citation
@@ -76,7 +86,9 @@ async function saveToQueue(item) {
         });
 
         for (const existing of allItems) {
-            if (existing.originalCitaId === item.originalCitaId && existing.id !== item.id) {
+            if (existing.relationshipId === item.relationshipId && 
+                existing.originalCitaId === item.originalCitaId && 
+                existing.id !== item.id) {
                 storeSync.delete(existing.id);
             }
         }
@@ -103,7 +115,7 @@ async function updateQueueItem(id, updates) {
 
             // If status is updating, sync with pending citations
             if (updates.status && updatedItem.originalCitaId) {
-                syncCitaStatus(updatedItem.originalCitaId, updates.status);
+                syncCitaStatus(updatedItem.originalCitaId, updates.status, updatedItem.relationshipId);
             }
         };
         tx.oncomplete = () => resolve();
@@ -124,13 +136,17 @@ async function removeFromQueue(id) {
 /**
  * Synchronize the status of a citation in the pending_citas store.
  */
-async function syncCitaStatus(citaId, status) {
-    if (!citaId) return;
+async function syncCitaStatus(citaId, status, relationshipId) {
+    if (!citaId || !relationshipId) return;
     try {
         const db = await openDB();
         const tx = db.transaction('pending_citas', 'readwrite');
         const store = tx.objectStore('pending_citas');
-        const getReq = store.get(citaId);
+        
+        // Citations use prefixed keys too
+        const key = getStoreKey(citaId, relationshipId);
+        const getReq = store.get(key);
+        
         getReq.onsuccess = () => {
             const item = getReq.result;
             if (item) {
@@ -143,7 +159,7 @@ async function syncCitaStatus(citaId, status) {
             tx.onerror = () => reject(tx.error);
         });
     } catch (err) {
-        console.error('[offlineQueue] Error syncing cita status:', err);
+        // Reduced visibility for standard production errors
     }
 }
 
@@ -151,6 +167,7 @@ async function syncCitaStatus(citaId, status) {
  * Offline-capable photo upload queue using IndexedDB.
  */
 export function useOfflineQueue() {
+    const { relationshipId } = useAuth();
     const { completeBingoSquare, enqueueBingoSuggestion } = useBingo();
     const [pendingCount, setPendingCount] = useState(0);
     const [failedCount, setFailedCount] = useState(0);
@@ -159,19 +176,20 @@ export function useOfflineQueue() {
 
     // Refresh pending count from IndexedDB
     const refreshCount = useCallback(async () => {
+        if (!relationshipId) return;
         try {
-            const pending = await getAllPending();
-            const failed = await getAllFailed();
+            const pending = await getAllPending(relationshipId);
+            const failed = await getAllFailed(relationshipId);
             setPendingCount(pending.length);
             setFailedCount(failed.length);
         } catch (err) {
-            console.error('[offlineQueue] Error refreshing count:', err);
+            // Silently handle refresh errors
         }
-    }, []);
+    }, [relationshipId]);
 
     // Process all pending uploads
     const processQueue = useCallback(async () => {
-        if (processingRef.current || isProcessingGlobal) return;
+        if (!relationshipId || processingRef.current || isProcessingGlobal) return;
 
         // Check connectivity before starting
         if (!navigator.onLine) {
@@ -179,7 +197,7 @@ export function useOfflineQueue() {
             return;
         }
 
-        const pending = await getAllPending();
+        const pending = await getAllPending(relationshipId);
         if (pending.length === 0) {
             refreshCount();
             return;
@@ -200,6 +218,11 @@ export function useOfflineQueue() {
                 // If we lost connection mid-process, stop
                 if (!navigator.onLine) break;
 
+                // SECURITY VALIDATION: Skip items from other relationships
+                if (item.relationshipId !== relationshipId) {
+                    continue;
+                }
+
                 try {
                     // Reset retry count if it was marked as failed before
                     const currentRetries = item.status === 'failed' ? 0 : (item.retryCount ?? 0);
@@ -208,15 +231,18 @@ export function useOfflineQueue() {
                     if (item.type === 'photo') {
                         await uploadFile(item.compressedBlob, item.targetStoragePath);
                     } else if (item.type === 'memory') {
-                        toast.info('Sincronizando recuerdo...', 'Guardando tus momentos pendientes ✨');
                         const photoUrls = [];
                         for (let i = 0; i < (item.photos?.length ?? 0); i++) {
                             const photo = item.photos[i];
                             const photoId = crypto.randomUUID();
                             const tempMemoryId = item.id;
-                            const storagePath = STORAGE_PATHS.PHOTO_ORIGINAL(tempMemoryId, photoId);
-                            const url = await uploadFile(photo.blob, storagePath);
-                            photoUrls.push({ url, storagePath, photoId });
+                            // Requirement: {relationshipId}/memories/{memoryId}/{photoId}.webp
+                            const storagePath = `${relationshipId}/memories/${item.originalId || tempMemoryId}/${photoId}.webp`;
+                            const url = await uploadFile(photo.blob, storagePath, { 
+                                isMain: String(!!photo.isMain),
+                                originalName: photo.fileName || ''
+                            });
+                            photoUrls.push({ url, storagePath, photoId, isMain: !!photo.isMain });
 
                             if (i < item.photos.length - 1) {
                                 await new Promise(r => setTimeout(r, DELAY_BETWEEN_UPLOADS));
@@ -226,11 +252,9 @@ export function useOfflineQueue() {
                         const memoryModel = Memory.fromForm(item.data);
                         memoryModel.offlinePhotoUrls = photoUrls;
 
-                        // CRITICAL: If no placeId but we have coordinates, find or create the place first
-                        // so it appears on the map as a pin.
+                        // COORDINATES FALLBACK: If no placeId but we have coordinates, find or create the place first
                         if (!memoryModel.placeId && memoryModel.placeLat && memoryModel.placeLng) {
                             try {
-                                console.log('[offlineQueue] Creating missing place for memory...');
                                 const placeResult = await findOrCreatePlace({
                                     lat: memoryModel.placeLat,
                                     lng: memoryModel.placeLng,
@@ -239,11 +263,9 @@ export function useOfflineQueue() {
 
                                 if (placeResult?.success && placeResult?.placeId) {
                                     memoryModel.placeId = placeResult.placeId;
-                                    console.log('[offlineQueue] Place created/found:', placeResult.placeId);
                                 }
                             } catch (placeErr) {
-                                console.error('[offlineQueue] findOrCreatePlace failed:', placeErr);
-                                // CRITICAL: coordinates remain in the payload even if place creation fails
+                                // Standard error handling
                             }
                         }
 
@@ -261,8 +283,11 @@ export function useOfflineQueue() {
                         if (item.bingoOrigin?.categoryId) {
                             // If this memory was EXPLICITLY started from a bingo square,
                             // complete it automatically and IGNORE general suggestions.
-                            console.log('[offlineQueue] Auto-completing bingo square:', item.bingoOrigin.categoryId);
-                            await completeBingoSquare(item.bingoOrigin.categoryId, item.id);
+                            await updateBingoSquare({ 
+                                categoryId: item.bingoOrigin.categoryId, 
+                                memoryId: item.id,
+                                completedAt: item.bingoOrigin.completedAt
+                            });
                         } else if (res?.bingoSuggestions?.length > 0) {
                             // Only save suggestions if it WASN'T an explicit bingo date
                             try {
@@ -281,7 +306,7 @@ export function useOfflineQueue() {
                                 enqueueBingoSuggestion(item.id, res.bingoSuggestions);
                                 newBingoSuggestionsCount++;
                             } catch (e) {
-                                console.error('[offlineQueue] Error saving pending_bingo', e);
+                                // Fail silently in prod per requirements
                             }
                         }
 
@@ -303,11 +328,31 @@ export function useOfflineQueue() {
                             message: item.data?.message ?? '',
                         });
                         toast.success('Instantánea sincronizada ✨');
+                    } else if (item.type === 'capsule') {
+                        const fileUrls = [];
+                        for (let i = 0; i < (item.files?.length ?? 0); i++) {
+                            const file = item.files[i];
+                             const fileId = crypto.randomUUID();
+                             const storagePath = STORAGE_PATHS.CAPSULE_ORIGINAL(relationshipId, item.originalId || item.id, fileId);
+                            const url = await uploadFile(file.blob, storagePath);
+                            fileUrls.push({ url, storagePath, fileId, fileName: file.fileName });
+
+                            if (i < item.files.length - 1) {
+                                await new Promise(r => setTimeout(r, DELAY_BETWEEN_UPLOADS));
+                            }
+                        }
+
+                        await createCapsule({
+                            ...item.data,
+                            id: item.originalId || item.id,
+                            attachments: fileUrls
+                        });
+                        toast.success('¡Cápsula enterrada!', 'Tu pareja la recibirá en el momento indicado ✨');
                     }
 
                     await removeFromQueue(item.id);
                 } catch (err) {
-                    console.error('[offlineQueue] Item failed:', err);
+                    // Fail silently in prod
                     const currentRetries = item.retryCount ?? 0;
                     const newRetryCount = currentRetries + 1;
                     
@@ -346,11 +391,11 @@ export function useOfflineQueue() {
 
         // 0. Cleanup stuck uploading items on mount
         const cleanupStuck = async () => {
-            const current = await getAllPending();
+            if (!relationshipId) return;
+            const current = await getAllPending(relationshipId);
             const stuck = current.filter(i => i.status === 'uploading');
 
             if (stuck.length > 0) {
-                console.log('[offlineQueue] Cleaning up stuck items:', stuck.map(s => s.id));
                 for (const item of stuck) {
                     await updateQueueItem(item.id, { status: 'pending' });
                 }
@@ -358,13 +403,14 @@ export function useOfflineQueue() {
             }
         };
 
-        cleanupStuck().then(() => {
-            // After initial cleanup, also check for any item that might have been 
-            // stuck during this session (rare, but possible if a throw happens)
+        const init = async () => {
+            await cleanupStuck();
             if (navigator.onLine) {
                 processQueue();
             }
-        });
+        };
+
+        init();
 
         // 2. Sync on connectivity change
         const handleOnline = () => {
@@ -392,7 +438,7 @@ export function useOfflineQueue() {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             clearInterval(heartbeat);
         };
-    }, [processQueue, refreshCount]);
+    }, [processQueue, refreshCount, relationshipId]);
 
     /**
      * Queue a file for upload (or upload immediately if online).
@@ -410,7 +456,9 @@ export function useOfflineQueue() {
 
         // ALWAYS save to IndexedDB queue first for persistence
         await saveToQueue({
-            id: photoId,
+            id: getStoreKey(photoId, relationshipId),
+            originalId: photoId, // Keep original for reference
+            relationshipId,
             type: 'photo',
             localFileUri: URL.createObjectURL(compressed),
             compressedBlob: compressed,
@@ -441,16 +489,27 @@ export function useOfflineQueue() {
      * @param {object} bingoOrigin - Optional { categoryId } metadata
      * @returns {Promise<{queued: boolean}>}
      */
-    const queueMemory = useCallback(async (formData, photoFiles, originalCitaId = null, bingoOrigin = null) => {
+    const queueMemory = useCallback(async (formData, photoMetadata, originalCitaId = null, bingoOrigin = null) => {
         const compressedPhotos = await Promise.all(
-            photoFiles.map(async (file) => {
+            photoMetadata.map(async (p) => {
+                const file = p.file || p;
                 const blob = await compressImage(file, 1200, 0.8);
-                return { blob, fileName: file.name, size: blob.size, mimeType: 'image/jpeg' };
+                return { 
+                    blob, 
+                    fileName: file.name, 
+                    size: blob.size, 
+                    mimeType: 'image/jpeg',
+                    isMain: !!p.isMain
+                };
             })
         );
 
+        const memoryId = crypto.randomUUID();
+
         await saveToQueue({
-            id: crypto.randomUUID(),
+            id: getStoreKey(memoryId, relationshipId),
+            originalId: memoryId,
+            relationshipId,
             type: 'memory',
             data: formData,
             photos: compressedPhotos,
@@ -481,8 +540,12 @@ export function useOfflineQueue() {
     const queueSnapshot = useCallback(async (photoFile, message = '') => {
         const blob = await compressImage(photoFile, 1200, 0.8);
 
+        const snapshotId = crypto.randomUUID();
+
         await saveToQueue({
-            id: crypto.randomUUID(),
+            id: getStoreKey(snapshotId, relationshipId),
+            originalId: snapshotId,
+            relationshipId,
             type: 'snapshot',
             data: { message },
             photos: [{ blob, fileName: photoFile.name, size: blob.size, mimeType: 'image/jpeg' }],
@@ -510,23 +573,26 @@ export function useOfflineQueue() {
     }, [refreshCount, processQueue]);
 
     const retryFailedItems = useCallback(async () => {
-        const failed = await getAllFailed();
+        if (!relationshipId) return;
+        const failed = await getAllFailed(relationshipId);
         for (const item of failed) {
             await updateQueueItem(item.id, { status: 'pending', retryCount: 0 });
         }
         await refreshCount();
         if (navigator.onLine) processQueue();
-    }, [refreshCount, processQueue]);
+    }, [refreshCount, processQueue, relationshipId]);
 
     const clearFailedItems = useCallback(async () => {
-        await clearFailedFromDB();
+        if (!relationshipId) return;
+        await clearFailedFromDB(relationshipId);
         await refreshCount();
-    }, [refreshCount]);
+    }, [refreshCount, relationshipId]);
 
     /**
      * Gets all snapshots currently in the offline queue.
      */
     const getPendingSnapshots = useCallback(async () => {
+        if (!relationshipId) return [];
         const db = await openDB();
         return new Promise((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, 'readonly');
@@ -534,11 +600,57 @@ export function useOfflineQueue() {
             const req = store.getAll();
             req.onsuccess = () => {
                 const results = req.result || [];
-                resolve(results.filter(item => item.type === 'snapshot' && item.status !== 'failed'));
+                resolve(results.filter(item => 
+                    item.relationshipId === relationshipId &&
+                    item.type === 'snapshot' && 
+                    item.status !== 'failed'
+                ));
             };
             req.onerror = () => reject(req.error);
         });
-    }, []);
+    }, [relationshipId]);
+
+    /**
+     * Queue a time capsule for offline creation.
+     */
+    const queueCapsule = useCallback(async (capsuleData, files = []) => {
+        if (!relationshipId) return { queued: false };
+
+        const capsuleId = crypto.randomUUID();
+        const compressedFiles = await Promise.all(
+            files.map(async (f) => {
+                const file = f.file || f;
+                // Only compress if it's an image
+                const blob = file.type.startsWith('image/') 
+                    ? await compressImage(file, 1200, 0.8) 
+                    : file;
+                
+                return {
+                    blob,
+                    fileName: file.name,
+                    mimeType: file.type,
+                    size: blob.size
+                };
+            })
+        );
+
+        await saveToQueue({
+            id: getStoreKey(capsuleId, relationshipId),
+            originalId: capsuleId,
+            relationshipId,
+            type: 'capsule',
+            data: capsuleData,
+            files: compressedFiles,
+            status: 'pending',
+            retryCount: 0,
+            createdAt: Date.now(),
+        });
+
+        await refreshCount();
+        if (navigator.onLine) processQueue();
+
+        return { queued: true };
+    }, [refreshCount, processQueue, relationshipId]);
 
     return {
         queueUpload,
@@ -552,5 +664,6 @@ export function useOfflineQueue() {
         retryFailedItems,
         clearFailedItems,
         getPendingSnapshots,
+        queueCapsule,
     };
 }

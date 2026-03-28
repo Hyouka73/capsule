@@ -23,13 +23,13 @@ export async function callBackendApi(name, data = {}) {
         // Si no trae la bandera success pero tampoco dio error, logueamos un warning
         // pero permitimos que pase (para no romper compatibilidad hacia atrás).
         if (result.data && typeof result.data.success === 'undefined') {
-            console.warn(`[API Client Warning] /${name} did not return a 'success' flag.`, result.data);
+            // silent warn
         }
 
         return result.data;
     } catch (error) {
         // Logueamos el error completo para debuggear en la consola del cliente
-        console.error(`[API Client Error] /${name}:`, error);
+        // error logged silently
         throw error;
     }
 }
@@ -42,6 +42,10 @@ export function createMemory(payload) {
 
 export function logActivity(payload) {
     return callBackendApi('logActivity', payload);
+}
+
+export function registerExercise(payload) {
+    return callBackendApi('registerExercise', payload);
 }
 
 export function findOrCreatePlace(payload) {
@@ -64,6 +68,10 @@ export function getCapsules(payload) {
     return callBackendApi('getCapsules', payload);
 }
 
+export function deleteCapsule(payload) {
+    return callBackendApi('deleteCapsule', payload);
+}
+
 export function updateMemory(payload) {
     return callBackendApi('updateMemory', payload);
 }
@@ -84,7 +92,75 @@ export function getGallery(payload) {
     return callBackendApi('getGallery', payload);
 }
 
-export function completeBingoSquare(payload) {
-    return callBackendApi('completeBingoSquare', payload);
+export function updateBingoSquare(payload) {
+    return callBackendApi('updateBingoSquare', payload);
+}
+
+export function updateBingoBoard(payload) {
+    return callBackendApi('updateBingoBoard', payload);
+}
+
+export function resetBingoBoard(payload) {
+    return callBackendApi('resetBingoBoard', payload);
+}
+
+export function getBingoBoard(payload) {
+    return callBackendApi('getBingoBoard', payload);
+}
+
+export function getBingoSuggestions(payload) {
+    return callBackendApi('getBingoSuggestions', payload);
+}
+
+export function createCoupon(payload) {
+    return callBackendApi('createCoupon', payload);
+}
+
+export function redeemCoupon(payload) {
+    return callBackendApi('redeemCoupon', payload);
+}
+
+export function getCoupons(payload) {
+    return callBackendApi('getCoupons', payload);
+}
+
+export function getSnapshots(payload) {
+    return callBackendApi('getSnapshots', payload);
+}
+
+export function deleteSnapshot(payload) {
+    return callBackendApi('deleteSnapshot', payload);
+}
+
+export function markSnapshotAsSeen(payload) {
+    return callBackendApi('markSnapshotAsSeen', payload);
+}
+
+export function getAppConfig(payload) {
+    return callBackendApi('getAppConfig', payload);
+}
+
+export function updateAppConfig(payload) {
+    return callBackendApi('updateAppConfig', payload);
+}
+
+export function revokePartner(payload) {
+    return callBackendApi('revokePartner', payload);
+}
+
+export function getTeaserConfig(payload) {
+    return callBackendApi('getTeaserConfig', payload);
+}
+
+export function completeTeaser(payload) {
+    return callBackendApi('completeTeaser', payload);
+}
+
+export function getActivityLogs(payload) {
+    return callBackendApi('getActivityLogs', payload);
+}
+
+export function markLogAsRead(payload) {
+    return callBackendApi('markLogAsRead', payload);
 }
 

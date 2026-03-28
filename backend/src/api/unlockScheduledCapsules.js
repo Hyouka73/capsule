@@ -22,42 +22,55 @@ export const unlockScheduledCapsules = onSchedule('every 24 hours', async (event
             .get();
 
         if (snapshot.empty) {
-            console.log('No capsules to unlock at this time.');
+            logger.info('No capsules to unlock at this time.');
             return;
         }
 
-        console.log(`Unlocking ${snapshot.size} capsules...`);
+        logger.info(`Unlocking ${snapshot.size} capsules...`);
 
         const messaging = getMessaging();
 
-        // 2. Fetch partner once to reuse tokens in the loop
-        const partnerQuery = await db.collection(COLLECTIONS.USERS)
-            .where('role', '==', 'partner')
-            .limit(1)
-            .get();
-        
-        const fcmTokens = (!partnerQuery.empty) ? (partnerQuery.docs[0].data().fcmTokens || []) : [];
-
-        // 3. Process each capsule
+        // 2. Group capsules by relationshipId for batch notification
+        const capsulesByRel = {};
         for (const doc of snapshot.docs) {
-            const capsuleId = doc.id;
             const data = doc.data();
-
+            const relId = data.relationshipId;
+            if (!relId) continue;
+            
+            if (!capsulesByRel[relId]) capsulesByRel[relId] = [];
+            capsulesByRel[relId].push({ id: doc.id, data });
+            
+            // Perform the update immediately
             await doc.ref.update({
                 isUnlocked: true,
                 unlockedAt: now,
                 unlockedByTrigger: 'cron_scheduler',
             });
+        }
 
-            // 4. Notify partner if needed
-            if (data.notifyOnUnlock && fcmTokens.length > 0) {
+        // 3. Process each relationship batch for notifications
+        for (const [relId, capsuleList] of Object.entries(capsulesByRel)) {
+            // Fetch partner(s) for THIS relationship only
+            const partnerQuery = await db.collection(COLLECTIONS.USERS)
+                .where('role', '==', 'partner')
+                .where('relationshipId', '==', relId)
+                .limit(1)
+                .get();
+            
+            const fcmTokens = (!partnerQuery.empty) ? (partnerQuery.docs[0].data().fcmTokens || []) : [];
+            
+            if (fcmTokens.length === 0) continue;
+
+            const capsulesToNotify = capsuleList.filter(c => c.data.notifyOnUnlock);
+            
+            for (const capsule of capsulesToNotify) {
                 const message = {
                     notification: {
                         title: '✨ Tienes una sorpresa',
-                        body: data.teaserMessage ?? '¡Alguien pensó en ti hoy! Abre tu cápsula.',
+                        body: capsule.data.teaserMessage ?? '¡Alguien pensó en ti hoy! Abre tu cápsula.',
                     },
                     data: {
-                        capsuleId: capsuleId,
+                        capsuleId: capsule.id,
                         type: 'capsule_unlocked',
                     },
                     tokens: fcmTokens,
@@ -65,7 +78,7 @@ export const unlockScheduledCapsules = onSchedule('every 24 hours', async (event
                 try {
                     await messaging.sendEachForMulticast(message);
                 } catch (err) {
-                    console.error(`Failed to send notification for capsule ${capsuleId}:`, err);
+                    console.error(`Failed to send notification for capsule ${capsule.id}:`, err);
                 }
             }
         }

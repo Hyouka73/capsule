@@ -5,11 +5,14 @@ import Button from '../../components/ui/Button/Button';
 import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
 import { toast } from '../../components/ui/PastelToast/PastelToast';
 import { getGlobalSettings, saveGlobalSettings, updateConfig } from '../../services/settingsService';
-import { generateInviteToken } from '../../apiClient';
+import { generateInviteToken, revokePartner } from '../../apiClient';
 import SystemConfig from '../../models/SystemConfig';
 import ConfirmModal from '../../components/ui/ConfirmModal/ConfirmModal';
 import LoadingScreen from '../../components/ui/LoadingScreen/LoadingScreen';
 import Skeleton from '../../components/ui/Skeleton/Skeleton';
+import { useAppConfig } from '../../context/AppConfigContext';
+import SystemConfigSection from './components/SystemConfig';
+import ToggleRow from './components/ToggleRow';
 import styles from './GlobalSettings.module.css';
 
 const containerVariants = {
@@ -32,21 +35,31 @@ const itemVariants = {
 };
 
 export default function GlobalSettings() {
+    const { refreshConfig } = useAppConfig();
     const [config, setConfig] = useState(new SystemConfig());
     const [isSaving, setIsSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [isRegenerating, setIsRegenerating] = useState(false);
     const [showInviteConfirm, setShowInviteConfirm] = useState(false);
+    const [showRevokeConfirm, setShowRevokeConfirm] = useState(false);
+    const [tempTeaserDate, setTempTeaserDate] = useState('');
+
 
     useEffect(() => {
         async function load() {
             try {
                 const data = await getGlobalSettings();
                 if (data) {
-                    setConfig(SystemConfig.fromFirestore(data));
+                    const loadedConfig = SystemConfig.fromFirestore(data);
+                    setConfig(loadedConfig);
+                    // Sync local date string
+                    if (loadedConfig.teaser?.unlockAt) {
+                        const d = new Date(loadedConfig.teaser.unlockAt);
+                        const iso = d.toLocaleString('sv').replace(' ', 'T').slice(0, 16);
+                        setTempTeaserDate(iso);
+                    }
                 }
             } catch (err) {
-                console.error('Error loading settings:', err);
                 toast.error('Error', 'No se pudo cargar la configuración.');
             } finally {
                 setIsLoading(false);
@@ -73,7 +86,8 @@ export default function GlobalSettings() {
                 onboarding: { 
                     ...prev.onboarding,
                     modules: { ...prev.onboarding?.modules }
-                }
+                },
+                modules: { ...prev.modules }
             });
             
             if (parts.length === 1) {
@@ -83,6 +97,9 @@ export default function GlobalSettings() {
             } else if (parts.length === 3) {
                 // Handle nested objects like mapConfig.defaultCenter.lat
                 newConfig[parts[0]][parts[1]][parts[2]] = value;
+            } else if (parts.length === 4) {
+                // Handle modules.bingo.isEnabled
+                newConfig[parts[0]][parts[1]][parts[2]][parts[3]] = value;
             }
             return newConfig;
         });
@@ -92,9 +109,9 @@ export default function GlobalSettings() {
         setIsSaving(true);
         try {
             await saveGlobalSettings(config.toFirestore());
+            await refreshConfig(true); // force=true: bypass cache, always fetch fresh
             toast.success('¡Configuración Guardada!', 'Los cambios se han aplicado en toda la app.');
         } catch (err) {
-            console.error('Error saving settings:', err);
             toast.error('Error al guardar.', 'No se pudo aplicar la configuración.');
         } finally {
             setIsSaving(false);
@@ -131,9 +148,9 @@ export default function GlobalSettings() {
                 } 
             });
 
+            await refreshConfig();
             toast.success('¡Enlace generado!', 'Link generado y guardado ✓');
         } catch (err) {
-            console.error('Error in regenerate invite flow:', err);
             toast.error('Error al generar enlace', 'Link generado pero no se pudo guardar. Cópialo antes de cerrar.');
         } finally {
             setIsRegenerating(false);
@@ -196,81 +213,10 @@ export default function GlobalSettings() {
                 {/* ── Tab: Modules ── */}
                 {activeTab === 'modules' && (
                     <motion.div variants={itemVariants} className={styles.fullWidth}>
-                        <Card className={styles.sectionCard} glass>
-                            <div className={styles.sectionHeader}>
-                                <span className={styles.sectionIcon}>🧩</span>
-                                <h3>Módulos del Sistema</h3>
-                            </div>
-                            <p className={styles.sectionDesc}>Habilita o deshabilita secciones principales.</p>
-
-                            <div className={styles.togglesList}>
-                                <ToggleRow
-                                    label="Mapa"
-                                    desc="Visualización geográfica de vuestras citas."
-                                    checked={config.features.memoryMap}
-                                    onChange={() => handleUpdate('features.memoryMap', !config.features.memoryMap)}
-                                />
-                                <ToggleRow
-                                    label="Galería"
-                                    desc="Acceso directo a todo el contenido multimedia."
-                                    checked={config.features.photoGallery}
-                                    onChange={() => handleUpdate('features.photoGallery', !config.features.photoGallery)}
-                                />
-                                <ToggleRow
-                                    label="Cápsulas"
-                                    desc="Línea temporal de momentos programados."
-                                    checked={config.features.timeCapsules}
-                                    onChange={() => handleUpdate('features.timeCapsules', !config.features.timeCapsules)}
-                                />
-                                <ToggleRow
-                                    label="Cupones"
-                                    desc="Favores canjeables y regalos digitales."
-                                    checked={config.features.coupons}
-                                    onChange={() => handleUpdate('features.coupons', !config.features.coupons)}
-                                />
-                                <ToggleRow
-                                    label="Bingo"
-                                    desc="Juego interactivo de misiones en pareja."
-                                    checked={config.features.bingoBoard}
-                                    onChange={() => handleUpdate('features.bingoBoard', !config.features.bingoBoard)}
-                                />
-                            </div>
-
-                            <div className={styles.divider}></div>
-                            
-                            <div className={styles.togglesList}>
-                                <ToggleRow
-                                    label="Ejercicio"
-                                    desc="Seguimiento de actividad y rachas físicas."
-                                    checked={config.features.exercise}
-                                    onChange={() => handleUpdate('features.exercise', !config.features.exercise)}
-                                />
-                                <ToggleRow
-                                    label="Películas"
-                                    desc="Lista de películas para ver y comentar."
-                                    checked={config.features.movieTracking}
-                                    onChange={() => handleUpdate('features.movieTracking', !config.features.movieTracking)}
-                                />
-                                <ToggleRow
-                                    label="Juegos"
-                                    desc="Minijuegos y dinámicas interactivas."
-                                    checked={config.features.games}
-                                    onChange={() => handleUpdate('features.games', !config.features.games)}
-                                />
-                                <ToggleRow
-                                    label="Huevos de Pascua"
-                                    desc="Animaciones y sorpresas ocultas en la UI."
-                                    checked={config.features.easterEggs}
-                                    onChange={() => handleUpdate('features.easterEggs', !config.features.easterEggs)}
-                                />
-                                <ToggleRow
-                                    label="Onboarding"
-                                    desc="Guía interactiva para nuevos usuarios."
-                                    checked={config.features.onboarding}
-                                    onChange={() => handleUpdate('features.onboarding', !config.features.onboarding)}
-                                />
-                            </div>
-                        </Card>
+                        <SystemConfigSection 
+                            config={config} 
+                            handleUpdate={handleUpdate} 
+                        />
                     </motion.div>
                 )}
 
@@ -461,8 +407,22 @@ export default function GlobalSettings() {
                                     <KawaiiInput
                                         type="datetime-local"
                                         label="🚀 Fecha y hora de lanzamiento"
-                                        value={config.teaser?.unlockAt ? config.teaser.unlockAt.substring(0, 16) : ''}
-                                        onChange={e => handleUpdate('teaser.unlockAt', e.target.value)}
+                                        value={tempTeaserDate}
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            setTempTeaserDate(val);
+                                            if (!val) return;
+                                            
+                                            // Handle partial years (at least 4 digits for YYYY)
+                                            const [datePart] = val.split('T');
+                                            const year = datePart.split('-')[0];
+                                            if (year.length < 4) return;
+
+                                            const ms = new Date(val).getTime();
+                                            if (!isNaN(ms)) {
+                                                handleUpdate('teaser.unlockAt', ms);
+                                            }
+                                        }}
                                         helpText="Fecha en que ella podrá entrar a la app por primera vez."
                                     />
                                 </div>
@@ -661,6 +621,12 @@ export default function GlobalSettings() {
                             <div className={styles.dangerZone}>
                                 <h4>Zona de Peligro</h4>
                                 <div className={styles.dangerActions}>
+                                    <Button 
+                                        className={styles.dangerBtn} 
+                                        onClick={() => setShowRevokeConfirm(true)}
+                                    >
+                                        💔 Desvincular Pareja
+                                    </Button>
                                     <Button className={styles.dangerBtn} onClick={() => toast.info('Beta', 'Backup en desarrollo')}>📥 Backup</Button>
                                     <Button className={styles.dangerBtn} onClick={() => toast.success('Caché', 'Limpieza OK')}>🗑️ Limpiar</Button>
                                 </div>
@@ -703,18 +669,28 @@ export default function GlobalSettings() {
                 onCancel={() => setShowInviteConfirm(false)}
                 emoji="🔒"
             />
+            <ConfirmModal
+                isOpen={showRevokeConfirm}
+                title="¿Desvincular a tu pareja?"
+                message="Tu pareja perderá el acceso a la aplicación de inmediato y todos sus tokens de sesión serán revocados. Esta acción no se puede deshacer sin una nueva invitación."
+                confirmText="Sí, desvincular"
+                cancelText="Cancelar"
+                onConfirm={async () => {
+                    setShowRevokeConfirm(false);
+                    try {
+                        const res = await revokePartner({ partnerUid: config.partnerUid });
+                        if (res.success) {
+                            toast.success('Pareja desvinculada', 'Se ha revocado el acceso correctamente.');
+                            await refreshConfig(true);
+                        }
+                    } catch (err) {
+                        toast.error('Error', err.message);
+                    }
+                }}
+                onCancel={() => setShowRevokeConfirm(false)}
+                emoji="💔"
+            />
         </motion.div>
     );
 }
 
-function ToggleRow({ label, desc, checked, onChange }) {
-    return (
-        <div className={styles.toggleRow}>
-            <div className={styles.toggleInfo}>
-                <span className={styles.toggleLabel}>{label}</span>
-                <span className={styles.toggleDesc}>{desc}</span>
-            </div>
-            <KawaiiInput type="toggle" value={checked} onChange={onChange} />
-        </div>
-    );
-}

@@ -119,6 +119,61 @@
     color: #9ca3af !important;
 }
 
+.container {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.createBtn {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: var(--pastel-rose-light);
+    border: 2px solid var(--pastel-rose);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    box-shadow: 
+        0 4px 0 var(--pastel-rose),
+        0 6px 14px rgba(255, 173, 199, 0.2);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.createBtn:hover {
+    transform: translateY(-3px);
+    box-shadow: 
+        0 7px 0 var(--pastel-rose),
+        0 10px 20px rgba(255, 173, 199, 0.25);
+}
+
+.createBtn:active {
+    transform: translateY(2px);
+    box-shadow: 0 0 0 var(--pastel-rose);
+}
+
+.badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #ff4d6d;
+    color: white;
+    font-size: 10px;
+    font-weight: 900;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 10;
+}
+
 .button {
     width: 60px;
     height: 60px;

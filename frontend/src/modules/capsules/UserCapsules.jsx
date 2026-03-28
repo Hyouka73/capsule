@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from './UserCapsules.module.css';
 import { CapsuleIcons } from '../../icons/CapsuleIcons';
-import { getCapsules, openCapsule } from '../../apiClient';
+import { getCapsules, openCapsule, deleteCapsule } from '../../apiClient';
 import Button from '../../components/ui/Button/Button';
 
 /**
@@ -13,26 +13,27 @@ function normalizeCapsule(raw) {
     const now = Date.now();
     const opensAtRaw = raw.unlockDate || raw.opensAt;
     const opensAt = opensAtRaw ? new Date(opensAtRaw).getTime() : null;
-    const destructsAtRaw = raw.destructAt || raw.destructsAt;
-    const destructsAt = destructsAtRaw ? new Date(destructsAtRaw).getTime() : null;
 
-    let status = 'locked';
-    if (raw.isDestructed) status = 'destructed';
-    else if (raw.isUnlocked) {
-        status = (raw.isDestructible || destructsAt) ? 'destructible' : 'unlocked';
+    let status = raw.status || 'locked';
+    
+    // Fallback logic if status is missing or needs derivation
+    if (!raw.status) {
+        if (raw.isUnlocked) {
+            status = 'unlocked';
+        } else if (opensAt && opensAt > now) {
+            status = 'locked';
+        }
     }
-    else if (opensAt && opensAt > now) status = 'scheduled';
 
     const opensInDays = opensAt ? Math.ceil((opensAt - now) / 86400000) : null;
-    const destroysInHours = destructsAt ? Math.ceil((destructsAt - now) / 3600000) : null;
 
     return {
         ...raw,
         status,
+        autoDestroy: !!(raw.autoDestroy || raw.autoDestruct),
         type: raw.type || 'standard',
         opensInDays,
-        destroysInHours,
-        domain: raw.domain || null,
+        destroyedAt: raw.destroyedAt ? new Date(raw.destroyedAt).getTime() : null,
     };
 }
 
@@ -42,20 +43,35 @@ function normalizeCapsule(raw) {
  */
 export default function UserCapsules() {
     const [capsules, setCapsules] = useState([]);
+    const [activeTab, setActiveTab] = useState('unopened'); // 'unopened' | 'opened'
     const [isLoading, setIsLoading] = useState(true);
     const [selectedCapsule, setSelectedCapsule] = useState(null);
     const [showDestruct, setShowDestruct] = useState(false);
-    const hasOpenedRef = useRef(new Set()); // Track which capsules were marked as opened/viewed
+    const isMounted = useRef(true);
+    const hasOpenedRef = useRef(new Set()); 
+
+    const fetchCapsules = useCallback(async () => {
+        try {
+            const res = await getCapsules({});
+            if (!isMounted.current) return;
+            const normalized = (res.docs || []).map(normalizeCapsule);
+            setCapsules(normalized.filter(c => c.status !== 'destroyed'));
+        } catch {
+            // Silently fail in prod
+        } finally {
+            if (isMounted.current) setIsLoading(false);
+        }
+    }, []);
 
     useEffect(() => {
-        getCapsules({})
-            .then(res => {
-                const normalized = (res.docs || []).map(normalizeCapsule);
-                setCapsules(normalized);
-            })
-            .catch(err => console.error(err))
-            .finally(() => setIsLoading(false));
+        return () => {
+            isMounted.current = false;
+        };
     }, []);
+
+    useEffect(() => {
+        fetchCapsules();
+    }, [fetchCapsules]);
 
     const handleDownloadFiles = (files) => {
         if (!files || files.length === 0) return;
@@ -63,44 +79,68 @@ export default function UserCapsules() {
             const a = document.createElement('a');
             a.href = file.url;
             a.download = file.fileName || 'capsule-file';
-            a.target = '_blank'; // Previene bloqueos en algunos navegadores
+            a.target = '_blank';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
         });
     };
 
-    const handleFinalClose = async (capsuleId) => {
-        // Only trigger backend open once per session/view
-        if (!hasOpenedRef.current.has(capsuleId)) {
-            try {
-                await openCapsule({ capsuleId });
-                hasOpenedRef.current.add(capsuleId);
-            } catch (err) {
-                console.error('[UserCapsules] Error marking capsule as opened:', err);
-            }
+    const handleOpenCapsule = async (capsule) => {
+        // Si ya está abierta o en espera de destrucción, solo mostrar
+        if (capsule.status === 'opened' || capsule.status === 'pending_destruction') {
+            setSelectedCapsule(capsule);
+            return;
         }
-        
+
+        try {
+            const res = await openCapsule({ capsuleId: capsule.id });
+            if (!isMounted.current) return;
+            if (res.success) {
+                const updatedCapsule = normalizeCapsule(res.capsule);
+                setSelectedCapsule(updatedCapsule);
+            }
+        } catch {
+            // Silently fail in prod
+        }
+    };
+
+    const handleFinalClose = async () => {
         setSelectedCapsule(null);
         setShowDestruct(false);
-        
-        // Refresh list to show 'destructed' state
-        const res = await getCapsules({});
-        setCapsules((res.docs || []).map(normalizeCapsule));
+        if (isMounted.current) fetchCapsules();
+    };
+
+    const handleDestroy = async () => {
+        if (!selectedCapsule) return;
+        try {
+            await deleteCapsule({ capsuleId: selectedCapsule.id });
+        } catch (err) {
+            // Silently fail in prod
+        } finally {
+            if (isMounted.current) handleFinalClose();
+        }
     };
 
     const handleToggleModal = (capsule) => {
         if (!capsule) {
-            // Case: Closing from the content modal (X button)
-            if (selectedCapsule?.autoDestruct && selectedCapsule?.files?.length > 0) {
+            // Case: Closing from the content modal
+            if (selectedCapsule?.autoDestroy && selectedCapsule.status !== 'pending_destruction') {
                 setShowDestruct(true);
             } else {
-                handleFinalClose(selectedCapsule?.id);
+                handleFinalClose();
             }
         } else {
-            setSelectedCapsule(capsule);
+            handleOpenCapsule(capsule);
         }
     };
+
+    const filteredCapsules = capsules.filter(c => {
+        if (activeTab === 'unopened') return c.status === 'locked' || c.status === 'unlocked' || c.status === 'pending_destruction';
+        if (activeTab === 'opened') return c.status === 'opened';
+        return false;
+    });
+
 
     if (isLoading) {
         return (
@@ -114,21 +154,40 @@ export default function UserCapsules() {
         <div className={styles.root}>
             <div className={styles.header}>
                 <h1 className={styles.title}>Cápsulas</h1>
-                <p className={styles.subtitle}>{capsules.length} sorpresas listas para ti</p>
+                <div className={styles.tabs}>
+                    <button 
+                        className={`${styles.tab} ${activeTab === 'unopened' ? styles.tabActive : ''}`}
+                        onClick={() => setActiveTab('unopened')}
+                    >
+                        🎁 Sin Abrir
+                    </button>
+                    <button 
+                        className={`${styles.tab} ${activeTab === 'opened' ? styles.tabActive : ''}`}
+                        onClick={() => setActiveTab('opened')}
+                    >
+                        📂 Abiertas
+                    </button>
+                </div>
             </div>
 
             <div className={styles.grid}>
-                {capsules.map(capsule => (
-                    <CapsuleCard
-                        key={capsule.id}
-                        capsule={capsule}
-                        onOpen={() => setSelectedCapsule(capsule)}
-                    />
-                ))}
+                {filteredCapsules.length > 0 ? (
+                    filteredCapsules.map(capsule => (
+                        <CapsuleCard
+                            key={capsule.id}
+                            capsule={capsule}
+                            onOpen={() => handleToggleModal(capsule)}
+                        />
+                    ))
+                ) : (
+                    <div className={styles.empty}>
+                        <p>{activeTab === 'unopened' ? 'No tienes cápsulas pendientes. ✨' : 'Aún no has guardado ninguna cápsula. 📂'}</p>
+                    </div>
+                )}
             </div>
 
             <AnimatePresence>
-                {selectedCapsule && !showDestruct && selectedCapsule.status !== 'locked' && (
+                {selectedCapsule && !showDestruct && (
                     <CapsuleModal
                         capsule={selectedCapsule}
                         onClose={() => handleToggleModal(null)}
@@ -139,13 +198,13 @@ export default function UserCapsules() {
             <AnimatePresence>
                 {showDestruct && (
                     <DestructModal
-                        files={selectedCapsule?.content?.files || []}
+                        files={selectedCapsule?.files || []}
                         onDownload={() => {
-                            handleDownloadFiles(selectedCapsule.content.files);
-                            handleFinalClose(selectedCapsule.id);
+                            handleDownloadFiles(selectedCapsule.files);
+                            handleDestroy();
                         }}
-                        onSkip={() => handleFinalClose(selectedCapsule.id)}
-                        onTimeUp={() => handleFinalClose(selectedCapsule.id)}
+                        onSkip={handleDestroy}
+                        onTimeUp={handleDestroy}
                     />
                 )}
             </AnimatePresence>
@@ -157,15 +216,15 @@ function CapsuleCard({ capsule, onOpen }) {
     const { status, type, teaserMessage, title, opensInDays, destroysInHours, domain } = capsule;
 
     const isLocked = status === 'locked';
-    const isDestructible = status === 'destructible';
-    const isUnlocked = status === 'unlocked';
+    const isDestructing = status === 'pending_destruction';
+    const isUnlocked = status === 'unlocked' || status === 'opened';
 
     // Icono dinámico desde el módulo externo
     const Icon = CapsuleIcons[type] || CapsuleIcons['message'];
 
     const getCardClass = () => {
         if (isLocked) return styles.cardLocked;
-        if (isDestructible) return styles.cardDestructible;
+        if (isDestructing) return styles.cardDestructible;
         return styles.cardUnlocked;
     };
 
@@ -183,6 +242,9 @@ function CapsuleCard({ capsule, onOpen }) {
                 {isLocked && (
                     <span className={styles.badgeLocked}>⏳ Se abre en {opensInDays} días</span>
                 )}
+                {isDestructing && (
+                    <span className={styles.badgeDestructible}>💥 ¡Destrucción en progreso!</span>
+                )}
                 {isUnlocked && (
                     <span className={styles.badgeOpen}>✨ ¡Lista!</span>
                 )}
@@ -194,21 +256,9 @@ function CapsuleCard({ capsule, onOpen }) {
             </div>
 
             {/* Content Título o Teaser */}
-            {isDestructible ? (
-                <>
-                    <p className={styles.contentTitle}>{title}</p>
-                    <div className={styles.destructionBar}>
-                        <p className={styles.destructionText}>💥 SE DESTRUYE EN {destroysInHours} HORAS</p>
-                        <div className={styles.progressBar}>
-                            <div className={styles.progressFill} style={{ width: '60%' }}></div>
-                        </div>
-                    </div>
-                </>
-            ) : (
-                <p className={isLocked ? styles.teaserDimmed : styles.teaser}>
-                    "{teaserMessage}"
-                </p>
-            )}
+            <p className={isLocked ? styles.teaserDimmed : styles.teaser}>
+                {isLocked ? teaserMessage : title || teaserMessage}
+            </p>
 
             {/* Dominios para links */}
             {type === 'link' && domain && (
@@ -328,12 +378,12 @@ function CapsuleModal({ capsule, onClose }) {
                         </motion.div>
                     )}
 
-                    {status === 'destructible' && (
+                    {status === 'pending_destruction' && (
                         <motion.div 
                             variants={itemVariants}
                             style={{ marginTop: '1rem', color: 'var(--color-error)', fontWeight: '800', fontSize: '0.8rem', textTransform: 'uppercase' }}
                         >
-                            ⚠️ Esta cápsula se autodestruirá pronto
+                            ⚠️ Esta cápsula se autodestruirá pronto (Ventana de 24h)
                         </motion.div>
                     )}
                 </motion.div>
@@ -346,7 +396,7 @@ function CapsuleModal({ capsule, onClose }) {
  * DestructModal — Pantalla de advertencia crítica con countdown
  */
 function DestructModal({ files, onDownload, onSkip, onTimeUp }) {
-    const [seconds, setSeconds] = useState(10);
+    const [seconds, setSeconds] = useState(30);
     const timerRef = useRef(null);
 
     useEffect(() => {

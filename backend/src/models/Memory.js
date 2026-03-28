@@ -21,6 +21,9 @@ export default class Memory {
         // Metadata
         this.photoCount = data.photoCount || 0;
         this.mainPhotoUrl = data.mainPhotoUrl || null;
+        this.mainPhotoThumb = data.mainPhotoThumb || null;
+        this.mainPhotoDetail = data.mainPhotoDetail || null;
+        this.photos = Array.isArray(data.photos) ? data.photos : [];
         this.isSpecial = !!data.isSpecial;
         this.isHidden = !!data.isHidden;
         this.uploadedBy = data.uploadedBy || null;
@@ -54,6 +57,9 @@ export default class Memory {
             placeLng: this.placeLng,
             photoCount: this.photoCount,
             mainPhotoUrl: this.mainPhotoUrl,
+            mainPhotoThumb: this.mainPhotoThumb,
+            mainPhotoDetail: this.mainPhotoDetail,
+            photos: this.photos,
             isSpecial: this.isSpecial,
             isHidden: this.isHidden,
             uploadedBy: this.uploadedBy,

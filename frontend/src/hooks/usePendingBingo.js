@@ -21,7 +21,7 @@ export function usePendingBingo() {
             
             setPendingSuggestions(allItems.filter(item => !item.resolved));
         } catch (err) {
-            console.error('[usePendingBingo] Error fetching:', err);
+            // silent fail
         }
     }, []);
 
@@ -66,7 +66,7 @@ export function usePendingBingo() {
             
             await fetchPending();
         } catch (err) {
-            console.error('[usePendingBingo] Error marking resolved:', err);
+            // silent fail
         }
     }, [fetchPending]);
 
@@ -92,7 +92,7 @@ export function usePendingBingo() {
             
             await fetchPending();
         } catch (err) {
-            console.error('[usePendingBingo] Error marking dismissed:', err);
+            // silent fail
         }
     }, [fetchPending]);
 

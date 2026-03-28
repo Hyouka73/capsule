@@ -1,0 +1,34 @@
+.card {
+    background-color: var(--bg-card);
+    border-radius: var(--radius-card);
+    box-shadow: var(--clay-shadow-md);
+    border: var(--border-muted); /* Warm & visible per tokens.css L168 */
+    overflow: hidden;
+    position: relative;
+    max-width: 100%;
+}
+
+.default {
+    background-color: var(--bg-card);
+}
+
+.rose {
+    background-color: var(--clay-bg-rose);
+    border-color: var(--pastel-rose);
+    box-shadow: var(--clay-shadow-rose);
+}
+
+.mint {
+    background-color: var(--clay-bg-mint);
+    border-color: var(--pastel-mint);
+    box-shadow: var(--clay-shadow-mint);
+}
+
+.padding-none { padding: 0; }
+.padding-sm { padding: 1rem; }
+.padding-md { padding: 1.5rem; }
+.padding-lg { padding: 2.5rem; }
+
+@media (max-width: 768px) {
+    .padding-lg { padding: 1.5rem; }
+}

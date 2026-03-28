@@ -300,6 +300,20 @@
     letter-spacing: -0.5px;
 }
 
+.disabledModuleBadge {
+    background: #fff0f3;
+    color: #ff9fb4;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    border: 1px solid #ffdae3;
+    margin-left: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    height: fit-content;
+}
+
 .headerRight {
     display: flex;
     align-items: center;
@@ -399,4 +413,106 @@
         bottom: 2.25rem;
         right: 2.25rem;
     }
+}
+
+/* ── Disabled Content State ── */
+.disabledContentState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 1.5rem;
+    border: 2px dashed #ffdae3;
+    animation: fadeIn 0.3s ease-out;
+    max-width: 500px;
+    margin: 2rem auto;
+}
+
+.disabledSectionIcon {
+    font-size: 3rem;
+    margin-bottom: 1.5rem;
+    filter: grayscale(0.5) opacity(0.5);
+}
+
+.disabledSectionTitle {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 1.75rem;
+    color: #4a3232;
+    margin-bottom: 1rem;
+}
+
+.disabledSectionDesc {
+    color: #8b6e6e;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+    max-width: 360px;
+}
+/* ── Invite Link Card ── */
+.inviteCard {
+    background: linear-gradient(135deg, #fff5f8, #fff);
+    border: 2px solid var(--pastel-rose);
+    border-radius: var(--radius-card);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 4px 16px rgba(255, 107, 157, 0.12);
+}
+
+.inviteCardHeader {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.875rem;
+}
+
+.inviteCardIcon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.inviteCardTitle {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--pastel-text);
+    margin: 0 0 0.2rem 0;
+}
+
+.inviteCardDesc {
+    font-size: 0.825rem;
+    color: var(--pastel-text);
+    opacity: 0.7;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.inviteLinkBox {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(255, 107, 157, 0.06);
+    border-radius: var(--radius-lg);
+    padding: 0.75rem 1rem;
+}
+
+.inviteLinkText {
+    flex: 1;
+    font-size: 0.8rem;
+    color: var(--pastel-text);
+    opacity: 0.85;
+    word-break: break-all;
+    font-family: monospace;
+    margin: 0;
+}
+
+.copyBtn {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem !important;
+    padding: 0.5rem 0.875rem !important;
 }

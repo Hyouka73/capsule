@@ -135,7 +135,7 @@
             ]
         },
         {
-            "collectionGroup": "activityLog",
+            "collectionGroup": "activityLogs",
             "queryScope": "COLLECTION",
             "fields": [
                 {
@@ -195,7 +195,7 @@
             ]
         },
         {
-            "collectionGroup": "instantaneas",
+            "collectionGroup": "snapshots",
             "queryScope": "COLLECTION_GROUP",
             "fields": [
                 {
@@ -209,7 +209,7 @@
             ]
         },
         {
-            "collectionGroup": "instantaneas",
+            "collectionGroup": "snapshots",
             "queryScope": "COLLECTION",
             "fields": [
                 {
@@ -297,7 +297,7 @@
             ]
         },
         {
-            "collectionGroup": "instantaneas",
+            "collectionGroup": "snapshots",
             "queryScope": "COLLECTION",
             "fields": [
                 {

@@ -1,5 +1,21 @@
+/**
+ * ⚠️ MIGRATION NOTE (Sprint 1):
+ * Old offline items (without relationshipId prefix) will be orphaned.
+ * Users will need to clear browser data or re-sync after this deploy.
+ * This is acceptable for v1.0 production readiness.
+ * // PM APPROVED: Old offline items will be orphaned (acceptable for v1.0)
+ */
+
 export const DB_NAME = 'capsule_offline_queue';
 export const DB_VERSION = 7;
+
+/**
+ * Genera una llave prefijada por relationshipId para asegurar el aislamiento de datos.
+ */
+export const getStoreKey = (id, relationshipId) => {
+    if (!relationshipId) return id;
+    return `${relationshipId}_${id}`;
+};
 
 /**
  * Abre la base de datos IndexedDB centralizada creando todos los stores necesarios.

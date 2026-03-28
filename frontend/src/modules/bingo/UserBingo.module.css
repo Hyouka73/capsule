@@ -155,6 +155,21 @@
     background: var(--primary-container, #eaddff) !important;
 }
 
+.square.special {
+    background: linear-gradient(135deg, #fff9e6 0%, #fffdf0 100%) !important;
+    border: 2px solid #ffd700 !important;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.35), inset 2px 2px 4px rgba(0,0,0,0.05) !important;
+}
+
+.specialStar {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    font-size: 0.8rem;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+    z-index: 5;
+}
+
 /* Rule: Hover/press: scale(0.95) + invertir sombra interna */
 .square:hover, .square:active {
     transform: scale(0.95);

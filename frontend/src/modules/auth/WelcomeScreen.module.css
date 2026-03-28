@@ -24,8 +24,11 @@
 .welcomeTitle {
     font-size: 2rem;
     margin-bottom: 1.5rem;
-    font-family: 'Poppins', sans-serif;
-    color: #ffd1dc;
+    font-family: 'Bodoni Moda', serif;
+    font-style: italic;
+    font-weight: 400;
+    color: #fff;
+    text-shadow: 0 0 20px rgba(255, 182, 193, 0.4);
 }
 
 .welcomeText {

@@ -7,8 +7,9 @@ import styles from './BingoManager.module.css';
 import BingoEditPanel from './components/BingoEditPanel';
 
 export default function BingoManager() {
+    // TODO v1.1: Pool system with random selection per user.
     const { 
-        categories: squares, 
+        allCategories: squares, 
         isLoading, 
         updateBingoBoard 
     } = useBingo();
@@ -132,6 +133,7 @@ export default function BingoManager() {
 
             <BingoEditPanel 
                 editingSquare={editingSquare}
+                allSquares={squares}
                 formData={formData}
                 setFormData={setFormData}
                 onSave={handleSave}

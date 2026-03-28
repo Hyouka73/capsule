@@ -53,69 +53,10 @@ export default function SnapshotCreator({ onClose, onOpenOwnSnapshots }) {
         refreshLocalHistory();
     }, [refreshLocalHistory]);
 
-    /* ─── Real-time listener for OWN snapshots ─── */
-    useEffect(() => {
-        if (!user) return;
-
-        // Query simpler to avoid missing composite index errors
-        const q = query(
-            collection(db, 'instantaneas'),
-            where('createdBy', '==', user.uid),
-            limit(15)
-        );
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const now = Date.now();
-            const snaps = snapshot.docs
-                .map(doc => ({ id: doc.id, ...doc.data() }))
-                .filter(snap => {
-                    // Solo ver instantáneas que envié YO y que el OTRO aún no ha visto
-                    // que tengan menos de 24 horas de antigüedad.
-                    if (snap.isSeen) return false;
-
-                    const createdMs = snap.createdAt instanceof Timestamp
-                        ? snap.createdAt.toMillis()
-                        : (snap.createdAt?.seconds ? snap.createdAt.seconds * 1000 : 0);
-                    return createdMs > 0 && (now - createdMs) <= TWENTY_FOUR_H_MS;
-                })
-                .sort((a, b) => {
-                    const timeA = a.createdAt?.toMillis?.() || a.createdAt?.seconds * 1000 || 0;
-                    const timeB = b.createdAt?.toMillis?.() || b.createdAt?.seconds * 1000 || 0;
-                    return timeB - timeA; // Más recientes arriba
-                });
-
-            setOwnUnseenSnapshots(snaps);
-            // Cada vez que el servidor se actualiza, refrescamos lo local por si ya subió
-            refreshLocalHistory();
-        });
-
-        return () => unsubscribe();
-    }, [user, refreshLocalHistory]);
-
-    /* ─── Combine Remote + Local ─── */
-    const allHistory = useMemo(() => {
-        const local = localPending.map(item => {
-            const blob = item.photos?.[0]?.blob || item.compressedBlob;
-            return {
-                id: item.id,
-                photoUrl: blob ? URL.createObjectURL(blob) : null,
-                createdAt: item.createdAt,
-                message: item.data?.message,
-                isLocal: true
-            };
-        }).filter(item => item.photoUrl);
-
-        // Filter and remove duplicates (remote overrides local if same ID)
-        const remoteIds = new Set(ownUnseenSnapshots.map(s => s.id));
-        const filteredLocal = local.filter(l => !remoteIds.has(l.id));
-
-        const combined = [...filteredLocal, ...ownUnseenSnapshots].filter(s => s.photoUrl);
-        return combined.sort((a, b) => {
-            const timeA = a.createdAt?.toMillis?.() || a.createdAt?.seconds * 1000 || a.createdAt || 0;
-            const timeB = b.createdAt?.toMillis?.() || b.createdAt?.seconds * 1000 || b.createdAt || 0;
-            return timeB - timeA;
-        });
-    }, [localPending, ownUnseenSnapshots]);
+    // Removed Firestore listener for "own" snapshots to comply with "Eliminar Firestore directo"
+    // and simplified UI requirements.
+    
+    /* ─── Camera lifecycle ─── */
 
     /* ─── Camera lifecycle ─── */
     const stopCamera = useCallback(() => {
@@ -158,7 +99,7 @@ export default function SnapshotCreator({ onClose, onOpenOwnSnapshots }) {
             }
             logToVercel('SnapshotCreator', 'CAMERA_STARTED', mode);
         } catch (err) {
-            console.error('Camera fallback...', err);
+            // Camera fallback...
             try {
                 const fallbackStream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: mode },
@@ -217,7 +158,7 @@ export default function SnapshotCreator({ onClose, onOpenOwnSnapshots }) {
                 // Refresh local immediately to show in history badge
                 await refreshLocalHistory();
             } catch (err) {
-                console.error('Queue error:', err);
+                // Queue error
                 logToVercel('SnapshotCreator', 'QUEUE_ERROR', err.message);
             } finally {
                 setIsSending(false);
@@ -229,32 +170,12 @@ export default function SnapshotCreator({ onClose, onOpenOwnSnapshots }) {
 
     const toggleCamera = () => setFacingMode(m => m === 'environment' ? 'user' : 'environment');
 
-    const hasHistory = allHistory.length > 0;
-
     return (
         <div className={styles.overlay}>
             {/* ── Close ── */}
             <button className={styles.closeBtn} onClick={onClose} aria-label="Cerrar">
                 ✕
             </button>
-
-            {/* ── History toggle ── */}
-            <div 
-                ref={clockRef} 
-                className={styles.clockBadge} 
-                aria-label="Mis enviadas recientemente"
-                style={{ cursor: hasHistory ? 'pointer' : 'default' }}
-                onClick={() => hasHistory && onOpenOwnSnapshots?.(allHistory)}
-            >
-                {hasHistory ? (
-                    <img src={allHistory[0].photoUrl} className={styles.clockThumb} alt="" />
-                ) : (
-                    <span className={styles.clockIcon}>
-                        <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>history</span>
-                    </span>
-                )}
-            </div>
-
             {/* ── Flying thumbnail animation ── */}
             <AnimatePresence>
                 {isFlying && flyThumb && (

@@ -1,13 +1,13 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { getFunctions } from 'firebase-admin/functions';
+import { logger } from 'firebase-functions';
 import { COLLECTIONS } from '../config/constants.js';
 
 /**
  * createCapsule — Serverless BFF API
  * 
- * Crea una nueva cápsula del tiempo. Si la fecha de apertura es en el futuro,
- * encola automáticamente una tarea (Cloud Task) para el desbloqueo y notificación exacta.
+ * Crea una nueva cápsula del tiempo en la subcolección de la relación.
  */
 export const createCapsule = onCall({ region: 'us-central1', cors: true }, async (request) => {
     if (!request.auth) {
@@ -15,9 +15,15 @@ export const createCapsule = onCall({ region: 'us-central1', cors: true }, async
     }
 
     const { uid } = request.auth;
+    const { relationshipId } = request.auth.token;
+
+    if (!relationshipId) {
+        throw new HttpsError('failed-precondition', 'El usuario no tiene una relación activa.');
+    }
+
     const { 
         title, teaserMessage, message, unlockTrigger, unlockDate, 
-        autoDestruct, notifyOnUnlock, attachments = [] 
+        autoDestroy, notifyOnUnlock, attachments = [] 
     } = request.data;
 
     if (!title || !unlockTrigger) {
@@ -26,7 +32,22 @@ export const createCapsule = onCall({ region: 'us-central1', cors: true }, async
 
     const db = getFirestore();
 
-    // Convertir fecha de apertura de string a Timestamp
+    // 1. Fetch Relationship for partner detection (1-a-1)
+    const relRef = db.collection('relationships').doc(relationshipId);
+    const relSnap = await relRef.get();
+    
+    if (!relSnap.exists) {
+        throw new HttpsError('not-found', 'Relación no encontrada.');
+    }
+    
+    const relData = relSnap.data();
+    const partnerUid = relData.members.find(m => m !== uid);
+
+    if (!partnerUid) {
+        throw new HttpsError('failed-precondition', 'No se encontró un compañero en la relación.');
+    }
+
+    // 2. Parse Unlock Date
     let parsedUnlockDate = null;
     if (unlockTrigger === 'date' && unlockDate) {
         const d = new Date(unlockDate);
@@ -36,8 +57,8 @@ export const createCapsule = onCall({ region: 'us-central1', cors: true }, async
         parsedUnlockDate = Timestamp.fromDate(d);
     }
 
-    // Si es desbloqueo manual (por acertijo o GPS futuramente), se queda sin task
-    const isUnlocked = unlockTrigger === 'manual' ? false : (parsedUnlockDate ? parsedUnlockDate.toMillis() <= Date.now() : true);
+    const now = Date.now();
+    const isUnlocked = unlockTrigger === 'manual' ? false : (parsedUnlockDate ? parsedUnlockDate.toMillis() <= now : true);
 
     const capsuleData = {
         title,
@@ -45,15 +66,16 @@ export const createCapsule = onCall({ region: 'us-central1', cors: true }, async
         message: message || null,
         createdBy: uid,
         createdAt: FieldValue.serverTimestamp(),
+        relationshipId,
+        recipientUid: partnerUid,
 
-        unlockTrigger, // 'date' | 'manual'
+        unlockTrigger, 
         unlockDate: parsedUnlockDate,
         isUnlocked: isUnlocked,
         unlockedAt: isUnlocked ? FieldValue.serverTimestamp() : null,
+        status: isUnlocked ? 'unlocked' : 'locked',
 
-        autoDestruct: autoDestruct || false, // Read-Once deletion
-        isDestructed: false,
-        isViewed: false,
+        autoDestroy: autoDestroy || false, 
         notifyOnUnlock: notifyOnUnlock !== undefined ? notifyOnUnlock : true,
 
         hasAttachments: attachments.length > 0,
@@ -61,17 +83,34 @@ export const createCapsule = onCall({ region: 'us-central1', cors: true }, async
     };
 
     try {
-        const capsuleRef = await db.collection(COLLECTIONS.CAPSULES).add(capsuleData);
+        const capsuleRef = await db.collection('relationships').doc(relationshipId).collection(COLLECTIONS.CAPSULES).add(capsuleData);
 
         // Si la cápsula aún está bloqueada y depende de la fecha, delegamos el despertador a Cloud Tasks
         if (!isUnlocked && unlockTrigger === 'date' && parsedUnlockDate) {
             const queue = getFunctions().taskQueue('taskUnlockCapsule');
 
             await queue.enqueue(
-                { capsuleId: capsuleRef.id },
-                { scheduleTime: parsedUnlockDate.toDate() } // Corrección: a la fecha exacta configurada
+                { capsuleId: capsuleRef.id, relationshipId },
+                { scheduleTime: parsedUnlockDate.toDate() }
             );
-            console.log(`Cloud Task programada para cápsula ${capsuleRef.id} en ${parsedUnlockDate.toDate()}`);
+            logger.info(`Cloud Task programada para cápsula ${capsuleRef.id} en ${parsedUnlockDate.toDate()}`);
+        }
+
+        // 3. FCM Notification to Partner
+        try {
+            const { fcm } = await import('../services/fcmService.js');
+            await fcm.sendToUser(partnerUid, {
+                notification: {
+                    title: '🎁 ¡Nueva Cápsula!',
+                    body: teaserMessage || `${request.auth.token.name || 'Tu pareja'} enterró algo para ti...`,
+                },
+                data: {
+                    type: 'capsule_created',
+                    capsuleId: capsuleRef.id,
+                }
+            });
+        } catch (fcmErr) {
+            logger.warn('FCM notification failed in createCapsule:', fcmErr.message);
         }
 
         return {
@@ -80,7 +119,7 @@ export const createCapsule = onCall({ region: 'us-central1', cors: true }, async
             message: 'Cápsula creada exitosamente.'
         };
     } catch (error) {
-        console.error('Error in createCapsule:', error);
+        logger.error('Error in createCapsule:', error);
         throw new HttpsError('internal', 'Ocurrió un error al persistir la cápsula en base de datos.');
     }
 });

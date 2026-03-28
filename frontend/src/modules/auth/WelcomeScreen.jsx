@@ -10,18 +10,23 @@ import LoadingScreen from '../../components/ui/LoadingScreen/LoadingScreen';
 import styles from './WelcomeScreen.module.css';
 
 export default function WelcomeScreen() {
-    const { user } = useAuth();
+    const { user, completeWelcome } = useAuth();
     const [isSaving, setIsSaving] = useState(false);
     const navigate = useNavigate();
 
     const handleContinue = async () => {
         setIsSaving(true);
         try {
-            const userRef = doc(db, COLLECTIONS.USERS, user.uid);
-            await updateDoc(userRef, { welcomeSeen: true });
-            navigate('/app');
+            if (completeWelcome) {
+                await completeWelcome();
+            }
+            
+            // Short delay to allow state and route to settle
+            setTimeout(() => {
+                if (navigate) navigate('/app');
+            }, 100);
         } catch (error) {
-            console.error('Error updating welcomeSeen:', error);
+            console.error("Error updating welcome status:", error);
             setIsSaving(false);
         }
     };
@@ -48,12 +53,12 @@ export default function WelcomeScreen() {
                         transition={{ duration: 0.8, type: 'spring' }}
                     >
                         <h1 className={styles.welcomeTitle}>
-                            ¡Bienvenida, {user?.displayName || 'amor'}! 💖
+                            ¡Bienvenida, mi amora! 💖
                         </h1>
                         <p className={styles.welcomeText}>
-                            Este rincón digital fue creado pieza por pieza con todo el amor del mundo.
-                            Aquí guardaremos nuestros mejores momentos, jugaremos y recordaremos por qué
-                            somos el mejor equipo.
+                            Aquí el tiempo se detiene y solo existimos nosotros. Cada rincón guarda un susurro 
+                            de lo que hemos vivido y una promesa de lo que vendrá. Adéntrate en este universo 
+                            que he construido para proteger nuestra historia...
                         </p>
                         <div className={styles.actions}>
                             <Button 
@@ -62,7 +67,7 @@ export default function WelcomeScreen() {
                                 onClick={handleContinue}
                                 className={styles.continueBtn}
                             >
-                                Abrir mi Capsule →
+                                Abrir nuestro mundo →
                             </Button>
                         </div>
                     </motion.div>

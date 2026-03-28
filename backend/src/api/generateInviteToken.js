@@ -11,57 +11,71 @@ export const generateInviteToken = onCall({ region: 'us-central1', cors: true },
         throw new HttpsError('permission-denied', 'Solo el admin puede generar tokens de invitación');
     }
 
-    const { expiresInDays = null } = request.data ?? {};
+    const { expiresAtDays = 7 } = request.data ?? {};
+    const { relationshipId } = request.auth.token;
+    
+    if (!relationshipId) {
+        throw new HttpsError('failed-precondition', 'El admin no tiene una relación asignada.');
+    }
+
     const db = getFirestore();
-    const baseUrl = process.env.APP_URL || '';
+    const baseUrl = process.env.APP_URL || 'https://capsule-sooty.vercel.app';
 
     try {
-        // 1. Check if there's an existing valid and unclaimed token
-        const tokensRef = db.collection('inviteTokens');
-        const snapshot = await tokensRef
-            .where('isClaimed', '==', false)
-            .where('isRevoked', '==', false)
-            .limit(1)
-            .get();
+        // --- AUTO-REVOKE PREVIOUS PARTNER ---
+        const configRef = db.collection('relationships').doc(relationshipId)
+            .collection('config').doc('main');
+        const configSnap = await configRef.get();
 
-        if (!snapshot.empty) {
-            const existingTokenDoc = snapshot.docs[0];
-            const tokenData = existingTokenDoc.data();
+        if (configSnap.exists) {
+            const { partnerUid } = configSnap.data();
+            if (partnerUid) {
+                logger.info(`[generateInviteToken] Revoking existing partner ${partnerUid} before generating new token for relationship ${relationshipId}`);
+                
+                // 1. Mark partner as revoked in Firestore
+                await db.collection('users').doc(partnerUid).update({
+                    accountStatus: 'revoked',
+                    updatedAt: Timestamp.now()
+                });
 
-            // Re-verify expiration date just in case
-            if (!tokenData.expiresAt || tokenData.expiresAt.toDate() > new Date()) {
-                logger.info(`Reusing existing valid invite token ${existingTokenDoc.id}`);
-                return {
-                    success: true,
-                    tokenId: existingTokenDoc.id,
-                    inviteUrl: `${baseUrl}/join?t=${existingTokenDoc.id}`
-                };
+                // 2. Clear partnerUid from config (it will be refilled when new partner joins)
+                await configRef.update({
+                    partnerUid: null
+                });
+                
+                // Note: Real-time revocation (auth.revokeRefreshTokens) could be added here
+                // but setting status to 'revoked' handles most app logic.
             }
         }
-
-        // 2. If no valid token exists, create a new one
+        // 1. Generate new token
         const tokenId = uuidv4();
+        const expiresAt = Timestamp.fromDate(new Date(Date.now() + expiresAtDays * 86400000));
 
-        const expiresAt = expiresInDays
-            ? Timestamp.fromDate(new Date(Date.now() + expiresInDays * 86400000))
-            : null;
+        const inviteUrl = `${baseUrl}/join?t=${tokenId}`;
 
-        // 3. Save the new token in the database
+        // 2. Save token globally for lookup during claim
         await db.collection('inviteTokens').doc(tokenId).set({
             token: tokenId,
+            relationshipId,
             createdBy: request.auth.uid,
             createdAt: Timestamp.now(),
             expiresAt,
             isClaimed: false,
-            claimedBy: null,
-            claimedAt: null,
-            claimedDeviceId: null,
             isRevoked: false,
         });
 
-        const inviteUrl = `${baseUrl}/join?t=${tokenId}`;
+        // 3. Update Relationship Config with the new link
+        // configRef is already defined above during auto-revoke check
+        await configRef.set({
+            inviteConfig: {
+                inviteLink: inviteUrl,
+                generatedAt: Timestamp.now().toDate().toISOString(),
+                expiresAt: expiresAt.toDate().toISOString(),
+                isActive: true
+            }
+        }, { merge: true });
 
-        logger.info(`Invite token ${tokenId} generated successfully by admin ${request.auth.uid}`);
+        logger.info(`Invite token ${tokenId} generated for relationship ${relationshipId}`);
 
         return {
             success: true,

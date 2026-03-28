@@ -39,7 +39,15 @@ export const updateMemory = onCall({ region: 'us-central1', cors: true }, async 
     updates.updatedAt = FieldValue.serverTimestamp();
 
     try {
-        const memoryRef = db.collection(COLLECTIONS.MEMORIES).doc(memoryId);
+        const relationshipId = request.auth.token.relationshipId;
+        if (!relationshipId) {
+            throw new HttpsError('failed-precondition', 'El usuario no tiene una relación asignada.');
+        }
+
+        const memoryRef = db.collection('relationships')
+            .doc(relationshipId)
+            .collection(COLLECTIONS.MEMORIES)
+            .doc(memoryId);
 
         // Verificar que el documento exista antes de intentar actualizar
         const doc = await memoryRef.get();

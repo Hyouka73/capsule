@@ -13,26 +13,37 @@ export const logActivity = onCall({ region: 'us-central1', cors: true }, async (
     }
 
     const { action, targetType, targetId, metadata, displayText } = request.data;
+    const relationshipId = request.auth.token.relationshipId;
 
     if (!action || !targetType || !targetId) {
         throw new HttpsError('invalid-argument', 'Faltan campos obligatorios para el log.');
+    }
+
+    if (!relationshipId) {
+        throw new HttpsError('failed-precondition', 'El usuario no tiene una relación activa.');
     }
 
     const db = getFirestore();
 
     const logData = {
         userId: request.auth.uid,
+        relationshipId,
         action,
         targetType,
         targetId,
         metadata: metadata || {},
         displayText: displayText || 'Realizó una acción',
         isReadByAdmin: false,
+        readAt: null,
         createdAt: FieldValue.serverTimestamp(),
     };
 
     try {
-        await db.collection(COLLECTIONS.ACTIVITY_LOG).add(logData);
+        await db
+            .collection('relationships')
+            .doc(relationshipId)
+            .collection(COLLECTIONS.ACTIVITY_LOG)
+            .add(logData);
         return { success: true };
     } catch (error) {
         logger.error('Error logging activity:', error);

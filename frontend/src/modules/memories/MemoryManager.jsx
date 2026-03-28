@@ -28,7 +28,7 @@ export default function MemoryManager() {
             const { docs } = await getMemories({ pageSize: 50, includeHidden: true });
             setMemories(docs ?? []);
         } catch (err) {
-            console.error('Error loading memories:', err);
+            // silent fail
         } finally {
             setIsLoading(false);
         }
@@ -80,7 +80,7 @@ export default function MemoryManager() {
             await updateMemory({ memoryId: id, isHidden: !memory.isHidden });
             setMemories(prev => prev.map(m => m.id === id ? { ...m, isHidden: !m.isHidden } : m));
         } catch (err) {
-            console.error('Error toggling visibility:', err);
+            // silent fail
         }
     }
 
@@ -90,7 +90,7 @@ export default function MemoryManager() {
             await deleteMemory({ memoryId: id });
             setMemories(prev => prev.filter(m => m.id !== id));
         } catch (err) {
-            console.error('Error deleting memory:', err);
+            // silent fail
         }
     }
 

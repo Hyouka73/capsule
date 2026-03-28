@@ -13,12 +13,13 @@ export const COLLECTIONS = {
     // Features
     CAPSULES: 'capsules',
     COUPONS: 'coupons',
-    BINGO_BOARD: 'bingoBoard',
+    BINGO_BOARD: 'bingoBoards',
+    BINGO_HISTORY: 'bingoHistory',
     WRAPPED_DATA: 'wrappedData',
-    INSTANTANEAS: 'instantaneas', // Added
+    INSTANTANEAS: 'snapshots', // Added
 
     // System
-    ACTIVITY_LOG: 'activityLog',
+    ACTIVITY_LOG: 'activityLogs',
     APP_CONFIG: 'appConfig',
 };
 
@@ -33,8 +34,11 @@ export const STORAGE_PATHS = {
     PHOTO_ORIGINAL: (memoryId, photoId) => `memories/${memoryId}/${photoId}.jpg`,
     PHOTO_THUMB: (memoryId, photoId) => `memories/${memoryId}/thumb_${photoId}.jpg`,
     SNAPSHOT_ORIGINAL: (snapshotId) => `snapshots/${snapshotId}.jpg`,
-    SNAPSHOT_THUMB: (snapshotId) => `snapshots/thumb_${snapshotId}.jpg`
+    SNAPSHOT_THUMB: (snapshotId) => `snapshots/thumb_${snapshotId}.jpg`,
+    CAPSULE_ORIGINAL: (relationshipId, capsuleId, fileId) => `${relationshipId}/capsules/${capsuleId}/${fileId}.webp`
 };
+
+export const CAPSULE_DESTRUCTION_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 export const CAPSULE_TYPES = {
     MESSAGE: 'message',

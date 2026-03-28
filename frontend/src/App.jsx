@@ -3,10 +3,12 @@ import { useAuth } from './hooks/useAuth';
 import { useAppConfig } from './context/AppConfigContext';
 import Teaser from './components/Teaser/Teaser';
 import AdminLogin from './modules/admin/AdminLogin';
+import AdminRegister from './modules/auth/AdminRegister';
 import AdminDashboard from './modules/admin/AdminDashboard';
 import UserDashboard from './modules/user/UserDashboard';
 import JoinInvite from './modules/auth/JoinInvite';
 import WelcomeScreen from './modules/auth/WelcomeScreen';
+import RevokedScreen from './modules/auth/RevokedScreen';
 import LoadingScreen from './components/ui/LoadingScreen/LoadingScreen';
 import { PastelToastProvider } from './components/ui/PastelToast/PastelToast';
 import { BingoProvider } from './context/BingoContext';
@@ -28,13 +30,25 @@ export default function App() {
   const { 
     isAdmin, 
     isAuthenticated, 
+    isRevoked,
     isLoading, 
     welcomeSeen,
     teaserCompleted
   } = useAuth();
 
+  // teaser.isEnabled comes from Firestore appConfig (default: true via SystemConfig)
+  const { teaser } = useAppConfig();
+  const teaserEnabled = teaser?.isEnabled !== false; // treat undefined as true (safe default)
+
   // While resolving Firebase auth, show nothing (prevents flash)
   if (isLoading) return <LoadingScreen />;
+
+  // If authenticated, we MUST wait for teaser/welcome progress to be loaded from Firestore 
+  // before making routing decisions, to avoid flashes of the wrong screen.
+  if (isAuthenticated && (teaserCompleted === null || welcomeSeen === null)) return <LoadingScreen />;
+
+  // Blocking screen if account is revoked
+  if (isRevoked) return <RevokedScreen />;
 
   return (
     <PastelToastProvider>
@@ -45,13 +59,11 @@ export default function App() {
             ? <Navigate to="/join" replace /> 
             : isAdmin 
               ? <Navigate to="/admin" replace />
-              : (welcomeSeen === null || teaserCompleted === null)
-                ? <LoadingScreen />
-                : teaserCompleted === false
-                  ? <Navigate to="/teaser" replace />
-                  : welcomeSeen === false
-                    ? <Navigate to="/welcome" replace />
-                    : <Navigate to="/app" replace />
+              : (teaserEnabled && teaserCompleted === false)
+                ? <Navigate to="/teaser" replace />
+                : welcomeSeen === false
+                  ? <Navigate to="/welcome" replace />
+                  : <Navigate to="/app" replace />
         } />
 
         {/* Flujo de invitación (público) */}
@@ -61,31 +73,36 @@ export default function App() {
             : <><JoinInvite /><VersionBadge /></>
         } />
 
-        {/* Teaser (protegido por estado) — solo si no ha sido completado */}
+        {/* Teaser (protegido por estado) — solo si está habilitado y no ha sido completado */}
         <Route path="/teaser" element={
           !isAuthenticated 
             ? <Navigate to="/join" replace />
             : isAdmin
               ? <Navigate to="/admin" replace />
-              : teaserCompleted === true
+              : (!teaserEnabled || teaserCompleted === true)
                 ? <Navigate to="/" replace />
                 : <><Teaser /><VersionBadge /></>
         } />
 
-        {/* Pantalla de Bienvenida (protegida) — accesible después del Teaser */}
+        {/* Pantalla de Bienvenida (protegida) — accesible después del Teaser (o si está deshabilitado) */}
         <Route path="/welcome" element={
           !isAuthenticated 
             ? <Navigate to="/join" replace />
             : isAdmin
               ? <Navigate to="/admin" replace />
-              : teaserCompleted === false
+              : (teaserEnabled && teaserCompleted === false)
                 ? <Navigate to="/teaser" replace />
                 : welcomeSeen === true
                   ? <Navigate to="/app" replace />
                   : <><WelcomeScreen /><VersionBadge /></>
         } />
 
-        {/* Admin: login público + dashboard protegido */}
+        {/* Admin: register (public) + login público + dashboard protegido */}
+        <Route path="/admin/register" element={
+          isAdmin
+            ? <Navigate to="/admin" replace />
+            : <><AdminRegister /><VersionBadge /></>
+        } />
         <Route path="/admin/login" element={
           isAdmin
             ? <Navigate to="/admin" replace />
@@ -103,7 +120,7 @@ export default function App() {
             ? <Navigate to="/join" replace />
             : isAdmin
               ? <Navigate to="/admin" replace />
-              : teaserCompleted === false
+              : (teaserEnabled && teaserCompleted === false)
                 ? <Navigate to="/teaser" replace />
                 : welcomeSeen === false
                   ? <Navigate to="/welcome" replace />

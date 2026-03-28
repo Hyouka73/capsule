@@ -11,11 +11,11 @@ export const COLLECTIONS = {
     ARTIFACTS: 'artifacts',
     CAPSULES: 'capsules',
     COUPONS: 'coupons',
-    BINGO_BOARD: 'bingoBoard',
+    BINGO_BOARD: 'bingoBoards',
     WRAPPED_DATA: 'wrappedData',
-    ACTIVITY_LOG: 'activityLog',
+    ACTIVITY_LOG: 'activityLogs',
     APP_CONFIG: 'appConfig',
-    INSTANTANEAS: 'instantaneas',
+    INSTANTANEAS: 'snapshots',
     BINGO_HISTORY: 'bingoHistory',
 };
 
@@ -116,7 +116,8 @@ export const STORAGE_PATHS = {
     PHOTO_ORIGINAL: (memoryId, photoId) => `memories/${memoryId}/${photoId}.jpg`,
     PHOTO_THUMB: (memoryId, photoId) => `memories/${memoryId}/thumb_${photoId}.jpg`,
     SNAPSHOT_ORIGINAL: (snapshotId) => `snapshots/${snapshotId}.jpg`,
-    SNAPSHOT_THUMB: (snapshotId) => `snapshots/thumb_${snapshotId}.jpg`
+    SNAPSHOT_THUMB: (snapshotId) => `snapshots/thumb_${snapshotId}.jpg`,
+    CAPSULE_ORIGINAL: (relationshipId, capsuleId, fileId) => `${relationshipId}/capsules/${capsuleId}/${fileId}.webp`
 };
 
 export const SINGLETON_DOCS = {

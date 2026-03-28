@@ -16,7 +16,9 @@ export const getMemories = onCall({ region: 'us-central1', cors: true }, async (
     const db = getFirestore();
     const isAdmin = request.auth.token.role === 'admin';
 
-    let query = db.collection(COLLECTIONS.MEMORIES);
+    let query = db.collection('relationships')
+        .doc(request.auth.token.relationshipId)
+        .collection(COLLECTIONS.MEMORIES);
 
     // Si data.includeHidden === true Y el llamador es el admin, omitir el filtro isHidden.
     // En cualquier otro caso, mantener where('isHidden', '==', false).

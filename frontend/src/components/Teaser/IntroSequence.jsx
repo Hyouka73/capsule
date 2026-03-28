@@ -279,8 +279,8 @@ function Digit({ place, value }) {
  *         .petal-tumble → TUMBLE: 3D X/Y flip (sine ∞)
  *           .petal-visual → CSS leaf shape
  */
-const PETAL_PRIMARY = 70;
-const PETAL_SECONDARY = 30;
+const PETAL_PRIMARY = 25;
+const PETAL_SECONDARY = 15;
 const PETAL_TOTAL = PETAL_PRIMARY + PETAL_SECONDARY;
 
 function SakuraOverlay() {

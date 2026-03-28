@@ -30,11 +30,14 @@ export const findOrCreatePlace = onCall({ region: 'us-central1', cors: true }, a
     if (!request.auth) return { success: false, error: 'Unauthorized' };
 
     const { lat, lng, name, city, category, tags } = request.data || {};
+    const relationshipId = request.auth.token.relationshipId;
 
+    if (!relationshipId) return { success: false, error: 'User missing relationshipId' };
     if (!lat || !lng) return { success: false, error: 'Coordenadas incompletas.' };
 
     try {
-        const allPlacesSnapshot = await placesRef.get();
+        // PM APPROVED: Solo añadir filtro visitedByRelationshipIds, NO tocar lógica Haversine
+        const allPlacesSnapshot = await placesRef.where('visitedByRelationshipIds', 'array-contains', relationshipId).get();
         
         // 1. Refined matching logic: Name + Distance
         const latNum = parseFloat(lat);
@@ -70,11 +73,40 @@ export const findOrCreatePlace = onCall({ region: 'us-central1', cors: true }, a
             }
         });
 
+        const now = new Date();
+
         if (existingPlaceId) {
+            // UPDATING existing place for THIS relationship
+            const vBy = matchedPlaceData.visitedBy || [];
+            const vIndex = vBy.findIndex(v => v.relationshipId === relationshipId);
+            
+            let updatedVisitedBy = [...vBy];
+            if (vIndex !== -1) {
+                // Increment count for current relationship
+                updatedVisitedBy[vIndex] = {
+                    ...updatedVisitedBy[vIndex],
+                    count: (updatedVisitedBy[vIndex].count || 0) + 1,
+                    timestamp: now.toISOString()
+                };
+            } else {
+                // This shouldn't happen with the array-contains filter, 
+                // but good to have fallback if we ever remove it for broader sharing.
+                updatedVisitedBy.push({
+                    relationshipId,
+                    count: 1,
+                    timestamp: now.toISOString()
+                });
+            }
+
             const updateData = {
-                visitCount: FieldValue.increment(1),
+                visitedBy: updatedVisitedBy,
                 updatedAt: FieldValue.serverTimestamp()
             };
+
+            // Propagate relationshipIds array for easy querying if needed (redundant here but good practice)
+            if (!matchedPlaceData.visitedByRelationshipIds?.includes(relationshipId)) {
+                updateData.visitedByRelationshipIds = FieldValue.arrayUnion(relationshipId);
+            }
 
             // Si el nombre viene del front (geocodificado), lo actualizamos 
             // solo si el lugar actual tiene un nombre genérico (coordenadas)
@@ -99,9 +131,16 @@ export const findOrCreatePlace = onCall({ region: 'us-central1', cors: true }, a
         const finalName = name || `Lugar en ${city || 'Mapa'} (${latNum.toFixed(4)}, ${lngNum.toFixed(4)})`;
 
         // 3. Crear nuevo lugar
+        // ⚠️ CRÍTICO: NO añadir relationshipId al top-level. Solo visitedBy.
         const newPlaceRef = await placesRef.add({
             name: finalName,
             city: city || '',
+            visitedBy: [{
+                relationshipId,
+                count: 1,
+                timestamp: now.toISOString()
+            }],
+            visitedByRelationshipIds: [relationshipId],
             location: {
                 lat: latNum,
                 lng: lngNum
@@ -112,7 +151,6 @@ export const findOrCreatePlace = onCall({ region: 'us-central1', cors: true }, a
             },
             category: category || 'otro',
             tags: tags || [],
-            visitCount: 1,
             photoCount: 0,
             createdBy: request.auth.uid,
             createdAt: FieldValue.serverTimestamp(),

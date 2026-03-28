@@ -50,14 +50,15 @@ export default function BingoBoardGrid({
     return (
         <div className={styles.boardCard}>
             <div className={styles.grid}>
-                {categories.map((square, index) => {
+                {categories.filter(s => s.isEnabled !== false).map((square, index) => {
                     const matchedPending = bingoQueue.find(p => p.suggestions.some(s => s.categoryId === square.id));
                     const isCompleted = !!square.completedMemoryId;
+                    const isSpecial = !!square.isSpecial;
 
                     return (
                         <motion.div
                             key={square.id}
-                            className={`${styles.square} ${isCompleted ? styles.completed : ''}`}
+                            className={`${styles.square} ${isCompleted ? styles.completed : ''} ${isSpecial ? styles.special : ''}`}
                             onClick={() => onSquareClick(square)}
                             whileTap={{ scale: 0.95 }}
                             initial={{ opacity: 0, scale: 0.9 }}
@@ -101,6 +102,12 @@ export default function BingoBoardGrid({
                                     {square.title || 'Misterio'}
                                 </span>
                             </div>
+
+                            {isSpecial && (
+                                <div className={styles.specialStar} title="Casilla Especial (+5 monedas)">
+                                    ⭐
+                                </div>
+                            )}
                         </motion.div>
                     );
                 })}

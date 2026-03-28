@@ -1,18 +1,16 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
-import { COLLECTIONS } from '../config/constants.js';
+import { COLLECTIONS, CAPSULE_DESTRUCTION_WINDOW_MS } from '../config/constants.js';
 
-/**
- * openCapsule — Serverless BFF API (Protocolo Read-Once)
- * 
- * Este endpoint es llamado cuando la novia decide finalmente leer el secreto de una cápsula desbloqueada.
- * Si la cápsula tiene configurada la "autodestrucción", el backend inmediatamente la fulmina de la BBDD, 
- * devolviendo los datos (foto/mensaje) sólo esta única y última vez al cliente para que los autodescargue.
- */
 export const openCapsule = onCall({ region: 'us-central1', cors: true }, async (request) => {
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Debes iniciar sesión para abrir una cápsula.');
+    }
+
+    const { relationshipId, role, uid } = request.auth.token;
+    if (!relationshipId) {
+        throw new HttpsError('failed-precondition', 'Usuario sin relación activa.');
     }
 
     const { capsuleId } = request.data;
@@ -21,69 +19,90 @@ export const openCapsule = onCall({ region: 'us-central1', cors: true }, async (
     }
 
     const db = getFirestore();
-    const capsuleRef = db.collection(COLLECTIONS.CAPSULES).doc(capsuleId);
+    const capsuleRef = db.collection('relationships').doc(relationshipId).collection(COLLECTIONS.CAPSULES).doc(capsuleId);
 
     try {
         let capsuleData;
 
-        // Usamos una transacción para asegurar integridad en concurrencia
+        // 1. Transactional Update
         await db.runTransaction(async (t) => {
             const snap = await t.get(capsuleRef);
             if (!snap.exists) {
-                throw new HttpsError('not-found', 'Cápsula no encontrada o ya se destruyó.');
+                throw new HttpsError('not-found', 'Cápsula no encontrada.');
             }
             capsuleData = snap.data();
 
             if (!capsuleData.isUnlocked) {
-                throw new HttpsError('permission-denied', 'Esta cápsula aún no puede leerse, el tiempo de espera no ha terminado.');
+                throw new HttpsError('permission-denied', 'Esta cápsula aún está bloqueada.');
             }
 
-            if (capsuleData.isDestructed) {
-                throw new HttpsError('failed-precondition', 'La cápsula ha sido destruida y su mensaje es inaccesible.');
+            if (capsuleData.status === 'destroyed') {
+                throw new HttpsError('failed-precondition', 'Esta cápsula ya fue destruida.');
             }
 
             const updates = {
-                isViewed: true,
-                viewedAt: Timestamp.now()
+                openedAt: FieldValue.serverTimestamp(),
+                status: 'opened'
             };
 
-            // Protocolo Read-Once: Marcar destruida permanentemente.
-            if (capsuleData.autoDestruct) {
-                updates.isDestructed = true;
-                updates.destructedAt = Timestamp.now();
-                // El campo mensaje se censura para el futuro en DB (opcional extra seguridad)
-                updates.message = '[DELETED BY AUTODESTRUCT]';
-                updates.files = [];
-                updates.hasAttachments = false;
+            // Behavior: Auto-Destruct
+            if (capsuleData.autoDestroy) {
+                // We mark it as 'pending_destruction' and set a 24h window.
+                updates.status = 'pending_destruction';
+                updates.destroyedAt = Timestamp.fromMillis(Date.now() + CAPSULE_DESTRUCTION_WINDOW_MS);
             }
 
-
             t.update(capsuleRef, updates);
+
+            // 2. Activity Log
+            const logEntry = {
+                userId: uid,
+                relationshipId: relationshipId,
+                action: 'capsule_opened',
+                targetType: 'capsule',
+                targetId: capsuleId,
+                displayText: `Abrió la cápsula: ${capsuleData.title || 'sin título'}`,
+                isReadByAdmin: false,
+                readAt: null,
+                createdAt: FieldValue.serverTimestamp(),
+            };
+            const logRef = db
+                .collection('relationships')
+                .doc(relationshipId)
+                .collection(COLLECTIONS.ACTIVITY_LOG)
+                .doc();
+            t.set(logRef, logEntry);
         });
 
-        // Retorna silenciosamente la carga secreta intacta al Frontend por única vez.
-        // El Frontend mostrará la animación y si hay "archivos", usará el link provisto para forzar descarga.
+        // 3. FCM Notification to Admin (partner opened)
+        if (role !== 'admin') {
+            try {
+                const relSnap = await db.collection('relationships').doc(relationshipId).get();
+                const members = relSnap.data()?.members || [];
+                const adminUid = members.find(m => m !== uid);
+                
+                if (adminUid) {
+                    const { sendToUser } = await import('../services/fcmService.js');
+                    await sendToUser(adminUid, {
+                        title: '📂 Cápsula Abierta',
+                        body: `Tu pareja ha abierto la cápsula: ${capsuleData.title || 'sin título'}.`,
+                        data: {
+                            type: 'capsule_opened',
+                            capsuleId: capsuleId,
+                        }
+                    });
+                }
+            } catch (fcmErr) {
+                logger.warn('FCM notification failed in openCapsule:', fcmErr.message);
+            }
+        }
+
         return {
             success: true,
             capsule: {
+                ...capsuleData,
                 id: capsuleId,
-                title: capsuleData.title ?? null,
-                message: capsuleData.message ?? null,
-                photoUrl: capsuleData.photoUrl ?? null,
-                storagePath: capsuleData.storagePath ?? null,
-                hasAttachments: capsuleData.hasAttachments ?? false,
-                files: capsuleData.files || [],
-                autoDestruct: capsuleData.autoDestruct ?? false,
-                isUnlocked: capsuleData.isUnlocked ?? false,
-                isViewed: capsuleData.isViewed ?? false,
-                isDestructed: capsuleData.isDestructed ?? false,
-                opensAt: capsuleData.opensAt?.toDate?.()?.toISOString() ?? capsuleData.opensAt ?? null,
-                createdAt: capsuleData.createdAt?.toDate?.()?.toISOString() ?? capsuleData.createdAt ?? null,
-                destructsAt: capsuleData.destructsAt?.toDate?.()?.toISOString() ?? capsuleData.destructsAt ?? null,
-                openedAt: capsuleData.openedAt?.toDate?.()?.toISOString() ?? capsuleData.openedAt ?? null,
-                viewedAt: capsuleData.viewedAt?.toDate?.()?.toISOString() ?? capsuleData.viewedAt ?? null,
-                destructedAt: capsuleData.destructedAt?.toDate?.()?.toISOString() ?? capsuleData.destructedAt ?? null,
-                isDestructedNow: !!capsuleData.autoDestruct,
+                status: capsuleData.autoDestroy ? 'pending_destruction' : 'opened'
             }
         };
 

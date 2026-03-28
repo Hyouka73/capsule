@@ -1,9 +1,13 @@
 import { motion } from 'framer-motion';
 import { MEMORY_TAGS } from '../../config/constants';
+import { usePlaces } from '../../modules/map/hooks/usePlaces';
 import styles from './BingoStartModal.module.css';
 
 export default function BingoStartModal({ bingoItem, onClose, onStartCita, defaultMinPhotos = 3 }) {
+    const { places } = usePlaces();
     const minPhotosVal = bingoItem.minPhotos || defaultMinPhotos;
+
+    const matchedPlace = (places || []).find(p => p.name === bingoItem.suggestedPlace);
 
     const handleStartCita = () => {
         if (onStartCita) {
@@ -51,6 +55,15 @@ export default function BingoStartModal({ bingoItem, onClose, onStartCita, defau
                             <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>photo_camera</span>
                             <span>Mínimo {minPhotosVal} fotos</span>
                         </div>
+
+                        {bingoItem.suggestedPlace && (
+                            <div className={styles.suggestedPlaceBox}>
+                                <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', color: '#ff85a2' }}>location_on</span>
+                                <span className={styles.placeLabel}>
+                                    {matchedPlace ? `${matchedPlace.emoji} ${matchedPlace.name}` : bingoItem.suggestedPlace}
+                                </span>
+                            </div>
+                        )}
 
                         {bingoItem.suggestedTags?.length > 0 && (
                             <div className={styles.tagsContainer}>

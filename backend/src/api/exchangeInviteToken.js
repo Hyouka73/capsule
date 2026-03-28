@@ -2,15 +2,12 @@ import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions';
-import { COLLECTIONS } from '../config/constants.js';
+import { COLLECTIONS, SINGLETON_DOCS } from '../config/constants.js';
 
 /**
  * exchangeInviteToken — HTTPS Callable
  *
  * Called by the app when a partner opens an invite link (?t=TOKEN).
- *
- * Input:  { token: string, deviceFingerprint: string }
- * Output: { customToken: string, userId: string }
  */
 export const exchangeInviteToken = onCall({ region: 'us-central1', cors: true }, async (request) => {
     try {
@@ -41,26 +38,32 @@ export const exchangeInviteToken = onCall({ region: 'us-central1', cors: true },
             throw new HttpsError('permission-denied', 'Este token ya fue usado en otro dispositivo');
         }
 
-        if (tokenData.expiresAt && tokenData.expiresAt.toDate() < new Date()) {
-            throw new HttpsError('deadline-exceeded', 'Este token ha expirado');
+        const { relationshipId, expiresAt } = tokenData;
+        if (expiresAt) {
+            const expiryDate = (typeof expiresAt.toDate === 'function') 
+                ? expiresAt.toDate() 
+                : new Date(expiresAt);
+            
+            if (expiryDate < new Date()) {
+                throw new HttpsError('deadline-exceeded', 'Este token ha expirado');
+            }
         }
 
         // 2. Find or create the partner user in Firebase Auth
-        // 2. Find or create the partner user in Firebase Auth
-        // No fixed UID — let Firebase generate a real one
         let userRecord = await auth.createUser({
             displayName: 'Partner'
         });
 
         const realPartnerUid = userRecord.uid;
 
-        // 3. Set custom claims: { role, deviceId }
+        // 3. Set custom claims: { role, deviceId, relationshipId }
         await auth.setCustomUserClaims(realPartnerUid, {
             role: 'partner',
             deviceId: deviceFingerprint,
+            ...(relationshipId && { relationshipId }),
         });
 
-        // 4. Update invite token: mark as claimed
+        // 3. Mark invite token as claimed
         await tokenRef.update({
             isClaimed: true,
             claimedBy: realPartnerUid,
@@ -68,13 +71,26 @@ export const exchangeInviteToken = onCall({ region: 'us-central1', cors: true },
             claimedDeviceId: deviceFingerprint,
         });
 
+        // 4. Update Relationship Config to link this new Partner
+        const configRef = db.collection('relationships').doc(relationshipId)
+            .collection('config').doc('main');
+        
+        await configRef.set({
+            partnerUid: realPartnerUid,
+            updatedAt: Timestamp.now(),
+            inviteConfig: {
+                isActive: false // Deactivate link after successful claim
+            }
+        }, { merge: true });
+
         // 5. Update/create user doc in Firestore
         const userRef = db.collection(COLLECTIONS.USERS).doc(realPartnerUid);
-        console.log(`[Backend Debug] Creating user doc: ${COLLECTIONS.USERS}/${realPartnerUid}`);
         
         await userRef.set({
             uid: realPartnerUid,
             role: 'partner',
+            accountStatus: 'active',
+            relationshipId: relationshipId || null,
             displayName: 'Partner',
             deviceId: deviceFingerprint,
             deviceInfo: {
@@ -85,29 +101,19 @@ export const exchangeInviteToken = onCall({ region: 'us-central1', cors: true },
             },
             isRevoked: false,
             fcmTokens: [],
-            preferences: {
-                theme: 'dark',
-                galleryOrderBy: 'eventDate',
-                language: 'es',
-                notificationsEnabled: true,
-            },
-            onboardingCompleted: {
-                map: false, bingo: false, capsules: false,
-                coupons: false, snapshots: false,
-                gallery: false, movies: false, games: false
-            },
             welcomeSeen: false,
-            teaserCompleted: false,
+            teaserCompleted: false, // Force them to see the intro
             createdAt: Timestamp.now(),
             lastActiveAt: Timestamp.now(),
+            gameCoins: 100,
+            coinTransactions: []
         }, { merge: true });
-
-        console.log(`[Backend Debug] User doc created successfully.`);
 
         // 6. Generate and return the custom token
         const customToken = await auth.createCustomToken(realPartnerUid, {
             role: 'partner',
             deviceId: deviceFingerprint,
+            ...(relationshipId && { relationshipId }),
         });
 
         logger.info(`Invite token ${token} successfully exchanged. User ${realPartnerUid} authenticated on device ${deviceFingerprint}.`);
@@ -118,10 +124,19 @@ export const exchangeInviteToken = onCall({ region: 'us-central1', cors: true },
             userId: realPartnerUid
         };
     } catch (error) {
-        logger.error('Error in exchangeInviteToken:', error);
+        logger.error('exchangeInviteToken error:', {
+            uid: request.auth?.uid || 'anonymous',
+            error: error.message,
+            stack: error.stack
+        });
+
         if (error instanceof HttpsError) {
             throw error;
         }
-        throw new HttpsError('internal', `Ocurrió un error interno: ${error.message} - Stack: ${error.stack}`);
+
+        throw new HttpsError(
+            'internal',
+            'Failed to exchange invite token. Please try again.'
+        );
     }
 });

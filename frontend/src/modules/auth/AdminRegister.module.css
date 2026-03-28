@@ -1,0 +1,189 @@
+.root {
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--pastel-bg);
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    font-family: var(--font-body);
+}
+
+/* ── Decorative elements ── */
+.bgDeco {
+    position: absolute;
+    font-size: 2.5rem;
+    opacity: 0.15;
+    pointer-events: none;
+    user-select: none;
+}
+
+.deco1 {
+    top: 8%;
+    left: 5%;
+    font-size: 3rem;
+    animation: floatA 4s ease-in-out infinite;
+}
+
+.deco2 {
+    top: 15%;
+    right: 8%;
+    font-size: 2rem;
+    animation: floatA 5s ease-in-out infinite reverse;
+}
+
+.deco3 {
+    bottom: 12%;
+    left: 10%;
+    font-size: 2.5rem;
+    animation: floatA 6s ease-in-out infinite;
+}
+
+@keyframes floatA {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+}
+
+/* ── Main Container ── */
+.mainContainer {
+    width: 100%;
+    max-width: 420px;
+    position: relative;
+    z-index: 1;
+}
+
+/* ── Card ── */
+.card {
+    background: #fff;
+    border-radius: var(--radius-card);
+    padding: 2.5rem 2rem;
+    box-shadow: var(--clay-shadow-md);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* ── Header ── */
+.headerGroup {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.iconWrapper {
+    width: 5rem;
+    height: 5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mainIcon {
+    font-size: 3.5rem;
+}
+
+.title {
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 5vw, 1.875rem);
+    font-weight: 700;
+    color: var(--pastel-text);
+    margin: 0;
+}
+
+.subtitle {
+    font-size: 0.9rem;
+    color: var(--pastel-text);
+    opacity: 0.7;
+    margin: 0;
+}
+
+/* ── Form ── */
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* ── Submit Button ── */
+.submitBtn {
+    position: relative;
+    width: 100%;
+    padding: 1rem 1.5rem;
+    border: none;
+    border-radius: var(--radius-xl);
+    background: var(--pastel-rose);
+    box-shadow: var(--clay-shadow-rose);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    overflow: hidden;
+    margin-top: 0.5rem;
+    transition: opacity 0.2s;
+}
+
+.submitBtn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.btnHighlight {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 40%;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    pointer-events: none;
+}
+
+.submitBtnText {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    position: relative;
+    z-index: 1;
+}
+
+.arrowIcon {
+    font-size: 1rem;
+    color: #fff;
+    position: relative;
+    z-index: 1;
+}
+
+/* ── Login Link ── */
+.loginLink {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.loginLinkText {
+    font-size: 0.85rem;
+    color: var(--pastel-text);
+    opacity: 0.7;
+}
+
+.loginLinkBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--pastel-rose);
+    text-decoration: underline;
+    padding: 0;
+}
+
+.loginLinkBtn:hover {
+    opacity: 0.8;
+}

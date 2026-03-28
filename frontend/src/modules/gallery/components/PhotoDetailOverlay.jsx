@@ -61,7 +61,7 @@ export default function PhotoDetailOverlay({ photos, initialIndex, onClose }) {
                         }}
                     >
                         <img
-                            src={currentPhoto.url || currentPhoto.storagePath}
+                            src={currentPhoto.detailUrl || currentPhoto.url || currentPhoto.storagePath}
                             alt={currentPhoto.caption || ''}
                             className={styles.mainPhoto}
                         />

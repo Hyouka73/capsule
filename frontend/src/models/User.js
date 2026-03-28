@@ -7,7 +7,10 @@ export default class User {
         this.uid = data.uid || null;
         this.displayName = data.displayName || '';
         this.role = data.role || 'partner'; // 'admin' | 'partner'
-        this.isRevoked = !!data.isRevoked;
+        this.accountStatus = data.accountStatus || (!!data.isRevoked ? 'revoked' : 'active');
+        this.relationshipId = data.relationshipId || null;
+        this.adminUid = data.adminUid || null; // For partner: reference to their admin
+        this.teaserLock = data.teaserLock || null; // Individual teaser unlock date (ISO string)
 
         // Device info
         this.deviceId = data.deviceId || null;

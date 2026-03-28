@@ -2,10 +2,12 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import KawaiiInput from '../../../components/ui/KawaiiInput/KawaiiInput';
 import { useAppConfig } from '../../../context/AppConfigContext';
+import { usePlaces } from '../../map/hooks/usePlaces';
 import styles from '../BingoManager.module.css';
 
 export default function BingoEditPanel({ 
     editingSquare, 
+    allSquares, // Array of all categories for limit calculation
     formData, 
     setFormData, 
     onSave, 
@@ -13,7 +15,9 @@ export default function BingoEditPanel({
     onUncheck,
     onForceComplete
 }) {
+    // TODO v1.1: Pool system with random selection per user.
     const { memoryTags } = useAppConfig();
+    const { places } = usePlaces();
     if (!editingSquare) return null;
 
     // formData.suggestedTags is an ARRAY of OBJECTS: { value, label }
@@ -112,13 +116,37 @@ export default function BingoEditPanel({
                     </div>
 
                     <div className={styles.formGroup}>
-                        <KawaiiInput
-                            type="text"
-                            label="Lugar Sugerido"
-                            value={formData.suggestedPlace || ''}
-                            onChange={e => setFormData({ ...formData, suggestedPlace: e.target.value })}
-                            placeholder="Ej. Restaurante Italiano Luigi"
-                        />
+                        <label className={styles.label}>Lugar Sugerido</label>
+                        <select 
+                            className={styles.select}
+                            value={places.some(p => p.name === formData.suggestedPlace) ? formData.suggestedPlace : (formData.suggestedPlace ? 'custom' : '')}
+                            onChange={e => {
+                                const val = e.target.value;
+                                if (val === 'custom') {
+                                    setFormData({ ...formData, suggestedPlace: '' });
+                                } else {
+                                    setFormData({ ...formData, suggestedPlace: val });
+                                }
+                            }}
+                        >
+                            <option value="">-- Sin lugar sugerido --</option>
+                            {(places || []).map(p => (
+                                <option key={p.id} value={p.name}>{p.emoji || '📍'} {p.name}</option>
+                            ))}
+                            <option value="custom">✍️ Otro (escribir debajo)...</option>
+                        </select>
+
+                        {(formData.suggestedPlace === 'custom' || (formData.suggestedPlace && !places.some(p => p.name === formData.suggestedPlace))) && (
+                            <div style={{ marginTop: '0.5rem' }}>
+                                <KawaiiInput
+                                    type="text"
+                                    label="Nombre del lugar personalizado"
+                                    value={formData.suggestedPlace === 'custom' ? '' : formData.suggestedPlace}
+                                    onChange={e => setFormData({ ...formData, suggestedPlace: e.target.value })}
+                                    placeholder="Ej. Restaurante Italiano Luigi"
+                                />
+                            </div>
+                        )}
                     </div>
 
                     <div className={styles.checkboxGroup}>
@@ -135,9 +163,23 @@ export default function BingoEditPanel({
                             <input 
                                 type="checkbox" 
                                 checked={formData.isEnabled !== false} 
-                                onChange={e => setFormData({ ...formData, isEnabled: e.target.checked })} 
+                                onChange={e => {
+                                    const nextEnabled = e.target.checked;
+                                    const enabledCount = (allSquares || []).filter(s => s.isEnabled !== false && s.id !== editingSquare.id).length;
+                                    
+                                    if (nextEnabled && enabledCount >= 16) {
+                                        alert("⚠️ Solo las primeras 16 casillas habilitadas (por fecha) serán visibles en el tablero v1.0.");
+                                    }
+                                    
+                                    setFormData({ ...formData, isEnabled: nextEnabled });
+                                }} 
                             />
-                            <span>✅ Habilitada (visible para Partner)</span>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <span>✅ Habilitada (visible para Partner)</span>
+                                <span style={{ fontSize: '0.7rem', color: '#8b4a61', opacity: 0.8 }}>
+                                    Habilitadas: {(allSquares || []).filter(s => (s.id === editingSquare.id ? formData.isEnabled : s.isEnabled !== false)).length}/16
+                                </span>
+                            </div>
                         </label>
                     </div>
 

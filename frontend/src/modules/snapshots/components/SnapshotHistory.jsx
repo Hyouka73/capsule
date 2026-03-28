@@ -1,16 +1,55 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../../hooks/useAuth';
+import { getSnapshots, deleteSnapshot } from '../../../apiClient';
+import { toast } from '../../../components/ui/PastelToast/PastelToast';
 import styles from './SnapshotHistory.module.css';
 
 /**
  * SnapshotHistory — A grid gallery for browsing snapshots.
- * Used for "Mis enviadas" (captured snapshots).
- * 
- * @param {Array}    snapshots - List of snapshots to display
- * @param {Function} onClose   - Callback to close the gallery
  */
-export default function SnapshotHistory({ snapshots = [], onClose }) {
+export default function SnapshotHistory({ initialSnapshots = [], onClose }) {
+    const [snapshots, setSnapshots] = useState(initialSnapshots);
     const [selectedIdx, setSelectedIdx] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'admin';
+
+    const fetchHistory = async () => {
+        setLoading(true);
+        try {
+            const res = await getSnapshots();
+            if (res.success) {
+                setSnapshots(res.snapshots || []);
+            }
+        } catch (err) {
+            toast.error('Error al cargar historial');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (snapshots.length === 0) {
+            fetchHistory();
+        }
+    }, []);
+
+    const handleDelete = async (e, snapId) => {
+        e.stopPropagation();
+        if (!isAdmin) return;
+        if (!window.confirm('¿Eliminar esta instantánea permanentemente?')) return;
+
+        try {
+            const res = await deleteSnapshot({ snapshotId: snapId });
+            if (res.success) {
+                toast.success('Instantánea eliminada');
+                setSnapshots(prev => prev.filter(s => s.id !== snapId));
+            }
+        } catch (err) {
+            toast.error('Error', err.message);
+        }
+    };
 
     return (
         <motion.div 
@@ -44,6 +83,15 @@ export default function SnapshotHistory({ snapshots = [], onClose }) {
                                     <img src={snap.photoUrl} alt="" className={styles.photo} loading="lazy" />
                                     {snap.message && <div className={styles.msgIndicator}>💌</div>}
                                     {snap.isLocal && <div className={styles.syncingIndicator}>⏳</div>}
+                                    {isAdmin && (
+                                        <button 
+                                            className={styles.deleteBtn}
+                                            onClick={(e) => handleDelete(e, snap.id)}
+                                            title="Eliminar"
+                                        >
+                                            🗑️
+                                        </button>
+                                    )}
                                 </div>
                                 <div className={styles.itemMeta}>
                                     {snap.createdAt instanceof Date ? snap.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 

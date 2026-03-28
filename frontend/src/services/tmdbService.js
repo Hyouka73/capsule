@@ -51,7 +51,7 @@ export async function getMovieDetails(tmdbId, language = 'es-MX') {
         if (!response.ok) throw new Error('Error fetching movie details');
         return await response.json();
     } catch (error) {
-        console.error('[tmdbService] Error fetching details:', error);
+        // error logged silently
         throw error;
     }
 }

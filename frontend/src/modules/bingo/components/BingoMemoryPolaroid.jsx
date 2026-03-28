@@ -32,7 +32,7 @@ export default function BingoMemoryPolaroid({ selectedSquare, onClose, onShowGal
                     setPhotos(photosList);
                 }
             } catch (err) {
-                console.error('[BingoMemoryPolaroid] Error fetching memory:', err);
+                // silent fail
             } finally {
                 setLoading(false);
             }

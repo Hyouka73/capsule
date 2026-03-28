@@ -94,7 +94,7 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
                     setIsLocating(false);
                 },
                 (err) => {
-                    console.warn('Geolocation failed or denied, using fallback', err);
+                    // silent fail
                     setIsLocating(false);
                 },
                 { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
@@ -174,7 +174,7 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
             const data = await res.json();
             setSearchResults(data);
         } catch (e) {
-            console.error('Search error', e);
+            // silent fail
             toast.error('Error de búsqueda', 'No se pudo conectar al servicio de lugares');
         } finally {
             setIsSearching(false);

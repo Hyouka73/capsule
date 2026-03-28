@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from './CelebrationOverlay.module.css';
 
@@ -15,6 +15,12 @@ export default function CelebrationOverlay({
 }) {
     const [isVisible, setIsVisible] = useState(true);
     const [phase, setPhase] = useState(isFullBoard ? 'combo' : 'normal'); // normal | combo | epic
+    const isMounted = useRef(true);
+
+    useEffect(() => {
+        return () => { isMounted.current = false; };
+    }, []);
+
     const displayCoins = isCombo ? totalCoins : coins;
 
     // Phase orchestration for 20/20: Combo (4s) -> Epic (6s) -> Reset
@@ -22,11 +28,11 @@ export default function CelebrationOverlay({
         if (!isFullBoard) return;
         
         const timerToEpic = setTimeout(() => {
-            setPhase('epic');
+            if (isMounted.current) setPhase('epic');
         }, 4000);
 
         const timerToReset = setTimeout(() => {
-            handleDismiss();
+            if (isMounted.current) handleDismiss();
         }, 15000); // 15s for full board
 
         return () => {
@@ -164,7 +170,7 @@ export default function CelebrationOverlay({
                             <p className={styles.rewardText}>
                                 {isFullBoard 
                                     ? (phase === 'epic' ? '¡Eres increíble! Has llenado todo el tablero. ✨' : reward)
-                                    : ''}
+                                    : '¡Sigue así para ganar más monedas! 💖'}
                             </p>
 
                             <button className={styles.dismissBtn} onClick={handleDismiss}>

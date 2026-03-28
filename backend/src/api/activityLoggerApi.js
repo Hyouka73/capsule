@@ -1,6 +1,8 @@
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { COLLECTIONS, ACTIVITY_ACTIONS } from '../config/constants.js';
 
+import { logger } from 'firebase-functions';
+
 const db = getFirestore();
 
 /**
@@ -16,42 +18,55 @@ const db = getFirestore();
  * Fails silently — never block the user's action if logging fails.
  *
  * @param {object} params
- * @param {string} params.userId     - Partner's Firebase UID
- * @param {string} params.action     - One of ACTIVITY_ACTIONS
- * @param {string} params.targetType - 'memory' | 'photo' | 'capsule' | 'coupon' | 'bingo' | 'wrapped'
- * @param {string} params.targetId   - ID of the affected document
- * @param {object} [params.metadata] - Extra context depending on action
- * @param {string} params.displayText - Human-readable description shown in admin feed
+ * @param {string} params.userId         - Partner's Firebase UID
+ * @param {string} params.relationshipId - Current relationship ID
+ * @param {string} params.action         - One of ACTIVITY_ACTIONS
+ * @param {string} params.targetType     - 'memory' | 'photo' | 'capsule' | 'coupon' | 'bingo' | 'wrapped'
+ * @param {string} params.targetId       - ID of the affected document
+ * @param {object} [params.metadata]     - Extra context depending on action
+ * @param {string} params.displayText    - Human-readable description shown in admin feed
  */
 export async function logActivity({
     userId,
+    relationshipId,
     action,
     targetType,
     targetId,
     metadata = {},
     displayText,
 }) {
+    if (!relationshipId) {
+        logger.error('[activityLogger] CRITICAL: Missing relationshipId for log:', action);
+        return; // Don't throw to avoid blocking the caller
+    }
+
     try {
-        await db.collection(COLLECTIONS.ACTIVITY_LOG).add({
-            userId,
-            action,
-            targetType,
-            targetId,
-            metadata,
-            displayText,
-            isReadByAdmin: false,
-            createdAt: FieldValue.serverTimestamp(),
-        });
+        await db
+            .collection('relationships')
+            .doc(relationshipId)
+            .collection(COLLECTIONS.ACTIVITY_LOG)
+            .add({
+                userId,
+                relationshipId,
+                action,
+                targetType,
+                targetId,
+                metadata,
+                displayText,
+                isReadByAdmin: false,
+                createdAt: FieldValue.serverTimestamp(),
+            });
     } catch (err) {
-        console.warn('[activityLogger] Failed to log activity:', err.message);
+        logger.warn('[activityLogger] Failed to log activity:', err.message);
     }
 }
 
 // ─── Convenience wrappers ─────────────────────────────────────────────────────
 
-export function logPhotoUploaded(userId, memoryId, photoCount, memoryTitle) {
+export function logPhotoUploaded(userId, relationshipId, memoryId, photoCount, memoryTitle) {
     return logActivity({
         userId,
+        relationshipId,
         action: ACTIVITY_ACTIONS.PHOTO_UPLOADED,
         targetType: 'memory',
         targetId: memoryId,
@@ -60,9 +75,10 @@ export function logPhotoUploaded(userId, memoryId, photoCount, memoryTitle) {
     });
 }
 
-export function logMemoryCreated(userId, memoryId, memoryTitle) {
+export function logMemoryCreated(userId, relationshipId, memoryId, memoryTitle) {
     return logActivity({
         userId,
+        relationshipId,
         action: ACTIVITY_ACTIONS.MEMORY_CREATED,
         targetType: 'memory',
         targetId: memoryId,
@@ -71,9 +87,10 @@ export function logMemoryCreated(userId, memoryId, memoryTitle) {
     });
 }
 
-export function logPhotoMarkedSpecial(userId, photoId, memoryId) {
+export function logPhotoMarkedSpecial(userId, relationshipId, photoId, memoryId) {
     return logActivity({
         userId,
+        relationshipId,
         action: ACTIVITY_ACTIONS.PHOTO_MARKED_SPECIAL,
         targetType: 'photo',
         targetId: photoId,
@@ -82,9 +99,10 @@ export function logPhotoMarkedSpecial(userId, photoId, memoryId) {
     });
 }
 
-export function logCapsuleOpened(userId, capsuleId, capsuleType) {
+export function logCapsuleOpened(userId, relationshipId, capsuleId, capsuleType) {
     return logActivity({
         userId,
+        relationshipId,
         action: ACTIVITY_ACTIONS.CAPSULE_OPENED,
         targetType: 'capsule',
         targetId: capsuleId,
@@ -93,9 +111,10 @@ export function logCapsuleOpened(userId, capsuleId, capsuleType) {
     });
 }
 
-export function logCouponUsed(userId, couponId, couponTitle, usedNotes) {
+export function logCouponUsed(userId, relationshipId, couponId, couponTitle, usedNotes) {
     return logActivity({
         userId,
+        relationshipId,
         action: ACTIVITY_ACTIONS.COUPON_USED,
         targetType: 'coupon',
         targetId: couponId,
@@ -104,9 +123,10 @@ export function logCouponUsed(userId, couponId, couponTitle, usedNotes) {
     });
 }
 
-export function logWrappedOpened(userId, year) {
+export function logWrappedOpened(userId, relationshipId, year) {
     return logActivity({
         userId,
+        relationshipId,
         action: ACTIVITY_ACTIONS.WRAPPED_OPENED,
         targetType: 'wrapped',
         targetId: String(year),
@@ -114,3 +134,4 @@ export function logWrappedOpened(userId, year) {
         displayText: `✨ Abrió el Wrapped ${year}`,
     });
 }
+

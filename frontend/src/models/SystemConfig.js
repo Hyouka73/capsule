@@ -60,7 +60,7 @@ export default class SystemConfig {
         };
 
         this.teaser = {
-            unlockAt: data.teaser?.unlockAt ?? '2026-04-04T00:00:00',
+            unlockAt: data.teaser?.unlockAt ?? 1775260800000, // Default to April 4, 2026 (ms)
             isEnabled: data.teaser?.isEnabled ?? true
         };
 
@@ -91,7 +91,18 @@ export default class SystemConfig {
             }
         };
 
+        this.modules = {
+            bingo: { isEnabled: data.modules?.bingo?.isEnabled ?? true },
+            capsules: { isEnabled: data.modules?.capsules?.isEnabled ?? true },
+            coupons: { isEnabled: data.modules?.coupons?.isEnabled ?? true },
+            snapshots: { isEnabled: data.modules?.snapshots?.isEnabled ?? true },
+            movies: { isEnabled: data.modules?.movies?.isEnabled ?? true },
+            ...data.modules
+        };
+
         this.updatedAt = data.updatedAt || null;
+        this.teaserLock = data.teaserLock || null;
+        this.partnerUid = data.partnerUid || null;
 
         this.partner = {
             welcomeMessage: data.partner?.welcomeMessage ?? '¡Bienvenida a nuestro espacio! 💖',
@@ -122,7 +133,7 @@ export default class SystemConfig {
      * Converts to plain object for Firestore persistence
      */
     toFirestore() {
-        return {
+        const data = {
             features: this.features,
             visibility: this.visibility,
             wrapped: this.wrappedConfig,
@@ -133,10 +144,21 @@ export default class SystemConfig {
             inviteConfig: this.inviteConfig,
             citaConfig: this.citaConfig,
             onboarding: this.onboarding,
+            modules: this.modules,
             partner: this.partner,
+            partnerUid: this.partnerUid,
             memoryTags: this.memoryTags,
-            updatedAt: new Date().toISOString()
+            updatedAt: Date.now() // Use numeric timestamp in MS
         };
+        
+        // Remove undefined/null strictly to avoid wipes
+        Object.keys(data).forEach(key => {
+            if (data[key] === undefined || data[key] === null) {
+                delete data[key];
+            }
+        });
+        
+        return data;
     }
 
     /**
@@ -153,10 +175,13 @@ export default class SystemConfig {
             notifications: data.notifications,
             snapshotConfig: data.snapshotConfig,
             teaser: data.teaser,
+            teaserLock: data.teaserLock,
             inviteConfig: data.inviteConfig,
             citaConfig: data.citaConfig,
             onboarding: data.onboarding,
+            modules: data.modules,
             partner: data.partner,
+            partnerUid: data.partnerUid,
             memoryTags: data.memoryTags,
             updatedAt: data.updatedAt
         });

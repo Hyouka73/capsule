@@ -1,16 +1,26 @@
-import { useState } from 'react';
-import { createCapsule } from '../../apiClient';
+import { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../../hooks/useAuth';
+import { useOfflineQueue } from '../../hooks/useOfflineQueue';
 import Button from '../../components/ui/Button/Button';
 import DescriptiveCheckbox from '../../components/ui/DescriptiveCheckbox/DescriptiveCheckbox';
 import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
 import MediaUploader from './components/MediaUploader';
-import { uploadFile } from '../../services/storage';
-import { STORAGE_PATHS } from '../../config/constants';
+import { useAppConfig } from '../../context/AppConfigContext';
 import styles from './CapsuleForm.module.css';
+import { toast } from '../../components/ui/PastelToast/PastelToast';
 
 export default function CapsuleForm({ onSuccess, onCancel }) {
+    const { partnerUid, partnerEmail, relationshipId } = useAppConfig();
+    const { queueCapsule } = useOfflineQueue();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
+    const isMounted = useRef(true);
+
+    useEffect(() => {
+        return () => {
+            isMounted.current = false;
+        };
+    }, []);
 
     // Initial state
     const [formData, setFormData] = useState({
@@ -19,12 +29,11 @@ export default function CapsuleForm({ onSuccess, onCancel }) {
         message: '',
         unlockTrigger: 'date',
         unlockDate: '',
-        autoDestruct: true,
+        autoDestroy: true,
         notifyOnUnlock: true,
     });
 
     const [files, setFiles] = useState([]);
-    const [uploadProgress, setUploadProgress] = useState(0);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -37,48 +46,34 @@ export default function CapsuleForm({ onSuccess, onCancel }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
+
+        if (!relationshipId || !partnerUid) {
+            setError('Error crítico: No se detectó una relación activa o un Partner asignado.');
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
-            let attachments = [];
-            
-            if (files.length > 0) {
-                // Generar un ID temporal para la carpeta si no existe uno
-                const tempCapsuleId = crypto.randomUUID();
-                
-                for (let i = 0; i < files.length; i++) {
-                    const file = files[i];
-                    const fileId = crypto.randomUUID();
-                    const ext = file.name.split('.').pop();
-                    const path = STORAGE_PATHS.ORIGINAL('capsules', tempCapsuleId, fileId); 
-                    // Nota: STORAGE_PATHS.ORIGINAL ya formatea como `type/entityId/fileId.jpg` (o extensión)
-                    
-                    const url = await uploadFile(file, path, (p) => {
-                        // Progreso simple ponderado
-                        const totalProgress = ((i / files.length) * 100) + (p / files.length);
-                        setUploadProgress(Math.round(totalProgress));
-                    });
-
-                    attachments.push({
-                        url,
-                        storagePath: path,
-                        fileName: file.name,
-                        fileType: file.type,
-                        size: file.size,
-                    });
-                }
-            }
-
-            await createCapsule({
+            const res = await queueCapsule({
                 ...formData,
-                attachments
-            });
-            onSuccess();
+                relationshipId,
+                recipientUid: partnerUid,
+            }, files);
+
+            if (!isMounted.current) return;
+
+            if (res.queued) {
+                toast.success('¡Cápsula enterrada!', 'Se sincronizará en cuanto haya conexión ✨');
+                onSuccess();
+            } else {
+                setError('No se pudo encolar la cápsula. Intenta de nuevo.');
+            }
         } catch (err) {
-            console.error('Error creating capsule:', err);
+            if (!isMounted.current) return;
             setError(err.message || 'Ocurrió un error inesperado al guardar la cápsula.');
         } finally {
-            setIsSubmitting(false);
+            if (isMounted.current) setIsSubmitting(false);
         }
     };
 
@@ -151,13 +146,19 @@ export default function CapsuleForm({ onSuccess, onCancel }) {
                 />
             </div>
 
+            <div className={styles.partnerInfo}>
+                <p>👤 <b>Partner:</b> {partnerEmail || 'Cargando...'}</p>
+                <p>🔗 <b>Relación:</b> <small>{relationshipId}</small></p>
+                <p className={styles.warning}>⚠️ Esta cápsula solo será visible para este destinatario.</p>
+            </div>
+
             <div className={styles.checkboxContainer}>
                 <DescriptiveCheckbox
-                    name="autoDestruct"
-                    checked={formData.autoDestruct}
+                    name="autoDestroy"
+                    checked={formData.autoDestroy}
                     onChange={handleChange}
-                    title="💥 Autodestrucción Rápida (Read-Once)"
-                    description="La cápsula se fulminará para siempre inmediatamente después de que ella la lea."
+                    title="💥 Autodestrucción Rápida (Modal 30s)"
+                    description="La cápsula se eliminará por completo de la base de datos y de las fotos tras ser abierta."
                 />
 
                 <DescriptiveCheckbox
@@ -165,7 +166,7 @@ export default function CapsuleForm({ onSuccess, onCancel }) {
                     checked={formData.notifyOnUnlock}
                     onChange={handleChange}
                     title="🔔 Notificación Push (Cloud Tasks)"
-                    description="Despertará su teléfono en el instante milimétrico de la fecha de apertura elegida."
+                    description="Dará un aviso inmediato en el momento exacto del desbloqueo."
                 />
             </div>
 
@@ -173,8 +174,8 @@ export default function CapsuleForm({ onSuccess, onCancel }) {
                 <MediaUploader files={files} onChange={setFiles} />
                 {isSubmitting && files.length > 0 && (
                     <div className={styles.progressContainer}>
-                        <div className={styles.progressBar} style={{ width: `${uploadProgress}%` }} />
-                        <span className={styles.progressText}>Subiendo multimedia: {uploadProgress}%</span>
+                        <div className={styles.progressBar} style={{ width: `100%` }} />
+                        <span className={styles.progressText}>Preparando para segundo plano...</span>
                     </div>
                 )}
             </div>

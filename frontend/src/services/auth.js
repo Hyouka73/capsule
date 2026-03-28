@@ -1,9 +1,10 @@
 import {
     signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
     signOut as firebaseSignOut,
 } from 'firebase/auth';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { httpsCallable } from 'firebase/functions';
 import { auth, db, functions } from './firebase';
 import { COLLECTIONS } from '../config/constants';
 
@@ -50,6 +51,60 @@ export async function signInAsAdmin(email, password) {
     return signInWithEmailAndPassword(auth, email, password);
 }
 
+/**
+ * Register a new user with email/password (Admin registration flow).
+ * @param {string} email
+ * @param {string} password
+ * @returns {Promise<import('firebase/auth').UserCredential>}
+ */
+export async function registerWithEmail(email, password) {
+    return createUserWithEmailAndPassword(auth, email, password);
+}
+
+/**
+ * Call the setupRelationship Cloud Function after admin registration.
+ * Generates relationshipId, partnerToken, creates placeholder partner + appConfig.
+ * @param {string} adminUid
+ * @returns {Promise<{ success: boolean, relationshipId: string, partnerToken: string }>}
+ */
+export async function callSetupRelationship(adminUid) {
+    const fn = httpsCallable(functions, 'setupRelationship');
+    const result = await fn({ adminUid });
+    return result.data;
+}
+
+/**
+ * Validate an invite token against appConfig/main.partnerToken.
+ * Public — no auth required.
+ * @param {string} token
+ * @returns {Promise<{ valid: boolean, relationshipId: string }>}
+ */
+export async function callValidateInviteToken(token) {
+    console.log('[AuthService] Validating token:', token);
+    try {
+        const fn = httpsCallable(functions, 'validateInviteToken');
+        const result = await fn({ token });
+        console.log('[AuthService] Validation success:', result.data);
+        return result.data;
+    } catch (error) {
+        console.error('[AuthService] Validation failed:', error);
+        throw error;
+    }
+}
+
+/**
+ * Claim a partner account using an invite token + chosen password.
+ * Backend sets password, activates accountStatus, injects claims, returns customToken.
+ * @param {string} token - The invite/partner token
+ * @param {string} password - Password the partner wants to set
+ * @returns {Promise<{ success: boolean, customToken: string, userId: string }>}
+ */
+export async function callClaimPartnerAccount(token, password) {
+    const fn = httpsCallable(functions, 'claimPartnerAccount');
+    const result = await fn({ token, password });
+    return result.data;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Partner Auth (Custom Token flow)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -90,6 +145,7 @@ export async function getCurrentUserClaims(forceRefresh = false) {
     return {
         role: tokenResult.claims.role ?? null,
         deviceId: tokenResult.claims.deviceId ?? null,
+        relationshipId: tokenResult.claims.relationshipId ?? null,
     };
 }
 

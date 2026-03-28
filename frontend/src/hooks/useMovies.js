@@ -88,7 +88,7 @@ export function useMovies() {
                     setIsLoading(false);
                     setError(null);
                 }, (err) => {
-                    console.error('[useMovies] Error:', err);
+                    // silent fail
                     setError(err.message);
                     setIsLoading(false);
                 });
@@ -126,8 +126,7 @@ export function useMovies() {
                 throw new Error(response.error || 'Error al guardar');
             }
         } catch (err) {
-            console.error('[useMovies] addMovie error:', err);
-            toast.error('Error', err.message);
+            // silent fail
             return { success: false, error: err.message };
         }
     }, []);

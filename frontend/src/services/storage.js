@@ -15,13 +15,14 @@ import { storage } from './firebase';
  * Upload a file with progress tracking
  * @param {File} file
  * @param {string} path - Storage path (e.g., 'photos/memoryId/filename.jpg')
+ * @param {object} metadata - Custom metadata (e.g., { isMain: 'true' })
  * @param {Function} onProgress - Callback with progress percentage (0-100)
  * @returns {Promise<string>} Download URL
  */
-export function uploadFile(file, path, onProgress = null) {
+export function uploadFile(file, path, metadata = {}, onProgress = null) {
     return new Promise((resolve, reject) => {
         const storageRef = ref(storage, path);
-        const uploadTask = uploadBytesResumable(storageRef, file);
+        const uploadTask = uploadBytesResumable(storageRef, file, { customMetadata: metadata });
 
         uploadTask.on(
             'state_changed',
@@ -110,7 +111,7 @@ export async function compressImage(file, maxWidth = 1200, quality = 0.8) {
         });
     } catch (err) {
         // Fallback for older browsers or broken blobs
-        console.warn('[compressImage] ImageBitmap failed, using legacy:', err);
+        // ImageBitmap failed, using legacy
         return new Promise((resolve) => {
             const img = new Image();
             img.onload = () => {

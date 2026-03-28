@@ -29,6 +29,9 @@ export function usePlaces() {
         listeners.add(updateState);
 
         if (!globalUnsubscribe) {
+            const rid = localStorage.getItem('capsule_relationship_id'); 
+            if (!rid) return;
+
             try {
                 globalUnsubscribe = subscribeToCollection(
                     COLLECTIONS.PLACES,
@@ -37,8 +40,6 @@ export function usePlaces() {
                         globalPlacesCache = newPlaces;
                         globalLoading = false;
                         
-                        // Lógica de caché de thumbnails (silenciosa)
-                        // Cacheamos solo los 50 lugares más visitados para no saturar storage
                         const popularPlaces = [...newPlaces]
                             .sort((a, b) => (b.visitCount || 0) - (a.visitCount || 0))
                             .slice(0, 50);
@@ -51,7 +52,7 @@ export function usePlaces() {
 
                         listeners.forEach(l => l());
                     },
-                    [],
+                    [['visitedByRelationshipIds', 'array-contains', rid]],
                     200
                 );
             } catch (err) {

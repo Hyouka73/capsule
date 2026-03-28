@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import { doc, deleteDoc } from 'firebase/firestore';
-import { db } from '../../services/firebase';
 import { COLLECTIONS } from '../../config/constants';
-import { getCapsules, openCapsule } from '../../apiClient';
+import { getCapsules, openCapsule, deleteCapsule } from '../../apiClient';
 import CapsuleForm from './CapsuleForm';
 import Button from '../../components/ui/Button/Button';
 import Card from '../../components/ui/Card/Card';
@@ -38,8 +36,7 @@ export default function CapsuleManager() {
             const result = await getCapsules();
             setCapsules(result.docs || []);
         } catch (err) {
-            console.error('Error loading capsules:', err);
-            toast.error('Error al cargar cápsulas');
+            // Silently fail in prod
         } finally {
             setIsLoading(false);
         }
@@ -60,7 +57,7 @@ export default function CapsuleManager() {
             emoji: '🗑️',
             onConfirm: async () => {
                 try {
-                    await deleteDoc(doc(db, COLLECTIONS.CAPSULES, id));
+                    await deleteCapsule({ capsuleId: id });
                     toast.success('Cápsula eliminada 🗑️');
                     setCapsules(prev => prev.filter(c => c.id !== id));
                     setConfirmState(p => ({ ...p, isOpen: false }));
@@ -88,7 +85,7 @@ export default function CapsuleManager() {
                     loadCapsules();
                     setConfirmState(p => ({ ...p, isOpen: false }));
                 } catch (err) {
-                    console.error('Unlock error:', err);
+                    // silent fail
                 }
             }
         });

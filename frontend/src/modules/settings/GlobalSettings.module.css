@@ -188,10 +188,28 @@
     flex: 1;
 }
 
+.toggleTitleWrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
 .toggleLabel {
     font-weight: 700;
     font-size: 1.05rem;
     color: var(--text-primary);
+}
+
+.moduleDisabledBadge {
+    background: #fff0f3;
+    color: #ff9fb4;
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 9999px;
+    border: 1px solid #ffdae3;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
 }
 
 .toggleDesc {

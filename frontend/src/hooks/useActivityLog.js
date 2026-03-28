@@ -5,44 +5,58 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { 
-    collection, 
-    onSnapshot, 
-    query, 
-    orderBy, 
-    doc, 
-    updateDoc, 
-    writeBatch
-} from 'firebase/firestore';
-import { db } from '../services/firebase';
-import { COLLECTIONS } from '../config/constants';
+import { getActivityLogs, markLogAsRead as apiMarkLogAsRead } from '../apiClient';
+import { useAuth } from './useAuth';
 
 export function useActivityLog() {
+    const { relationshipId } = useAuth();
     const [logs, setLogs] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isFetchingMore, setIsFetchingMore] = useState(false);
     const [error, setError] = useState(null);
+    const [hasMore, setHasMore] = useState(false);
+    const [lastId, setLastId] = useState(null);
+
+    const fetchLogs = useCallback(async (isLoadMore = false) => {
+        if (!relationshipId) return;
+
+        if (isLoadMore) {
+            setIsFetchingMore(true);
+        } else {
+            setIsLoading(true);
+        }
+
+        try {
+            const result = await getActivityLogs({
+                limit: 50,
+                startAfterLogId: isLoadMore ? lastId : null
+            });
+
+            if (result.success) {
+                if (isLoadMore) {
+                    setLogs(prev => [...prev, ...result.logs]);
+                } else {
+                    setLogs(result.logs);
+                }
+                setHasMore(result.hasMore);
+                setLastId(result.lastId);
+                setError(null);
+            } else {
+                setError(result.error || 'Failed to fetch logs');
+            }
+        } catch (err) {
+            // silent fail
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+            setIsFetchingMore(false);
+        }
+    }, [relationshipId, lastId]);
 
     useEffect(() => {
-        const logRef = collection(db, COLLECTIONS.ACTIVITY_LOG);
-        const q = query(logRef, orderBy('createdAt', 'desc'));
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const list = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                createdAt: doc.data().createdAt?.toDate() || new Date()
-            }));
-            setLogs(list);
-            setIsLoading(false);
-            setError(null);
-        }, (err) => {
-            console.error('[useActivityLog] Error:', err);
-            setError(err.message);
-            setIsLoading(false);
-        });
-
-        return unsubscribe;
-    }, []);
+        fetchLogs();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [relationshipId]);
 
     const unreadCount = useMemo(() => {
         return logs.filter(log => !log.isReadByAdmin).length;
@@ -50,35 +64,41 @@ export function useActivityLog() {
 
     const markAsRead = useCallback(async (logId) => {
         try {
-            const ref = doc(db, COLLECTIONS.ACTIVITY_LOG, logId);
-            await updateDoc(ref, { isReadByAdmin: true });
+            const result = await apiMarkLogAsRead({ logId, markAll: false });
+            if (result.success) {
+                setLogs(prev => prev.map(log => 
+                    log.id === logId ? { ...log, isReadByAdmin: true, readAt: new Date().toISOString() } : log
+                ));
+            }
         } catch (err) {
-            console.error('[useActivityLog] Error marking as read:', err);
+            // silent fail
         }
     }, []);
 
     const markAllAsRead = useCallback(async () => {
-        const unreadLogs = logs.filter(l => !l.isReadByAdmin);
-        if (unreadLogs.length === 0) return;
-
-        const batch = writeBatch(db);
-        unreadLogs.forEach(log => {
-            const ref = doc(db, COLLECTIONS.ACTIVITY_LOG, log.id);
-            batch.update(ref, { isReadByAdmin: true });
-        });
-
         try {
-            await batch.commit();
+            const result = await apiMarkLogAsRead({ markAll: true });
+            if (result.success) {
+                setLogs(prev => prev.map(log => ({ 
+                    ...log, 
+                    isReadByAdmin: true, 
+                    readAt: new Date().toISOString() 
+                })));
+            }
         } catch (err) {
-            console.error('[useActivityLog] Error marking all as read:', err);
+            // silent fail
         }
-    }, [logs]);
+    }, []);
 
     return {
         logs,
         unreadCount,
         isLoading,
+        isFetchingMore,
+        hasMore,
         error,
+        fetchLogs,
+        loadMore: () => fetchLogs(true),
         markAsRead,
         markAllAsRead
     };

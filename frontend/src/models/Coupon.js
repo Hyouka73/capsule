@@ -13,11 +13,12 @@ export default class Coupon {
         this.usedAt = data.usedAt || null;
         this.usedNotes = data.usedNotes || '';
         this.tier = data.tier || 1;
-        this.status = data.status || 'activo'; // 'activo' | 'inactivo' | 'cobrado'
+        this.status = data.status || 'active'; // 'active' | 'redeemed' | 'expired'
         this.source = data.source || 'admin_direct'; // 'admin_direct' | 'slot_machine'
         this.maxRedemptions = data.maxRedemptions || 1;
         this.redemptionsLeft = data.redemptionsLeft !== undefined ? data.redemptionsLeft : (data.maxRedemptions || 1);
         this.isActive = data.isActive !== undefined ? data.isActive : true;
+        this.relationshipId = data.relationshipId || null;
         this.createdAt = data.createdAt || new Date().toISOString();
         this.updatedAt = data.updatedAt || null;
     }
@@ -42,6 +43,7 @@ export default class Coupon {
             maxRedemptions: this.maxRedemptions,
             redemptionsLeft: this.redemptionsLeft,
             isActive: this.isActive,
+            relationshipId: this.relationshipId,
             createdAt: this.createdAt,
             updatedAt: this.updatedAt
         };

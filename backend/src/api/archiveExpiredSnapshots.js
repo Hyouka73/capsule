@@ -1,12 +1,7 @@
-/**
- * archiveExpiredSnapshots — Scheduled Cloud Function (every 6 hours)
- *
- * Queries snapshots where expiresAt <= now and isArchived != true,
- * then marks them as archived so they appear in the gallery.
- */
-
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { logger } from 'firebase-functions';
+import { COLLECTIONS } from '../config/constants.js';
 
 export const archiveExpiredSnapshots = onSchedule({
     schedule: 'every 6 hours',
@@ -17,20 +12,20 @@ export const archiveExpiredSnapshots = onSchedule({
     const db = getFirestore();
     const now = Timestamp.now();
 
-    // Query snapshots that have expired but are not yet archived
-    const snapshot = await db.collection('instantaneas')
+    // Query snapshots that have expired but are not yet archived across ALL relationships
+    const snapshotsSnap = await db.collectionGroup(COLLECTIONS.INSTANTANEAS)
         .where('expiresAt', '<=', now)
         .where('isArchived', '==', false)
         .get();
 
-    if (snapshot.empty) {
-        console.log('[archiveExpiredSnapshots] No expired snapshots to archive.');
+    if (snapshotsSnap.empty) {
+        logger.info('[archiveExpiredSnapshots] No expired snapshots to archive.');
         return;
     }
 
-    // Batch update (max 500 per batch — should be well within limits)
+    // Batch update
     const batch = db.batch();
-    snapshot.docs.forEach(doc => {
+    snapshotsSnap.docs.forEach(doc => {
         batch.update(doc.ref, {
             isArchived: true,
             archivedAt: now,
@@ -38,5 +33,5 @@ export const archiveExpiredSnapshots = onSchedule({
     });
 
     await batch.commit();
-    console.log(`[archiveExpiredSnapshots] Archived ${snapshot.size} snapshots.`);
+    logger.info(`[archiveExpiredSnapshots] Archived ${snapshotsSnap.size} snapshots.`);
 });

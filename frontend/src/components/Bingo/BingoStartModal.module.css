@@ -133,6 +133,26 @@
     color: #8b4a61;
 }
 
+.suggestedPlaceBox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: #ffffff;
+    border: 2px dashed #ffadc7;
+    padding: 0.75rem 1rem;
+    border-radius: 1.25rem;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.9rem;
+    color: #4a3232;
+    margin-top: 0.5rem;
+}
+
+.placeLabel {
+    font-weight: 700;
+    color: #8b4a61;
+}
+
 .tagsContainer {
     display: flex;
     flex-wrap: wrap;

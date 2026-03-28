@@ -10,6 +10,7 @@
 
 import { onTaskDispatched } from 'firebase-functions/v2/tasks';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { logger } from 'firebase-functions';
 import { COLLECTIONS } from '../config/constants.js';
 
 export const taskArchiveSnapshot = onTaskDispatched(
@@ -23,24 +24,28 @@ export const taskArchiveSnapshot = onTaskDispatched(
         },
     },
     async (request) => {
-        const { snapshotId } = request.data;
-        if (!snapshotId) {
-            console.error('[taskArchiveSnapshot] No snapshotId in payload, skipping.');
+        const { snapshotId, relationshipId } = request.data;
+        if (!snapshotId || !relationshipId) {
+            logger.error('[taskArchiveSnapshot] Missing snapshotId or relationshipId in payload, skipping.');
             return;
         }
 
         const db = getFirestore();
-        const snapshotRef = db.collection(COLLECTIONS.INSTANTANEAS).doc(snapshotId);
+        // Subcollection path: relationships/{id}/snapshots/{snapshotId}
+        const snapshotRef = db.collection('relationships')
+            .doc(relationshipId)
+            .collection(COLLECTIONS.INSTANTANEAS)
+            .doc(snapshotId);
 
         const snap = await snapshotRef.get();
         if (!snap.exists) {
-            console.log(`[taskArchiveSnapshot] Snapshot ${snapshotId} not found (may have been deleted). OK.`);
+            logger.info(`[taskArchiveSnapshot] Snapshot ${snapshotId} not found in ${relationshipId}. OK.`);
             return;
         }
 
         const data = snap.data();
         if (data.isArchived) {
-            console.log(`[taskArchiveSnapshot] Snapshot ${snapshotId} already archived. OK.`);
+            logger.info(`[taskArchiveSnapshot] Snapshot ${snapshotId} already archived. OK.`);
             return;
         }
 
@@ -49,6 +54,6 @@ export const taskArchiveSnapshot = onTaskDispatched(
             archivedAt: Timestamp.now(),
         });
 
-        console.log(`[taskArchiveSnapshot] Snapshot ${snapshotId} archived successfully.`);
+        logger.info(`[taskArchiveSnapshot] Snapshot ${snapshotId} in relationship ${relationshipId} archived successfully.`);
     }
 );

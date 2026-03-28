@@ -77,7 +77,7 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
             <BingoProgress 
                 progressPercent={progressPercent} 
                 completedCount={completedCount} 
-                totalCount={categories.length || 20} 
+                totalCount={categories.length || 16} 
             />
 
             <BingoBoardGrid 
