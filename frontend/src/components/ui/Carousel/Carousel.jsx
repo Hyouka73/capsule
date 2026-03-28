@@ -95,13 +95,22 @@ export default function Carousel({
                     {currentIndex + 1} / {items.length}
                 </div>
                 <div className={styles.indicators}>
-                    {items.length > 1 && items.map((_, idx) => (
-                        <div 
-                            key={idx} 
-                            className={`${styles.dot} ${idx === currentIndex ? styles.dotActive : ''}`}
-                            onClick={() => setCurrentIndex(idx)}
-                        />
-                    ))}
+                    {items.length > 10 ? (
+                        <div className={styles.progressContainer}>
+                            <div 
+                                className={styles.progressFill} 
+                                style={{ width: `${((currentIndex + 1) / items.length) * 100}%` }}
+                            />
+                        </div>
+                    ) : (
+                        items.length > 1 && items.map((_, idx) => (
+                            <div 
+                                key={idx} 
+                                className={`${styles.dot} ${idx === currentIndex ? styles.dotActive : ''}`}
+                                onClick={() => setCurrentIndex(idx)}
+                            />
+                        ))
+                    )}
                 </div>
             </div>
         </div>

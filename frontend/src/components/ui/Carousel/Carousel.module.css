@@ -112,7 +112,25 @@
 
 .indicators {
     display: flex;
-    gap: 8px;
+    justify-content: center;
+    width: 100%;
+    min-height: 10px;
+}
+
+.progressContainer {
+    width: 120px;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 99px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progressFill {
+    height: 100%;
+    background: #fff;
+    border-radius: 99px;
+    transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dot {
