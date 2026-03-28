@@ -33,6 +33,7 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, onAutoSa
         return new Date().toISOString().split('T')[0];
     });
     const [selectedTags, setSelectedTags] = useState(pendingDate?.tags || pendingDate?.suggestedTags || pendingDate?.context?.tags || []);
+    const [isSpecial, setIsSpecial] = useState(pendingDate?.isSpecial || false);
     const [comments, setComments] = useState(pendingDate?.description || pendingDate?.comments || pendingDate?.context?.description || '');
     const [locationError, setLocationError] = useState(false);
     const [showCarousel, setShowCarousel] = useState(false);
@@ -43,7 +44,7 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, onAutoSa
         
         const timer = setTimeout(() => {
             // Only save if something looks "touched" or already exists
-            const hasData = title || selectedTags.length > 0 || comments || selectedPlaceId;
+            const hasData = title || selectedTags.length > 0 || comments || selectedPlaceId || isSpecial;
             if (hasData) {
                 onAutoSave({
                     id: pendingDate.id,
@@ -53,13 +54,14 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, onAutoSa
                     comments,
                     placeId: selectedPlaceId,
                     placeName: selectedPlaceId === 'custom_map' ? customPlaceName : null,
-                    customLocation
+                    customLocation,
+                    isSpecial
                 });
             }
         }, 800);
 
         return () => clearTimeout(timer);
-    }, [title, eventDate, selectedTags, comments, selectedPlaceId, customLocation, customPlaceName, onAutoSave, pendingDate.id]);
+    }, [title, eventDate, selectedTags, comments, selectedPlaceId, customLocation, customPlaceName, isSpecial, onAutoSave, pendingDate.id]);
 
     // Auto-resolve place name if coordinates exist but name doesn't
     useEffect(() => {
@@ -96,7 +98,8 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, onAutoSa
             placeName: selectedPlaceId === 'custom_map' ? customPlaceName : null,
             customLocation: customLocation,
             tags: selectedTags,
-            comments: comments
+            comments: comments,
+            isSpecial
         });
     };
 
@@ -234,6 +237,26 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, onAutoSa
                                     </button>
                                 ));
                             })()}
+                        </div>
+                    </div>
+
+                    <div className={styles.formGroup}>
+                        <div className={styles.specialToggleContainer}>
+                            <div className={styles.specialToggleInfo}>
+                                <span className={styles.specialToggleIcon}>⭐</span>
+                                <div className={styles.specialToggleText}>
+                                    <span className={styles.specialToggleTitle}>Momento Especial</span>
+                                    <span className={styles.specialToggleSubtitle}>Destaca este recuerdo en su historia</span>
+                                </div>
+                            </div>
+                            <label className={styles.switch}>
+                                <input 
+                                    type="checkbox" 
+                                    checked={isSpecial} 
+                                    onChange={(e) => setIsSpecial(e.target.checked)} 
+                                />
+                                <span className={styles.slider}></span>
+                            </label>
                         </div>
                     </div>
 

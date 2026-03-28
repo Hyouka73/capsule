@@ -5,6 +5,7 @@ import Button from '../../components/ui/Button/Button';
 import Card from '../../components/ui/Card/Card';
 import PageHeader from '../../components/ui/PageHeader/PageHeader';
 import EmptyState from '../../components/ui/EmptyState/EmptyState';
+import { usePlaces } from '../map/hooks/usePlaces';
 import styles from './MemoryManager.module.css';
 
 export default function MemoryManager() {
@@ -94,6 +95,32 @@ export default function MemoryManager() {
         }
     }
 
+    const { places } = usePlaces();
+
+    if (showForm) {
+        return (
+            <div className={styles.editorView}>
+                <PageHeader
+                    title={editingMemory ? '✍️ Editar recuerdo' : '✨ Nuevo recuerdo'}
+                    subtitle={editingMemory ? 'Refina los detalles de este momento.' : 'Añade momentos mágicos a su historia.'}
+                    actionLabel="Volver al listado"
+                    actionIcon="⬅️"
+                    onAction={() => { setShowForm(false); setEditingMemory(null); }}
+                />
+
+                <Card className={styles.editorCard} glass>
+                    <MemoryForm
+                        initialData={editingMemory}
+                        onSuccess={handleCreated}
+                        onCancel={() => { setShowForm(false); setEditingMemory(null); }}
+                        role="admin"
+                        defaultPlaces={places}
+                    />
+                </Card>
+            </div>
+        );
+    }
+
     return (
         <div className={styles.root}>
             <PageHeader
@@ -105,7 +132,7 @@ export default function MemoryManager() {
             />
 
             {/* ── Toolbar ── */}
-            {!isLoading && memories.length > 0 && !showForm && (
+            {!isLoading && memories.length > 0 && (
                 <div className={styles.toolbar}>
                     <div className={styles.searchBox}>
                         <span className={styles.searchIcon}>🔍</span>
@@ -140,22 +167,6 @@ export default function MemoryManager() {
                         </select>
                     </div>
                 </div>
-            )}
-
-            {/* ── Form panel ── */}
-            {showForm && (
-                <Card className={styles.formPanel} glass>
-                    <div className={styles.formPanelHeader}>
-                        <h2>{editingMemory ? '✍️ Editar recuerdo' : '✨ Nuevo recuerdo'}</h2>
-                        <button onClick={() => setShowForm(false)} className={styles.closeBtn} title="Cerrar">✕</button>
-                    </div>
-                    <MemoryForm
-                        initialData={editingMemory}
-                        onSuccess={handleCreated}
-                        onCancel={() => setShowForm(false)}
-                        role="admin"
-                    />
-                </Card>
             )}
 
             {/* ── Memory grid ── */}
@@ -204,24 +215,36 @@ function MemoryCard({ memory, onEdit, onToggleVisibility, onDelete }) {
         day: 'numeric', month: 'short', year: 'numeric',
     }) : '—';
 
+    let photos = memory.photos || [];
+    if (memory.mainPhotoUrl && !photos.includes(memory.mainPhotoUrl)) {
+        photos = [memory.mainPhotoUrl, ...photos];
+    }
+
     return (
         <Card className={`${styles.card} ${memory.isHidden ? styles.cardHidden : ''}`}>
-            {/* Image Header */}
+            {/* Image Gallery Header */}
             <div className={styles.cardHeader}>
-                {memory.mainPhotoUrl ? (
-                    <img
-                        src={memory.mainPhotoUrl}
-                        alt={memory.title ?? 'Recuerdo'}
-                        className={styles.cardPhoto}
-                    />
+                {photos.length > 0 ? (
+                    <div className={styles.photoGallery}>
+                        {photos.map((photo, idx) => (
+                            <img
+                                key={`${memory.id}-photo-${idx}`}
+                                src={photo}
+                                alt={`${memory.title ?? 'Recuerdo'} ${idx + 1}`}
+                                className={styles.cardPhoto}
+                                loading="lazy"
+                            />
+                        ))}
+                    </div>
                 ) : (
                     <div className={styles.cardPhotoEmpty}>📷</div>
                 )}
 
                 {/* Status Badges */}
                 <div className={styles.badges}>
+                    {memory.isSpecial && <span className={styles.badgeSpecial}>⭐ Especial</span>}
                     {memory.isHidden && <span className={styles.badgeHidden}>🙈 Oculto</span>}
-                    <span className={styles.badgePhotos}>📸 {memory.photoCount ?? 0}</span>
+                    <span className={styles.badgePhotos}>📸 {photos.length}</span>
                 </div>
 
                 {/* Cover Actions Overlay */}

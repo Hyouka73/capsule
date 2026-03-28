@@ -8,7 +8,7 @@ import styles from './PlacePickerBottomSheet.module.css';
 export default function PlacePickerBottomSheet({
     isOpen,
     onClose,
-    places,
+    places = [],
     onSelectPlace,
     onLocationSelected, // Gets raw coordinates/data from map
     initialCoordinates // from pendingDate if any
@@ -39,6 +39,22 @@ export default function PlacePickerBottomSheet({
         onClose();
     };
 
+    const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : true;
+    
+    // Choose animation variants based on screen size
+    const variants = {
+        mobile: {
+            initial: { y: '100%', opacity: 1, scale: 1 },
+            animate: { y: isOpen ? 0 : '100%', opacity: 1, scale: 1 }
+        },
+        desktop: {
+            initial: { y: 20, opacity: 0, scale: 0.95 },
+            animate: { y: isOpen ? 0 : 20, opacity: isOpen ? 1 : 0, scale: isOpen ? 1 : 0.95 }
+        }
+    };
+
+    const currentVariant = isMobile ? variants.mobile : variants.desktop;
+
     return (
         <motion.div
             className={styles.overlay}
@@ -52,9 +68,9 @@ export default function PlacePickerBottomSheet({
         >
             <motion.div
                 className={styles.bottomSheet}
-                initial={false}
-                animate={{ y: isOpen ? 0 : '100%' }}
-                transition={{ type: 'spring', damping: 25, stiffness: 250 }}
+                initial={currentVariant.initial}
+                animate={currentVariant.animate}
+                transition={{ type: 'spring', damping: 25, stiffness: 280 }}
                 onClick={e => e.stopPropagation()}
             >
                 <div style={{ position: 'relative', width: '100%', height: '100%' }}>

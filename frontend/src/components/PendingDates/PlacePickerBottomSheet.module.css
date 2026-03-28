@@ -230,3 +230,48 @@
     background: var(--text-muted) !important;
     box-shadow: none;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DESKTOP OPTIMIZATIONS
+   ────────────────────────────────────────────────────────────────────────── */
+
+@media (min-width: 768px) {
+    .overlay {
+        align-items: center;
+        backdrop-filter: blur(8px);
+    }
+
+    .bottomSheet {
+        width: 90%;
+        max-width: 500px;
+        height: auto;
+        min-height: 400px;
+        max-height: 85vh;
+        border-radius: var(--radius-xl);
+        border-bottom: 2px solid var(--pastel-rose-light);
+        padding: 2rem;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+    }
+
+    .handle {
+        display: none;
+    }
+
+    .header h3 {
+        font-size: 1.8rem;
+    }
+
+    .searchSection {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .mapBtn {
+        width: auto;
+        white-space: nowrap;
+    }
+
+    .footer {
+        padding-top: 1.5rem;
+    }
+}

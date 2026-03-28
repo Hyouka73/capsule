@@ -86,56 +86,24 @@
     color: var(--text-primary);
 }
 
-/* ── Form Panel ── */
-.formPanel {
-    margin-bottom: 1rem;
-    padding: 2rem;
-    animation: slideDown 0.3s ease-out;
-}
-
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.formPanelHeader {
+/* ── Editor View ── */
+.editorView {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 2rem;
-    border-bottom: 3px dashed var(--pastel-rose-light);
-    padding-bottom: 1rem;
+    flex-direction: column;
+    gap: 2rem;
+    animation: fadeIn 0.3s ease-out;
 }
 
-.formPanelHeader h2 {
-    margin: 0;
-    font-size: 1.5rem;
-    font-family: var(--font-display);
-    color: var(--accent-primary);
+.editorCard {
+    padding: 2.5rem !important;
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
 }
 
-.closeBtn {
-    background: transparent;
-    border: none;
-    font-size: 1.25rem;
-    color: var(--text-muted);
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 50%;
-    transition: background 0.2s;
-    line-height: 1;
-}
-
-.closeBtn:hover {
-    background: var(--clay-bg-rose);
-    color: var(--color-error);
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* ── Grid & Cards ── */
@@ -176,17 +144,30 @@
     overflow: hidden;
 }
 
+.photoGallery {
+    display: flex;
+    overflow-x: auto;
+    width: 100%;
+    height: 100%;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE/Edge */
+}
+
+.photoGallery::-webkit-scrollbar {
+    display: none;
+    /* Hide scrollbar for Chrome/Safari */
+}
+
 .cardPhoto {
+    flex: 0 0 100%;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    display: block;
+    scroll-snap-align: start;
     transition: transform 0.5s ease;
-}
-
-.card:hover .cardPhoto {
-    transform: scale(1.05);
-    /* Slight zoom on hover */
 }
 
 .cardPhotoEmpty {
@@ -219,6 +200,13 @@
     color: var(--pastel-text);
     box-shadow: var(--clay-shadow-sm);
     border: 2px solid var(--pastel-rose-light);
+}
+
+.badgeSpecial {
+    background: rgba(255, 215, 0, 0.9);
+    color: #5d4e00;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
 }
 
 .badgeHidden {
