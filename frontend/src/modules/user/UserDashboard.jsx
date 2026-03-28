@@ -279,6 +279,7 @@ export default function UserDashboard() {
                             setIsSnapshotOpen(true);
                         }}
                         onOpenCamera={() => setIsCameraOpen(true)}
+                        onOpenHistory={() => setIsHistoryOpen(true)}
                         citaContext={citaContext}
                         onCitaContextChange={setCitaContext}
                         onOpenPending={() => setIsPendingListOpen(true)}
@@ -345,9 +346,17 @@ export default function UserDashboard() {
                     <SnapshotOverlay
                         key="snapshot-overlay"
                         snapshots={activeSnapshots}
-                        onClose={() => {
+                        onClose={(shouldReply, isEarly) => {
+                            if (isEarly) {
+                                // Tulip phase: Pre-mount the camera behind the overlay
+                                if (shouldReply) setIsCameraOpen(true);
+                                return;
+                            }
+                            
+                            // Close overlay phase: Camera is already there!
                             setIsSnapshotOpen(false);
                             setActiveSnapshots([]);
+                            // We don't need to call setIsCameraOpen here anymore because isEarly handled it
                         }}
                     />
                 )}
@@ -356,10 +365,9 @@ export default function UserDashboard() {
             {isCameraOpen && (
                 <SnapshotCreator 
                     onClose={() => setIsCameraOpen(false)} 
-                    onOpenOwnSnapshots={(ownSnaps) => {
-                        setActiveSnapshots(ownSnaps);
+                    onOpenHistory={() => {
                         setIsHistoryOpen(true);
-                        setIsCameraOpen(false);
+                        // No cerramos cámara para que el partner regrese a ella
                     }}
                 />
             )}
@@ -367,11 +375,9 @@ export default function UserDashboard() {
             <AnimatePresence>
                 {isHistoryOpen && (
                     <SnapshotHistory 
-                        snapshots={activeSnapshots}
                         onClose={() => {
                             setIsHistoryOpen(false);
-                            setActiveSnapshots([]);
-                            setIsCameraOpen(true); // Return to camera section
+                            setIsCameraOpen(true); // Retorno explícito a la cámara
                         }}
                     />
                 )}

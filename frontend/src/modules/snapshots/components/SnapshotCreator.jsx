@@ -1,24 +1,16 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    collection, 
-    query, 
-    where, 
-    onSnapshot, 
-    orderBy, 
-    limit, 
-    Timestamp 
-} from 'firebase/firestore';
-import { db } from '../../../services/firebase';
 import { useAuth } from '../../../hooks/useAuth';
 import { useOfflineQueue } from '../../../hooks/useOfflineQueue';
+import { compressImage } from '../../../services/storage';
 import { logToVercel } from '../../../utils/vercelLogger';
 import CameraPermissionGate from '../../../components/ui/CameraPermissionGate/CameraPermissionGate';
 import styles from './SnapshotCreator.module.css';
 
-const TWENTY_FOUR_H_MS = 24 * 60 * 60 * 1000;
+// SQUIRCLE PATH — NO MODIFICAR
+const squirclePath = "M0.5,0 C0.42,0 0,0.42 0,0.5 C0,0.58 0.42,1 0.5,1 C0.58,1 1,0.58 1,0.5 C1,0.42 0.58,0 0.5,0 Z";
 
-export default function SnapshotCreator({ onClose, onOpenOwnSnapshots }) {
+export default function SnapshotCreator({ onClose, onOpenHistory }) {
     const { user } = useAuth();
     const [isCameraLoading, setIsCameraLoading] = useState(true);
     const streamRef = useRef(null);
@@ -27,36 +19,15 @@ export default function SnapshotCreator({ onClose, onOpenOwnSnapshots }) {
     const [isMessageOpen, setIsMessageOpen] = useState(false);
     const [isSending, setIsSending] = useState(false);
 
-    // Thumbs for the "land" animation (local state)
-    const [sentThumbs, setSentThumbs] = useState([]);
-    
-    // Remote "own" snapshots (actually in DB)
-    const [ownUnseenSnapshots, setOwnUnseenSnapshots] = useState([]);
-
     const [flyThumb, setFlyThumb] = useState(null);
     const [isFlying, setIsFlying] = useState(false);
+    const [showFlash, setShowFlash] = useState(false);
 
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const shutterRef = useRef(null);
-    const clockRef = useRef(null);
 
-    const { queueSnapshot, getPendingSnapshots } = useOfflineQueue();
-    const [localPending, setLocalPending] = useState([]);
-
-    const refreshLocalHistory = useCallback(async () => {
-        const pending = await getPendingSnapshots();
-        setLocalPending(pending || []);
-    }, [getPendingSnapshots]);
-
-    useEffect(() => {
-        refreshLocalHistory();
-    }, [refreshLocalHistory]);
-
-    // Removed Firestore listener for "own" snapshots to comply with "Eliminar Firestore directo"
-    // and simplified UI requirements.
-    
-    /* ─── Camera lifecycle ─── */
+    const { queueSnapshot } = useOfflineQueue();
 
     /* ─── Camera lifecycle ─── */
     const stopCamera = useCallback(() => {
@@ -65,24 +36,17 @@ export default function SnapshotCreator({ onClose, onOpenOwnSnapshots }) {
             tracks.forEach(t => t.stop());
             videoRef.current.srcObject = null;
         }
-        if (streamRef.current) {
-            const tracks = streamRef.current.getTracks();
-            tracks.forEach(t => t.stop());
-            streamRef.current = null;
-        }
     }, []);
 
     const startCamera = useCallback(async (mode) => {
         setIsCameraLoading(true);
-        
-        // Stop any existing stream first
         stopCamera();
 
         try {
             const constraints = {
                 video: { 
                     facingMode: mode,
-                    width: { ideal: 720 },
+                    width: { ideal: 1024 },
                     aspectRatio: 1
                 },
                 audio: false,
@@ -93,40 +57,26 @@ export default function SnapshotCreator({ onClose, onOpenOwnSnapshots }) {
             
             if (videoRef.current) {
                 videoRef.current.srcObject = mediaStream;
-                videoRef.current.onloadedmetadata = () => {
+                // Use onPlaying as it's more reliable for immediate capture
+                videoRef.current.onplaying = () => {
                     setIsCameraLoading(false);
                 };
             }
-            logToVercel('SnapshotCreator', 'CAMERA_STARTED', mode);
         } catch (err) {
-            // Camera fallback...
-            try {
-                const fallbackStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: mode },
-                    audio: false
-                });
-                streamRef.current = fallbackStream;
-                if (videoRef.current) {
-                    videoRef.current.srcObject = fallbackStream;
-                    setIsCameraLoading(false);
-                }
-            } catch (fallbackErr) {
-                logToVercel('SnapshotCreator', 'CAMERA_ERROR', fallbackErr.message);
-                setIsCameraLoading(false);
-            }
+            logToVercel('SnapshotCreator', 'CAMERA_ERROR', err.message);
+            setIsCameraLoading(false);
         }
-    }, []);
+    }, [stopCamera]);
 
     useEffect(() => {
         startCamera(facingMode);
-        return () => {
-            stopCamera();
-        };
+        return () => stopCamera();
     }, [facingMode, startCamera, stopCamera]);
 
-    /* ─── Capture + instant send ─── */
+    /* ─── Capture ─── */
     const handleCapture = async () => {
-        if (!videoRef.current || !canvasRef.current || isSending) return;
+        if (!videoRef.current || !canvasRef.current || isSending || isCameraLoading) return;
+        if (videoRef.current.videoWidth === 0) return;
 
         const video = videoRef.current;
         const canvas = canvasRef.current;
@@ -136,83 +86,99 @@ export default function SnapshotCreator({ onClose, onOpenOwnSnapshots }) {
         canvas.height = video.videoHeight;
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        canvas.toBlob(async (blob) => {
-            if (!blob) return;
+        const id = `snap_${Date.now()}`;
+        
+        try {
+            // Convertimos canvas a blob antes de comprimir (compressImage requiere un Blob/File)
+            const rawBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.95));
+            if (!rawBlob) throw new Error('No se pudo generar el Blob del canvas');
+            
+            // Quality-First Optimization: WebP, 1080px, Floor 0.5
+            const optimizedBlob = await compressImage(rawBlob, {
+                maxWidth: 1080,
+                initialQuality: 0.8,
+                mimeType: 'image/webp',
+                maxWeightKb: 500,
+                minQuality: 0.5
+            });
 
-            const thumbUrl = URL.createObjectURL(blob);
-            const file = new File([blob], `snapshot_${Date.now()}.jpg`, { type: 'image/jpeg' });
+            const thumbUrl = URL.createObjectURL(optimizedBlob);
+            const file = new File([optimizedBlob], `${id}.webp`, { type: 'image/webp' });
 
             setFlyThumb(thumbUrl);
             setIsFlying(true);
+            setShowFlash(true);
 
+            // Shutter feedback
+            if (shutterRef.current) {
+                shutterRef.current.style.transform = 'scale(0.8)';
+                setTimeout(() => { if (shutterRef.current) shutterRef.current.style.transform = ''; }, 100);
+            }
+            // Flash duration
+            setTimeout(() => setShowFlash(false), 150);
+
+            // Fly animation ends
             setTimeout(() => {
                 setIsFlying(false);
-                setSentThumbs(prev => [{ id: Date.now(), url: thumbUrl }, ...prev].slice(0, 5));
-                setTimeout(() => URL.revokeObjectURL(thumbUrl), 30_000);
-            }, 600);
+                setTimeout(() => URL.revokeObjectURL(thumbUrl), 1000);
+            }, 550);
 
             setIsSending(true);
             try {
-                const res = await queueSnapshot(file, message.trim());
-                logToVercel('SnapshotCreator', 'QUEUED', `size=${file.size}`);
-                // Refresh local immediately to show in history badge
-                await refreshLocalHistory();
+                await queueSnapshot(file, message.trim());
             } catch (err) {
-                // Queue error
                 logToVercel('SnapshotCreator', 'QUEUE_ERROR', err.message);
             } finally {
                 setIsSending(false);
                 setMessage('');
                 setIsMessageOpen(false);
             }
-        }, 'image/jpeg', 0.85);
+        } catch (err) {
+            logToVercel('SnapshotCreator', 'CAPTURE_ERROR', err.message);
+        }
     };
 
     const toggleCamera = () => setFacingMode(m => m === 'environment' ? 'user' : 'environment');
 
     return (
         <div className={styles.overlay}>
-            {/* ── Close ── */}
+            <div className={styles.backdrop} onClick={onClose} />
+            
             <button className={styles.closeBtn} onClick={onClose} aria-label="Cerrar">
-                ✕
+                <span className="material-symbols-rounded">close</span>
             </button>
-            {/* ── Flying thumbnail animation ── */}
+            <button className={styles.historyBtn} onClick={onOpenHistory} title="Ver historial">
+                <span className="material-symbols-rounded">history</span>
+            </button>
+
             <AnimatePresence>
                 {isFlying && flyThumb && (
                     <motion.img
                         key="fly"
                         src={flyThumb}
                         className={styles.flyImg}
-                        initial={{ scale: 1, x: 0, y: 0, opacity: 1, borderRadius: '24px' }}
-                        animate={{ scale: 0.18, x: 140, y: -320, opacity: 0.8, borderRadius: '50%' }}
+                        initial={{ scale: 1, x: '-50%', y: '-50%', opacity: 1, rotate: 0 }}
+                        animate={{ scale: 0.05, x: '38vw', y: '-44vh', opacity: 0, rotate: 25 }}
                         exit={{ opacity: 0 }}
-                        transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
+                        transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
                     />
                 )}
             </AnimatePresence>
 
-            {/* Hidden SVG clip path for camera squircle (outside content for stability) */}
             <svg height="0" width="0" style={{ position: 'absolute' }}>
                 <defs>
                     <clipPath clipPathUnits="objectBoundingBox" id="pillowClipCreator">
-                        <path
-                            d="M0.5,0 C0.42,0 0,0.42 0,0.5 C0,0.58 0.42,1 0.5,1 C0.58,1 1,0.58 1,0.5 C1,0.42 0.58,0 0.5,0 Z"
-                            transform="rotate(45 0.5 0.5)"
-                        />
+                        <path d={squirclePath} transform="rotate(45 0.5 0.5)" />
                     </clipPath>
                 </defs>
             </svg>
 
             <div className={styles.content}>
                 <CameraPermissionGate onCancel={onClose}>
-
-
-                    {/* Hidden canvas */}
                     <canvas ref={canvasRef} style={{ display: 'none' }} />
 
-                    {/* Viewfinder — always the camera */}
-                    <div className={`${styles.squircle} ${isSending ? styles.squircleSending : ''}`}>
-                        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                    <div className={`${styles.viewfinderContainer} ${isSending ? styles.sending : ''}`}>
+                        <div className={styles.squircle}>
                             <video
                                 ref={videoRef}
                                 className={`${styles.video} ${facingMode === 'user' ? styles.videoMirrored : ''}`}
@@ -222,76 +188,95 @@ export default function SnapshotCreator({ onClose, onOpenOwnSnapshots }) {
                             />
                             {isCameraLoading && (
                                 <div className={styles.loader}>
-                                    <p className={styles.loaderText}>Cargando lente...</p>
+                                    <span className={styles.loaderSpinner} />
+                                    <p>Abriendo lente...</p>
                                 </div>
                             )}
 
-                            {/* Optional message chip inside viewfinder */}
                             {message && (
-                                <div className={styles.messageChip}>
+                                <motion.div 
+                                    initial={{ y: 20, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    className={styles.messagePreview}
+                                >
                                     <span>{message}</span>
-                                </div>
+                                </motion.div>
                             )}
+
+                            <AnimatePresence>
+                                {showFlash && (
+                                    <motion.div 
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        className={styles.shutterFlash} 
+                                    />
+                                )}
+                            </AnimatePresence>
                         </div>
+                        <div className={styles.viewfinderGlow} />
                     </div>
 
-                    {/* ── Controls row ── */}
-                    <div className={styles.controls}>
-                        {/* Add message toggle */}
-                        <button
-                            className={styles.msgToggle}
-                            onClick={() => setIsMessageOpen(o => !o)}
-                            aria-label="Añadir mensaje"
-                        >
-                            <span className="material-symbols-outlined">
-                                {isMessageOpen ? 'keyboard_hide' : 'edit_note'}
-                            </span>
-                        </button>
-
-                        {/* Shutter */}
-                        <button
-                            ref={shutterRef}
-                            className={styles.shutterBtn}
-                            onClick={handleCapture}
-                            disabled={isCameraLoading || isSending}
-                            aria-label="Tomar foto"
-                        >
-                            <div className={styles.shutterInner} />
-                        </button>
-
-                        {/* Flip camera — ahora aquí, reemplaza el spacer */}
-                        <button
-                            className={styles.msgToggle}
-                            onClick={toggleCamera}
-                            disabled={isCameraLoading}
-                            aria-label="Cambiar cámara"
-                        >
-                            <span className="material-symbols-outlined">flip_camera_ios</span>
-                        </button>
-                    </div>
-
-                    {/* ── Optional message input ── */}
-                    <AnimatePresence>
-                        {isMessageOpen && (
-                            <motion.div
-                                className={styles.messageRow}
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.2 }}
+                    <div className={styles.footer}>
+                        <div className={styles.controls}>
+                            <button
+                                className={styles.iconBtn}
+                                onClick={toggleCamera}
+                                disabled={isCameraLoading}
+                                title="Girar cámara"
                             >
-                                <input
-                                    type="text"
-                                    placeholder="Añade un mensaje... 💌"
-                                    value={message}
-                                    onChange={e => setMessage(e.target.value)}
-                                    className={styles.messageInput}
-                                    maxLength={80}
-                                    autoFocus
-                                />
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                                <motion.span 
+                                    key={facingMode}
+                                    initial={{ rotate: 0 }}
+                                    animate={{ rotate: 180 }}
+                                    transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                                    className="material-symbols-rounded"
+                                >
+                                    sync
+                                </motion.span>
+                            </button>
+
+                            <button
+                                ref={shutterRef}
+                                className={styles.shutterBtn}
+                                onClick={handleCapture}
+                                disabled={isCameraLoading || isSending}
+                            >
+                                <div className={styles.shutterInner} />
+                            </button>
+
+                            <button
+                                className={styles.iconBtn}
+                                onClick={() => setIsMessageOpen(o => !o)}
+                                title="Añadir mensaje"
+                            >
+                                <span className="material-symbols-rounded">
+                                    {isMessageOpen ? 'close' : 'chat'}
+                                </span>
+                            </button>
+                        </div>
+
+                        <AnimatePresence>
+                            {isMessageOpen && (
+                                <motion.div
+                                    className={styles.messageRow}
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                >
+                                    <input
+                                        type="text"
+                                        placeholder="Escribe algo tierno... 💌"
+                                        value={message}
+                                        onChange={e => setMessage(e.target.value)}
+                                        className={styles.messageInput}
+                                        maxLength={50}
+                                        autoFocus
+                                    />
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
                 </CameraPermissionGate>
             </div>
         </div>

@@ -265,15 +265,6 @@ export default function AdminDashboard() {
 
             {/* Snapshot Button removido por petición (Solo se ve en Mapa) */}
             {/* ── Camera FAB — tomar nueva instantánea para el partner ── */}
-            {!isSnapshotOpen && !isCameraOpen && (
-                <button
-                    className={styles.fab}
-                    onClick={() => setIsCameraOpen(true)}
-                    title="Nueva Instantánea"
-                >
-                    <span className="material-symbols-outlined">add_a_photo</span>
-                </button>
-            )}
 
             {/* ── SnapshotOverlay — ver fotos recibidas ── */}
             <AnimatePresence>
@@ -281,9 +272,12 @@ export default function AdminDashboard() {
                     <SnapshotOverlay
                         key="admin-snapshot-overlay"
                         snapshots={activeSnapshots}
-                        onClose={() => {
+                        onClose={(shouldReply) => {
                             setIsSnapshotOpen(false);
                             setActiveSnapshots([]);
+                            if (shouldReply) {
+                                setTimeout(() => setIsCameraOpen(true), 300);
+                            }
                         }}
                     />
                 )}
@@ -293,10 +287,10 @@ export default function AdminDashboard() {
             {isCameraOpen && (
                 <SnapshotCreator 
                     onClose={() => setIsCameraOpen(false)} 
-                    onOpenOwnSnapshots={(ownSnaps) => {
+                    onOpenHistory={(ownSnaps) => {
                         setActiveSnapshots(ownSnaps);
                         setIsHistoryOpen(true);
-                        setIsCameraOpen(false);
+                        // No cerramos la cámara para que al volver siga ahí
                     }}
                 />
             )}
@@ -387,7 +381,7 @@ function InviteLinkCard({ inviteLink }) {
                     size="sm"
                     className={styles.copyBtn}
                 >
-                    <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>
+                    <span className="material-symbols-rounded" style={{ fontSize: '1rem' }}>
                         {copied ? 'check' : 'content_copy'}
                     </span>
                     {copied ? '¡Copiado!' : 'Copiar'}
