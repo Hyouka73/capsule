@@ -75,61 +75,71 @@ export async function listFiles(path) {
 }
 
 /**
- * Compress an image before upload (client-side)
- * @param {File} file
- * @param {number} maxWidth - Max width in pixels
- * @param {number} quality - JPEG quality (0-1)
+ * Compress and optimize an image before upload (client-side)
+ * @param {File|Blob} file 
+ * @param {object} options 
  * @returns {Promise<Blob>}
  */
-export async function compressImage(file, maxWidth = 1200, quality = 0.8) {
+export async function compressImage(file, options = {}) {
+    const { 
+        maxWidth = 1080, 
+        initialQuality = 0.8, 
+        mimeType = 'image/webp', 
+        maxWeightKb = 500,
+        minQuality = 0.5
+    } = options;
+
     const url = URL.createObjectURL(file);
+    
     try {
-        const img = await createImageBitmap(file);
+        const img = await new Promise((resolve, reject) => {
+            const i = new Image();
+            i.onload = () => resolve(i);
+            i.onerror = reject;
+            i.src = url;
+        });
+
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
 
-        if (width > maxWidth) {
-            height = (height * maxWidth) / width;
-            width = maxWidth;
+        if (width > maxWidth || height > maxWidth) {
+            if (width > height) {
+                height = (height * maxWidth) / width;
+                width = maxWidth;
+            } else {
+                width = (width * maxWidth) / height;
+                height = maxWidth;
+            }
         }
 
         canvas.width = width;
         canvas.height = height;
 
         const ctx = canvas.getContext('2d');
-        // Good practice: clear canvas and use smoothing
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, width, height);
 
-        return new Promise((resolve) => {
-            canvas.toBlob((blob) => {
-                img.close(); // Important for memory
-                resolve(blob);
-            }, 'image/jpeg', quality);
-        });
+        // Recursive quality reduction if weight exceeded
+        const getOptimizedBlob = async (q) => {
+            return new Promise((resolve) => {
+                canvas.toBlob(async (blob) => {
+                    if (blob.size / 1024 > maxWeightKb && q > minQuality) {
+                        // Reduce quality and try again
+                        const nextQ = Math.max(minQuality, q - 0.1);
+                        resolve(await getOptimizedBlob(nextQ));
+                    } else {
+                        resolve(blob);
+                    }
+                }, mimeType, q);
+            });
+        };
+
+        return await getOptimizedBlob(initialQuality);
     } catch (err) {
-        // Fallback for older browsers or broken blobs
-        // ImageBitmap failed, using legacy
-        return new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
-                if (width > maxWidth) {
-                    height = (height * maxWidth) / width;
-                    width = maxWidth;
-                }
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                canvas.toBlob(resolve, 'image/jpeg', quality);
-            };
-            img.src = url;
-        });
+        console.error('[storageService] Compression error:', err);
+        return file; // Fallback
     } finally {
         URL.revokeObjectURL(url);
     }

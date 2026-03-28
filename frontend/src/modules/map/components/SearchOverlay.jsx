@@ -18,7 +18,8 @@ export default function SearchOverlay({
     isPartner,
     isAdmin,
     onOpenSnapshot,
-    onOpenCamera
+    onOpenCamera,
+    onOpenHistory
 }) {
     const scrollRef = React.useRef(null);
 
@@ -99,7 +100,7 @@ export default function SearchOverlay({
                 onClick={!isSearchActive ? () => setIsSearchActive(true) : undefined}
             >
                 <div className={styles.searchFabBtn}>
-                    <span className="material-symbols-outlined">search</span>
+                    <span className="material-symbols-rounded">search</span>
                 </div>
 
                 <AnimatePresence>
@@ -147,7 +148,7 @@ export default function SearchOverlay({
                             }}
                         >
                             <span
-                                className={`material-symbols-outlined ${styles.chipIcon}`}
+                                className={`material-symbols-rounded ${styles.chipIcon}`}
                                 style={activeFilter === opt.id ? { fontVariationSettings: "'FILL' 1" } : {}}
                             >
                                 {opt.icon}
@@ -167,6 +168,7 @@ export default function SearchOverlay({
                     <SnapshotButton
                         onOpenSnapshot={onOpenSnapshot}
                         onOpenCamera={onOpenCamera}
+                        onOpenHistory={onOpenHistory}
                     />
                 </motion.div>
             )}

@@ -16,7 +16,7 @@ export default function PendingWarningBtn({ pendingCount, onClick, isVisible }) 
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                 >
-                    <span className={`material-symbols-outlined ${styles.icon}`}>schedule</span>
+                    <span className={`material-symbols-rounded ${styles.icon}`}>schedule</span>
                     <span className={styles.text}>{pendingCount} {pendingCount === 1 ? 'cita por guardar' : 'citas por guardar'}</span>
                 </motion.button>
             )}

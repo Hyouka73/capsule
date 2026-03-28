@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Map, MapMarker, MarkerContent, MapControls, MarkerLabel } from '@/components/ui/map';
 import MapPin from '../../components/ui/MapPin/MapPin';
-import { subscribeToGlobalSettings } from '../../services/settingsService';
-import { toast } from '../../components/ui/PastelToast/PastelToast';
 import { useAuth } from '../../hooks/useAuth';
+import { useAppConfig } from '../../hooks/useAppConfig';
 import styles from './MapView.module.css';
 import { usePlaces } from './hooks/usePlaces';
 import { getMemories } from '../../apiClient';
@@ -24,12 +23,14 @@ export default function MapView({
     onPendingSignalHandled,
     onOpenSnapshot,
     onOpenCamera,
+    onOpenHistory,
     citaContext,
     onCitaContextChange,
     onOpenPending,
     onOpenPhotoViewer
 }) {
     const { isPartner, isAdmin } = useAuth();
+    const { config: globalConfig } = useAppConfig();
     const [selectedPlace, setSelectedPlace] = useState(null);
     const [activeFilter, setActiveFilter] = useState('todos');
     const [globalSettings, setGlobalSettings] = useState(null);
@@ -46,7 +47,6 @@ export default function MapView({
     });
 
     useEffect(() => {
-        // 1. Zero-Latency Cache: Cargar cache local inmediatamente para evitar parpadeos
         async function initCache() {
             const cached = await getMapConfigCache();
             if (cached) {
@@ -56,32 +56,17 @@ export default function MapView({
             }
         }
         initCache();
+    }, []);
 
-        // 2. Suscribirse a Firestore
-        const unsub = subscribeToGlobalSettings(async data => {
-            if (data) {
-                const config = SystemConfig.fromFirestore(data);
-                
-                const cached = await getMapConfigCache();
-                const remoteTs = config.mapConfig?.lastActTimestamp;
-                const localTs = cached?.mapConfig?.lastActTimestamp;
+    useEffect(() => {
+        if (globalConfig) {
+            setGlobalSettings(globalConfig);
+            setSyncStatus('synced');
+            setIsUsingCache(false);
+        }
+    }, [globalConfig]);
 
-                const remoteDate = remoteTs ? (typeof remoteTs.toDate === 'function' ? remoteTs.toDate() : new Date(remoteTs)) : null;
-                const localDate = localTs ? new Date(localTs) : null;
-
-                if (!cached || !localDate || (remoteDate && remoteDate > localDate)) {
-                    await setMapConfigCache(data);
-                }
-
-                setGlobalSettings(config);
-                setSyncStatus('synced');
-                setIsUsingCache(false);
-            } else {
-                setSyncStatus('offline');
-                setIsUsingCache(true);
-            }
-        });
-
+    useEffect(() => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
@@ -92,16 +77,11 @@ export default function MapView({
                     }));
                 },
                 (err) => {
-                    // SILENT TOAST: Solo informar si es denegado o error real
-                    if (err.code === 1) { // PERMISSION_DENIED
-                        toast.info('Ubicación desactivada. El mapa se centrará en el lugar por defecto.', { duration: 2000 });
-                    }
+                    // Location denial is handled silently
                 },
                 { enableHighAccuracy: false, timeout: 30000, maximumAge: 300000 }
             );
         }
-
-        return unsub;
     }, []);
 
     useEffect(() => {

@@ -115,8 +115,8 @@ export const STORAGE_PATHS = {
     // New optimized paths
     PHOTO_ORIGINAL: (memoryId, photoId) => `memories/${memoryId}/${photoId}.jpg`,
     PHOTO_THUMB: (memoryId, photoId) => `memories/${memoryId}/thumb_${photoId}.jpg`,
-    SNAPSHOT_ORIGINAL: (snapshotId) => `snapshots/${snapshotId}.jpg`,
-    SNAPSHOT_THUMB: (snapshotId) => `snapshots/thumb_${snapshotId}.jpg`,
+    SNAPSHOT_ORIGINAL: (relationshipId, snapshotId) => `${relationshipId}/snapshots/${snapshotId}/original.webp`,
+    SNAPSHOT_THUMB: (relationshipId, snapshotId) => `${relationshipId}/snapshots/${snapshotId}/thumb.webp`,
     CAPSULE_ORIGINAL: (relationshipId, capsuleId, fileId) => `${relationshipId}/capsules/${capsuleId}/${fileId}.webp`
 };
 

@@ -161,7 +161,7 @@ export default function CelebrationOverlay({
                             )}
 
                             <div className={`${styles.coinsAmount} ${isCombo || isFullBoard ? styles.coinsAmountCombo : ''}`}>
-                                <span className={`material-symbols-outlined ${styles.coinIcon}`}>monetization_on</span>
+                                <span className={`material-symbols-rounded ${styles.coinIcon}`}>monetization_on</span>
                                 <span className={styles.coinsValue}>+{displayCoins}</span>
                             </div>
 

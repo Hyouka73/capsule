@@ -121,7 +121,7 @@ function PendingDateCard({ pd, idx, onSelectDate, onRemove, onRestore }) {
                 style={{ opacity: deleteOpacity }}
             >
                 <motion.span 
-                    className="material-symbols-outlined"
+                    className="material-symbols-rounded"
                     style={{ scale: iconScale }}
                 >
                     delete
@@ -161,7 +161,7 @@ function PendingDateCard({ pd, idx, onSelectDate, onRemove, onRestore }) {
                             <img src={pd.photos[0].objectUrl} alt="Recuerdo" className={styles.thumb} />
                         ) : (
                             <div className={styles.thumbFallback}>
-                                <span className="material-symbols-outlined">photo_camera</span>
+                                <span className="material-symbols-rounded">photo_camera</span>
                             </div>
                         )}
                         {isUploading && (
@@ -169,7 +169,7 @@ function PendingDateCard({ pd, idx, onSelectDate, onRemove, onRestore }) {
                         )}
                         {isFailed && (
                             <div className={`${styles.statusOverlay} ${styles.failedOverlay}`}>
-                                <span className="material-symbols-outlined">error</span>
+                                <span className="material-symbols-rounded">error</span>
                             </div>
                         )}
                     </div>
@@ -186,7 +186,7 @@ function PendingDateCard({ pd, idx, onSelectDate, onRemove, onRestore }) {
                             <span className={styles.photoCount}>
                                 {pd.title ? displayDate : (
                                     <>
-                                        <span className="material-symbols-outlined">photo_library</span>
+                                        <span className="material-symbols-rounded">photo_library</span>
                                         {pd.photos?.length || 0} fotos
                                     </>
                                 )}
@@ -194,7 +194,7 @@ function PendingDateCard({ pd, idx, onSelectDate, onRemove, onRestore }) {
                             {displayTime && <span className={styles.timeTag}>{displayTime}</span>}
                             {pd.title && (
                                 <span className={styles.photoCountMini}>
-                                    <span className="material-symbols-outlined" style={{fontSize: '12px'}}>photo_library</span>
+                                    <span className="material-symbols-rounded" style={{fontSize: '12px'}}>photo_library</span>
                                     {pd.photos?.length || 0}
                                 </span>
                             )}
@@ -221,14 +221,14 @@ export default function PendingDatesList({ pendingDates = [], onClose, onSelectD
                         <p>Ordena tus recuerdos ✨</p>
                     </div>
                     <button className={styles.closeBtn} onClick={onClose}>
-                        <span className="material-symbols-outlined">close</span>
+                        <span className="material-symbols-rounded">close</span>
                     </button>
                 </div>
 
                 <div className={styles.scrollList}>
                     {pendingDates.filter(p => !p.isHidden).length === 0 ? (
                         <div className={styles.emptyState}>
-                            <span className="material-symbols-outlined">celebration</span>
+                            <span className="material-symbols-rounded">celebration</span>
                             <p>¡Todo listo para hoy!</p>
                         </div>
                     ) : (
@@ -248,7 +248,7 @@ export default function PendingDatesList({ pendingDates = [], onClose, onSelectD
                 </div>
                 
                 <div className={styles.footerInfo}>
-                    <span className="material-symbols-outlined">info</span>
+                    <span className="material-symbols-rounded">info</span>
                     Desliza a la izquierda para descartar
                 </div>
             </div>

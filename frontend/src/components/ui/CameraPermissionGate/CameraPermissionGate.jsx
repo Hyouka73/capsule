@@ -41,7 +41,7 @@ export default function CameraPermissionGate({ children, onCancel }) {
         <div className={styles.overlay}>
             <div className={styles.modal}>
                 <div className={styles.iconContainer}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '48px', color: '#3182ce' }}>
+                    <span className="material-symbols-rounded" style={{ fontSize: '48px', color: '#3182ce' }}>
                         photo_camera_front
                     </span>
                 </div>

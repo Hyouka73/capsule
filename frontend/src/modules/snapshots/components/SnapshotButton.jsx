@@ -1,78 +1,38 @@
-import { useState, useEffect } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
-import { getSnapshots } from '../../../apiClient';
+import { useSnapshots } from '../hooks/useSnapshots';
 import styles from './SnapshotButton.module.css';
 import TulipIcon from '../../../components/ui/TulipIcon';
 
-/** 24 hours in milliseconds */
-const TWENTY_FOUR_H_MS = 24 * 60 * 60 * 1000;
-
 /**
- * SnapshotButton — Main entry point for Snapshots.
- * Admin sees [+] and the count badge. Partner sees only the count badge.
- *
- * @param {Function} onOpenSnapshot  Called when tapping badge to view unseen
- * @param {Function} onOpenCamera    Called by Admin (+) to shoot new
- * @param {Function} onOpenHistory   Called when tapping main button with no unseen
+ * SnapshotButton — El disparador de momentos espontáneos.
+ * 
+ * Flujo de uso:
+ * 1. Si hay fotos sin ver: Al pulsar, abre el Overlay (el mazo).
+ * 2. Si NO hay fotos sin ver: Al pulsar, abre la Cámara directamente.
+ * 3. Al terminar de ver el mazo, se abrirá la cámara automáticamente (vía prop onOpenHistory).
  */
 export default function SnapshotButton({ onOpenSnapshot, onOpenCamera, onOpenHistory }) {
-    const [unseenSnapshots, setUnseenSnapshots] = useState([]);
     const { user, relationshipId } = useAuth();
-    const isAdmin = user?.role === 'admin';
+    const { unseenSnapshots, hasUnseen, loading } = useSnapshots();
 
-    const fetchSnapshots = async () => {
-        if (!user || !relationshipId) return;
-        try {
-            const res = await getSnapshots();
-            if (res.success && res.snapshots) {
-                const now = Date.now();
-                const unseen = res.snapshots
-                    .filter(snap => {
-                        // Unseen snapshots from the OTHER person
-                        if (snap.isSeen || snap.createdBy === user.uid) return false;
-                        
-                        const createdMs = snap.createdAt ? new Date(snap.createdAt).getTime() : 0;
-                        return createdMs > 0 && (now - createdMs) <= TWENTY_FOUR_H_MS;
-                    })
-                    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-                
-                // Pre-cache
-                unseen.forEach(s => {
-                    if (s.photoUrl) {
-                        const img = new Image();
-                        img.src = s.photoUrl;
-                    }
-                });
-                
-                setUnseenSnapshots(unseen);
-            }
-        } catch (err) {
-            // silent fail
+    if (!user || !relationshipId || loading) return null;
+
+    const handleClick = () => {
+        if (hasUnseen) {
+            // Pasar la lista al overlay. Al terminar el overlay, Dashboard abrirá la cámara.
+            onOpenSnapshot(unseenSnapshots);
+        } else {
+            // Abrir cámara directamente
+            onOpenCamera();
         }
     };
 
-    useEffect(() => {
-        fetchSnapshots();
-        // Polling every 30 seconds as fallback for real-time
-        const interval = setInterval(fetchSnapshots, 30000);
-        return () => clearInterval(interval);
-    }, [user, relationshipId]);
-
-    const hasUnseen = unseenSnapshots.length > 0;
-
     return (
         <div className={styles.container}>
-            {/* View Unseen or History Button */}
             <button
                 className={`${styles.instantaneasBtn} ${hasUnseen ? styles.hasNew : styles.discrete}`}
-                onClick={() => {
-                    if (hasUnseen) {
-                        onOpenSnapshot(unseenSnapshots);
-                    } else {
-                        onOpenHistory();
-                    }
-                }}
-                title={hasUnseen ? `${unseenSnapshots.length} nuevas instantáneas ✨` : 'Ver historial de instantáneas'}
+                onClick={handleClick}
+                title={hasUnseen ? `✨ ${unseenSnapshots.length} momentos nuevos para ti` : 'Enviar un momento espontáneo 📸'}
             >
                 <div className={styles.iconWrapper}>
                     <TulipIcon size={26} color={hasUnseen ? 'white' : undefined} />
@@ -80,19 +40,6 @@ export default function SnapshotButton({ onOpenSnapshot, onOpenCamera, onOpenHis
                 {hasUnseen && <div className={styles.badge}>{unseenSnapshots.length}</div>}
                 {hasUnseen && <div className={styles.glowContainer} />}
             </button>
-
-            {/* Create Button (Admin Only) */}
-            {isAdmin && (
-                <button
-                    className={styles.createBtn}
-                    onClick={onOpenCamera}
-                    title="Nueva Instantánea 📸"
-                >
-                    <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>
-                        add_a_photo
-                    </span>
-                </button>
-            )}
         </div>
     );
 }

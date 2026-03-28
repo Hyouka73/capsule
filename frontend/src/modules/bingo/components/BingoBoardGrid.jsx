@@ -16,7 +16,7 @@ const SquareIcon = ({ square }) => {
     if (square.icon) {
         // If it's a Material Symbol name as a string (fallback safety)
         if (typeof square.icon === 'string') {
-            return <span className="material-symbols-outlined" style={{ fontSize: '1.8rem' }}>{square.icon}</span>;
+            return <span className="material-symbols-rounded" style={{ fontSize: '1.8rem' }}>{square.icon}</span>;
         }
         // If it's a functional component or raw SVG
         const Icon = square.icon;
@@ -75,7 +75,7 @@ export default function BingoBoardGrid({
                                         exit={{ scale: 0, opacity: 0, rotate: 45 }}
                                         transition={{ type: 'spring', damping: 10, stiffness: 200 }}
                                     >
-                                        <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>check</span>
+                                        <span className="material-symbols-rounded" style={{ fontSize: '1rem' }}>check</span>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
@@ -83,7 +83,7 @@ export default function BingoBoardGrid({
                             {matchedPending && !isCompleted && (
                                 <div className={styles.suggestionIndicator}>
                                     <span 
-                                        className="material-symbols-outlined" 
+                                        className="material-symbols-rounded" 
                                         style={{ color: 'var(--primary)', fontSize: '1.4rem', fontVariationSettings: "'FILL' 1" }}
                                         onClick={(e) => {
                                             e.stopPropagation();

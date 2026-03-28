@@ -49,11 +49,11 @@ export default function BingoEditPanel({
             <div className={`${styles.editPanel} ${editingSquare ? styles.open : ''}`}>
                 <div className={styles.panelHeader}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <span className="material-symbols-outlined" style={{ color: '#8b4a61', fontSize: '1.75rem' }}>edit_square</span>
+                        <span className="material-symbols-rounded" style={{ color: '#8b4a61', fontSize: '1.75rem' }}>edit_square</span>
                         <h3>Editar Casilla</h3>
                     </div>
                     <button className={styles.closeBtn} onClick={onClose} aria-label="Cerrar">
-                        <span className="material-symbols-outlined">close</span>
+                        <span className="material-symbols-rounded">close</span>
                     </button>
                 </div>
 
@@ -198,7 +198,7 @@ export default function BingoEditPanel({
 
                 <div className={styles.panelFooter}>
                     <button type="button" className={styles.saveBtn} onClick={onSave}>
-                        <span className="material-symbols-outlined">save</span>
+                        <span className="material-symbols-rounded">save</span>
                         Guardar Cambios
                     </button>
                     
@@ -208,7 +208,7 @@ export default function BingoEditPanel({
                             className={`${styles.resetBtn} ${styles.danger}`} 
                             onClick={() => onUncheck(editingSquare.id)}
                         >
-                            <span className="material-symbols-outlined">restart_alt</span>
+                            <span className="material-symbols-rounded">restart_alt</span>
                             Resetear Progreso
                         </button>
                     ) : (
@@ -217,7 +217,7 @@ export default function BingoEditPanel({
                             className={styles.resetBtn} 
                             onClick={() => onForceComplete(editingSquare.id)}
                         >
-                            <span className="material-symbols-outlined">check_circle</span>
+                            <span className="material-symbols-rounded">check_circle</span>
                             Forzar Cumplido
                         </button>
                     )}

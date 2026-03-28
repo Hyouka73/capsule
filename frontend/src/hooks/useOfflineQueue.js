@@ -318,7 +318,7 @@ export function useOfflineQueue() {
                         toast.success('¡Recuerdo sincronizado!', 'Ya está disponible en tu mapa 📍');
                     } else if (item.type === 'snapshot') {
                         const snapshotId = item.id;
-                        const storagePath = STORAGE_PATHS.SNAPSHOT_ORIGINAL(snapshotId);
+                        const storagePath = STORAGE_PATHS.SNAPSHOT_ORIGINAL(relationshipId, snapshotId);
                         const blob = item.photos?.[0]?.blob ?? item.compressedBlob;
                         const url = await uploadFile(blob, storagePath);
 

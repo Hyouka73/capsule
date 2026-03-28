@@ -62,7 +62,7 @@ export default function MoviesView() {
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setIsWizardOpen(true)}
             >
-                <span className="material-symbols-outlined">add</span>
+                <span className="material-symbols-rounded">add</span>
             </motion.button>
 
             {/* Movie Registration Wizard */}

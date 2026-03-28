@@ -48,7 +48,7 @@ export default function PlaceDetailDrawer({
                         </div>
                     </div>
                     <button className={styles.closeDrawer} onClick={onClose}>
-                        <span className="material-symbols-outlined">close</span>
+                        <span className="material-symbols-rounded">close</span>
                     </button>
                 </div>
 
@@ -59,7 +59,7 @@ export default function PlaceDetailDrawer({
                             className={styles.verifyBtn}
                             onClick={() => onVerifyPlace(selectedPlace)}
                         >
-                            <span className="material-symbols-outlined">task_alt</span>
+                            <span className="material-symbols-rounded">task_alt</span>
                             Confirmar que estoy aquí ✨
                         </button>
                     </div>
@@ -151,7 +151,7 @@ export default function PlaceDetailDrawer({
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                     >
                         <Carousel 
-                            photos={selectedPhotos} 
+                            items={selectedPhotos} 
                             onBack={() => setView('list')} 
                         />
                     </motion.div>

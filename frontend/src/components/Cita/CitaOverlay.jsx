@@ -68,7 +68,7 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                                 if (onClose) onClose();
                             }
                         }}>
-                            <span className="material-symbols-outlined">close</span>
+                            <span className="material-symbols-rounded">close</span>
                         </button>
                     </div>
 
@@ -122,7 +122,7 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                             onTouchEnd={() => logToVercel('Cita_Input_Camera', 'TOUCHEND', 'Direct tap on input ended')}
                             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, zIndex: 100, cursor: 'pointer', touchAction: 'manipulation' }}
                         />
-                        <span className="material-symbols-outlined">add_a_photo</span>
+                        <span className="material-symbols-rounded">add_a_photo</span>
                     </label>
                     <p className={styles.bigCameraLabel}>Toma una foto</p>
 
@@ -162,7 +162,7 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                                 onChange={handleFileAdded}
                                 style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, zIndex: 100, cursor: sessionPhotos.length === 0 ? 'not-allowed' : 'pointer', touchAction: 'manipulation' }}
                             />
-                            <span className="material-symbols-outlined">photo_library</span>
+                            <span className="material-symbols-rounded">photo_library</span>
                             Galería
                         </label>
 
@@ -171,7 +171,7 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                             className={`${styles.citaAction} ${sessionPhotos.length === 0 ? styles.citaActionDisabled : ''}`}
                             disabled={sessionPhotos.length === 0}
                         >
-                            <span className="material-symbols-outlined">confirmation_number</span>
+                            <span className="material-symbols-rounded">confirmation_number</span>
                             Boleto
                         </button>
                     </div>
@@ -200,7 +200,7 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                                 }
                             }}
                         >
-                            <span className="material-symbols-outlined">check_circle</span>
+                            <span className="material-symbols-rounded">check_circle</span>
                             Guardar Cita
                         </button>
                     )}

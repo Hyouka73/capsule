@@ -38,7 +38,7 @@ export default function GalleryView() {
     if (error) {
         return (
             <div className={styles.errorContainer}>
-                <span className="material-symbols-outlined">error</span>
+                <span className="material-symbols-rounded">error</span>
                 <p>Ups, no pudimos cargar las fotos</p>
                 <button onClick={() => window.location.reload()}>Reintentar</button>
             </div>
@@ -67,7 +67,7 @@ export default function GalleryView() {
                 >
                     <div className={styles.emptyCard}>
                         <div className={styles.emptyIcon}>
-                            <span className="material-symbols-outlined">auto_awesome_motion</span>
+                            <span className="material-symbols-rounded">auto_awesome_motion</span>
                             <div className={styles.sparkle}>✨</div>
                         </div>
                         <h2>Aquí vivirán sus recuerdos 🌸</h2>
@@ -114,7 +114,7 @@ export default function GalleryView() {
                             />
                             {photo.isSpecial && (
                                 <div className={styles.specialBadge}>
-                                    <span className="material-symbols-outlined">favorite</span>
+                                    <span className="material-symbols-rounded">favorite</span>
                                 </div>
                             )}
                             {photo._type === 'snapshot' && (

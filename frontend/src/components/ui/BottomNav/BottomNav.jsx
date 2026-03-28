@@ -58,7 +58,7 @@ export default function BottomNav({ activeTab, setActiveTab, tabs = [], moreTabs
                                     onClick={() => handleTabSelect(tab.id)}
                                 >
                                     <div className={styles.iconWrapper}>
-                                        <span className={`material-symbols-outlined ${styles.moreIcon}`}>
+                                        <span className={`material-symbols-rounded ${styles.moreIcon}`}>
                                             {tab.icon}
                                         </span>
                                         {tab.id === 'bingo' && pendingBingoCount > 0 && (
@@ -99,7 +99,7 @@ export default function BottomNav({ activeTab, setActiveTab, tabs = [], moreTabs
                             >
                                 <div className={styles.iconWrapper}>
                                     <span
-                                        className={`material-symbols-outlined ${styles.navIcon}`}
+                                        className={`material-symbols-rounded ${styles.navIcon}`}
                                         style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}
                                     >
                                         {tab.icon}
@@ -132,7 +132,7 @@ export default function BottomNav({ activeTab, setActiveTab, tabs = [], moreTabs
                             animate={{ scale: isMoreOpen ? 1.1 : 1 }}
                         >
                             <div className={styles.iconWrapper}>
-                                <span className={`material-symbols-outlined ${styles.navIcon}`}>
+                                <span className={`material-symbols-rounded ${styles.navIcon}`}>
                                     more_horiz
                                 </span>
                             </div>

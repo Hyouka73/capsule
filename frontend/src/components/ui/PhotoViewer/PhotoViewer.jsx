@@ -17,7 +17,7 @@ export default function PhotoViewer({ photos, onClose }) {
                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                 >
                     <button className={styles.viewerClose} onClick={onClose}>
-                        <span className="material-symbols-outlined">close</span>
+                        <span className="material-symbols-rounded">close</span>
                     </button>
 
                     <div className={styles.viewerContent}>
@@ -36,7 +36,7 @@ export default function PhotoViewer({ photos, onClose }) {
                                 className={styles.viewerBtn}
                                 onClick={() => setViewerIndex(prev => prev > 0 ? prev - 1 : photos.length - 1)}
                             >
-                                <span className="material-symbols-outlined">chevron_left</span>
+                                <span className="material-symbols-rounded">chevron_left</span>
                             </button>
                             <div className={styles.viewerCounter}>
                                 {viewerIndex + 1} / {photos.length}
@@ -45,7 +45,7 @@ export default function PhotoViewer({ photos, onClose }) {
                                 className={styles.viewerBtn}
                                 onClick={() => setViewerIndex(prev => prev < photos.length - 1 ? prev + 1 : 0)}
                             >
-                                <span className="material-symbols-outlined">chevron_right</span>
+                                <span className="material-symbols-rounded">chevron_right</span>
                             </button>
                         </div>
                     </div>

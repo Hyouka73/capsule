@@ -223,7 +223,7 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
         <div className={styles.container}>
             <div className={styles.header}>
                 <button type="button" className={styles.backBtn} onClick={onCancel}>
-                    <span className="material-symbols-outlined">arrow_back</span>
+                    <span className="material-symbols-rounded">arrow_back</span>
                 </button>
 
                 <div className={styles.searchContainer}>
@@ -250,7 +250,7 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
                                 className={styles.searchResultItem}
                                 onClick={() => handleSearchResultClick(res)}
                             >
-                                <span className="material-symbols-outlined">location_on</span>
+                                <span className="material-symbols-rounded">location_on</span>
                                 <div className={styles.searchResultText}>
                                     <strong>{res.display_name.split(',')[0]}</strong>
                                     <span>{res.display_name.split(',').slice(1, 3).join(',')}</span>
@@ -314,7 +314,7 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
 
                 {showHint && (
                     <div className={styles.hintOverlay}>
-                        <span className="material-symbols-outlined">touch_app</span>
+                        <span className="material-symbols-rounded">touch_app</span>
                         Toca el mapa para marcar ✨
                     </div>
                 )}
@@ -344,7 +344,7 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
                     variant="primary"
                 >
                     Confirmar ubicación 📍
-                    <span className="material-symbols-outlined">check_circle</span>
+                    <span className="material-symbols-rounded">check_circle</span>
                 </Button>
 
                 {showConfirmBadge && (

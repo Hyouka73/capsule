@@ -21,7 +21,7 @@ export default function GlassInput({
             {leftIcon && (
                 <div className={styles.inputIcon}>
                     <span
-                        className="material-symbols-outlined"
+                        className="material-symbols-rounded"
                         style={{ fontVariationSettings: "'FILL' 1", fontSize: '24px' }}
                     >
                         {leftIcon}
@@ -45,14 +45,14 @@ export default function GlassInput({
                     onClick={() => setShowPassword(!showPassword)}
                     className={styles.visibilityBtn}
                 >
-                    <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>
+                    <span className="material-symbols-rounded" style={{ fontSize: '24px' }}>
                         {showPassword ? 'visibility' : 'visibility_off'}
                     </span>
                 </button>
             ) : rightIcon ? (
                 <div className={styles.inputRightIcon}>
                     <span
-                        className="material-symbols-outlined"
+                        className="material-symbols-rounded"
                         style={{ fontVariationSettings: "'FILL' 1", fontSize: '18px' }}
                     >
                         {rightIcon}

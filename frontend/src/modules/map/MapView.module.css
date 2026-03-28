@@ -129,7 +129,7 @@
     box-shadow: none !important;
 }
 
-.searchFabBtn .material-symbols-outlined {
+.searchFabBtn .material-symbols-rounded {
     font-size: 26px;
     font-variation-settings: 'FILL' 0, 'wght' 600; /* No fill to match image outline style if needed, or fill 1 for bolder */
 }

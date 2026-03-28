@@ -34,13 +34,13 @@ export default function BingoStartModal({ bingoItem, onClose, onStartCita, defau
             >
                 <div className={styles.header}>
                     <button className={styles.closeBtn} onClick={onClose}>
-                        <span className="material-symbols-outlined">close</span>
+                        <span className="material-symbols-rounded">close</span>
                     </button>
                 </div>
 
                 <div className={styles.content}>
                     <div className={styles.iconWrapper}>
-                        <span className={bingoItem.emoji === 'favorite' || bingoItem.emoji === 'help_outline' ? `${styles.emoji} material-symbols-outlined ${styles.materialEmoji}` : styles.emoji}>
+                        <span className={bingoItem.emoji === 'favorite' || bingoItem.emoji === 'help_outline' ? `${styles.emoji} material-symbols-rounded ${styles.materialEmoji}` : styles.emoji}>
                             {bingoItem.emoji}
                         </span>
                     </div>
@@ -52,13 +52,13 @@ export default function BingoStartModal({ bingoItem, onClose, onStartCita, defau
                         </p>
                         
                         <div className={styles.reqs}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>photo_camera</span>
+                            <span className="material-symbols-rounded" style={{ fontSize: '1.25rem' }}>photo_camera</span>
                             <span>Mínimo {minPhotosVal} fotos</span>
                         </div>
 
                         {bingoItem.suggestedPlace && (
                             <div className={styles.suggestedPlaceBox}>
-                                <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', color: '#ff85a2' }}>location_on</span>
+                                <span className="material-symbols-rounded" style={{ fontSize: '1.2rem', color: '#ff85a2' }}>location_on</span>
                                 <span className={styles.placeLabel}>
                                     {matchedPlace ? `${matchedPlace.emoji} ${matchedPlace.name}` : bingoItem.suggestedPlace}
                                 </span>
@@ -87,7 +87,7 @@ export default function BingoStartModal({ bingoItem, onClose, onStartCita, defau
                     </p>
 
                     <button className={styles.startBtn} onClick={handleStartCita}>
-                        <span className="material-symbols-outlined">play_arrow</span>
+                        <span className="material-symbols-rounded">play_arrow</span>
                         ¡Comenzar Cita!
                     </button>
                 </div>

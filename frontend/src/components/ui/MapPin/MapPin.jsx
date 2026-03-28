@@ -89,12 +89,12 @@ export default function MapPin({
                         transition={{ repeat: selected ? Infinity : 0, duration: 1.5 }}
                     >
                         {size === 'large' && (
-                            <span className="material-symbols-outlined material-icons-filled" style={{ fontSize: '20px', color: 'white' }}>
+                            <span className="material-symbols-rounded material-icons-filled" style={{ fontSize: '20px', color: 'white' }}>
                                 favorite
                             </span>
                         )}
                         {size === 'medium' && (
-                            <span className="material-symbols-outlined material-icons-filled" style={{ fontSize: '15px', color: 'white' }}>
+                            <span className="material-symbols-rounded material-icons-filled" style={{ fontSize: '15px', color: 'white' }}>
                                 favorite
                             </span>
                         )}

@@ -83,7 +83,7 @@ export default function MovieWizard({ onClose, onSave }) {
                                 exit={{ opacity: 0, x: 20 }}
                             >
                                 <div className={styles.searchBox}>
-                                    <span className={`material-symbols-outlined ${styles.searchIcon}`}>search</span>
+                                    <span className={`material-symbols-rounded ${styles.searchIcon}`}>search</span>
                                     <input 
                                         type="text" 
                                         placeholder="Busca por título..." 

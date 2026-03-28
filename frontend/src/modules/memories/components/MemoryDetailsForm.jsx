@@ -64,12 +64,12 @@ export default function MemoryDetailsForm({
                 className={`${styles.locationInput} ${!selectedPlaceId ? styles.locationPlaceholder : ''}`}
                 onClick={() => setIsPlacePickerOpen(true)}
             >
-                <span className="material-symbols-outlined">location_on</span>
+                <span className="material-symbols-rounded">location_on</span>
                 <div className={styles.locationText}>
                     <strong>{form.placeName || 'Toca para elegir el lugar...'}</strong>
                     <span>{form.placeCity || (form.placeLat ? `${form.placeLat}, ${form.placeLng}` : 'Busca en la lista o el mapa')}</span>
                 </div>
-                <span className="material-symbols-outlined">chevron_right</span>
+                <span className="material-symbols-rounded">chevron_right</span>
             </div>
 
             <PlacePickerBottomSheet

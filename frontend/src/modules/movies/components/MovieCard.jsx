@@ -31,7 +31,7 @@ export default function MovieCard({ movie }) {
                 
                 {rating > 0 && (
                     <div className={styles.ratingBadge}>
-                        <span className="material-symbols-outlined">star</span>
+                        <span className="material-symbols-rounded">star</span>
                         {rating}
                     </div>
                 )}

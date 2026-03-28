@@ -1,10 +1,10 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import App from './App.jsx'
-import { AuthProvider } from './context/AuthContext.jsx'
-import { AppConfigProvider } from './context/AppConfigContext.jsx'
-import { BingoProvider } from './context/BingoContext.jsx'
+import App from './App'
+import { AuthProvider } from './context/AuthContext'
+import { AppConfigProvider } from './context/AppConfigContext'
+import { BingoProvider } from './context/BingoContext'
 import { BrowserRouter } from 'react-router-dom'
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -119,7 +119,7 @@ export default function BingoManager() {
                         >
                             {sq.completedMemoryId && (
                                 <div className={styles.checkBadge}>
-                                    <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check</span>
+                                    <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>check</span>
                                 </div>
                             )}
                             <div className={styles.squareContent}>

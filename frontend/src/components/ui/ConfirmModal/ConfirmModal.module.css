@@ -26,17 +26,29 @@
 }
 
 .emojiContainer {
-    width: 64px;
-    height: 64px;
-    background: var(--clay-bg-rose);
+    width: 68px;
+    height: 68px;
+    background: #fff;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 1.25rem;
-    font-size: 2rem;
-    border: 2px solid var(--pastel-rose-light);
-    box-shadow: var(--clay-shadow-sm);
+    margin-bottom: 1.5rem;
+    font-size: 2.25rem;
+    border: 3px solid var(--pastel-rose-light);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.06), var(--clay-shadow-sm);
+    position: relative;
+    z-index: 1;
+}
+
+.emojiContainer::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    background: var(--clay-bg-rose);
+    border-radius: 50%;
+    z-index: -1;
+    opacity: 0.6;
 }
 
 .content {
@@ -62,18 +74,42 @@
 
 .actions {
     display: flex;
-    gap: 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
     width: 100%;
     margin-top: 0.5rem;
 }
 
 .actions > button {
-    flex: 1;
-    min-width: 0; /* Allow shrinking to prevent overflow */
+    width: 100%;
+    white-space: normal; /* Allow wrapping for very long text */
+    padding-top: 0.9rem;
+    padding-bottom: 0.9rem;
 }
 
-@media (max-width: 400px) {
+.confirmBtn {
+    order: 1;
+}
+
+.cancelBtn {
+    order: 2;
+}
+
+@media (min-width: 480px) {
     .actions {
-        flex-direction: column-reverse;
+        flex-direction: row;
+    }
+    
+    .actions > button {
+        flex: 1;
+        white-space: nowrap;
+    }
+
+    .confirmBtn {
+        order: 2;
+    }
+
+    .cancelBtn {
+        order: 1;
     }
 }

@@ -146,7 +146,7 @@ export default function PhotoUploader({
                             onTouchEnd={() => logToVercel('Photo_Input_Camera', 'TOUCHEND', 'Direct tap on input ended')}
                             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, zIndex: 100, cursor: 'pointer', touchAction: 'manipulation' }}
                         />
-                        <span className="material-symbols-outlined">add_a_photo</span>
+                        <span className="material-symbols-rounded">add_a_photo</span>
                         Cámara
                     </label>
                 </CameraPermissionGate>
@@ -194,7 +194,7 @@ export default function PhotoUploader({
                         onChange={handleFileChange}
                         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, zIndex: 100, cursor: uploads.length === 0 ? 'not-allowed' : 'pointer', touchAction: 'manipulation' }}
                     />
-                    <span className="material-symbols-outlined">photo_library</span>
+                    <span className="material-symbols-rounded">photo_library</span>
                     Galería
                 </label>
             </div>

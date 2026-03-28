@@ -34,22 +34,22 @@ export default function AdminLogin() {
         <div className={styles.root}>
             {/* Background elements */}
             <div className={`${styles.bgDeco} ${styles.star1} ${styles.floating} ${styles.delay100}`}>
-                <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1", fontSize: '2.25rem' }}>star</span>
+                <span className="material-symbols-rounded" style={{ fontVariationSettings: "'FILL' 1", fontSize: '2.25rem' }}>star</span>
             </div>
             <div className={`${styles.bgDeco} ${styles.heart1} ${styles.floating} ${styles.delay500}`}>
-                <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1", fontSize: '1.875rem' }}>favorite</span>
+                <span className="material-symbols-rounded" style={{ fontVariationSettings: "'FILL' 1", fontSize: '1.875rem' }}>favorite</span>
             </div>
             <div className={`${styles.bgDeco} ${styles.heart2} ${styles.floating} ${styles.delay200}`}>
-                <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1", fontSize: '1.5rem' }}>favorite</span>
+                <span className="material-symbols-rounded" style={{ fontVariationSettings: "'FILL' 1", fontSize: '1.5rem' }}>favorite</span>
             </div>
             <div className={`${styles.bgDeco} ${styles.sparkle1} ${styles.floating}`}>
-                <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
+                <span className="material-symbols-rounded" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
             </div>
             <div className={`${styles.bgDeco} ${styles.star2} ${styles.sparkleAnim}`}>
-                <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>star</span>
+                <span className="material-symbols-rounded" style={{ fontSize: '1.25rem' }}>star</span>
             </div>
             <div className={`${styles.bgDeco} ${styles.circle1} ${styles.sparkleAnim} ${styles.delay200}`}>
-                <span className="material-symbols-outlined">circle</span>
+                <span className="material-symbols-rounded">circle</span>
             </div>
 
             <main className={styles.mainContainer}>
@@ -102,23 +102,23 @@ export default function AdminLogin() {
                             {isLoading ? 'Verificando...' : 'Abrir Recuerdos'}
                         </span>
                         {!isLoading && (
-                            <span className={`material-symbols-outlined ${styles.arrowIcon}`}>arrow_forward_ios</span>
+                            <span className={`material-symbols-rounded ${styles.arrowIcon}`}>arrow_forward_ios</span>
                         )}
                     </button>
                 </form>
 
                 <div className={styles.avatarBtnContainer}>
                     <button className={styles.avatarBtn} type="button">
-                        <span className="material-symbols-outlined" style={{ fontSize: '2.25rem' }}>face_3</span>
+                        <span className="material-symbols-rounded" style={{ fontSize: '2.25rem' }}>face_3</span>
                     </button>
                 </div>
 
                 <div className={styles.footerNote}>
                     <div className={styles.footerPill}>
                         <p className={styles.footerText}>
-                            <span className={`material-symbols-outlined ${styles.footerIcon}`} style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
+                            <span className={`material-symbols-rounded ${styles.footerIcon}`} style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
                             Cada recuerdo es un regalo
-                            <span className={`material-symbols-outlined ${styles.footerIcon}`} style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
+                            <span className={`material-symbols-rounded ${styles.footerIcon}`} style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
                         </p>
                     </div>
                 </div>

@@ -67,7 +67,7 @@ export default function BingoMemoryPolaroid({ selectedSquare, onClose, onShowGal
                         onClick={(e) => e.stopPropagation()}
                     >
                         <button className={styles.closeBtn} onClick={onClose}>
-                            <span className="material-symbols-outlined">close</span>
+                            <span className="material-symbols-rounded">close</span>
                         </button>
 
                         <div className={styles.photoArea}>
@@ -77,7 +77,7 @@ export default function BingoMemoryPolaroid({ selectedSquare, onClose, onShowGal
                                 <img src={mainPhoto} alt={displayTitle} className={styles.memoryImg} />
                             ) : (
                                 <div className={styles.noPhotoDefault}>
-                                    <span className={`material-symbols-outlined ${styles.emoji}`}>
+                                    <span className={`material-symbols-rounded ${styles.emoji}`}>
                                         {selectedSquare.emoji || 'favorite'}
                                     </span>
                                 </div>
@@ -103,7 +103,7 @@ export default function BingoMemoryPolaroid({ selectedSquare, onClose, onShowGal
                                     className={styles.galleryBtn}
                                     onClick={() => onShowGallery(galleryPhotos)}
                                 >
-                                    <span className="material-symbols-outlined">photo_library</span>
+                                    <span className="material-symbols-rounded">photo_library</span>
                                     Ver Galería ({galleryPhotos.length})
                                 </button>
                             )}

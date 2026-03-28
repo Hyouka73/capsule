@@ -88,7 +88,7 @@ export default function PlacePickerBottomSheet({
                             <div className={styles.handle} />
                             <h3>Selecciona un lugar</h3>
                             <button type="button" className={styles.closeBtn} onClick={onClose}>
-                                <span className="material-symbols-outlined">close</span>
+                                <span className="material-symbols-rounded">close</span>
                             </button>
                         </div>
 
@@ -105,7 +105,7 @@ export default function PlacePickerBottomSheet({
                                 className={styles.mapBtn}
                                 onClick={() => setIsMapOpen(true)}
                             >
-                                <span className={`material-symbols-outlined ${styles.mapIcon}`}>map</span>
+                                <span className={`material-symbols-rounded ${styles.mapIcon}`}>map</span>
                                 Elegir en el mapa
                             </Button>
                         </div>
@@ -142,7 +142,7 @@ export default function PlacePickerBottomSheet({
                                             )}
                                         </div>
                                         {selectedId === place.id && (
-                                            <span className={`material-symbols-outlined ${styles.checkIcon}`}>check_circle</span>
+                                            <span className={`material-symbols-rounded ${styles.checkIcon}`}>check_circle</span>
                                         )}
                                     </div>
                                 ))
@@ -167,7 +167,7 @@ export default function PlacePickerBottomSheet({
                                 disabled={!selectedId}
                             >
                                 Seleccionar este lugar
-                                <span className="material-symbols-outlined">done_all</span>
+                                <span className="material-symbols-rounded">done_all</span>
                             </Button>
                         </div>
                     </div>

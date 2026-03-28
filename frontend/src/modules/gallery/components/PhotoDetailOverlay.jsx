@@ -36,7 +36,7 @@ export default function PhotoDetailOverlay({ photos, initialIndex, onClose }) {
             exit={{ opacity: 0 }}
         >
             <button className={styles.closeBtn} onClick={onClose}>
-                <span className="material-symbols-outlined">close</span>
+                <span className="material-symbols-rounded">close</span>
             </button>
 
             <div className={styles.content}>
@@ -72,13 +72,13 @@ export default function PhotoDetailOverlay({ photos, initialIndex, onClose }) {
                             <div className={styles.infoRow}>
                                 {currentPhoto.createdAt && (
                                     <div className={styles.infoItem}>
-                                        <span className="material-symbols-outlined">calendar_month</span>
+                                        <span className="material-symbols-rounded">calendar_month</span>
                                         <span>{currentPhoto.createdAt.toDate?.().toLocaleDateString() || new Date(currentPhoto.createdAt).toLocaleDateString()}</span>
                                     </div>
                                 )}
                                 {currentPhoto.location && (
                                     <div className={styles.infoItem}>
-                                        <span className="material-symbols-outlined">location_on</span>
+                                        <span className="material-symbols-rounded">location_on</span>
                                         <span>{currentPhoto.location.name || 'Ubicación'}</span>
                                     </div>
                                 )}
@@ -90,12 +90,12 @@ export default function PhotoDetailOverlay({ photos, initialIndex, onClose }) {
                 {/* Navigation Arrows (for desktop/accessibility) */}
                 {currentIndex > 0 && (
                     <button className={`${styles.navBtn} ${styles.prevBtn}`} onClick={handlePrev}>
-                        <span className="material-symbols-outlined">chevron_left</span>
+                        <span className="material-symbols-rounded">chevron_left</span>
                     </button>
                 )}
                 {currentIndex < photos.length - 1 && (
                     <button className={`${styles.navBtn} ${styles.nextBtn}`} onClick={handleNext}>
-                        <span className="material-symbols-outlined">chevron_right</span>
+                        <span className="material-symbols-rounded">chevron_right</span>
                     </button>
                 )}
             </div>

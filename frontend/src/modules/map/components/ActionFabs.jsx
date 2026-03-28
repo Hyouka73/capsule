@@ -23,7 +23,7 @@ export default function ActionFabs({
                         transition={{ type: 'spring', damping: 15, stiffness: 250 }}
                     >
                         <button className={styles.fabBtn} onClick={onSpontaneousCita}>
-                            <span className="material-symbols-outlined">{icon}</span>
+                            <span className="material-symbols-rounded">{icon}</span>
                         </button>
                     </motion.div>
                 )}

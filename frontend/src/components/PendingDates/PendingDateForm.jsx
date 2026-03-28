@@ -114,7 +114,7 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, onAutoSa
                 <div className={styles.contentWrapper}>
                     <div className={styles.header}>
                         <button className={styles.backBtn} onClick={onClose}>
-                            <span className="material-symbols-outlined">arrow_back</span>
+                            <span className="material-symbols-rounded">arrow_back</span>
                         </button>
                         <h2 className={styles.title}>Clasificar cita</h2>
                     </div>
@@ -122,11 +122,11 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, onAutoSa
                     <div className={styles.heroSection} onClick={() => setShowCarousel(true)}>
                         <img src={pendingDate.coverPhoto} alt="Cover" className={styles.heroImg} />
                         <div className={styles.heroBadge}>
-                            <span className="material-symbols-outlined" style={{fontSize:'12px', verticalAlign:'middle', marginRight:'4px'}}>photo_library</span>
+                            <span className="material-symbols-rounded" style={{fontSize:'12px', verticalAlign:'middle', marginRight:'4px'}}>photo_library</span>
                             {pendingDate.photos?.length || 0} fotos
                         </div>
                         <div className={styles.heroOverlay}>
-                            <span className="material-symbols-outlined">zoom_in</span>
+                            <span className="material-symbols-rounded">zoom_in</span>
                             Toca para ver todas
                         </div>
                     </div>
@@ -140,7 +140,7 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, onAutoSa
                                 exit={{ opacity: 0 }}
                             >
                                 <Carousel 
-                                    photos={pendingDate.photos?.map(p => p.objectUrl) || [pendingDate.coverPhoto]} 
+                                    items={pendingDate.photos?.map(p => p.objectUrl) || [pendingDate.coverPhoto]} 
                                     onBack={() => setShowCarousel(false)} 
                                 />
                             </motion.div>
@@ -173,7 +173,7 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, onAutoSa
                             <div className={styles.confirmedLocationBadge}>
                                 <div className={styles.confirmedLeft}>
                                     <div className={styles.checkCircle}>
-                                        <span className="material-symbols-outlined">check</span>
+                                        <span className="material-symbols-rounded">check</span>
                                     </div>
                                     <div className={styles.locationMeta}>
                                         <span className={styles.locationLabel}>
@@ -188,7 +188,7 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, onAutoSa
                                     className={styles.editLocationBtn}
                                     onClick={() => setIsPlacePickerOpen(true)}
                                 >
-                                    <span className="material-symbols-outlined">edit_location_alt</span>
+                                    <span className="material-symbols-rounded">edit_location_alt</span>
                                     Cambiar
                                 </button>
                             </div>
@@ -255,7 +255,7 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, onAutoSa
 
                     {(pendingDate.isFromBingo || pendingDate.context?.type === 'bingo') && (
                         <div className={styles.bingoBanner}>
-                            <span className="material-symbols-outlined">casino</span>
+                            <span className="material-symbols-rounded">casino</span>
                             ¡Esta cita desbloquea un reto! ✨
                         </div>
                     )}
@@ -269,7 +269,7 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, onAutoSa
                     disabled={!selectedPlaceId && !customLocation}
                 >
                     <span>Guardar este recuerdo</span>
-                    <span className="material-symbols-outlined">favorite</span>
+                    <span className="material-symbols-rounded">favorite</span>
                 </button>
             </div>
 

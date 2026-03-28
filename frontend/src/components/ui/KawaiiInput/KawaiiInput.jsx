@@ -61,7 +61,7 @@ export default function KawaiiInput({
             }
             return (
                 <div className={styles.photoPlaceholder}>
-                    <span className="material-symbols-outlined">image</span>
+                    <span className="material-symbols-rounded">image</span>
                 </div>
             );
         }
@@ -78,7 +78,7 @@ export default function KawaiiInput({
 
         if (icon) {
             return (
-                <span className={`material-symbols-outlined ${styles.leftIcon} ${type === 'textarea' ? styles.leftIconTextarea : ''}`}>
+                <span className={`material-symbols-rounded ${styles.leftIcon} ${type === 'textarea' ? styles.leftIconTextarea : ''}`}>
                     {icon}
                 </span>
             );
@@ -189,7 +189,7 @@ export default function KawaiiInput({
                         if (inputRef.current) inputRef.current.focus();
                     }}
                 >
-                    <span className="material-symbols-outlined">close</span>
+                    <span className="material-symbols-rounded">close</span>
                 </button>
             );
         }
@@ -197,7 +197,7 @@ export default function KawaiiInput({
         if (type === 'photo') {
             return (
                 <div className={styles.rightAction}>
-                    <span className="material-symbols-outlined">add_photo_alternate</span>
+                    <span className="material-symbols-rounded">add_photo_alternate</span>
                 </div>
             );
         }
@@ -205,7 +205,7 @@ export default function KawaiiInput({
         if (type === 'date') {
             return (
                 <div className={styles.rightAction}>
-                    <span className="material-symbols-outlined">chevron_right</span>
+                    <span className="material-symbols-rounded">chevron_right</span>
                 </div>
             );
         }
@@ -213,7 +213,7 @@ export default function KawaiiInput({
         if (type === 'select') {
             return (
                 <div className={styles.rightAction}>
-                    <span className="material-symbols-outlined">expand_more</span>
+                    <span className="material-symbols-rounded">expand_more</span>
                 </div>
             );
         }
@@ -228,7 +228,7 @@ export default function KawaiiInput({
                         setShowPassword(!showPassword);
                     }}
                 >
-                    <span className="material-symbols-outlined">
+                    <span className="material-symbols-rounded">
                         {showPassword ? 'visibility_off' : 'visibility'}
                     </span>
                 </button>
@@ -238,7 +238,7 @@ export default function KawaiiInput({
         if (iconRight) {
             return (
                 <div className={styles.rightAction}>
-                    <span className="material-symbols-outlined">{iconRight}</span>
+                    <span className="material-symbols-rounded">{iconRight}</span>
                 </div>
             );
         }

@@ -1,55 +1,63 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../../hooks/useAuth';
-import { getSnapshots, deleteSnapshot } from '../../../apiClient';
+import { useSnapshots } from '../hooks/useSnapshots';
+import { deleteSnapshot } from '../../../apiClient';
 import { toast } from '../../../components/ui/PastelToast/PastelToast';
+import Carousel from '../../../components/ui/Carousel/Carousel';
+import ConfirmModal from '../../../components/ui/ConfirmModal/ConfirmModal';
 import styles from './SnapshotHistory.module.css';
 
 /**
- * SnapshotHistory — A grid gallery for browsing snapshots.
+ * SnapshotHistory — Galería de momentos con eliminaciones bajo confirmación custom.
  */
-export default function SnapshotHistory({ initialSnapshots = [], onClose }) {
-    const [snapshots, setSnapshots] = useState(initialSnapshots);
-    const [selectedIdx, setSelectedIdx] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const { user } = useAuth();
-    const isAdmin = user?.role === 'admin';
+export default function SnapshotHistory({ onClose }) {
+    const { sentSnapshots, loading } = useSnapshots();
+    const [snapshotToDelete, setSnapshotToDelete] = useState(null);
 
-    const fetchHistory = async () => {
-        setLoading(true);
-        try {
-            const res = await getSnapshots();
-            if (res.success) {
-                setSnapshots(res.snapshots || []);
-            }
-        } catch (err) {
-            toast.error('Error al cargar historial');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (snapshots.length === 0) {
-            fetchHistory();
-        }
-    }, []);
-
-    const handleDelete = async (e, snapId) => {
-        e.stopPropagation();
-        if (!isAdmin) return;
-        if (!window.confirm('¿Eliminar esta instantánea permanentemente?')) return;
+    const handleConfirmDelete = async () => {
+        if (!snapshotToDelete) return;
+        const snapId = snapshotToDelete.id;
+        setSnapshotToDelete(null);
 
         try {
             const res = await deleteSnapshot({ snapshotId: snapId });
             if (res.success) {
-                toast.success('Instantánea eliminada');
-                setSnapshots(prev => prev.filter(s => s.id !== snapId));
+                toast.success('Momento eliminado');
             }
         } catch (err) {
-            toast.error('Error', err.message);
+            toast.error('Error al eliminar');
         }
     };
+
+    const renderSnapshotItem = (snap) => (
+        <div className={styles.carouselItem}>
+            <div className={styles.photoWrapper}>
+                <img src={snap.photoUrl} alt="" className={styles.photo} />
+                {snap.isSeen && <div className={styles.seenBadge}>Visto ✓</div>}
+                
+                <button 
+                    className={styles.deleteBtn}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setSnapshotToDelete(snap);
+                    }}
+                    title="Eliminar"
+                >
+                    ✕
+                </button>
+            </div>
+            
+            <div className={styles.itemMeta}>
+                <span className={styles.timeTag}>
+                    {new Date(snap.createdAtMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+                {snap.message && (
+                    <p className={styles.snapMsg}>{snap.message}</p>
+                )}
+            </div>
+        </div>
+    );
 
     return (
         <motion.div 
@@ -58,74 +66,47 @@ export default function SnapshotHistory({ initialSnapshots = [], onClose }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
         >
-            <div className={styles.header}>
-                <h2 className={styles.title}>Mis Enviadas ✨</h2>
-                <button className={styles.closeBtn} onClick={onClose}>✕</button>
-            </div>
+            <div className={styles.backdrop} onClick={onClose} />
 
-            <div className={styles.scrollArea}>
-                {snapshots.length === 0 ? (
-                    <div className={styles.emptyState}>
-                        <div className={styles.emptyIcon}>✨</div>
-                        <p>Aún no has enviado instantáneas hoy.</p>
-                        <p className={styles.emptySub}>¡Captura un momento ahora!</p>
-                    </div>
-                ) : (
-                    <div className={styles.grid}>
-                        {snapshots.map((snap, idx) => (
-                            <motion.div 
-                                key={snap.id}
-                                className={styles.gridItem}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => setSelectedIdx(idx)}
-                            >
-                                <div className={styles.photoWrapper}>
-                                    <img src={snap.photoUrl} alt="" className={styles.photo} loading="lazy" />
-                                    {snap.message && <div className={styles.msgIndicator}>💌</div>}
-                                    {snap.isLocal && <div className={styles.syncingIndicator}>⏳</div>}
-                                    {isAdmin && (
-                                        <button 
-                                            className={styles.deleteBtn}
-                                            onClick={(e) => handleDelete(e, snap.id)}
-                                            title="Eliminar"
-                                        >
-                                            🗑️
-                                        </button>
-                                    )}
-                                </div>
-                                <div className={styles.itemMeta}>
-                                    {snap.createdAt instanceof Date ? snap.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 
-                                     snap.createdAt?.seconds ? new Date(snap.createdAt.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 
-                                     typeof snap.createdAt === 'number' ? new Date(snap.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 
-                                     snap.createdAt && typeof snap.createdAt === 'string' ? new Date(snap.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
-                )}
-            </div>
+            <div className={styles.container}>
+                <div className={styles.header}>
+                    <h2 className={styles.title}>Momentos Enviados ✉️</h2>
+                    <button className={styles.closeBtn} onClick={onClose}>✕</button>
+                </div>
 
-            {/* Simple Lightbox for viewing one at a time from history */}
-            <AnimatePresence>
-                {selectedIdx !== null && (
-                    <motion.div 
-                        className={styles.lightbox}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        onClick={() => setSelectedIdx(null)}
-                    >
-                        <div className={styles.lightboxContent}>
-                            <img src={snapshots[selectedIdx].photoUrl} alt="" className={styles.lightboxImg} />
-                            {snapshots[selectedIdx].message && (
-                                <div className={styles.lightboxMsg}>
-                                    {snapshots[selectedIdx].message}
-                                </div>
-                            )}
+                <div className={styles.content}>
+                    {loading ? (
+                        <div className={styles.loadingState}>
+                            <p>Cargando tus momentos...</p>
                         </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    ) : sentSnapshots.length === 0 ? (
+                        <div className={styles.emptyState}>
+                            <div className={styles.emptyIcon}>✨</div>
+                            <p>No tienes fotos activas ahora.</p>
+                            <p className={styles.emptySub}>Las que envíes aparecerán aquí durante 24h.</p>
+                        </div>
+                    ) : (
+                        <div className={styles.carouselWrapper}>
+                            <Carousel 
+                                items={sentSnapshots}
+                                renderItem={renderSnapshotItem}
+                            />
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <ConfirmModal
+                isOpen={!!snapshotToDelete}
+                title="¿Eliminar momento?"
+                message="Esta foto desaparecerá para ambos y no se puede recuperar. 🌪️"
+                confirmText="Eliminar permanentemente"
+                cancelText="Mantener foto"
+                variant="danger"
+                emoji="🗑️"
+                onConfirm={handleConfirmDelete}
+                onCancel={() => setSnapshotToDelete(null)}
+            />
         </motion.div>
     );
 }
