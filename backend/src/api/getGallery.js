@@ -16,11 +16,9 @@ export const getGallery = onCall({ region: 'us-central1', cors: true }, async (r
     try {
         const relationshipId = request.auth.token.relationshipId;
 
-        // 1. Fetch memory photos via Collection Group
-        // Depth doesn't matter for collectionGroup as long as collection name matches
-        let photosQuery = db.collectionGroup(COLLECTIONS.PHOTOS)
+        // 1. Fetch memories via Collection Group (to show main photo of each cita)
+        let memoriesQuery = db.collectionGroup(COLLECTIONS.MEMORIES)
             .where('relationshipId', '==', relationshipId)
-            .where('isSnapshot', '==', false)
             .orderBy('createdAt', 'desc');
 
         // 2. Fetch snapshots from relationship subcollection
@@ -33,23 +31,25 @@ export const getGallery = onCall({ region: 'us-central1', cors: true }, async (r
         // Apply cursor if provided
         if (lastCreatedAt) {
             const cursorDate = new Date(lastCreatedAt);
-            // Use the date for both queries
-            photosQuery = photosQuery.startAfter(cursorDate);
+            memoriesQuery = memoriesQuery.startAfter(cursorDate);
             snapshotsQuery = snapshotsQuery.startAfter(cursorDate);
         }
 
-        const [photosSnap, snapshotsSnap] = await Promise.all([
-            photosQuery.limit(limit).get(),
+        const [memoriesSnap, snapshotsSnap] = await Promise.all([
+            memoriesQuery.limit(limit).get(),
             snapshotsQuery.limit(limit).get()
         ]);
 
-        const memoryPhotos = photosSnap.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            parentPath: doc.ref.parent.parent?.path,
-            _type: 'memory',
-            createdAt: doc.data().createdAt?.toDate()?.toISOString() || null
-        }));
+        const memoryEntries = memoriesSnap.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                url: data.mainPhotoUrl, // Use memory's main photo
+                _type: 'memory',
+                createdAt: data.createdAt?.toDate()?.toISOString() || null
+            };
+        }).filter(m => !!m.url); // Only show memories with a main photo
 
         const archivedSnapshots = snapshotsSnap.docs.map(doc => ({
             id: doc.id,
@@ -62,7 +62,7 @@ export const getGallery = onCall({ region: 'us-central1', cors: true }, async (r
         }));
 
         // 3. Merge and sort
-        const allPhotos = [...memoryPhotos, ...archivedSnapshots]
+        const allPhotos = [...memoryEntries, ...archivedSnapshots]
             .sort((a, b) => {
                 const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
                 const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
