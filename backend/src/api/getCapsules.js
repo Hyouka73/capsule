@@ -74,3 +74,4 @@ export const getCapsules = onCall({ region: 'us-central1', cors: true }, async (
         throw new HttpsError('internal', 'Ocurrió un error al obtener las cápsulas de Firestore.');
     }
 });
+

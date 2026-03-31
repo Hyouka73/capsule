@@ -140,3 +140,4 @@ export const exchangeInviteToken = onCall({ region: 'us-central1', cors: true },
         );
     }
 });
+

@@ -115,3 +115,4 @@ export const redeemCoupon = onCall({ region: 'us-central1', cors: true }, async 
         throw new HttpsError('internal', 'Error al procesar el canje del cupón.');
     }
 });
+

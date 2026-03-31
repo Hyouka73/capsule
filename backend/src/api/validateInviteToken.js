@@ -59,19 +59,20 @@ export const validateInviteToken = onCall({ region: 'us-central1', cors: true },
             throw new HttpsError('not-found', 'Configuración de la relación no encontrada');
         }
 
-        // partnerUid is now optional during validation
         const { partnerUid } = configSnap.data() || {};
 
-        // 3. Check partner hasn't already claimed the account (Defense in depth)
-        const partnerRef = db.collection(COLLECTIONS.USERS).doc(partnerUid);
-        const partnerSnap = await partnerRef.get();
+        // 3. Check partner hasn't already claimed the account (Only if partnerUid exists)
+        if (partnerUid) {
+            const partnerRef = db.collection(COLLECTIONS.USERS).doc(partnerUid);
+            const partnerSnap = await partnerRef.get();
 
-        if (partnerSnap.exists && partnerSnap.data().accountStatus === 'active') {
-            throw new HttpsError('failed-precondition', 'Esta invitación ya fue utilizada');
-        }
+            if (partnerSnap.exists && partnerSnap.data().accountStatus === 'active') {
+                throw new HttpsError('failed-precondition', 'Esta invitación ya fue utilizada');
+            }
 
-        if (partnerSnap.exists && partnerSnap.data().accountStatus === 'revoked') {
-            throw new HttpsError('permission-denied', 'Esta cuenta ha sido revocada');
+            if (partnerSnap.exists && partnerSnap.data().accountStatus === 'revoked') {
+                throw new HttpsError('permission-denied', 'Esta cuenta ha sido revocada');
+            }
         }
 
         logger.info(`Token validated for token=${token.substring(0, 8)}... relationship=${relationshipId}`);
@@ -96,3 +97,4 @@ export const validateInviteToken = onCall({ region: 'us-central1', cors: true },
         );
     }
 });
+

@@ -37,7 +37,6 @@ export default function SnapshotButton({ onOpenSnapshot, onOpenCamera, onOpenHis
                 <div className={styles.iconWrapper}>
                     <TulipIcon size={26} color={hasUnseen ? 'white' : undefined} />
                 </div>
-                {hasUnseen && <div className={styles.badge}>{unseenSnapshots.length}</div>}
                 {hasUnseen && <div className={styles.glowContainer} />}
             </button>
         </div>

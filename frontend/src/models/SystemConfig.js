@@ -109,7 +109,15 @@ export default class SystemConfig {
             displayName: data.partner?.displayName ?? ''
         };
 
-        this.memoryTags = data.memoryTags || [
+        // Ensure memoryTags is always an array of objects (Firestore objects-wrapped-array fix)
+        let incomingTags = data.memoryTags;
+        if (incomingTags && typeof incomingTags === 'object' && !Array.isArray(incomingTags)) {
+            // Remove 'updatedAt' from the object values before mapping
+            const { updatedAt, ...indices } = incomingTags;
+            incomingTags = Object.values(indices);
+        }
+        
+        const defaultTags = [
             { value: 'viaje', label: 'Viaje ✈️' },
             { value: 'cita', label: 'Cita 🍷' },
             { value: 'aniversario', label: 'Aniversario 💝' },
@@ -127,6 +135,15 @@ export default class SystemConfig {
             { value: 'arte', label: 'Arte 🎨' },
             { value: 'casa', label: 'En Casa 🏠' }
         ];
+
+        this.memoryTags = (Array.isArray(incomingTags) && incomingTags.length > 0) 
+            ? incomingTags
+                .filter(tag => tag && typeof tag === 'object' && tag.value)
+                .map(tag => ({ 
+                    value: tag.value, 
+                    label: tag.label || `${tag.value} 🏷️`
+                }))
+            : defaultTags;
     }
 
     /**
@@ -137,7 +154,7 @@ export default class SystemConfig {
             features: this.features,
             visibility: this.visibility,
             wrapped: this.wrappedConfig,
-            map: this.mapConfig,
+            mapConfig: this.mapConfig,
             notifications: this.notifications,
             snapshotConfig: this.snapshotConfig,
             teaser: this.teaser,

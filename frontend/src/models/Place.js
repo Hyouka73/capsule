@@ -51,14 +51,22 @@ export default class Place {
      * @returns {Object} { color: string, scale: number }
      */
     getMarkerStyle(config) {
-        const tiers = config?.pinTiers || [];
+        // Higher-level fallback for tiers if config is missing
+        const tiers = config?.pinTiers || [
+            { minVisits: 1, color: "#FFB6C1", scale: 0.8 },
+            { minVisits: 3, color: "#BF7DB1", scale: 1.0 },
+            { minVisits: 5, color: "#F38686", scale: 1.2 },
+            { minVisits: 10, color: "#F3E595", scale: 1.4 },
+            { minVisits: 15, color: "#CCFFF7", scale: 1.6 }
+        ];
+        
         const fallback = { color: "#FFB6C1", scale: 1.0 };
         
         if (tiers.length === 0) return fallback;
 
         // Find highest matching tier (sorted descending by minVisits)
-        const sortedTiers = [...tiers].sort((a, b) => b.minVisits - a.minVisits);
-        const match = sortedTiers.find(t => this.visitCount >= t.minVisits);
+        const sortedTiers = [...tiers].sort((a, b) => (b.minVisits || 0) - (a.minVisits || 0));
+        const match = sortedTiers.find(t => (this.visitCount || 0) >= (t.minVisits || 0));
 
         return match || fallback;
     }

@@ -87,3 +87,4 @@ export const generateInviteToken = onCall({ region: 'us-central1', cors: true },
         throw new HttpsError('internal', 'Error al generar el token en la base de datos.');
     }
 });
+

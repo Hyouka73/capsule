@@ -112,3 +112,4 @@ export const openCapsule = onCall({ region: 'us-central1', cors: true }, async (
         throw new HttpsError('internal', 'Falló la apertura de la cápsula.');
     }
 });
+

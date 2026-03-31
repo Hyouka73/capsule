@@ -22,10 +22,22 @@ service firebase.storage {
     match /{relationshipId}/{module}/{docId}/{fileName} {
       allow read, write: if matchesRelationship(relationshipId);
     }
-    
-    // Modules: memories, capsules, snapshots, artifacts, backups
-    // Note: The general match above covers all modules if they follow the pattern.
-    // If specific modules need different logic (e.g. admin only), they can be added here.
+
+    // Snapshots: {relationshipId}/snapshots/{fileName} (3 Levels)
+    match /{relationshipId}/snapshots/{fileName} {
+      allow read, write: if matchesRelationship(relationshipId);
+    }
+
+    // Support for legacy or flat paths during migration/dev
+    match /memories/{memoryId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated(); 
+    }
+
+    match /snapshots/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
     
     match /{relationshipId}/backups/{allPaths=**} {
       allow read, write: if isAdmin() && matchesRelationship(relationshipId);

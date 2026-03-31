@@ -1,11 +1,11 @@
-export default async function seedCapsules(admin, db) {
-    console.log('--- Seeding Capsules ---');
-    const REL_ID = 'capsule_development_rel_123';
-    
-    // Admin needed as creator
-    const adminRecord = await admin.auth().getUserByEmail('admin@test.com');
-    const adminUid = adminRecord.uid;
+export default async function seedCapsules(admin, db, relationshipId, adminUid, isFullSeed) {
+    if (!isFullSeed) {
+        console.log(`--- Skipping Capsules for ${relationshipId} (Clean State) ---`);
+        return;
+    }
 
+    console.log(`--- Seeding Capsules for ${relationshipId} (Full State) ---`);
+    
     const now = new Date();
     const future30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
     const future7 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -22,20 +22,7 @@ export default async function seedCapsules(admin, db) {
             unlockDate: admin.firestore.Timestamp.fromDate(future30),
             autoDestruct: false, hasAttachments: false, notifyOnUnlock: true,
             createdBy: adminUid,
-            relationshipId: REL_ID
-        },
-        {
-            id: 'locked-soon',
-            type: 'message', 
-            title: 'Para el próximo viernes',
-            teaserMessage: 'Algo especial se acerca... ✨',
-            message: null,
-            isUnlocked: false, isDestructed: false, isViewed: false,
-            unlockTrigger: 'date',
-            unlockDate: admin.firestore.Timestamp.fromDate(future7),
-            autoDestruct: false, hasAttachments: false, notifyOnUnlock: true,
-            createdBy: adminUid,
-            relationshipId: REL_ID
+            relationshipId: relationshipId
         },
         {
             id: 'unlocked-message',
@@ -49,26 +36,11 @@ export default async function seedCapsules(admin, db) {
             unlockedAt: admin.firestore.Timestamp.fromDate(now),
             autoDestruct: false, hasAttachments: false, notifyOnUnlock: true,
             createdBy: adminUid,
-            relationshipId: REL_ID
-        },
-        {
-            id: 'autodestruct-message',
-            type: 'message',
-            title: 'Un secreto',
-            teaserMessage: 'Desaparecerá al leerlo 🔥',
-            message: 'Te amo más que a nada en este mundo. Esto es solo para ti.',
-            isUnlocked: true, isDestructed: false, isViewed: false,
-            unlockTrigger: 'manual',
-            unlockDate: null,
-            unlockedAt: admin.firestore.Timestamp.fromDate(now),
-            autoDestruct: true, hasAttachments: false,
-            notifyOnUnlock: true,
-            createdBy: adminUid,
-            relationshipId: REL_ID
+            relationshipId: relationshipId
         }
     ];
 
-    const relRef = db.collection('relationships').doc(REL_ID);
+    const relRef = db.collection('relationships').doc(relationshipId);
     const capsCollection = relRef.collection('capsules');
 
     const batch = db.batch();
@@ -88,5 +60,5 @@ export default async function seedCapsules(admin, db) {
     }
     
     await batch.commit();
-    console.log(`✅ ${capsules.length} cápsulas creadas para ${REL_ID}.`);
+    console.log(`✅ ${capsules.length} cápsulas creadas para ${relationshipId}.`);
 }

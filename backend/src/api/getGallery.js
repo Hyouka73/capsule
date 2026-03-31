@@ -1,5 +1,5 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, Filter } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import { COLLECTIONS } from '../config/constants.js';
 
@@ -21,11 +21,17 @@ export const getGallery = onCall({ region: 'us-central1', cors: true }, async (r
             .where('relationshipId', '==', relationshipId)
             .orderBy('createdAt', 'desc');
 
-        // 2. Fetch snapshots from relationship subcollection
-        let snapshotsQuery = db.collection('relationships')
+        // 2. Fetch snapshots from relationship subcollection (Seen or Archived)
+        const snapshotsRef = db.collection('relationships')
             .doc(relationshipId)
-            .collection(COLLECTIONS.INSTANTANEAS)
-            .where('isArchived', '==', true)
+            .collection(COLLECTIONS.INSTANTANEAS);
+
+        // Snapshots that are either seen by the partner OR officially archived after 24h
+        let snapshotsQuery = snapshotsRef
+            .where(Filter.or(
+                Filter.where('isSeen', '==', true),
+                Filter.where('isArchived', '==', true)
+            ))
             .orderBy('createdAt', 'desc');
 
         // Apply cursor if provided
@@ -79,3 +85,4 @@ export const getGallery = onCall({ region: 'us-central1', cors: true }, async (r
         return { success: false, error: error.message };
     }
 });
+

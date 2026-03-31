@@ -114,19 +114,21 @@ export function AuthProvider({ children }) {
                         localStorage.setItem('capsule_relationship_id', data.relationshipId);
                     }
                     
+                    // Defensive: If role is ADMIN, they shouldn't be blocked by teaser/welcome flags
                     // Fallback: If role is not in claims, take it from Firestore
-                    if (!role && data.role) {
+                    if (data.role) {
                         setRole(data.role);
                     }
 
                     // Defensive: If role is ADMIN, they shouldn't be blocked by teaser/welcome flags
-                    if (data.role === 'admin' || role === 'admin') {
+                    if (data.role === 'admin') {
                         setTeaserCompleted(true);
                         setWelcomeSeen(true);
                     }
 
                     setIsLoading(false);
                 }, (err) => {
+                    console.error('[AuthContext] Snapshot error:', err);
                     if (isMounted) setIsLoading(false);
                 });
 

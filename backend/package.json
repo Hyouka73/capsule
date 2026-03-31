@@ -11,7 +11,7 @@
         "seed": "node seeds/run.js"
     },
     "engines": {
-        "node": "20"
+        "node": "22"
     },
     "type": "module",
     "main": "index.js",

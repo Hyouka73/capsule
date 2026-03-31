@@ -46,3 +46,4 @@ export const getSnapshots = onCall({ region: 'us-central1', cors: true }, async 
         throw new HttpsError('internal', 'Error al obtener las instantáneas.');
     }
 });
+

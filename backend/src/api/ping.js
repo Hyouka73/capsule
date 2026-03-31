@@ -9,3 +9,4 @@ export const ping = onCall({ region: 'us-central1', cors: true }, async (request
         emulator: process.env.FUNCTIONS_EMULATOR
     };
 });
+

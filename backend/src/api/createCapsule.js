@@ -123,3 +123,4 @@ export const createCapsule = onCall({ region: 'us-central1', cors: true }, async
         throw new HttpsError('internal', 'Ocurrió un error al persistir la cápsula en base de datos.');
     }
 });
+

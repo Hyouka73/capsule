@@ -208,3 +208,27 @@
 .hiddenNativeInput {
     display: none;
 }
+
+@media (min-width: 900px) {
+    .inputWrapper {
+        padding: 8px 14px;
+    }
+
+    .inputElement, .textareaElement, .valueText {
+        font-size: 14px;
+    }
+
+    .leftIcon {
+        font-size: 20px;
+        margin-right: 8px;
+    }
+
+    .label {
+        font-size: 0.8rem;
+        margin-bottom: 2px;
+    }
+
+    .inputWrapperTextarea {
+        min-height: 60px;
+    }
+}

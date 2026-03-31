@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import BingoStartModal from '../../components/Bingo/BingoStartModal';
 import PhotoViewer from '../../components/ui/PhotoViewer/PhotoViewer';
-import { subscribeToGlobalSettings } from '../../services/settingsService';
 import { useBingo } from '../../hooks/useBingo';
 import { useAppConfig } from '../../hooks/useAppConfig';
 import styles from './UserBingo.module.css';
@@ -17,15 +16,7 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
     const [selectedSquare, setSelectedSquare] = useState(null);
     const [selectedStartSquare, setSelectedStartSquare] = useState(null);
     const [viewerPhotos, setViewerPhotos] = useState(null);
-    const [globalSettings, setGlobalSettings] = useState(null);
-    const { isFromCache } = useAppConfig();
-
-    useEffect(() => {
-        const unsub = subscribeToGlobalSettings(data => {
-            if (data) setGlobalSettings(data);
-        });
-        return unsub;
-    }, []);
+    const { isFromCache, config } = useAppConfig();
 
     const { 
         categories, 
@@ -103,7 +94,7 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
                 {selectedStartSquare && (
                     <BingoStartModal
                         bingoItem={selectedStartSquare}
-                        defaultMinPhotos={globalSettings?.citaConfig?.minPhotosBingoDefault || 3}
+                        defaultMinPhotos={config?.citaConfig?.minPhotosBingoDefault || 3}
                         onClose={() => {
                             setSelectedStartSquare(null);
                             if (setIsModalOpen) setIsModalOpen(false);

@@ -56,3 +56,4 @@ export const markSnapshotAsSeen = onCall({ region: 'us-central1', cors: true }, 
         throw new HttpsError('internal', 'Error al marcar la instantánea como vista.');
     }
 });
+

@@ -84,3 +84,4 @@ export const getMemories = onCall({ region: 'us-central1', cors: true }, async (
         return { success: false, error: 'Error interno del servidor.' };
     }
 });
+

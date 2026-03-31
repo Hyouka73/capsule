@@ -55,3 +55,26 @@
 .btnIcon {
     font-size: 20px;
 }
+
+@media (min-width: 900px) {
+    .header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.25rem;
+    }
+
+    .title {
+        font-size: 1.8rem;
+    }
+
+    .subtitle {
+        font-size: 0.9rem;
+    }
+
+    .newBtn {
+        margin-top: 0;
+        padding: 10px 20px;
+        font-size: 0.9rem;
+    }
+}

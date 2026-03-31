@@ -14,8 +14,7 @@ import { COLLECTIONS } from '../config/constants.js';
  * Implements idempotency to avoid double-counting photoCount.
  */
 export const onPhotoUploaded = onObjectFinalized({ 
-    region: 'us-central1',
-    bucket: 'capsule-sooty.firebasestorage.app' 
+    bucket: 'capsule-valentins-day.firebasestorage.app' 
 }, async (event) => {
     const filePath = event.data.name; 
     const contentType = event.data.contentType;

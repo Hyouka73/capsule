@@ -40,20 +40,24 @@ if (import.meta.env.VITE_USE_EMULATORS !== 'true') {
     });
 }
 
-// In DEV mode, always connect the Functions emulator (port 5001).
-// Only connect Firestore/Storage/Auth emulators when VITE_USE_EMULATORS=true
-// (those emulators are not always running locally).
+// In DEV mode, always connect the emulators when needed.
 if (import.meta.env.DEV) {
+    const host = window.location.hostname;
+    
     try {
-        connectFunctionsEmulator(functions, 'localhost', 5001);
+        connectFunctionsEmulator(functions, host, 5001);
     } catch { /* already connected */ }
 
     if (import.meta.env.VITE_USE_EMULATORS === 'true') {
         try {
-            connectFirestoreEmulator(db, 'localhost', 8080);
-            connectStorageEmulator(storage, 'localhost', 9199);
-            connectAuthEmulator(auth, 'http://localhost:9099');
-        } catch { /* already connected */ }
+            connectFirestoreEmulator(db, host, 8080);
+            connectStorageEmulator(storage, host, 9199);
+            // v9+ connectAuthEmulator expects the full URL including scheme
+            connectAuthEmulator(auth, `http://${host}:9099`, { disableWarnings: true });
+            console.log(`[Firebase] Connected to emulators on ${host}`);
+        } catch (err) {
+            console.warn('[Firebase] Emulator connection error:', err.message);
+        }
     }
 }
 

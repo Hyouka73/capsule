@@ -82,3 +82,4 @@ export const createCoupon = onCall({ region: 'us-central1', cors: true }, async 
         throw new HttpsError('internal', 'Error al crear el cupón.');
     }
 });
+

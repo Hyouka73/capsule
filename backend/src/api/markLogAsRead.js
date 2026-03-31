@@ -79,3 +79,4 @@ export const markLogAsRead = onCall({ region: 'us-central1', cors: true }, async
         throw new HttpsError('internal', 'Error al actualizar el estado del log.');
     }
 });
+

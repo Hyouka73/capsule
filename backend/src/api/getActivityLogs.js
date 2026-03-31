@@ -61,3 +61,4 @@ export const getActivityLogs = onCall({ region: 'us-central1', cors: true }, asy
         throw new HttpsError('internal', 'Error al obtener los logs de actividad.');
     }
 });
+

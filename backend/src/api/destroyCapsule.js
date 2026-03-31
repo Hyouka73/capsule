@@ -73,3 +73,4 @@ export const destroyCapsule = onCall({ region: 'us-central1', cors: true }, asyn
         throw new HttpsError('internal', 'Error interno al destruir la cápsula.');
     }
 });
+

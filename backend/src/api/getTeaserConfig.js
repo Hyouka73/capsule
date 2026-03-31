@@ -49,3 +49,4 @@ export const getTeaserConfig = onCall({ region: 'us-central1', cors: true }, asy
         throw new HttpsError('internal', 'Error al obtener teaser config.');
     }
 });
+

@@ -56,3 +56,4 @@ export const deleteMemory = onCall({ region: 'us-central1', cors: true }, async 
         throw new HttpsError('internal', 'Falló el borrado del recuerdo en la base de datos.');
     }
 });
+

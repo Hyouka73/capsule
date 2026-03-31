@@ -37,7 +37,7 @@ export const getAppConfig = onCall({ region: 'us-central1', cors: true }, async 
             throw new HttpsError('not-found', 'Configuración no encontrada para esta relación.');
         }
 
-        // Merge all documents in the collection
+        // Merge all documents in the 'config' subcollection
         const combinedData = {};
         let maxUpdatedAt = 0;
 
@@ -45,20 +45,21 @@ export const getAppConfig = onCall({ region: 'us-central1', cors: true }, async 
             const docData = doc.data();
             const docId = doc.id;
             
-            // If the doc is 'main', merge its root fields
+            // If the doc is 'main', merge its fields to the root
             if (docId === SINGLETON_DOCS.APP_CONFIG) {
                 Object.assign(combinedData, docData);
             } else {
-                // Otherwise, nest it under its ID (tab name)
+                // Otherwise nest it under its document ID (module/section name)
                 combinedData[docId] = docData;
             }
 
-            // Track latest update
-            const docUpdatedAt = docData.updatedAt?.toMillis?.() || docData.updatedAt || 0;
+            // Robust timestamp tracking
+            const docUpdatedAt = docData.updatedAt?.toMillis?.() || 
+                               (typeof docData.updatedAt === 'number' ? docData.updatedAt : 0);
             if (docUpdatedAt > maxUpdatedAt) maxUpdatedAt = docUpdatedAt;
         });
 
-        // Add the max updatedAt to the combined object
+        // Final consolidated updatedAt
         combinedData.updatedAt = maxUpdatedAt;
 
         const { clientUpdatedAt } = request.data || {};
@@ -94,3 +95,4 @@ export const getAppConfig = onCall({ region: 'us-central1', cors: true }, async 
         throw new HttpsError('internal', 'Error al obtener la configuración.');
     }
 });
+

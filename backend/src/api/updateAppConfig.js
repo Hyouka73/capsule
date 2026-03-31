@@ -33,8 +33,8 @@ export const updateAppConfig = onCall({ region: 'us-central1', cors: true }, asy
 
         // Separate sections from main-level fields
         const sections = [
-            'teaser', 'snapshotConfig', 'wrapped', 'map', 'notifications', 
-            'onboarding', 'modules', 'partner', 'memoryTags', 'citaConfig'
+            'teaser', 'snapshotConfig', 'wrapped', 'mapConfig', 'notifications', 
+            'onboarding', 'modules', 'partner', 'citaConfig', 'memoryTags'
         ];
 
         const mainData = { updatedAt: now };
@@ -43,7 +43,8 @@ export const updateAppConfig = onCall({ region: 'us-central1', cors: true }, asy
         Object.keys(config).forEach(key => {
             if (sections.includes(key)) {
                 updatesBySection[key] = { ...config[key], updatedAt: now };
-            } else if (key !== 'updatedAt') {
+            } else if (!['updatedAt', 'map'].includes(key)) { 
+                // Specifically ignore legacy 'map' and other calculated fields in main
                 mainData[key] = config[key];
             }
         });
@@ -51,9 +52,12 @@ export const updateAppConfig = onCall({ region: 'us-central1', cors: true }, asy
         // 1. Update 'main' document
         batch.set(configColl.doc(SINGLETON_DOCS.APP_CONFIG), mainData, { merge: true });
 
-        // 2. Update each section document
+        // 2. Explicitly wipe legacy 'map' document to avoid conflicts
+        batch.delete(configColl.doc('map'));
+
+        // 3. Update each section document (CLEAN SAVE - NO MERGE)
         Object.entries(updatesBySection).forEach(([section, data]) => {
-            batch.set(configColl.doc(section), data, { merge: true });
+            batch.set(configColl.doc(section), data, { merge: false });
         });
 
         await batch.commit();
@@ -67,3 +71,4 @@ export const updateAppConfig = onCall({ region: 'us-central1', cors: true }, asy
         throw new HttpsError('internal', 'Error al actualizar la configuración.');
     }
 });
+

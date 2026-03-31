@@ -77,3 +77,4 @@ export const deleteCapsule = onCall({ region: 'us-central1', cors: true }, async
         throw new HttpsError('internal', 'Error al procesar la eliminación de la cápsula.');
     }
 });
+

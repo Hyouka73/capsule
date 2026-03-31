@@ -212,3 +212,4 @@ export const updateBingoSquare = onCall({ region: 'us-central1', cors: true }, a
         throw new HttpsError('internal', 'Error al actualizar la casilla de bingo.');
     }
 });
+

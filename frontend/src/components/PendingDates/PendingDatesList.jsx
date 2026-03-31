@@ -4,6 +4,43 @@ import { toast } from './../../components/ui/PastelToast/PastelToast';
 import styles from './PendingDatesList.module.css';
 
 /**
+ * Status Badge helper function
+ */
+function renderStatusBadge(pd) {
+    let label = '';
+    let badgeClass = '';
+
+    if (pd.status === 'uploading') {
+        label = '⏳ Sincronizando con la nube...';
+        badgeClass = styles.statusUploading;
+    } else if (pd.status === 'failed') {
+        label = '❌ Error de sincronización';
+        badgeClass = styles.statusFailed;
+    } else {
+        // Status is pending/draft
+        if (pd.isFromBingo) {
+            label = '🎯 Vinculado a Bingo';
+            badgeClass = styles.statusBingo;
+        } else if (!pd.title) {
+            label = '💾 Guardado local (Faltan datos)';
+            badgeClass = styles.statusLocalIncomplete;
+        } else if (!pd.coordinates) {
+            label = '🗺️ Ubicación pendiente';
+            badgeClass = styles.statusLocalNoLocation;
+        } else {
+            label = '✨ Todo listo (Sin sincronizar)';
+            badgeClass = styles.statusReady;
+        }
+    }
+
+    return (
+        <div className={`${styles.statusBadge} ${badgeClass}`}>
+            {label}
+        </div>
+    );
+}
+
+/**
  * Individual Card component with relative gesture logic
  */
 function PendingDateCard({ pd, idx, onSelectDate, onRemove, onRestore }) {
@@ -17,13 +54,11 @@ function PendingDateCard({ pd, idx, onSelectDate, onRemove, onRestore }) {
     const backgroundColor = useTransform(
         x, 
         [-150, -60, 0], 
-        ['#ff6b81', '#ffecf0', '#ffffff'] // De blanco a rosa claro y termina en un rojo pastel potente
+        ['#ff6b81', '#ffecf0', '#ffffff'] 
     );
     const deleteOpacity = useTransform(x, [-80, -20, 0], [1, 0.4, 0]);
     const iconScale = useTransform(x, [-80, -30, 0], [1.3, 0.9, 0.4]);
 
-    // Better date parsing & 24hr format conversion
-    // Priority: user-selected eventDate > original metadata date
     const finalDate = pd.eventDate || pd.originalDate;
     const parts = typeof finalDate === 'string' ? finalDate.split(', ') : [];
     
@@ -31,7 +66,6 @@ function PendingDateCard({ pd, idx, onSelectDate, onRemove, onRestore }) {
     let displayTime = '';
 
     if (pd.eventDate) {
-        // If it's a YYYY-MM-DD from the form
         const d = new Date(pd.eventDate);
         if (!isNaN(d.getTime())) {
             displayDate = d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -41,7 +75,6 @@ function PendingDateCard({ pd, idx, onSelectDate, onRemove, onRestore }) {
         displayTime = parts[2] || '';
     }
 
-    // Convert "06:32 p" or "06:32 p.m." to "18:32"
     if (displayTime) {
         const timeMatch = displayTime.match(/(\d{1,2}):(\d{2})\s*([ap])/i);
         if (timeMatch) {
@@ -51,19 +84,16 @@ function PendingDateCard({ pd, idx, onSelectDate, onRemove, onRestore }) {
             if (ampm.toLowerCase().startsWith('a') && hours === 12) hours = 0;
             displayTime = `${hours.toString().padStart(2, '0')}:${minutes}`;
         } else {
-            // Clean up if it doesn't match the regex but has suffix
             displayTime = displayTime.replace(/\s*[ap]\.?m?\.?/gi, '').trim();
         }
     }
 
     const maxDrag = containerWidth ? -(containerWidth * 0.9) : -300; 
 
-    // Centrar automáticamente cuando se monta para asegurar estado limpio
     useEffect(() => {
         x.set(0);
     }, [x]);
 
-    // Calcular ancho inicial y al redimensionar
     useEffect(() => {
         const updateWidth = () => {
             if (containerRef.current) setContainerWidth(containerRef.current.offsetWidth);
@@ -75,13 +105,11 @@ function PendingDateCard({ pd, idx, onSelectDate, onRemove, onRestore }) {
 
     const handleDelete = () => {
         if (onRemove) {
-            // Pequeña vibración visual antes de borrar
             animate(x, -containerWidth * 0.8, { duration: 0.3 });
-            
             setTimeout(() => {
                 onRemove(pd.id);
                 toast.info('Recuerdo quitado de la lista ✨', 'Toca para DESHACER ↺', {
-                    id: `delete-${pd.id}`, // Individual toast for each deletion
+                    id: `delete-${pd.id}`,
                     duration: 6000,
                     onClick: () => {
                         if (onRestore) {
@@ -182,23 +210,7 @@ function PendingDateCard({ pd, idx, onSelectDate, onRemove, onRestore }) {
                                 displayDate
                             )}
                         </span>
-                        <div className={styles.detailsRow}>
-                            <span className={styles.photoCount}>
-                                {pd.title ? displayDate : (
-                                    <>
-                                        <span className="material-symbols-rounded">photo_library</span>
-                                        {pd.photos?.length || 0} fotos
-                                    </>
-                                )}
-                            </span>
-                            {displayTime && <span className={styles.timeTag}>{displayTime}</span>}
-                            {pd.title && (
-                                <span className={styles.photoCountMini}>
-                                    <span className="material-symbols-rounded" style={{fontSize: '12px'}}>photo_library</span>
-                                    {pd.photos?.length || 0}
-                                </span>
-                            )}
-                        </div>
+                        {renderStatusBadge(pd)}
                     </div>
                 </div>
             </motion.div>

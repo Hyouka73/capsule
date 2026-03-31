@@ -127,3 +127,4 @@ export const claimPartnerAccount = onCall({ region: 'us-central1', cors: true },
         );
     }
 });
+

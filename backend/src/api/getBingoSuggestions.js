@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
-import { COLLECTIONS } from '../config/constants.js';
+import { COLLECTIONS, SINGLETON_DOCS } from '../config/constants.js';
 
 /**
  * getBingoSuggestions — Backend API (BFF)
@@ -24,19 +24,28 @@ export const getBingoSuggestions = onCall({ region: 'us-central1', cors: true },
     const db = getFirestore();
 
     try {
-        const boardRef = db.doc(`relationships/${relationshipId}/bingo/board`);
-        const boardSnap = await boardRef.get();
+        const boardsColl = db.collection('relationships').doc(relationshipId).collection(COLLECTIONS.BINGO_BOARD);
+        const activeSnap = await boardsColl.where('status', '==', 'active').limit(1).get();
 
-        if (!boardSnap.exists) {
+        let categories = [];
+        if (!activeSnap.empty) {
+            categories = activeSnap.docs[0].data().categories || [];
+        } else {
+            // Fallback for legacy documents
+            const legacyDoc = await boardsColl.doc(SINGLETON_DOCS.BINGO_BOARD).get();
+            if (legacyDoc.exists) {
+                categories = legacyDoc.data().categories || [];
+            }
+        }
+
+        if (categories.length === 0) {
               return { success: true, suggestions: [] };
         }
 
-        const { categories = [] } = boardSnap.data();
-        
-        // 1. Filtrar solo casillas no completadas
+        // 1. Filtrar solo casillas no completadas y habilitadas
         const availableCategories = categories.filter(c => !c.completedMemoryId && c.isEnabled !== false);
 
-        // 2. Si no hay tags, retornar un subconjunto de disponibles (o vacío)
+        // 2. Si no hay tags, retornar listado de disponibles para selección manual (opcional)
         if (tags.length === 0) {
             return { 
                 success: true, 
@@ -47,12 +56,15 @@ export const getBingoSuggestions = onCall({ region: 'us-central1', cors: true },
 
         const normalizedTags = tags.map(t => t.toLowerCase().trim());
 
-        // 3. Match logic
+        // 3. Match logic: Strict AND logic (Memory must contain ALL suggested tags of the category)
         const suggestions = availableCategories.filter(cat => {
-            const catTags = (cat.suggestedTags || []).map(st => 
-                (typeof st === 'string' ? st : st.value).toLowerCase().trim()
-            );
-            return normalizedTags.some(t => catTags.includes(t));
+            const suggestedTags = cat.suggestedTags || [];
+            if (suggestedTags.length === 0) return false;
+
+            return suggestedTags.every(st => {
+                const catTag = (typeof st === 'string' ? st : st.value).toLowerCase().trim();
+                return normalizedTags.includes(catTag);
+            });
         });
 
         return {
@@ -71,3 +83,4 @@ export const getBingoSuggestions = onCall({ region: 'us-central1', cors: true },
         throw new HttpsError('internal', 'Error al obtener sugerencias de bingo.');
     }
 });
+

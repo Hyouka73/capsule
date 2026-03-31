@@ -34,3 +34,4 @@ export const completeTeaser = onCall({ region: 'us-central1', cors: true }, asyn
         throw new HttpsError('internal', 'Error al completar el teaser.');
     }
 });
+

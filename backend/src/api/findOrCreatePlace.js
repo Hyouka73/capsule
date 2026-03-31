@@ -171,3 +171,4 @@ export const findOrCreatePlace = onCall({ region: 'us-central1', cors: true }, a
         return { success: false, error: err.message };
     }
 });
+

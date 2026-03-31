@@ -39,3 +39,4 @@ export const getCoupons = onCall({ region: 'us-central1', cors: true }, async (r
         throw new HttpsError('internal', 'Error al obtener los cupones.');
     }
 });
+

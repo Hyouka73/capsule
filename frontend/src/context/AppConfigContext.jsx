@@ -27,18 +27,22 @@ export function AppConfigProvider({ children }) {
         if (!relationshipId) return;
         
         try {
-            // When force=true (e.g. after saving), skip the cache check to always get fresh data
-            const clientUpdatedAt = force ? null : (configRef.current?.updatedAt || null);
-            const res = await getAppConfig({ clientUpdatedAt });
+            // Explicitly convert Date/Timestamp to numeric MS for reliable backend comparison
+            const clientTime = force ? null : (
+                configRef.current?.updatedAt?.toMillis ? configRef.current.updatedAt.toMillis() : 
+                (configRef.current?.updatedAt instanceof Date ? configRef.current.updatedAt.getTime() : configRef.current?.updatedAt)
+            );
+
+            const res = await getAppConfig({ 
+                clientUpdatedAt: clientTime
+            });
+
+            if (res.unchanged) {
+                setIsConfigLoaded(true);
+                return; // No update needed
+            }
 
             if (res.success) {
-                // If the server says it's unchanged (and we didn't force), we already have the latest
-                if (res.unchanged && !force) {
-                    setIsConfigLoaded(true);
-                    setIsFromCache(true);
-                    return;
-                }
-
                 const newConfig = SystemConfig.fromFirestore(res);
                 setConfig(newConfig);
                 setIsFromCache(false);
@@ -100,6 +104,7 @@ export function AppConfigProvider({ children }) {
 
     const value = useMemo(() => ({
         ...config,
+        config,
         relationshipId,
         isConfigLoaded,
         isFromCache,

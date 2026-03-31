@@ -15,8 +15,9 @@ export const resetBingoBoard = onCall({ region: 'us-central1', cors: true }, asy
     }
 
     const { relationshipId, uid, role } = request.auth.token;
-    if (role !== 'admin') {
-        throw new HttpsError('permission-denied', 'Solo el Admin puede resetear el tablero.');
+    // Allow both admin and partner to reset, provided they are in the relationship
+    if (role !== 'admin' && role !== 'partner') {
+        throw new HttpsError('permission-denied', 'No tienes permisos para resetear el tablero.');
     }
 
     const db = getFirestore();
@@ -70,3 +71,4 @@ export const resetBingoBoard = onCall({ region: 'us-central1', cors: true }, asy
         throw new HttpsError('internal', 'Error al resetear el tablero.');
     }
 });
+

@@ -33,38 +33,18 @@ export default function MapView({
     const { config: globalConfig } = useAppConfig();
     const [selectedPlace, setSelectedPlace] = useState(null);
     const [activeFilter, setActiveFilter] = useState('todos');
-    const [globalSettings, setGlobalSettings] = useState(null);
     const [placeMemories, setPlaceMemories] = useState([]);
     const [loadingMemories, setLoadingMemories] = useState(false);
     const isOnline = useOnlineStatus();
-    const [syncStatus, setSyncStatus] = useState('syncing'); // 'synced', 'cached', 'offline', 'syncing'
-    const [isUsingCache, setIsUsingCache] = useState(false);
+    
+    // No local settings needed anymore, we use globalConfig directly
+    const syncStatus = globalConfig ? 'synced' : 'loading';
 
     // Tuxtla Gutiérrez, Chiapas
     const [viewport, setViewport] = useState({
         center: [-93.1152, 16.7521], // MapLibre uses [lng, lat]
         zoom: 13,
     });
-
-    useEffect(() => {
-        async function initCache() {
-            const cached = await getMapConfigCache();
-            if (cached) {
-                setGlobalSettings(SystemConfig.fromFirestore(cached));
-                setSyncStatus('cached');
-                setIsUsingCache(true);
-            }
-        }
-        initCache();
-    }, []);
-
-    useEffect(() => {
-        if (globalConfig) {
-            setGlobalSettings(globalConfig);
-            setSyncStatus('synced');
-            setIsUsingCache(false);
-        }
-    }, [globalConfig]);
 
     useEffect(() => {
         if (navigator.geolocation) {
@@ -243,7 +223,8 @@ export default function MapView({
                         const isSelected = selectedPlace?.id === place.id;
                         const zoom = viewport?.zoom || 13;
 
-                        const tierStyle = place.getMarkerStyle(globalSettings?.mapConfig);
+                        // Use unified mapConfig from context
+                        const tierStyle = place.getMarkerStyle(globalConfig?.mapConfig);
 
 
                         let size = 'small';
@@ -317,7 +298,7 @@ export default function MapView({
                     citaContext={citaContext}
                     selectedPlace={selectedPlace}
                     onSpontaneousCita={() => {
-                        const minVal = globalSettings?.citaConfig?.minPhotosSpontaneous || 5;
+                        const minVal = globalConfig?.citaConfig?.minPhotosSpontaneous || 5;
                         if (onCitaContextChange) onCitaContextChange({ type: 'spontaneous', minPhotos: minVal });
                     }}
                 />

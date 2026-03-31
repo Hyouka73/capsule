@@ -142,34 +142,62 @@ export const createMemory = onCall({ region: 'us-central1', cors: true }, async 
             }
         }
 
-        // 6. Bingo Autodetection
+        // 6. Bingo Autodetection - Standardized for multiple boards & status: 'active'
         let bingoSuggestions = [];
         try {
-            const bingoRef = db.doc(`relationships/${relationshipId}/bingo/board`);
-            const bingoDoc = await bingoRef.get();
+            const boardsColl = db.collection('relationships').doc(relationshipId).collection(COLLECTIONS.BINGO_BOARD);
+            const activeSnap = await boardsColl.where('status', '==', 'active').limit(1).get();
 
-            if (bingoDoc.exists) {
+            if (!activeSnap.empty) {
+                const bingoDoc = activeSnap.docs[0];
                 const categories = bingoDoc.data().categories || [];
-                const memoryTagsLower = (memoryData.tags || []).map(t => t.toLowerCase());
+                const memoryTagsLower = (memoryData.tags || []).map(t => t.toLowerCase().trim());
                 
                 bingoSuggestions = categories
                     .filter(cat => {
                         if (cat.completedMemoryId) return false;
-                        
-                        const hasTagMatch = (cat.suggestedTags || []).length > 0 && 
-                            (cat.suggestedTags || []).every(t => {
-                                const catTag = (typeof t === 'string' ? t : t.value).toLowerCase();
-                                return memoryTagsLower.includes(catTag);
-                            });
+                        if (cat.isEnabled === false) return false;
+
+                        // Strict AND logic: memory must have ALL suggested tags of the category to match
+                        const suggestedTags = cat.suggestedTags || [];
+                        if (suggestedTags.length === 0) return false;
+
+                        const hasAllTagsMatch = suggestedTags.every(st => {
+                            const catTag = (typeof st === 'string' ? st : st.value).toLowerCase().trim();
+                            return memoryTagsLower.includes(catTag);
+                        });
                         
                         const isMovieMatch = cat.id === 'movies' && request.data.movieData;
-                        return hasTagMatch || isMovieMatch;
+                        return hasAllTagsMatch || isMovieMatch;
                     })
                     .map(cat => ({
                         categoryId: cat.id,
-                        label: cat.title,
+                        label: cat.title || cat.label,
                         emoji: cat.emoji
                     }));
+            } else {
+                // Fallback to legacy 'board' document if no active found (prevent breakage)
+                const legacyRef = boardsColl.doc(SINGLETON_DOCS.BINGO_BOARD);
+                const legacyDoc = await legacyRef.get();
+                if (legacyDoc.exists) {
+                    const categories = legacyDoc.data().categories || [];
+                    const memoryTagsLower = (memoryData.tags || []).map(t => t.toLowerCase().trim());
+                    bingoSuggestions = categories
+                        .filter(cat => {
+                            if (cat.completedMemoryId || cat.isEnabled === false) return false;
+                            const suggestedTags = cat.suggestedTags || [];
+                            if (suggestedTags.length === 0) return false;
+                            return suggestedTags.every(st => {
+                                const catTag = (typeof st === 'string' ? st : st.value).toLowerCase().trim();
+                                return memoryTagsLower.includes(catTag);
+                            });
+                        })
+                        .map(cat => ({
+                            categoryId: cat.id,
+                            label: cat.title || cat.label,
+                            emoji: cat.emoji
+                        }));
+                }
             }
         } catch (bingoErr) {
             logger.warn('Bingo suggestion check failed:', bingoErr);
@@ -187,3 +215,4 @@ export const createMemory = onCall({ region: 'us-central1', cors: true }, async 
         throw new HttpsError('internal', 'Falló la creación del recuerdo en la base de datos.');
     }
 });
+

@@ -1,15 +1,10 @@
-const TEST_RELATIONSHIP_ID = 'capsule_development_rel_123';
-
-export default async function seedMemories(admin, db) {
-    console.log('--- Seeding Memories (Subcollections) ---');
-
-    let adminUid;
-    try {
-        const adminRecord = await admin.auth().getUserByEmail('admin@test.com');
-        adminUid = adminRecord.uid;
-    } catch (e) {
-        adminUid = 'seed_admin_uid';
+export default async function seedMemories(admin, db, relationshipId, adminUid, isFullSeed) {
+    if (!isFullSeed) {
+        console.log(`--- Skipping Memories for ${relationshipId} (Clean State) ---`);
+        return;
     }
+
+    console.log(`--- Seeding Memories for ${relationshipId} (Full State) ---`);
 
     const memories = [
         {
@@ -20,7 +15,7 @@ export default async function seedMemories(admin, db) {
             mainPhotoUrl: 'https://images.unsplash.com/photo-1519337265831-281ec6cc8514?auto=format&fit=crop&q=80&w=400',
             tags: ['cita', 'romántico'],
             placeId: 'place_1',
-            placeName: 'Lugar Tier 1 (1 vis)',
+            placeName: 'Parque Central',
             uploadedBy: adminUid,
             isSpecial: false,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -34,7 +29,21 @@ export default async function seedMemories(admin, db) {
             mainPhotoUrl: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&q=80&w=400',
             tags: ['cita', 'cine'],
             placeId: 'place_5',
-            placeName: 'Lugar Tier 3 (5 vis)',
+            placeName: 'Cinepolis Luxury',
+            uploadedBy: adminUid,
+            isSpecial: true,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        },
+        {
+            id: 'seed_mem_3',
+            title: 'Cena de Aniversario',
+            eventDate: '2024-02-14',
+            photoCount: 3,
+            mainPhotoUrl: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&q=80&w=400',
+            tags: ['aniversario', 'cena'],
+            placeId: 'place_10',
+            placeName: 'Restaurante El Cielo',
             uploadedBy: adminUid,
             isSpecial: true,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -42,11 +51,11 @@ export default async function seedMemories(admin, db) {
         }
     ];
 
-    const relationshipRef = db.collection('relationships').doc(TEST_RELATIONSHIP_ID);
+    const relationshipRef = db.collection('relationships').doc(relationshipId);
 
     for (const mem of memories) {
         await relationshipRef.collection('memories').doc(mem.id).set(mem);
     }
     
-    console.log(`✅ Memories sembradas en subcollección para relación: ${TEST_RELATIONSHIP_ID}`);
+    console.log(`✅ ${memories.length} Memories sembradas para relación: ${relationshipId}`);
 }

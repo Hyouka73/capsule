@@ -54,3 +54,4 @@ export const getBingoBoard = onCall({ region: 'us-central1', cors: true }, async
         throw new HttpsError('internal', 'Error al obtener el tablero de bingo.');
     }
 });
+

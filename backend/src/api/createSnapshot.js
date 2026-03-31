@@ -135,3 +135,4 @@ export const createSnapshot = onCall({ region: 'us-central1', cors: true }, asyn
         throw new HttpsError('internal', err.message || 'Error interno al crear la instantánea.');
     }
 });
+

@@ -451,23 +451,25 @@ export default function GlobalSettings() {
                                                 <input 
                                                     type="text" 
                                                     className={styles.tagInputEmoji}
-                                                    value={tag.label.split(' ').pop()} 
+                                                    value={(tag?.label || '').split(' ').pop()} 
                                                     onChange={(e) => {
-                                                        const newTags = [...config.memoryTags];
-                                                        const text = tag.label.split(' ').slice(0, -1).join(' ');
-                                                        newTags[index].label = `${text} ${e.target.value}`;
-                                                        handleUpdate('memoryTags', newTags);
+                                                         const currentLabel = tag?.label || '';
+                                                         const newTags = [...config.memoryTags];
+                                                         const text = currentLabel.split(' ').slice(0, -1).join(' ');
+                                                         newTags[index].label = `${text} ${e.target.value}`;
+                                                         handleUpdate('memoryTags', newTags);
                                                     }}
                                                 />
                                                 <input 
                                                     type="text" 
                                                     className={styles.tagInputLabel}
-                                                    value={tag.label.split(' ').slice(0, -1).join(' ')} 
+                                                    value={(tag?.label || '').split(' ').slice(0, -1).join(' ')} 
                                                     onChange={(e) => {
-                                                        const newTags = [...config.memoryTags];
-                                                        const emoji = tag.label.split(' ').pop();
-                                                        newTags[index].label = `${e.target.value} ${emoji}`;
-                                                        newTags[index].value = e.target.value.toLowerCase().replace(/\s+/g, '_');
+                                                         const currentLabel = tag?.label || '';
+                                                         const newTags = [...config.memoryTags];
+                                                         const emoji = currentLabel.split(' ').pop();
+                                                         newTags[index].label = `${e.target.value} ${emoji}`;
+                                                         newTags[index].value = e.target.value.toLowerCase().replace(/\s+/g, '_');
                                                         handleUpdate('memoryTags', newTags);
                                                     }}
                                                 />

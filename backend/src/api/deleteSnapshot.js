@@ -80,3 +80,4 @@ export const deleteSnapshot = onCall({ region: 'us-central1', cors: true }, asyn
         throw new HttpsError('internal', 'Error al eliminar la instantánea.');
     }
 });
+

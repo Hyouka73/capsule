@@ -275,3 +275,87 @@
     .thumbWrapper { width: 3.75rem; height: 3.75rem; }
     .itemContent { gap: 1rem; padding: 0.75rem 1rem; }
 }
+
+.statusBadge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.625rem;
+    border-radius: 2rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-family: var(--font-body);
+    margin-top: 0.375rem;
+    width: fit-content;
+    letter-spacing: -0.01em;
+}
+
+.statusLocalIncomplete {
+    background: #fff8e1;
+    color: #f57c00;
+    border: 1px solid #ffe0b2;
+}
+
+.statusLocalNoLocation {
+    background: #e3f2fd;
+    color: #1976d2;
+    border: 1px solid #bbdefb;
+}
+
+.statusReady {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+.statusUploading {
+    background: #f3e5f5;
+    color: #7b1fa2;
+    border: 1px solid #e1bee7;
+    animation: pulseSync 2s infinite ease-in-out;
+}
+
+@keyframes pulseSync {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
+}
+
+.statusFailed {
+    background: #ffebee;
+    color: #d32f2f;
+    border: 1px solid #ffcdd2;
+}
+
+.statusBingo {
+    background: #fdf2f8;
+    color: #db2777;
+    border: 1px solid #fbcfe8;
+}
+
+.miniSpinner {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.statusOverlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+}
+
+.failedOverlay {
+    background: rgba(255,0,0,0.2);
+}
+

@@ -70,3 +70,4 @@ export const updateMemory = onCall({ region: 'us-central1', cors: true }, async 
         throw new HttpsError('internal', 'Falló la actualización del recuerdo en la base de datos.');
     }
 });
+
