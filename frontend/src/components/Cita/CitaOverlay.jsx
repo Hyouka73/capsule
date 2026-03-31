@@ -12,6 +12,7 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
     const [sessionPhotos, setSessionPhotos] = useState([]); // Array of { file, previewUrl }
     const [warningOpen, setWarningOpen] = useState(false);
     const [metadataStatus, setMetadataStatus] = useState('idle'); // 'idle' | 'detecting' | 'found' | 'not_found'
+    const [isSaving, setIsSaving] = useState(false);
 
     const handleFileAdded = async (e) => {
         const files = Array.from(e.target.files || []);
@@ -192,16 +193,25 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
 
                     {isComplete && (
                         <button
-                            className={styles.saveBtn}
-                            onClick={() => {
-                                if (onSave) {
-                                    const files = sessionPhotos.map(p => p.file);
-                                    onSave(files);
+                            className={`${styles.saveBtn} ${isSaving ? styles.saveBtnDisabled : ''}`}
+                            disabled={isSaving}
+                            onClick={async () => {
+                                if (onSave && !isSaving) {
+                                    setIsSaving(true);
+                                    try {
+                                        const files = sessionPhotos.map(p => p.file);
+                                        await onSave(files);
+                                    } catch (err) {
+                                        setIsSaving(false);
+                                        console.error('Error saving cita:', err);
+                                    }
                                 }
                             }}
                         >
-                            <span className="material-symbols-rounded">check_circle</span>
-                            Guardar Cita
+                            <span className={`material-symbols-rounded ${isSaving ? styles.rotating : ''}`}>
+                                {isSaving ? 'sync' : 'check_circle'}
+                            </span>
+                            {isSaving ? 'Guardando...' : 'Guardar Cita'}
                         </button>
                     )}
 

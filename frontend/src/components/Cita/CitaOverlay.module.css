@@ -342,7 +342,24 @@
     transition: transform 0.1s, box-shadow 0.1s;
 }
 
-.saveBtn:active {
+.saveBtn:active:not(:disabled) {
     transform: translateY(4px);
     box-shadow: var(--clay-shadow-pressed);
+}
+
+.saveBtnDisabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: #ccc !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.rotating {
+    animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
