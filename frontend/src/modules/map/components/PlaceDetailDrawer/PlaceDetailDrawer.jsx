@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../../../../services/firebase';
+import { useAuth } from '../../../../hooks/useAuth';
 import styles from './PlaceDetailDrawer.module.css';
-import Carousel from '../../../../components/ui/Carousel/Carousel';
 import { useCacheThumbnail } from '../../../../hooks/useCacheThumbnail';
 
 /**
@@ -19,14 +21,58 @@ export default function PlaceDetailDrawer({
     citaContext,
     onVerifyPlace
 }) {
-    const [view, setView] = useState('list'); // 'list' or 'photos'
-    const [selectedPhotos, setSelectedPhotos] = useState([]);
+    const { relationshipId } = useAuth();
+    const [loadingMemoryId, setLoadingMemoryId] = useState(null);
 
-    // Reset view when place changes
+    // Reset view state when place changes
     useEffect(() => {
-        setView('list');
-        setSelectedPhotos([]);
+        // No longer needed: local view state was removed
     }, [selectedPlace?.id]);
+
+    const handleMemoryClick = async (memory) => {
+        if (!onPhotoClick) return;
+        setLoadingMemoryId(memory.id);
+
+        try {
+            let photosArray = [];
+            const photosRef = collection(db, 'relationships', relationshipId, 'memories', memory.id, 'photos');
+            const snap = await getDocs(photosRef);
+
+            if (!snap.empty) {
+                photosArray = snap.docs.map(d => d.data());
+            }
+
+            if (photosArray.length === 0) {
+                photosArray = [{ url: memory.mainPhotoUrl }];
+            }
+
+            const items = photosArray.map(p => ({
+                url: p.url || p.storagePath || memory.mainPhotoUrl,
+                title: memory.title,
+                description: memory.description,
+                createdAt: memory.eventDate,
+                placeName: selectedPlace.name,
+                _type: 'memory'
+            }));
+
+            onPhotoClick({ items, index: 0 });
+        } catch (e) {
+            console.error('Error fetching memory photos:', e);
+            onPhotoClick({ 
+                items: [{ 
+                    url: memory.mainPhotoUrl, 
+                    title: memory.title, 
+                    description: memory.description, 
+                    createdAt: memory.eventDate, 
+                    placeName: selectedPlace.name, 
+                    _type: 'memory' 
+                }], 
+                index: 0 
+            });
+        } finally {
+            setLoadingMemoryId(null);
+        }
+    };
 
     if (!selectedPlace) return null;
 
@@ -73,90 +119,66 @@ export default function PlaceDetailDrawer({
                 ) : (
                     <div className={styles.contentBody}>
                         <AnimatePresence mode="wait">
-                            {view === 'list' ? (
-                                <motion.div 
-                                    key="list"
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -20 }}
-                                    className={styles.memoriesScroll}
-                                >
-                                    <h3 className={styles.sectionTitle}>Bitácora de Memorias 📔</h3>
-                                    {placeMemories.length > 0 ? (
-                                        placeMemories.map(memory => (
-                                            <div
-                                                key={memory.id}
-                                                className={styles.memoryCard}
-                                                onClick={() => {
-                                                    const photoUrls = (memory.photos && memory.photos.length > 0) 
-                                                        ? memory.photos 
-                                                        : (memory.mainPhotoUrl ? [memory.mainPhotoUrl] : []);
-                                                    
-                                                    if (photoUrls.length > 0) {
-                                                        setSelectedPhotos(photoUrls);
-                                                        setView('photos');
-                                                    }
-                                                }}
-                                            >
-                                                <div className={styles.memoryPhotoWrap}>
-                                                    <MemoryPhoto 
-                                                        placeId={selectedPlace.id} 
-                                                        originalUrl={memory.mainPhotoUrl} 
-                                                        className={styles.memoryPhoto} 
-                                                    />
-                                                    {memory.photoCount > 1 && (
-                                                        <div className={styles.photoCountBadge}>
-                                                            {memory.photoCount} fotos
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className={styles.memoryInfo}>
-                                                    <div className={styles.memoryHeader}>
-                                                        <h3 className={styles.memoryTitle}>{memory.title || 'Sin título'}</h3>
-                                                        <span className={styles.memoryDate}>
-                                                            {memory.eventDate ? new Date(memory.eventDate).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) : ''}
-                                                        </span>
+                            <motion.div 
+                                key={`list-${selectedPlace.id}`}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                className={styles.memoriesScroll}
+                            >
+                                <h3 className={styles.sectionTitle}>Bitácora de Memorias 📔</h3>
+                                {placeMemories.length > 0 ? (
+                                    placeMemories.map(memory => (
+                                        <div
+                                            key={memory.id}
+                                            className={styles.memoryCard}
+                                            onClick={() => handleMemoryClick(memory)}
+                                        >
+                                            <div className={styles.memoryPhotoWrap}>
+                                                <MemoryPhoto 
+                                                    placeId={selectedPlace.id} 
+                                                    originalUrl={memory.mainPhotoUrl} 
+                                                    className={styles.memoryPhoto} 
+                                                />
+                                                {loadingMemoryId === memory.id && (
+                                                    <div className={styles.loadingOverlay}>
+                                                        <div className={styles.spinnerWrapper}></div>
                                                     </div>
-                                                    <p className={styles.memoryDesc}>{memory.description}</p>
-                                                    {memory.tags?.length > 0 && (
-                                                        <div className={styles.memoryTags}>
-                                                            {memory.tags.slice(0, 2).map(t => (
-                                                                <span key={t} className={styles.miniTag}>#{t}</span>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                )}
+                                                {memory.photoCount > 1 && (
+                                                    <div className={styles.photoCountBadge}>
+                                                        {memory.photoCount} {memory.photoCount === 1 ? 'foto' : 'fotos'}
+                                                    </div>
+                                                )}
                                             </div>
-                                        ))
-                                    ) : (
-                                        <div className={styles.noMemories}>
-                                            <p>Aún no hay citas registradas aquí. 📸</p>
+                                            <div className={styles.memoryInfo}>
+                                                <div className={styles.memoryHeader}>
+                                                    <h3 className={styles.memoryTitle}>{memory.title || 'Sin título'}</h3>
+                                                    <span className={styles.memoryDate}>
+                                                        {memory.eventDate ? new Date(memory.eventDate).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) : ''}
+                                                    </span>
+                                                </div>
+                                                <p className={styles.memoryDesc}>{memory.description}</p>
+                                                {memory.tags?.length > 0 && (
+                                                    <div className={styles.memoryTags}>
+                                                        {memory.tags.slice(0, 2).map(t => (
+                                                            <span key={t} className={styles.miniTag}>#{t}</span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    )}
-                                </motion.div>
-                            ) : null}
+                                    ))
+                                ) : (
+                                    <div className={styles.noMemories}>
+                                        <p>Aún no hay citas registradas aquí. 📸</p>
+                                    </div>
+                                )}
+                            </motion.div>
                         </AnimatePresence>
                     </div>
                 )}
             </div>
-
-            {/* FULL SCREEN PHOTO VIEWER */}
-            <AnimatePresence>
-                {view === 'photos' && (
-                    <motion.div 
-                        className={styles.fullScreenOverlay}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                    >
-                        <Carousel 
-                            items={selectedPhotos} 
-                            onBack={() => setView('list')} 
-                        />
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </div>
     );
 }

@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../../services/firebase';
+import { useAuth } from '../../hooks/useAuth';
 import { useGallery } from './hooks/useGallery';
 import PhotoDetailOverlay from './components/PhotoDetailOverlay';
 import LoadingScreen from '../../components/ui/LoadingScreen/LoadingScreen';
@@ -9,27 +12,69 @@ import styles from './GalleryView.module.css';
  * GalleryView — Optimized for Photos (Minimal UI)
  */
 export default function GalleryView({ onOverlayStateChange }) {
+    const { relationshipId } = useAuth();
     const { photos, loading, hasMore, loadMore, error } = useGallery(24);
-    const [filter, setFilter] = useState('all'); // all, memory, snapshot
-    const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(null);
+    const [filter, setFilter] = useState('memory'); // memory, snapshot
+    const [viewerSelection, setViewerSelection] = useState(null);
+    const [loadingMemoryId, setLoadingMemoryId] = useState(null);
     const observerTarget = useRef(null);
 
     // Filter and process photos
     const filteredPhotos = useMemo(() => {
-        if (filter === 'all') return photos;
         return photos.filter(p => p._type === filter);
     }, [photos, filter]);
+
+    const handlePhotoClick = async (photo, index) => {
+        if (photo._type === 'memory') {
+            setLoadingMemoryId(photo.id);
+            try {
+                let photosArray = [];
+                const photosRef = collection(db, 'relationships', relationshipId, 'memories', photo.id, 'photos');
+                const snap = await getDocs(photosRef);
+                
+                if (!snap.empty) {
+                    photosArray = snap.docs.map(d => d.data());
+                }
+
+                if (photosArray.length === 0) {
+                    photosArray = [{ url: photo.url, storagePath: photo.storagePath }];
+                }
+
+                const items = photosArray.map(p => ({
+                    url: p.url || p.storagePath || photo.url,
+                    title: photo.title,
+                    description: photo.description,
+                    createdAt: photo.createdAt,
+                    placeName: photo.placeName,
+                    _type: 'memory'
+                }));
+                setViewerSelection({ items, index: 0 });
+            } catch (err) {
+                console.error("Error fetching memory photos:", err);
+                // Fallback on error
+                setViewerSelection({ 
+                    items: [{ url: photo.url, title: photo.title, description: photo.description, _type: 'memory' }], 
+                    index: 0 
+                });
+            } finally {
+                setLoadingMemoryId(null);
+            }
+        } else {
+            setViewerSelection({ items: filteredPhotos, index });
+        }
+    };
+
 
     // Handle overlay state for Navbar hiding
     useEffect(() => {
         if (onOverlayStateChange) {
-            onOverlayStateChange(selectedPhotoIndex !== null);
+            onOverlayStateChange(viewerSelection !== null);
         }
         // Cleanup when unmounting the gallery tab
         return () => {
             if (onOverlayStateChange) onOverlayStateChange(false);
         };
-    }, [selectedPhotoIndex, onOverlayStateChange]);
+    }, [viewerSelection, onOverlayStateChange]);
 
     // Infinite Scroll Observer
     useEffect(() => {
@@ -54,17 +99,12 @@ export default function GalleryView({ onOverlayStateChange }) {
             <div className={styles.filterSection}>
                 <div className={styles.filterWrapper}>
                     <button 
-                        className={`${styles.filterBtn} ${filter === 'all' ? styles.filterBtnActive : ''}`}
-                        onClick={() => setFilter('all')}
-                    >
-                        Todo
-                    </button>
-                    <button 
                         className={`${styles.filterBtn} ${filter === 'memory' ? styles.filterBtnActive : ''}`}
                         onClick={() => setFilter('memory')}
                     >
                         Recuerdos
                     </button>
+
                     <button 
                         className={`${styles.filterBtn} ${filter === 'snapshot' ? styles.filterBtnActive : ''}`}
                         onClick={() => setFilter('snapshot')}
@@ -87,11 +127,16 @@ export default function GalleryView({ onOverlayStateChange }) {
                                 key={photo.id || index}
                                 className={styles.photoCard}
                                 layout
-                                onClick={() => setSelectedPhotoIndex(index)}
+                                onClick={() => handlePhotoClick(photo, index)}
                                 whileTap={{ scale: 0.98 }}
                             >
                                 <div className={styles.imageContainer}>
                                     <img src={photo.thumbnail || photo.url} alt="Recuerdo" loading="lazy" />
+                                    {loadingMemoryId === photo.id && (
+                                        <div className={styles.loadingOverlay}>
+                                            <div className={styles.spinnerWrapper}></div>
+                                        </div>
+                                    )}
                                     {photo.isNew && <div className={styles.newTag}>Nuevo</div>}
                                     {photo._type === 'snapshot' && (
                                         <div className={styles.specialBadge}>
@@ -132,11 +177,11 @@ export default function GalleryView({ onOverlayStateChange }) {
 
             {/* Photo Detail Viewer */}
             <AnimatePresence>
-                {selectedPhotoIndex !== null && (
+                {viewerSelection && (
                     <PhotoDetailOverlay
-                        photos={filteredPhotos}
-                        initialIndex={selectedPhotoIndex}
-                        onClose={() => setSelectedPhotoIndex(null)}
+                        photos={viewerSelection.items}
+                        initialIndex={viewerSelection.index}
+                        onClose={() => setViewerSelection(null)}
                     />
                 )}
             </AnimatePresence>

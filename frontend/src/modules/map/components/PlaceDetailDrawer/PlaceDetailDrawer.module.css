@@ -233,6 +233,26 @@
     object-fit: cover;
 }
 
+.loadingOverlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+}
+
+.spinnerWrapper {
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(255, 175, 204, 0.3);
+    border-top: 3px solid var(--pastel-rose);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
 .memoryPhotoPlaceholder {
     width: 100%;
     height: 100%;

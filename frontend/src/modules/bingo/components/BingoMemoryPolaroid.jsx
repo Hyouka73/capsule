@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '../../../services/firebase';
+import { useAuth } from '../../../hooks/useAuth';
 import styles from '../UserBingo.module.css';
 
 export default function BingoMemoryPolaroid({ selectedSquare, onClose, onShowGallery }) {
     const [memory, setMemory] = useState(null);
     const [photos, setPhotos] = useState([]);
     const [loading, setLoading] = useState(false);
+    const { relationshipId } = useAuth();
 
     useEffect(() => {
         if (!selectedSquare?.completedMemoryId) {
@@ -20,14 +22,14 @@ export default function BingoMemoryPolaroid({ selectedSquare, onClose, onShowGal
             setLoading(true);
             try {
                 const memoryId = selectedSquare.completedMemoryId;
-                const memoryDoc = await getDoc(doc(db, 'memories', memoryId));
+                const memoryDoc = await getDoc(doc(db, 'relationships', relationshipId, 'memories', memoryId));
                 
                 if (memoryDoc.exists()) {
                     const data = memoryDoc.data();
                     setMemory(data);
 
                     // Fetch subcollection photos
-                    const photosSnap = await getDocs(collection(db, 'memories', memoryId, 'photos'));
+                    const photosSnap = await getDocs(collection(db, 'relationships', relationshipId, 'memories', memoryId, 'photos'));
                     const photosList = photosSnap.docs.map(d => ({ id: d.id, ...d.data() }));
                     setPhotos(photosList);
                 }
@@ -101,7 +103,17 @@ export default function BingoMemoryPolaroid({ selectedSquare, onClose, onShowGal
                             {!loading && galleryPhotos.length > 0 && (
                                 <button
                                     className={styles.galleryBtn}
-                                    onClick={() => onShowGallery(galleryPhotos)}
+                                    onClick={() => {
+                                        const items = galleryPhotos.map(p => ({
+                                            url: p.url || p.storagePath,
+                                            title: displayTitle,
+                                            description: displayDescription,
+                                            createdAt: selectedSquare.completedAt,
+                                            placeName: selectedSquare.placeName || 'Bingo',
+                                            _type: 'memory'
+                                        }));
+                                        onShowGallery({ items, index: 0 });
+                                    }}
                                 >
                                     <span className="material-symbols-rounded">photo_library</span>
                                     Ver Galería ({galleryPhotos.length})
