@@ -9,9 +9,14 @@ export default function Carousel({
     items = [], 
     initialIndex = 0, 
     onBack,
+    onIndexChange,
     renderItem 
 }) {
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
+
+    React.useEffect(() => {
+        if (onIndexChange) onIndexChange(currentIndex);
+    }, [currentIndex, onIndexChange]);
 
     if (!items || items.length === 0) return null;
 
