@@ -13,7 +13,7 @@ export default function PhotoDetailOverlay({ photos, initialIndex, onClose }) {
     if (!photos || photos.length === 0) return null;
 
     const currentPhoto = photos[currentIndex] || photos[0];
-    const hasMetadata = currentPhoto.title || currentPhoto.description || currentPhoto.caption || currentPhoto.placeName;
+    const hasMetadata = currentPhoto.title || currentPhoto.description || currentPhoto.caption || currentPhoto.placeName || currentPhoto.createdAt || currentPhoto.placeName || currentPhoto.location;
 
     const renderPhotoItem = (photo) => (
         <div className={styles.slideContent}>
@@ -25,28 +25,6 @@ export default function PhotoDetailOverlay({ photos, initialIndex, onClose }) {
         </div>
     );
 
-    const [touchStartY, setTouchStartY] = useState(null);
-
-    const handleTouchStart = (e) => {
-        setTouchStartY(e.touches[0].clientY);
-    };
-
-    const handleTouchEnd = (e) => {
-        if (!touchStartY) return;
-        const touchEndY = e.changedTouches[0].clientY;
-        const diff = touchStartY - touchEndY;
-
-        // diff > 0 means swiped UP
-        // diff < 0 means swiped DOWN
-        if (diff > 50) {
-            setDrawerState('open');
-        } else if (diff < -50) {
-            setDrawerState('peek');
-        }
-        
-        setTouchStartY(null);
-    };
-
     return (
         <motion.div
             className={styles.overlay}
@@ -54,64 +32,91 @@ export default function PhotoDetailOverlay({ photos, initialIndex, onClose }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
         >
-            <Carousel 
-                items={photos}
-                initialIndex={initialIndex}
-                onIndexChange={(idx) => {
-                    setCurrentIndex(idx);
-                    setDrawerState('peek'); // Reset on photo change
+            <motion.div 
+                className={styles.carouselWrapper}
+                onPanEnd={(e, info) => {
+                    const absX = Math.abs(info.offset.x);
+                    const absY = Math.abs(info.offset.y);
+                    
+                    // If it's more vertical than horizontal (strict ratio 2:1)
+                    if (absY > 30 && absY > absX * 2) {
+                        if (info.offset.y < 0) setDrawerState('open');
+                        else setDrawerState('peek');
+                    }
                 }}
-                onBack={onClose}
-                renderItem={renderPhotoItem}
-            />
+            >
+                <Carousel 
+                    items={photos}
+                    initialIndex={initialIndex}
+                    onIndexChange={(idx) => {
+                        setCurrentIndex(idx);
+                    }}
+                    onBack={onClose}
+                    renderItem={renderPhotoItem}
+                />
+            </motion.div>
 
-            {/* Invisible Gesture Area at Bottom (Intercepts touches without blocking Carousel's x-drag) */}
-            <div 
-                className={styles.gestureCapture}
-                onTouchStart={handleTouchStart}
-                onTouchEnd={handleTouchEnd}
-            />
+            {/* Drawer UI - NO key or AnimatePresence here to avoid unmounting flicker */}
+            <motion.div
+                className={styles.metadata}
+                drag="y"
+                dragConstraints={{ top: 0, bottom: 0 }}
+                dragElastic={0.05}
+                onDragEnd={(e, { offset, velocity }) => {
+                    if (offset.y < -30 || velocity.y < -300) {
+                        setDrawerState('open');
+                    } else if (offset.y > 30 || velocity.y > 300) {
+                        setDrawerState('peek');
+                    }
+                }}
+                variants={{
+                    peek: { y: 'calc(100% - 35px)' },
+                    open: { y: 0 }
+                }}
+                initial="peek"
+                animate={hasMetadata ? drawerState : "peek"} /* Hide content but keep drawer structure if no metadata? Actually hasMetadata handles text. */
+                style={{ display: hasMetadata ? 'flex' : 'none' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+            >
+                <div 
+                    className={styles.drawerHandleWrap}
+                    onClick={() => setDrawerState(prev => prev === 'peek' ? 'open' : 'peek')}
+                >
+                    <div className={styles.drawerHandle} />
+                </div>
+                
+                <div className={styles.scrollableContent}>
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={currentIndex}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                            className={styles.contentInner}
+                        >
+                            {currentPhoto.caption && <p className={styles.caption}>{currentPhoto.caption}</p>}
+                            {currentPhoto.title && <h3 className={styles.photoTitle}>{currentPhoto.title}</h3>}
+                            {currentPhoto.description && <p className={styles.description}>{currentPhoto.description}</p>}
 
-            {/* Toggle Handle / Peek UI explicitly rendering even when hidden, to prompt the user */}
-            <AnimatePresence mode="wait">
-                {hasMetadata && (
-                    <motion.div
-                        key={`drawer-${currentIndex}`}
-                        className={styles.metadata}
-                        variants={{
-                            peek: { y: 'calc(100% - 35px)' },
-                            open: { y: 0 }
-                        }}
-                        initial="peek"
-                        animate={drawerState}
-                        transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-                        onClick={() => setDrawerState(prev => prev === 'peek' ? 'open' : 'peek')}
-                    >
-                        <div className={styles.drawerHandleWrap}>
-                            <div className={styles.drawerHandle} />
-                        </div>
-                        
-                        {currentPhoto.caption && <p className={styles.caption}>{currentPhoto.caption}</p>}
-                        {currentPhoto.title && <h3 className={styles.photoTitle}>{currentPhoto.title}</h3>}
-                        {currentPhoto.description && <p className={styles.description}>{currentPhoto.description}</p>}
-
-                        <div className={styles.infoRow}>
-                            {currentPhoto.createdAt && (
-                                <div className={styles.infoItem}>
-                                    <span className="material-symbols-rounded">calendar_month</span>
-                                    <span>{new Date(currentPhoto.createdAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                                </div>
-                            )}
-                            {(currentPhoto.placeName || currentPhoto.location) && (
-                                <div className={styles.infoItem}>
-                                    <span className="material-symbols-rounded">location_on</span>
-                                    <span>{currentPhoto.placeName || currentPhoto.location?.name || 'Ubicación'}</span>
-                                </div>
-                            )}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                            <div className={styles.infoRow}>
+                                {currentPhoto.createdAt && (
+                                    <div className={styles.infoItem}>
+                                        <span className="material-symbols-rounded">calendar_month</span>
+                                        <span>{new Date(currentPhoto.createdAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                    </div>
+                                )}
+                                {(currentPhoto.placeName || currentPhoto.location) && (
+                                    <div className={styles.infoItem}>
+                                        <span className="material-symbols-rounded">location_on</span>
+                                        <span>{currentPhoto.placeName || currentPhoto.location?.name || 'Ubicación'}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </AnimatePresence>
+                </div>
+            </motion.div>
         </motion.div>
     );
 }
