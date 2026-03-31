@@ -58,7 +58,7 @@ service cloud.firestore {
 
     // ── SUBCOLLECTIONS BY RELATIONSHIP ────────────────────────────────────
 
-    match /relationships/{relationshipId}/{collection}/{docId} {
+    match /relationships/{relationshipId}/{document=**} {
       allow read, write: if matchesRelationship(relationshipId);
     }
   }
