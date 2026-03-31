@@ -180,13 +180,19 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                     {sessionPhotos.length > 0 && (
                         <div className={styles.sessionPhotosStrip}>
                             {sessionPhotos.map((item, i) => (
-                                <img
-                                    key={i}
-                                    src={item.previewUrl}
-                                    alt=""
-                                    className={styles.sessionPhotoThumb}
-                                    onError={handleImageError}
-                                />
+                                <div key={i} className={styles.sessionPhotoWrap}>
+                                    <img
+                                        src={item.previewUrl}
+                                        alt=""
+                                        className={styles.sessionPhotoThumb}
+                                        onError={handleImageError}
+                                    />
+                                    {i === 0 && (
+                                        <div className={styles.mainPhotoBadge} title="Foto Principal (Portada)">
+                                            <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>star</span>
+                                        </div>
+                                    )}
+                                </div>
                             ))}
                         </div>
                     )}

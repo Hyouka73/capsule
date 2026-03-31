@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 import { openDB } from '../config/dbConfig';
 import { autoDetectMetadata } from '../utils/extractGpsFromFile';
@@ -7,8 +7,9 @@ const STORE_NAME = 'pending_citas';
 export function usePendingCitas() {
     const [pendingCitas, setPendingCitas] = useState([]);
     const [pendingCount, setPendingCount] = useState(0);
-    const [hiddenIds, setHiddenIds] = useState(new Set());
-    const [removalTimers, setRemovalTimers] = useState({});
+    const hiddenIdsRef = useRef(new Set());
+    const removalTimersRef = useRef({});
+    const [hiddenTick, setHiddenTick] = useState(0);
 
     const refreshPending = useCallback(async () => {
         try {
@@ -139,11 +140,8 @@ export function usePendingCitas() {
                 const store = tx.objectStore(STORE_NAME);
                 store.delete(id);
                 tx.oncomplete = () => {
-                    setHiddenIds(prev => {
-                        const next = new Set(prev);
-                        next.delete(id);
-                        return next;
-                    });
+                    hiddenIdsRef.current.delete(id);
+                    setHiddenTick(t => t + 1);
                     refreshPending();
                     resolve();
                 };
@@ -151,41 +149,27 @@ export function usePendingCitas() {
             });
         }
 
-        setHiddenIds(prev => {
-            const next = new Set(prev);
-            next.add(id);
-            return next;
-        });
+        hiddenIdsRef.current.add(id);
+        setHiddenTick(t => t + 1);
 
         const timer = setTimeout(() => {
             removePendingCita(id, true);
-            setRemovalTimers(prev => {
-                const next = { ...prev };
-                delete next[id];
-                return next;
-            });
+            delete removalTimersRef.current[id];
         }, 6000);
 
-        setRemovalTimers(prev => ({ ...prev, [id]: timer }));
+        removalTimersRef.current[id] = timer;
     }, [refreshPending]);
 
     const restorePendingCita = useCallback(async (idOrCita) => {
         const id = typeof idOrCita === 'string' ? idOrCita : idOrCita.id;
         
-        if (hiddenIds.has(id)) {
-            if (removalTimers[id]) {
-                clearTimeout(removalTimers[id]);
-                setRemovalTimers(prev => {
-                    const next = { ...prev };
-                    delete next[id];
-                    return next;
-                });
+        if (hiddenIdsRef.current.has(id)) {
+            if (removalTimersRef.current[id]) {
+                clearTimeout(removalTimersRef.current[id]);
+                delete removalTimersRef.current[id];
             }
-            setHiddenIds(prev => {
-                const next = new Set(prev);
-                next.delete(id);
-                return next;
-            });
+            hiddenIdsRef.current.delete(id);
+            setHiddenTick(t => t + 1);
             return;
         }
 
@@ -206,7 +190,7 @@ export function usePendingCitas() {
             return new Promise((resolve, reject) => {
                 const tx = db.transaction(STORE_NAME, 'readwrite');
                 const store = tx.objectStore(STORE_NAME);
-                store.add(itemToRestore);
+                store.put(itemToRestore);
                 tx.oncomplete = () => {
                     refreshPending();
                     resolve(cita.id);
@@ -214,7 +198,7 @@ export function usePendingCitas() {
                 tx.onerror = () => reject(tx.error);
             });
         }
-    }, [hiddenIds, removalTimers, refreshPending]);
+    }, [refreshPending]);
 
     const updatePendingCitaStatus = useCallback(async (id, status) => {
         const db = await openDB();
@@ -303,9 +287,9 @@ export function usePendingCitas() {
     return useMemo(() => ({
         pendingCitas: pendingCitas.map(cita => ({
             ...cita,
-            isHidden: hiddenIds.has(cita.id)
+            isHidden: hiddenIdsRef.current.has(cita.id)
         })),
-        pendingCount: pendingCount - hiddenIds.size,
+        pendingCount: pendingCount - hiddenIdsRef.current.size,
         addPendingCita,
         removePendingCita,
         updatePendingCitaStatus,
@@ -314,5 +298,5 @@ export function usePendingCitas() {
         getActiveDraft,
         saveDraft,
         restorePendingCita
-    }), [pendingCitas, hiddenIds, pendingCount, addPendingCita, removePendingCita, updatePendingCitaStatus, updatePendingCita, refreshPending, getActiveDraft, saveDraft, restorePendingCita]);
+    }), [pendingCitas, hiddenTick, pendingCount, addPendingCita, removePendingCita, updatePendingCitaStatus, updatePendingCita, refreshPending, getActiveDraft, saveDraft, restorePendingCita]);
 }

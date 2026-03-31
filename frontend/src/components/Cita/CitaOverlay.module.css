@@ -264,6 +264,28 @@
     box-shadow: var(--clay-shadow-sm);
 }
 
+.sessionPhotoWrap {
+    position: relative;
+    display: inline-block;
+}
+
+.mainPhotoBadge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: var(--pastel-mint);
+    color: white;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--clay-shadow-sm);
+    z-index: 10;
+    border: 2px solid white;
+}
+
 .warningBox {
     background: var(--clay-bg-rose);
     border: 2px solid var(--pastel-rose-light);
