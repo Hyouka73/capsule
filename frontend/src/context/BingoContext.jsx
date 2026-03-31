@@ -12,7 +12,8 @@ import BingoAction from '../models/BingoAction';
 import { openDB } from '../config/dbConfig';
 
 const BingoContext = createContext();
-const BINGO_QUEUE_KEY = 'bingo_suggestions_queue';
+const BINGO_CACHE_DB_KEY = 'bingo_board';
+const BINGO_QUEUE_DB_KEY = 'bingo_suggestions';
 
 const getBingoCacheKey = (rid) => `bingo_${rid}`;
 
@@ -21,8 +22,8 @@ async function saveBingoCache(boardData, rid) {
     try {
         const db = await openDB();
         const tx = db.transaction('app_cache', 'readwrite');
-        tx.objectStore('app_cache').put({ key: getBingoCacheKey(rid), data: boardData, savedAt: Date.now() });
-    } catch { /* falla silenciosa */ }
+        tx.objectStore('app_cache').put({ key: `${BINGO_CACHE_DB_KEY}_${rid}`, data: boardData, savedAt: Date.now() });
+    } catch { /* silent */ }
 }
 
 async function loadBingoCache(rid) {
@@ -31,11 +32,33 @@ async function loadBingoCache(rid) {
         const db = await openDB();
         return new Promise((resolve) => {
             const tx = db.transaction('app_cache', 'readonly');
-            const req = tx.objectStore('app_cache').get(getBingoCacheKey(rid));
+            const req = tx.objectStore('app_cache').get(`${BINGO_CACHE_DB_KEY}_${rid}`);
             req.onsuccess = () => resolve(req.result ?? null);
             req.onerror = () => resolve(null);
         });
     } catch { return null; }
+}
+
+async function saveBingoQueue(queue, rid) {
+    if (!rid) return;
+    try {
+        const db = await openDB();
+        const tx = db.transaction('app_cache', 'readwrite');
+        tx.objectStore('app_cache').put({ key: `${BINGO_QUEUE_DB_KEY}_${rid}`, data: queue, savedAt: Date.now() });
+    } catch { /* silent */ }
+}
+
+async function loadBingoQueue(rid) {
+    if (!rid) return [];
+    try {
+        const db = await openDB();
+        return new Promise((resolve) => {
+            const tx = db.transaction('app_cache', 'readonly');
+            const req = tx.objectStore('app_cache').get(`${BINGO_QUEUE_DB_KEY}_${rid}`);
+            req.onsuccess = () => resolve(req.result?.data ?? []);
+            req.onerror = () => resolve([]);
+        });
+    } catch { return []; }
 }
 
 export function BingoProvider({ children }) {
@@ -49,6 +72,7 @@ export function BingoProvider({ children }) {
     const { queueAction } = useOfflineActions();
 
     const [celebrationEvent, setCelebrationEvent] = useState(null);
+    const [pendingVictory, setPendingVictory] = useState(null);
     const [irisEvent, setIrisEvent] = useState(false);
     
     // UI Queue for offline sync suggestions
@@ -87,10 +111,14 @@ export function BingoProvider({ children }) {
         let isMounted = true;
         
         const init = async () => {
-            const result = await loadBingoCache(rid);
+            const [result, initialQueue] = await Promise.all([
+                loadBingoCache(rid),
+                loadBingoQueue(rid)
+            ]);
+
             if (!isMounted) return;
 
-            // 1. Cargar lo que haya en cache (rápido!)
+            // 1. Cargar lo que haya en IndexedDB (instantáneo!)
             if (result && result.data) {
                 const cached = result.data;
                 const cats = Array.isArray(cached.categories) ? cached.categories : (Array.isArray(cached.squares) ? cached.squares : []);
@@ -100,19 +128,19 @@ export function BingoProvider({ children }) {
                 setIsLoading(false);
             }
 
-            // Hydrate Queue from localStorage
-            try {
-                const savedQueue = localStorage.getItem(`${BINGO_QUEUE_KEY}_${rid}`);
-                if (savedQueue) {
-                    setBingoQueue(JSON.parse(savedQueue));
-                }
-            } catch (err) { /* silent */ }
+            if (initialQueue.length > 0) {
+                setBingoQueue(initialQueue);
+            }
 
-            // 2. Solo fetch si el cache tiene más de 5 minutos o no existe
-            const CACHE_STALE_TIME = 5 * 60 * 1000;
+            // 2. Background Refresh (Fetch si el cache tiene más de 2 minutos)
+            const CACHE_STALE_TIME = 2 * 60 * 1000;
             const isStale = !result || !result.savedAt || (Date.now() - result.savedAt > CACHE_STALE_TIME);
             
             if (navigator.onLine && isStale) {
+                fetchBoard();
+            } else if (!result) {
+                // Si no hay nada, forzar un fetch
+                setIsLoading(true);
                 fetchBoard();
             }
         };
@@ -130,10 +158,10 @@ export function BingoProvider({ children }) {
         };
     }, [rid, fetchBoard]);
 
-    // Persist queue
+    // Persist queue to IndexedDB
     useEffect(() => {
         if (!isLoading && rid) {
-            localStorage.setItem(`${BINGO_QUEUE_KEY}_${rid}`, JSON.stringify(bingoQueue));
+            saveBingoQueue(bingoQueue, rid);
         }
     }, [bingoQueue, isLoading, rid]);
 
@@ -160,14 +188,55 @@ export function BingoProvider({ children }) {
                 const res = await updateBingoSquare({ categoryId, memoryId, completedAt });
                 if (res.success) {
                     if (res.newAchievements?.length > 0) {
-                        setCelebrationEvent({
-                            isCombo: res.newAchievements.length > 1,
-                            achievements: res.newAchievements,
-                            totalCoins: res.totalCoinsEarned,
-                            tierLabel: res.newAchievements.length > 1 ? '¡COMBO ÉPICO! 🎊' : res.newAchievements[0].label,
-                            reward: res.isFullBoard ? '¡Tablero completado! Se reseteará automáticamente.' : '¡Tus monedas han sido añadidas! ✨',
-                            isFullBoard: res.isFullBoard
-                        });
+                        const isFullBoard = !!res.isFullBoard;
+                        
+                        if (isFullBoard) {
+                            // Separar logros: Fase 1 (Lineas/Diagonales) y Fase 2 (Bingo)
+                            const initialAchievements = res.newAchievements.filter(a => a.type !== 'full_board');
+                            const boardVictoryAchievement = res.newAchievements.find(a => a.type === 'full_board');
+                            
+                            if (initialAchievements.length > 0) {
+                                // Hay logros previos al Bingo (ej: Combo de líneas)
+                                setCelebrationEvent({
+                                    isCombo: initialAchievements.length > 1,
+                                    achievements: initialAchievements,
+                                    totalCoins: res.totalCoinsEarned - (boardVictoryAchievement?.coins || 0),
+                                    tierLabel: initialAchievements.length > 1 ? '¡COMBO ÉPICO! 🎊' : initialAchievements[0].label,
+                                    reward: '¡Tus monedas han sido añadidas! ✨',
+                                    isFullBoard: false,
+                                    hasNextPhase: true // Indica que sigue el Bingo
+                                });
+                                // Guardar la Fase 2 para después (Solo el valor del Tablero)
+                                setPendingVictory({
+                                    isCombo: false,
+                                    achievements: [boardVictoryAchievement],
+                                    totalCoins: boardVictoryAchievement?.coins || 50,
+                                    tierLabel: '¡TABLERO COMPLETADO! 🏆',
+                                    reward: '¡Increíble! Has superado todos los retos de este nivel. ✨',
+                                    isFullBoard: true
+                                });
+                            } else {
+                                // Solo se completó el tablero (o no hay líneas nuevas)
+                                setCelebrationEvent({
+                                    isCombo: false,
+                                    achievements: [boardVictoryAchievement],
+                                    totalCoins: boardVictoryAchievement?.coins || 50,
+                                    tierLabel: '¡TABLERO COMPLETADO! 🏆',
+                                    reward: '¡Increíble! Has superado todos los retos de este nivel. ✨',
+                                    isFullBoard: true
+                                });
+                            }
+                        } else {
+                            // Caso normal sin tablero completo
+                            setCelebrationEvent({
+                                isCombo: res.newAchievements.length > 1,
+                                achievements: res.newAchievements,
+                                totalCoins: res.totalCoinsEarned,
+                                tierLabel: res.newAchievements.length > 1 ? '¡COMBO ÉPICO! 🎊' : res.newAchievements[0].label,
+                                reward: '¡Tus monedas han sido añadidas! ✨',
+                                isFullBoard: false
+                            });
+                        }
                     }
                     toast.success('¡Casilla marcada! ✅');
                     fetchBoard(); // Refresh for final state
@@ -222,6 +291,13 @@ export function BingoProvider({ children }) {
         }
     }, [rid, fetchBoard, triggerIris]);
 
+    const triggerFullBoardVictory = useCallback(() => {
+        if (pendingVictory) {
+            setCelebrationEvent(pendingVictory);
+            setPendingVictory(null);
+        }
+    }, [pendingVictory]);
+
     const availableTags = useMemo(() => {
         const safeArr = Array.isArray(allCategories) ? allCategories : [];
         return safeArr.reduce((acc, cat) => {
@@ -247,6 +323,11 @@ export function BingoProvider({ children }) {
             .slice(0, 16);
     }, [allCategories]);
 
+    const isCategoryAvailable = useCallback((catId) => {
+        const cat = allCategories.find(c => c.id === catId);
+        return cat && !cat.completedMemoryId && cat.isEnabled !== false;
+    }, [allCategories]);
+
     const value = {
         categories,
         allCategories,
@@ -258,8 +339,10 @@ export function BingoProvider({ children }) {
         error,
         markComplete,
         completeBingoSquare: markComplete,
+        isCategoryAvailable,
         updateBingoBoard,
         resetBingoBoard,
+        triggerFullBoardVictory,
         celebrationEvent,
         clearCelebrationEvent,
         irisEvent,

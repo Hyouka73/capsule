@@ -20,7 +20,6 @@ import { TABS } from '../../data/dashboardData';
 import { usePendingCitas } from '../../hooks/usePendingCitas';
 import Memory from '../../models/Memory';
 import { useOfflineQueue } from '../../hooks/useOfflineQueue';
-import { useScrollNavbar } from '../../hooks/useScrollNavbar';
 // import { usePendingBingo } from '../../hooks/usePendingBingo';
 import { useBingo } from '../../hooks/useBingo';
 import BingoSuggestionSheet from '../memories/components/BingoSuggestionSheet';
@@ -43,6 +42,7 @@ export default function UserDashboard() {
         clearCelebrationEvent, 
         irisEvent, 
         resetBingoBoard,
+        triggerFullBoardVictory,
         bingoQueue,
         resolveBingoSuggestion,
         isResolving
@@ -139,6 +139,15 @@ export default function UserDashboard() {
     useEffect(() => {
         if (celebrationEvent?.isFullBoard && activeTab !== 'bingo') {
             setActiveTab('bingo');
+            // Ensure no overlays are blocking the view except the celebration itself
+            setIsBingoModalOpen(false);
+            setIsCouponsModalOpen(false);
+            setIsSnapshotOpen(false);
+            setIsCameraOpen(false);
+            setIsHistoryOpen(false);
+            setIsPendingListOpen(false);
+            setSelectedPendingDate(null);
+            setCitaContext(null);
         }
     }, [celebrationEvent?.isFullBoard, activeTab]);
 
@@ -458,11 +467,22 @@ export default function UserDashboard() {
                     totalCoins={celebrationEvent.totalCoins}
                     isFullBoard={celebrationEvent.isFullBoard}
                     onComplete={() => {
-                        if (celebrationEvent.isFullBoard) {
-                            // First phase complete, reset board after transition
+                        const hasNext = celebrationEvent.hasNextPhase;
+                        const isFull = celebrationEvent.isFullBoard;
+                        
+                        clearCelebrationEvent();
+
+                        if (hasNext) {
+                            // Fase 1 terminada: Navegar al Bingo y disparar Fase 2
+                            setActiveTab('bingo');
+                            // Pequeño delay para dejar que la navegación ocurra
+                            setTimeout(() => {
+                                triggerFullBoardVictory();
+                            }, 600);
+                        } else if (isFull) {
+                            // Fase 2 (Bingo) terminada: Resetear
                             resetBingoBoard();
                         }
-                        clearCelebrationEvent();
                     }}
                 />
             )}

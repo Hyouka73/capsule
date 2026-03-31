@@ -75,14 +75,12 @@ export default function CelebrationOverlay({
 
     // Helper to get achievement title
     const displayTitle = useMemo(() => {
-        if (phase === 'epic') return '🏆 LEYENDA DEL AMOR 🏆';
-        if (isFullBoard) return '¡META ALCANZADA! 🏁';
-        if (isCombo) return '¡SÚPER COMBO! 🎊';
+        if (isFullBoard) return '🌟 ¡BINGO! 🌟';
+        if (isCombo) return '¡MEGA COMBO! 🎊';
         
-        // Single achievement
         const label = achievements[0]?.label || tierLabel || '¡LOGRO!';
         return `¡FELICIDADES! 🎉\n${label.replace(' ✅', '').replace(' 🏆', '').replace(' ✨', '')}`;
-    }, [phase, isFullBoard, isCombo, achievements, tierLabel]);
+    }, [isFullBoard, isCombo, achievements, tierLabel]);
 
     return (
         <AnimatePresence>
@@ -123,7 +121,7 @@ export default function CelebrationOverlay({
                         transition={{ type: 'spring', damping: 12, stiffness: 100 }}
                     >
                         {/* Only show "BINGO" on full board completion */}
-                        {(phase === 'epic' || (isFullBoard && phase === 'combo')) && (
+                        {isFullBoard && (
                             <motion.h1 
                                 className={styles.bingoTitle}
                                 animate={{ 
@@ -136,14 +134,19 @@ export default function CelebrationOverlay({
                             </motion.h1>
                         )}
 
-                        <div className={`${styles.rewardCard} ${isCombo || isFullBoard ? styles.rewardCardCombo : ''}`}>
+                        <div className={`${styles.rewardCard} ${isCombo ? styles.rewardCardCombo : ''} ${isFullBoard ? styles.rewardCardFull : ''}`}>
                             {isFullBoard && (
+                                <h1 className={styles.fullBoardTitle}>
+                                    🌟 ¡TABLERO COMPLETADO! 🌟
+                                </h1>
+                            )}
+                            {(isCombo || isFullBoard) && (
                                 <h2 className={styles.tierLabel}>
-                                    {displayTitle}
+                                    {isFullBoard ? '¡Bingo! 🎉' : tierLabel}
                                 </h2>
                             )}
                             
-                            {isFullBoard && phase !== 'epic' && achievements.length > 1 && (
+                            {achievements.length > 1 && (
                                 <ul className={styles.achievementList}>
                                     {achievements.map((ac, idx) => (
                                         <motion.li 
@@ -165,7 +168,7 @@ export default function CelebrationOverlay({
                                 <span className={styles.coinsValue}>+{displayCoins}</span>
                             </div>
 
-                            {isFullBoard && phase !== 'epic' && <div className={styles.totalBadge}>TOTAL GANADO</div>}
+                            {isFullBoard && phase !== 'epic' && <div className={styles.totalBadge}>BONUS DE TABLERO</div>}
 
                             <p className={styles.rewardText}>
                                 {isFullBoard 
