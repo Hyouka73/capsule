@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import BingoStartModal from '../../components/Bingo/BingoStartModal';
-import PhotoViewer from '../../components/ui/PhotoViewer/PhotoViewer';
+import PhotoDetailOverlay from '../gallery/components/PhotoDetailOverlay';
 import { useBingo } from '../../hooks/useBingo';
 import { useAppConfig } from '../../hooks/useAppConfig';
 import styles from './UserBingo.module.css';
@@ -15,7 +15,7 @@ import BingoSuggestionSheet from '../memories/components/BingoSuggestionSheet';
 export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsModalOpen }) {
     const [selectedSquare, setSelectedSquare] = useState(null);
     const [selectedStartSquare, setSelectedStartSquare] = useState(null);
-    const [viewerPhotos, setViewerPhotos] = useState(null);
+    const [viewerSelection, setViewerSelection] = useState(null);
     const { isFromCache, config } = useAppConfig();
 
     const { 
@@ -87,7 +87,7 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
             <BingoMemoryPolaroid 
                 selectedSquare={selectedSquare}
                 onClose={handleClosePolaroid}
-                onShowGallery={setViewerPhotos}
+                onShowGallery={setViewerSelection}
             />
 
             <AnimatePresence>
@@ -111,10 +111,15 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
                 )}
             </AnimatePresence>
 
-            <PhotoViewer
-                photos={viewerPhotos}
-                onClose={() => setViewerPhotos(null)}
-            />
+            <AnimatePresence>
+                {viewerSelection && (
+                    <PhotoDetailOverlay
+                        photos={viewerSelection.items}
+                        initialIndex={viewerSelection.index}
+                        onClose={() => setViewerSelection(null)}
+                    />
+                )}
+            </AnimatePresence>
 
             <BingoSuggestionSheet
                 isOpen={bingoQueue.length > 0}
