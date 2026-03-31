@@ -10,7 +10,7 @@ import styles from './MemoryForm.module.css';
 import { toast } from '../../components/ui/PastelToast/PastelToast';
 
 /**
- * MemoryForm - Full version with Place Picker, Tags, and Special toggle.
+ * MemoryForm - Optimized version for better density.
  */
 export default function MemoryForm({ onSuccess, onCancel, initialData = null, bingoOrigin = null, defaultPlaces = [] }) {
     const { relationshipId } = useAuth();
@@ -101,28 +101,29 @@ export default function MemoryForm({ onSuccess, onCancel, initialData = null, bi
 
             <div className={styles.scrollArea}>
                 <div className={styles.leftColumn}>
-                    <div className={styles.formSection}>
-                        <KawaiiInput
-                            label="¿Qué pasó hoy? ✨"
-                            name="title"
-                            required
-                            value={formData.title}
-                            onChange={handleChange}
-                            placeholder="Título del recuerdo..."
-                            iconLeft="edit"
-                        />
-                    </div>
-
-                    <div className={styles.formSection}>
-                        <KawaiiInput
-                            type="date"
-                            label="Fecha del momento"
-                            name="eventDate"
-                            required
-                            value={formData.eventDate}
-                            onChange={handleChange}
-                            iconLeft="calendar_today"
-                        />
+                    <div className={`${styles.formRow} ${styles.compact}`}>
+                        <div className={styles.formSection} style={{ flex: 2 }}>
+                            <KawaiiInput
+                                label="¿Qué pasó hoy? ✨"
+                                name="title"
+                                required
+                                value={formData.title}
+                                onChange={handleChange}
+                                placeholder="Título..."
+                                iconLeft="edit"
+                            />
+                        </div>
+                        <div className={styles.formSection} style={{ flex: 1 }}>
+                            <KawaiiInput
+                                type="date"
+                                label="Fecha"
+                                name="eventDate"
+                                required
+                                value={formData.eventDate}
+                                onChange={handleChange}
+                                iconLeft="calendar_today"
+                            />
+                        </div>
                     </div>
 
                     <div className={styles.formSection}>

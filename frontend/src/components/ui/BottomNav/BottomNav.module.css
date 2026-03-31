@@ -5,21 +5,29 @@
 
 .bottomNavContainer {
     position: fixed;
-    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-    left: 14px;
-    right: 14px;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px)); /* Elevated floating position */
+    left: 20px;
+    right: 20px;
     z-index: 8000;
+    pointer-events: none; /* Let clicks through container */
 }
 
 .bottomNav {
-    background: #ffffff;
-    border: 1.5px solid var(--pastel-rose-light);
-    border-radius: var(--radius-xl);
-    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border: 1px solid rgba(255, 173, 199, 0.3);
+    border-radius: 40px; /* Super pill */
+    padding: 10px 14px;
     display: flex;
     justify-content: space-around;
     align-items: center;
-    box-shadow: 0 4px 12px rgba(92, 74, 74, 0.08), 0 2px 4px rgba(92, 74, 74, 0.04);
+    box-shadow: 
+        0 10px 25px rgba(92, 74, 74, 0.08),
+        0 4px 10px rgba(92, 74, 74, 0.04);
+    pointer-events: auto; /* Re-enable clicks for the bar */
+    height: 68px;
+    position: relative;
 }
 
 .navItem {
@@ -34,23 +42,18 @@
     flex: 1;
     outline: none !important;
     -webkit-tap-highlight-color: transparent;
-    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    border-radius: var(--radius-lg);
-}
-
-.navItem:active:not(.navItemActive) {
-    background: var(--clay-bg-rose);
-    transform: scale(0.92);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border-radius: 20px;
 }
 
 .navItemActive {
-    transform: translateY(-4px);
+    transform: translateY(-2px);
 }
 
 .navIcon {
     font-size: 24px;
-    color: var(--text-muted);
-    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    color: var(--pastel-text-muted);
+    transition: all 0.25s ease;
     font-variation-settings: 'FILL' 0, 'wght' 500;
 }
 
@@ -62,35 +65,94 @@
 
 .navLabel {
     font-family: var(--font-body);
-    font-size: 0.7rem;
-    font-weight: 800;
-    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--pastel-text-muted);
     transition: color 0.2s;
+    letter-spacing: -0.01em;
 }
 
 .navItemActive .navLabel {
     color: var(--pastel-rose);
 }
 
-.badge {
-    position: absolute;
-    top: -2px;
-    right: -4px;
-    background: var(--pastel-rose);
-    color: white;
-    font-size: 0.6rem;
-    font-weight: 800;
-    width: 16px;
-    height: 16px;
+/* ── Central Plus Button HERO ─────────────────────────────────────────── */
+.plusButton {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0 12px;
+    cursor: pointer;
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 8005;
+    transform: translateY(-22px);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.plusIconWrapper {
+    width: 60px;
+    height: 60px;
+    background: var(--pastel-rose); /* Solid Clay surface */
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid #fff;
-    box-shadow: 0 2px 6px rgba(255, 175, 204, 0.4);
+    box-shadow: 
+        0 8px 16px rgba(255, 122, 158, 0.35),
+        0 0 0 4px #ffffff; /* Total solid white border (sticker effect) */
+    color: white;
+    transition: all 0.3s ease;
+    position: relative;
 }
 
-/* Icon wrapper for badge positioning */
+/* Glossy highlight REMOVED to match Clay style */
+
+.plusIconWrapper span {
+    font-size: 38px;
+    font-weight: 800; /* Thicker for Clay feel */
+    font-variation-settings: 'FILL' 1, 'wght' 800;
+}
+
+.plusButton:hover {
+    transform: translateY(-25px) scale(1.05);
+}
+
+.plusButton:active {
+    transform: translateY(-18px) scale(0.95);
+}
+
+.plusButton:hover .plusIconWrapper {
+    box-shadow: 
+        0 12px 24px rgba(255, 122, 158, 0.45),
+        0 0 0 5px #ffffff;
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+
+.badge {
+    position: absolute;
+    top: -4px;
+    right: -6px;
+    background: #FF5C8A;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 800;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2.5px solid #fff;
+    box-shadow: 0 4px 8px rgba(255, 92, 138, 0.3);
+}
+
 .iconWrapper {
     position: relative;
 }
@@ -102,58 +164,50 @@
     gap: 2px;
 }
 
-/* ── More Sheet ────────────────────────────────────────────────────────── */
+/* ── More Sheet Refined ────────────────────────────────────────────────── */
 .moreSheet {
     position: absolute;
-    bottom: calc(100% + 12px);
+    bottom: calc(100% + 20px);
     left: 0;
     right: 0;
-    background: #ffffff;
-    border: 2px solid var(--pastel-rose-light);
-    border-radius: var(--radius-xl);
-    padding: 20px;
-    box-shadow: var(--clay-shadow-lg);
-    z-index: 1;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 173, 199, 0.2);
+    border-radius: 30px;
+    padding: 24px;
+    box-shadow: 0 15px 40px rgba(92, 74, 74, 0.15);
+    z-index: 10;
 }
 
 .moreGrid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
+    gap: 16px;
 }
 
 .moreItem {
-    background: var(--clay-bg-rose);
-    border: 2px solid var(--pastel-rose-light);
-    border-radius: var(--radius-lg);
+    background: #fff;
+    border: 1.5px solid #fff5f7;
+    border-radius: 20px;
     padding: 16px 8px;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    box-shadow: var(--clay-shadow-sm);
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    touch-action: manipulation;
+    box-shadow: 0 4px 10px rgba(92, 74, 74, 0.03);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .moreItem:hover {
     transform: translateY(-4px);
-    box-shadow: var(--clay-shadow-rose);
-}
-
-.moreItem:active {
-    transform: translateY(2px);
-    box-shadow: var(--clay-shadow-pressed);
+    border-color: var(--pastel-rose-light);
+    box-shadow: 0 8px 18px rgba(255, 173, 199, 0.15);
 }
 
 .moreItemActive {
     background: var(--pastel-rose);
     border-color: var(--pastel-rose);
-}
-
-.moreItemActive .moreIcon,
-.moreItemActive .moreLabel {
     color: white;
 }
 
@@ -162,51 +216,51 @@
     color: var(--pastel-rose);
 }
 
+.moreItemActive .moreIcon {
+    color: white;
+}
+
 .moreLabel {
-    font-family: var(--font-display);
+    font-family: var(--font-body);
     font-size: 0.75rem;
     font-weight: 700;
-    color: var(--text-primary);
-    text-align: center;
+    color: var(--pastel-text);
 }
 
-/* More sheet active class for icon nav item */
-.navItemMoreOpen .navIcon {
-    transform: rotate(45deg) scale(1.1);
-    color: var(--pastel-rose);
-}
-
-/* ── Bingo Pending Indicators ───────────────────────────────────────────── */
-.navItemGlow {
-    animation: borderPulse 2s infinite ease-in-out;
-    /* Use the same border-radius as .navItem */
-    border-radius: var(--radius-lg);
-}
-
-@keyframes borderPulse {
-    0%, 100% {
-        box-shadow: 0 0 0 0px transparent;
-    }
-    50% {
-        box-shadow: 0 0 0 2px var(--pastel-rose);
-    }
-}
-
-.badgeLeft {
-    position: absolute;
-    top: -2px;
-    left: -4px;
-    background: var(--pastel-rose);
+.moreItemActive .moreLabel {
     color: white;
-    font-size: 0.6rem;
-    font-weight: 800;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid #fff;
-    box-shadow: 0 2px 6px rgba(255, 175, 204, 0.4);
-    z-index: 2;
+}
+
+/* ── Nav Item Glow for Pending Bingo ───────────────────────────────────── */
+.navItemGlow {
+    position: relative;
+}
+
+.navItemGlow::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 20px;
+    background: var(--pastel-rose);
+    opacity: 0.2;
+    z-index: -1;
+    animation: glowPulse 2s infinite ease-in-out;
+}
+
+@keyframes glowPulse {
+    0%, 100% { transform: scale(1); opacity: 0.1; }
+    50% { transform: scale(1.1); opacity: 0.3; }
+}
+
+@media (max-width: 360px) {
+    .plusIconWrapper {
+        width: 52px;
+        height: 52px;
+    }
+    .plusIconWrapper span {
+        font-size: 32px;
+    }
+    .bottomNav {
+        padding: 10px 8px;
+    }
 }

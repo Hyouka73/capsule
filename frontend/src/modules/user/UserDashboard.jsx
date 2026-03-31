@@ -33,7 +33,7 @@ import LaLaLandIris from '../../components/Bingo/LaLaLandIris';
 
 export default function UserDashboard() {
     const { isPartner, isAdmin } = useAuth();
-    const { isFeatureOn } = useAppConfig();
+    const { config, isFeatureOn } = useAppConfig();
     const { pendingCount, pendingCitas, removePendingCita, addPendingCita, updatePendingCitaStatus, updatePendingCita, restorePendingCita } = usePendingCitas();
     const { 
         completeBingoSquare, 
@@ -118,6 +118,11 @@ export default function UserDashboard() {
         const interval = setInterval(createParticle, 800);
         return () => clearInterval(interval);
     }, [activeTab]);
+
+    const handlePlusClick = () => {
+        const minPhotos = config?.citaConfig?.minPhotosSpontaneous || 5;
+        setCitaContext({ type: 'spontaneous', minPhotos });
+    };
 
     const handleTabChange = (newTab) => {
         if (newTab === activeTab) {
@@ -344,6 +349,8 @@ export default function UserDashboard() {
                             moreTabs={moreTabs}
                             pendingCount={pendingCount}
                             pendingBingoCount={bingoQueue.length}
+                            onPlusClick={handlePlusClick}
+                            isPartner={isPartner}
                         />
                     </motion.div>
                 )}

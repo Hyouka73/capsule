@@ -12,9 +12,47 @@ import styles from './BottomNav.module.css';
  * @param {Array} props.moreTabs - Secondary tabs to display in the "More" sheet
  * @param {number} props.pendingCount - Count for the notification badge
  */
-export default function BottomNav({ activeTab, setActiveTab, tabs = [], moreTabs = [], pendingCount = 0, pendingBingoCount = 0 }) {
+export default function BottomNav({ activeTab, setActiveTab, tabs = [], moreTabs = [], pendingCount = 0, pendingBingoCount = 0, onPlusClick, isPartner }) {
     const [isMoreOpen, setIsMoreOpen] = useState(false);
     const moreMenuRef = useRef(null);
+
+    const renderNavItem = (tab) => {
+        const isActive = activeTab === tab.id;
+        const hasLugaresBadge = tab.id === 'lugares' && pendingCount > 0;
+
+        return (
+            <button
+                key={tab.id}
+                onClick={() => handleTabSelect(tab.id)}
+                className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
+            >
+                <motion.div
+                    className={styles.itemContent}
+                    initial={false}
+                    animate={{ scale: isActive ? 1.1 : 1 }}
+                >
+                    <div className={styles.iconWrapper}>
+                        <span
+                            className={`material-symbols-rounded ${styles.navIcon}`}
+                            style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}
+                        >
+                            {tab.icon}
+                        </span>
+                        {hasLugaresBadge && (
+                            <motion.div
+                                className={styles.badge}
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                            >
+                                {pendingCount}
+                            </motion.div>
+                        )}
+                    </div>
+                    <span className={styles.navLabel}>{tab.label}</span>
+                </motion.div>
+            </button>
+        );
+    };
 
     // Close menu when clicking outside
     useEffect(() => {
@@ -81,47 +119,25 @@ export default function BottomNav({ activeTab, setActiveTab, tabs = [], moreTabs
 
             {/* --- Primary Nav Bar --- */}
             <nav className={styles.bottomNav}>
-                {tabs.map(tab => {
-                    const isActive = activeTab === tab.id;
-                    const hasLugaresBadge = tab.id === 'lugares' && pendingCount > 0;
-                    const hasBadge = hasLugaresBadge;
+                {/* Primeros dos items (Mapa, Galería) */}
+                {tabs.slice(0, 2).map(tab => renderNavItem(tab))}
 
-                    return (
-                        <button
-                            key={tab.id}
-                            onClick={() => handleTabSelect(tab.id)}
-                            className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
-                        >
-                            <motion.div
-                                className={styles.itemContent}
-                                initial={false}
-                                animate={{ scale: isActive ? 1.1 : 1 }}
-                            >
-                                <div className={styles.iconWrapper}>
-                                    <span
-                                        className={`material-symbols-rounded ${styles.navIcon}`}
-                                        style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}
-                                    >
-                                        {tab.icon}
-                                    </span>
-                                    {hasLugaresBadge && (
-                                        <motion.div
-                                            className={styles.badge}
-                                            initial={{ scale: 0 }}
-                                            animate={{ scale: 1 }}
-                                        >
-                                            {pendingCount}
-                                        </motion.div>
-                                    )}
-                                </div>
-                                <span className={styles.navLabel}>{tab.label}</span>
-                            </motion.div>
-                        </button>
-                    );
+                {/* --- BOTÓN CENTRAL PLUS --- */}
+                {isPartner && (
+                    <button 
+                        className={styles.plusButton} 
+                        onClick={onPlusClick}
+                        aria-label="Nueva Cita"
+                    >
+                        <div className={styles.plusIconWrapper}>
+                            <span className="material-symbols-rounded">add</span>
+                        </div>
+                    </button>
+                )}
 
-                })}
+                {/* Resto de items (Bingo) y el botón "Más" */}
+                {tabs.slice(2).map(tab => renderNavItem(tab))}
 
-                {/* --- "More" Button --- */}
                 {moreTabs.length > 0 && (
                     <button
                         onClick={() => setIsMoreOpen(!isMoreOpen)}
@@ -133,7 +149,7 @@ export default function BottomNav({ activeTab, setActiveTab, tabs = [], moreTabs
                         >
                             <div className={styles.iconWrapper}>
                                 <span className={`material-symbols-rounded ${styles.navIcon}`}>
-                                    more_horiz
+                                    {isMoreOpen ? 'close' : 'more_horiz'}
                                 </span>
                             </div>
                             <span className={styles.navLabel}>Más</span>

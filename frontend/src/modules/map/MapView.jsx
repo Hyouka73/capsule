@@ -314,10 +314,6 @@ export default function MapView({
                         isSearchActive={isSearchActive}
                         citaContext={citaContext}
                         selectedPlace={selectedPlace}
-                        onSpontaneousCita={() => {
-                            const minVal = globalConfig?.citaConfig?.minPhotosSpontaneous || 5;
-                            if (onCitaContextChange) onCitaContextChange({ type: 'spontaneous', minPhotos: minVal });
-                        }}
                     />
                 )}
 

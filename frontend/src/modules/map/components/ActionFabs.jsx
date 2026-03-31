@@ -6,27 +6,12 @@ export default function ActionFabs({
     isPartner,
     isSearchActive,
     citaContext,
-    selectedPlace,
-    onSpontaneousCita,
-    fabLabel = "Cita Instantánea ✨",
-    icon = "camera_alt"
+    selectedPlace
 }) {
     return (
         <div className={styles.actionsStack}>
             <AnimatePresence>
-                {isPartner && !isSearchActive && !citaContext && !selectedPlace && (
-                    <motion.div
-                        className={styles.fab}
-                        initial={{ opacity: 0, scale: 0.5, y: 50 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.5, y: 50 }}
-                        transition={{ type: 'spring', damping: 15, stiffness: 250 }}
-                    >
-                        <button className={styles.fabBtn} onClick={onSpontaneousCita}>
-                            <span className="material-symbols-rounded">{icon}</span>
-                        </button>
-                    </motion.div>
-                )}
+                {/* ── FAB removido: Ahora está en el Navbar ── */}
             </AnimatePresence>
         </div>
     );

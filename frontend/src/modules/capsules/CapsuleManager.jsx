@@ -91,6 +91,32 @@ export default function CapsuleManager() {
         });
     };
 
+    // Render separated Form View
+    if (showForm) {
+        return (
+            <div className={styles.root}>
+                <div className={styles.formViewHeader}>
+                    <Button variant="ghost" onClick={() => setShowForm(false)} className={styles.backBtn}>
+                        <span className="material-symbols-rounded">arrow_back</span>
+                        Volver al listado
+                    </Button>
+                </div>
+                
+                <Card className={styles.formPanelFull}>
+                    <div className={styles.formPanelHeader}>
+                        <h2>{editingCapsule ? '✍️ Editar Cápsula' : '✨ Nueva Cápsula Real'}</h2>
+                        <p className={styles.formSubtitle}>Escribe mensajes para el futuro y prográmalos.</p>
+                    </div>
+                    <CapsuleForm
+                        initialData={editingCapsule}
+                        onSuccess={handleCreated}
+                        onCancel={() => setShowForm(false)}
+                    />
+                </Card>
+            </div>
+        );
+    }
+
     return (
         <div className={styles.root}>
             <PageHeader
@@ -112,21 +138,6 @@ export default function CapsuleManager() {
                 confirmText="Síp, adelante"
                 cancelText="Nop, espera"
             />
-
-            {/* Form panel */}
-            {showForm && (
-                <Card className={styles.formPanel}>
-                    <div className={styles.formPanelHeader}>
-                        <h2>{editingCapsule ? '✍️ Editar Cápsula' : '✨ Nueva Cápsula Real'}</h2>
-                        <button onClick={() => setShowForm(false)} className={styles.closeBtn} title="Cerrar">✕</button>
-                    </div>
-                    <CapsuleForm
-                        initialData={editingCapsule}
-                        onSuccess={handleCreated}
-                        onCancel={() => setShowForm(false)}
-                    />
-                </Card>
-            )}
 
             {/* Capsule grid */}
             {isLoading ? (
