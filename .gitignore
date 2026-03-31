@@ -46,4 +46,4 @@ tmp/
 emulator_log*.txt
 seed_output.txt
 backend/tools/
-frontend/dist-test/
+frontend/dist-test/backend/seeds/

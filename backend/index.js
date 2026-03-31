@@ -1,21 +1,11 @@
-import { initializeApp } from 'firebase-admin/app';
+import { initializeApp, getApps } from 'firebase-admin/app';
 
-// 1. Initialize Firebase Admin
-if (process.env.FUNCTIONS_EMULATOR === 'true' || process.env.NODE_ENV === 'development') {
-    process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8080';
-    process.env.FIREBASE_AUTH_EMULATOR_HOST = 'localhost:9099';
-    process.env.FIREBASE_STORAGE_EMULATOR_HOST = 'localhost:9199';
-    process.env.GCLOUD_PROJECT = 'capsule-valentins-day'; // Force project ID
-    console.log('[Backend] Forcing Emulator Hosts and Project ID:', {
-        firestore: process.env.FIRESTORE_EMULATOR_HOST,
-        auth: process.env.FIREBASE_AUTH_EMULATOR_HOST,
-        project: process.env.GCLOUD_PROJECT
+// 1. Initialize Firebase Admin (Static config, emulators are handled by SDK automatically)
+if (getApps().length === 0) {
+    initializeApp({
+        projectId: 'capsule-valentins-day'
     });
 }
-
-initializeApp({
-    projectId: 'capsule-valentins-day'
-});
 
 /**
  * PROJECT CAPSULE - Cloud Functions Entry Point
