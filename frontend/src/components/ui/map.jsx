@@ -158,6 +158,50 @@ const Map = forwardRef(function Map(
     }
   }, []);
 
+  // 1x1 Transparent PNG Base64 to silence missing image warnings
+  const EMPTY_IMAGE_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+
+  const injectDummyImages = useCallback((map) => {
+    const handledIcons = ['office', 'swimming_pool', 'gate', 'atm', 'hospital', 'police', 'school', 'marker-15', 'attraction-15'];
+    
+    handledIcons.forEach(id => {
+      if (!map.hasImage(id)) {
+        const img = new Image();
+        img.onload = () => map.addImage(id, img);
+        img.src = EMPTY_IMAGE_BASE64;
+      }
+    });
+  }, []);
+
+  const sanitizeStyle = useCallback((style) => {
+    if (!style) return style;
+    try {
+      const sanitized = JSON.parse(JSON.stringify(style));
+      // Recursively find layers and their filters/paint properties to remove nulls
+      if (sanitized.layers) {
+        sanitized.layers.forEach(layer => {
+          // Fix filters that might have null values: ["==", "property", null] -> ["!has", "property"] or similar
+          if (layer.filter) {
+            const cleanFilter = (f) => {
+              if (!Array.isArray(f)) return f;
+              return f.map(val => (val === null ? "" : (Array.isArray(val) ? cleanFilter(val) : val)));
+            };
+            layer.filter = cleanFilter(layer.filter);
+          }
+          // Fix paint properties
+          if (layer.paint) {
+             Object.keys(layer.paint).forEach(key => {
+               if (layer.paint[key] === null) layer.paint[key] = 0;
+             });
+          }
+        });
+      }
+      return sanitized;
+    } catch (e) {
+      return style;
+    }
+  }, []);
+
   // Initialize the map
   useEffect(() => {
     if (!containerRef.current) return;
@@ -168,7 +212,7 @@ const Map = forwardRef(function Map(
 
     const map = new MapLibreGL.Map({
       container: containerRef.current,
-      style: initialStyle,
+      style: sanitizeStyle(initialStyle),
       renderWorldCopies: false,
       attributionControl: {
         compact: true,
@@ -209,8 +253,18 @@ const Map = forwardRef(function Map(
     map.on("dblclick", handleDblClick);
     map.on("contextmenu", handleContextMenu);
     map.on("styleimagemissing", (e) => {
-        // Silently ignore missing images from remote styles
-        console.warn(`[Map] Estilo solicitó imagen inexistente: ${e.id}`);
+        // Dynamically inject dummy images when requested but missing
+        const img = new Image();
+        img.onload = () => {
+            if (!map.hasImage(e.id)) map.addImage(e.id, img);
+        };
+        img.src = EMPTY_IMAGE_BASE64;
+    });
+
+    // Initial injection
+    map.on("load", () => {
+        injectDummyImages(map);
+        loadHandler();
     });
 
     setMapInstance(map);
@@ -237,11 +291,17 @@ const Map = forwardRef(function Map(
     if (mapInstance.isMoving()) return;
 
     const current = getViewport(mapInstance);
+    
+    // Ensure center is valid and contains actual numbers
+    const isValidCenter = Array.isArray(viewport.center) && 
+                         typeof viewport.center[0] === 'number' && 
+                         typeof viewport.center[1] === 'number';
+
     const next = {
-      center: viewport.center ?? current.center,
-      zoom: viewport.zoom ?? current.zoom,
-      bearing: viewport.bearing ?? current.bearing,
-      pitch: viewport.pitch ?? current.pitch,
+      center: isValidCenter ? viewport.center : current.center,
+      zoom: typeof viewport.zoom === 'number' ? viewport.zoom : current.zoom,
+      bearing: typeof viewport.bearing === 'number' ? viewport.bearing : current.bearing,
+      pitch: typeof viewport.pitch === 'number' ? viewport.pitch : current.pitch,
     };
 
     if (
