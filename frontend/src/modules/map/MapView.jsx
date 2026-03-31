@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Map, MapMarker, MarkerContent, MapControls, MarkerLabel } from '@/components/ui/map';
 import MapPin from '../../components/ui/MapPin/MapPin';
 import { useAuth } from '../../hooks/useAuth';
@@ -274,34 +275,51 @@ export default function MapView({
             </div>
 
             {/* ── OVERLAY LAYER ── */}
-            <div className={styles.overlay}>
-                <SearchOverlay 
-                    isSearchActive={isSearchActive}
-                    setIsSearchActive={setIsSearchActive}
-                    searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
-                    activeFilters={activeFilters}
-                    activeFilter={activeFilter}
-                    setActiveFilter={setActiveFilter}
-                    placesLoading={placesLoading}
-                    places={places}
-                    onPlaceSelected={onPlaceSelected}
-                    isPartner={isPartner}
-                    isAdmin={isAdmin}
-                    onOpenSnapshot={onOpenSnapshot}
-                    onOpenCamera={onOpenCamera}
-                />
+            <div className={`${styles.overlay} ${selectedPlace ? styles.overlayActive : ''}`}>
+                <AnimatePresence>
+                    {selectedPlace && (
+                        <motion.div
+                            key="map-backdrop"
+                            className={styles.backdrop}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={handleMapClick}
+                        />
+                    )}
+                </AnimatePresence>
 
-                <ActionFabs 
-                    isPartner={isPartner}
-                    isSearchActive={isSearchActive}
-                    citaContext={citaContext}
-                    selectedPlace={selectedPlace}
-                    onSpontaneousCita={() => {
-                        const minVal = globalConfig?.citaConfig?.minPhotosSpontaneous || 5;
-                        if (onCitaContextChange) onCitaContextChange({ type: 'spontaneous', minPhotos: minVal });
-                    }}
-                />
+                {!selectedPlace && (
+                    <SearchOverlay 
+                        isSearchActive={isSearchActive}
+                        setIsSearchActive={setIsSearchActive}
+                        searchQuery={searchQuery}
+                        setSearchQuery={setSearchQuery}
+                        activeFilters={activeFilters}
+                        activeFilter={activeFilter}
+                        setActiveFilter={setActiveFilter}
+                        placesLoading={placesLoading}
+                        places={places}
+                        onPlaceSelected={onPlaceSelected}
+                        isPartner={isPartner}
+                        isAdmin={isAdmin}
+                        onOpenSnapshot={onOpenSnapshot}
+                        onOpenCamera={onOpenCamera}
+                    />
+                )}
+
+                {!selectedPlace && (
+                    <ActionFabs 
+                        isPartner={isPartner}
+                        isSearchActive={isSearchActive}
+                        citaContext={citaContext}
+                        selectedPlace={selectedPlace}
+                        onSpontaneousCita={() => {
+                            const minVal = globalConfig?.citaConfig?.minPhotosSpontaneous || 5;
+                            if (onCitaContextChange) onCitaContextChange({ type: 'spontaneous', minPhotos: minVal });
+                        }}
+                    />
+                )}
 
                 {!isSearchActive && (
                     <PlaceDetailDrawer

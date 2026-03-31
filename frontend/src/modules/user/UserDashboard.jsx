@@ -23,7 +23,7 @@ import { useOfflineQueue } from '../../hooks/useOfflineQueue';
 // import { usePendingBingo } from '../../hooks/usePendingBingo';
 import { useBingo } from '../../hooks/useBingo';
 import BingoSuggestionSheet from '../memories/components/BingoSuggestionSheet';
-import PhotoViewer from '../../components/ui/PhotoViewer/PhotoViewer';
+import PhotoDetailOverlay from '../gallery/components/PhotoDetailOverlay';
 import PendingDatesList from '../../components/PendingDates/PendingDatesList';
 import PendingDateForm from '../../components/PendingDates/PendingDateForm';
 import { usePlaces } from '../map/hooks/usePlaces';
@@ -85,14 +85,14 @@ export default function UserDashboard() {
     const { places } = usePlaces();
     const [citaContext, setCitaContext] = useState(null);
     const [selectedPendingDate, setSelectedPendingDate] = useState(null);
-    const [viewerPhotos, setViewerPhotos] = useState(null);
+    const [viewerSelection, setViewerSelection] = useState(null);
     const [isPendingListOpen, setIsPendingListOpen] = useState(false);
     const [isGalleryDetailOpen, setIsGalleryDetailOpen] = useState(false);
 
     // ── NAVBAR VISIBILITY & OVERLAYS ──
-    const hasAnyOverlayOpen = !!citaContext || isBingoModalOpen || isCouponsModalOpen || isSnapshotOpen || isCameraOpen || isHistoryOpen || isPendingListOpen || !!selectedPendingDate || !!viewerPhotos || bingoQueue.length > 0 || !!celebrationEvent || isGalleryDetailOpen;
+    const hasAnyOverlayOpen = !!citaContext || isBingoModalOpen || isCouponsModalOpen || isSnapshotOpen || isCameraOpen || isHistoryOpen || isPendingListOpen || !!selectedPendingDate || !!viewerSelection || bingoQueue.length > 0 || !!celebrationEvent || isGalleryDetailOpen || isPlaceSelected;
     const shouldHideNav = hasAnyOverlayOpen;
-    const shouldShowMap = activeTab === 'lugares' && (!hasAnyOverlayOpen || isPlaceSelected);
+    const shouldShowMap = activeTab === 'lugares'; // Simplificado: Si es la tab de lugares, se muestra el mapa
 
     // Partículas solo cuando NO es el mapa
     useEffect(() => {
@@ -286,7 +286,7 @@ export default function UserDashboard() {
                         citaContext={citaContext}
                         onCitaContextChange={setCitaContext}
                         onOpenPending={() => setIsPendingListOpen(true)}
-                        onOpenPhotoViewer={setViewerPhotos}
+                        onOpenPhotoViewer={setViewerSelection}
                     />
                 </div>
             )}
@@ -436,12 +436,15 @@ export default function UserDashboard() {
                 )}
             </AnimatePresence>
 
-            {viewerPhotos && (
-                <PhotoViewer
-                    photos={viewerPhotos}
-                    onClose={() => setViewerPhotos(null)}
-                />
-            )}
+            <AnimatePresence>
+                {viewerSelection && (
+                    <PhotoDetailOverlay
+                        photos={viewerSelection.items}
+                        initialIndex={viewerSelection.index}
+                        onClose={() => setViewerSelection(null)}
+                    />
+                )}
+            </AnimatePresence>
 
             <BingoSuggestionSheet 
                 isOpen={bingoQueue.length > 0}
