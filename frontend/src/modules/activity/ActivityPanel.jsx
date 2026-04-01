@@ -1,9 +1,17 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import Card from '../../components/ui/Card/Card';
+import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../../components/ui/Button/Button';
 import { useActivityLog } from '../../hooks/useActivityLog';
-import { useCoupons } from '../../hooks/useCoupons';
 import styles from './ActivityPanel.module.css';
+
+const CATEGORY_MAP = {
+    all: { label: 'Todos', icon: 'auto_awesome', color: 'var(--pastel-rose)' },
+    memory: { label: 'Recuerdos', icon: 'photo_camera', color: 'var(--pastel-rose)' },
+    photo: { label: 'Fotos', icon: 'image', color: 'var(--pastel-yellow)' },
+    capsule: { label: 'Cápsulas', icon: 'hourglass_empty', color: 'var(--pastel-mint)' },
+    bingo: { label: 'Bingo', icon: 'grid_view', color: 'var(--pastel-orange, #ffb400)' },
+    wrapped: { label: 'Wrapped', icon: 'movie', color: 'var(--pastel-lavender)' },
+};
 
 export default function ActivityPanel({ filterType, setFilterType }) {
     const { 
@@ -17,11 +25,24 @@ export default function ActivityPanel({ filterType, setFilterType }) {
         unreadCount 
     } = useActivityLog();
 
-    const { coupons, redemptions, updateCoupon } = useCoupons({ adminMode: true });
-    
     const [onlyUnread, setOnlyUnread] = useState(false);
     const scrollRef = useRef(null);
 
+    // Activity Stats calculation
+    const activityStats = useMemo(() => {
+        const stats = {
+            total: logs.length,
+            unread: unreadCount,
+            byType: {}
+        };
+        logs.forEach(log => {
+            if (!stats.byType[log.targetType]) stats.byType[log.targetType] = 0;
+            stats.byType[log.targetType]++;
+        });
+        return stats;
+    }, [logs, unreadCount]);
+
+    // Horizontal scroll for chips (mobile only)
     useEffect(() => {
         const slider = scrollRef.current;
         if (!slider) return;
@@ -63,16 +84,10 @@ export default function ActivityPanel({ filterType, setFilterType }) {
         };
     }, []);
 
-    const pendingRedemptions = useMemo(() => {
-        return (redemptions || []).filter(r => r.status === 'pending_approval').map(r => {
-            const coupon = coupons.find(c => c.id === r.couponId);
-            return { ...r, coupon };
-        }).filter(r => r.coupon);
-    }, [redemptions, coupons]);
-
     const filteredLogs = useMemo(() => {
-        return logs.filter(log => {
+        return (logs || []).filter(log => {
             if (log.targetType === 'snapshot') return false;
+            if (log.targetType === 'coupon') return false;
             const matchesType = filterType === 'all' || log.targetType === filterType;
             const matchesUnread = !onlyUnread || !log.isReadByAdmin;
             return matchesType && matchesUnread;
@@ -111,6 +126,7 @@ export default function ActivityPanel({ filterType, setFilterType }) {
 
         Object.keys(groups)
             .filter(l => !orderedLabels.includes(l))
+            .sort((a, b) => b.localeCompare(a))
             .forEach(l => {
                 result.push({ label: l, items: groups[l] });
             });
@@ -121,196 +137,228 @@ export default function ActivityPanel({ filterType, setFilterType }) {
     const getTimeAgo = (dateInput) => {
         const date = new Date(dateInput);
         const seconds = Math.floor((new Date() - date) / 1000);
-        if (seconds < 60) return 'ahora mismo';
+        if (seconds < 60) return 'ahora';
         const minutes = Math.floor(seconds / 60);
-        if (minutes < 60) return `hace ${minutes}m`;
+        if (minutes < 60) return `${minutes}m`;
         const hours = Math.floor(minutes / 60);
-        if (hours < 24) return `hace ${hours}h`;
+        if (hours < 24) return `${hours}h`;
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
-    const handleApprove = async (redemption) => {
-        // NOTE: Standard updateCoupon might not handle status change to 'approved' if it only expects data updates.
-        // For now, keeping the logic minimal as per the ActivityLog focus.
-        // If a specific updateRedemption API is missing, we should address it in other module migration.
-        try {
-            await updateCoupon(redemption.couponId, {
-                redemptionsLeft: (redemption.coupon.redemptionsLeft || redemption.coupon.maxRedemptions || 1) - 1
-            });
-            // TODO: Migrate redemption status update to apiClient/backend API when moving coupons module
-        } catch (err) {
-            // silent fail
-        }
-    };
-
-    const getIcon = (type) => {
-        switch (type) {
-            case 'memory': return '📸';
-            case 'photo': return '🖼️';
-            case 'capsule': return '⏳';
-            case 'coupon': return '🎁';
-            case 'bingo': return '🎯';
-            case 'wrapped': return '🎬';
-            case 'snapshot': return '✨';
-            default: return '🔔';
-        }
-    };
-
-    const getLabel = (type) => {
-        switch (type) {
-            case 'memory': return 'Recuerdo';
-            case 'photo': return 'Foto';
-            case 'capsule': return 'Cápsula';
-            case 'coupon': return 'Cupón';
-            case 'bingo': return 'Bingo';
-            case 'wrapped': return 'Wrapped';
-            case 'snapshot': return 'Instantánea';
-            default: return 'Actividad';
-        }
-    };
-
-    const CATEGORIES = [
-        { id: 'all', label: 'Todos', icon: '♡' },
-        { id: 'memory', label: 'Recuerdos', icon: '📸' },
-        { id: 'photo', label: 'Fotos', icon: '🖼️' },
-        { id: 'capsule', label: 'Cápsulas', icon: '⏳' },
-        { id: 'coupon', label: 'Cupones', icon: '🎁' },
-        { id: 'bingo', label: 'Bingo', icon: '🎯' },
-    ];
+    const getIcon = (type) => CATEGORY_MAP[type]?.icon || 'notifications';
+    const getLabel = (type) => CATEGORY_MAP[type]?.label || 'Actividad';
 
     if (loadingLogs && logs.length === 0) {
-        return <div className={styles.loading}>Cargando feed de actividad...</div>;
+        return (
+            <div className={styles.loading}>
+                <div className={styles.spinner} />
+                <span>Cargando dashboard...</span>
+            </div>
+        );
     }
 
     return (
         <div className={styles.root}>
+            {/* ── Dashboard Header ── */}
             <header className={styles.header}>
                 <div className={styles.titleGroup}>
-                    <h1 className={styles.title}>Panel de Actividad</h1>
-                    <p className={styles.subtitle}>Monitorea las acciones de tu partner.</p>
+                    <h1 className={styles.title}>Actividad</h1>
+                    <p className={styles.subtitle}>Lo que pasa en vuestro mundo ✨</p>
                 </div>
-                {unreadCount > 0 && (
-                    <Button variant="primary" size="md" onClick={markAllAsRead} className={styles.markAllBtn}>
-                        Marcar todo como leído ({unreadCount})
-                    </Button>
-                )}
+                <div className={styles.headerActions}>
+                    {unreadCount > 0 && (
+                        <Button 
+                            variant="primary" 
+                            size="sm" 
+                            onClick={markAllAsRead} 
+                            className={styles.markAllBtn}
+                        >
+                            Marcar todo leído ({unreadCount})
+                        </Button>
+                    )}
+                </div>
             </header>
 
-            <div className={styles.dashboardGrid}>
-                <div className={styles.feedContainer}>
-                    <div className={styles.filterHeader}>
-                        <div className={styles.filterChips} ref={scrollRef}>
-                            {CATEGORIES.map(cat => (
+            <div className={styles.dashboardContainer}>
+                {/* ── Left Sidebar: Filters ── */}
+                <aside className={styles.filtersSidebar}>
+                    <div className={styles.sidebarSection}>
+                        <h2 className={styles.sidebarTitle}>Filtrar por</h2>
+                        <nav className={styles.filterNav}>
+                            {Object.entries(CATEGORY_MAP).map(([id, cat]) => (
                                 <button 
-                                    key={cat.id}
-                                    className={`${styles.chip} ${filterType === cat.id ? styles.activeChip : ''}`}
-                                    onClick={() => setFilterType(cat.id)}
+                                    key={id}
+                                    className={`${styles.navChip} ${filterType === id ? styles.activeNavChip : ''}`}
+                                    onClick={() => setFilterType(id)}
                                 >
-                                    <span className={styles.chipIcon}>{cat.icon}</span>
-                                    {cat.label}
+                                    <span className="material-symbols-rounded">{cat.icon}</span>
+                                    <span>{cat.label}</span>
+                                    {id !== 'all' && activityStats.byType[id] > 0 && (
+                                        <span className={styles.statBadge}>{activityStats.byType[id]}</span>
+                                    )}
+                                </button>
+                            ))}
+                        </nav>
+                    </div>
+
+                    {/* Unread Toggle */}
+                    <div className={styles.sidebarSection}>
+                        <button 
+                            className={`${styles.toggleBtn} ${onlyUnread ? styles.toggleActive : ''}`}
+                            onClick={() => setOnlyUnread(!onlyUnread)}
+                        >
+                            <span className="material-symbols-rounded">
+                                {onlyUnread ? 'visibility_off' : 'visibility'}
+                            </span>
+                            <span>{onlyUnread ? 'Ver todos' : 'Solo sin leer'}</span>
+                        </button>
+                    </div>
+                </aside>
+
+                {/* ── Center: Feed ── */}
+                <main className={styles.feedWrapper}>
+                    {/* Mobile Only: Sticky scroll view of chips */}
+                    <div className={styles.mobileFilterBar}>
+                        <div className={styles.mobileChips} ref={scrollRef}>
+                            {Object.entries(CATEGORY_MAP).map(([id, cat]) => (
+                                <button 
+                                    key={id}
+                                    className={`${styles.chip} ${filterType === id ? styles.activeChip : ''}`}
+                                    onClick={() => setFilterType(id)}
+                                >
+                                    <span className="material-symbols-rounded">{cat.icon}</span>
+                                    <span>{cat.label}</span>
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    {groupedLogs.length === 0 ? (
-                        <div className={styles.emptyFeed}>
-                            <span>📭</span>
-                            <p>No hay actividad que coincida con los filtros.</p>
-                        </div>
-                    ) : (
-                        <div className={styles.feedList}>
-                            {groupedLogs.map(group => (
-                                <section key={group.label} className={styles.feedSection}>
-                                    <header className={styles.dateHeader}>
-                                        {group.label}
-                                    </header>
-                                    
-                                    {group.items.map(log => (
-                                        <div 
-                                            key={log.id} 
-                                            className={`${styles.feedItem} ${log.isReadByAdmin ? styles.read : styles.unread}`}
-                                        >
-                                            <div className={`${styles.itemIcon} ${styles[log.targetType]}`}>
-                                                {getIcon(log.targetType)}
-                                            </div>
-                                            <div className={styles.itemContent}>
-                                                <div className={styles.itemHeader}>
-                                                    <span className={styles.itemAction}>{log.displayText}</span>
-                                                    <span className={styles.itemTime}>{getTimeAgo(log.createdAt)}</span>
-                                                </div>
-                                                <div className={styles.itemFooter}>
-                                                    <span className={styles.itemType}>{getLabel(log.targetType)}</span>
-                                                    <span className={styles.itemId}>#{log.targetId?.slice(-6)}</span>
-                                                </div>
-                                            </div>
-                                            <div className={styles.itemActions}>
-                                                {!log.isReadByAdmin && (
-                                                    <button 
-                                                        className={styles.markReadBtn} 
-                                                        onClick={() => markAsRead(log.id)}
-                                                        title="Marcar como leído"
-                                                    >
-                                                        ✅
-                                                    </button>
-                                                )}
-                                                <div className={styles.statusIndicator}>
-                                                    {log.isReadByAdmin ? '○' : '●'}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </section>
-                            ))}
-
-                            {hasMore && (
-                                <div className={styles.loadMoreContainer}>
-                                    <Button 
-                                        variant="secondary" 
-                                        onClick={loadMore} 
-                                        disabled={isFetchingMore}
-                                        className={styles.loadMoreBtn}
-                                    >
-                                        {isFetchingMore ? 'Cargando...' : 'Cargar más actividades'}
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                <aside className={styles.filtersSidebar}>
-                    {pendingRedemptions.length > 0 && (
-                        <Card className={styles.pendingRedemptionsCard}>
-                            <h3>🎟️ Solicitudes ({pendingRedemptions.length})</h3>
-                            <div className={styles.pendingList}>
-                                {pendingRedemptions.map(r => (
-                                    <div key={r.id} className={styles.pendingItem}>
-                                        <div className={styles.pendingInfo}>
-                                            <span className={styles.pendingEmoji}>{r.coupon.emoji}</span>
-                                            <div>
-                                                <p className={styles.pendingTitle}>{r.coupon.title}</p>
-                                                <span className={styles.pendingTime}>{getTimeAgo(r.requestedAt?.toDate() || new Date())}</span>
-                                            </div>
-                                        </div>
-                                        <div className={styles.pendingActions}>
-                                            <Button size="xs" onClick={() => handleApprove(r)}>✅</Button>
-                                        </div>
+                    <div className={styles.feedList}>
+                        <AnimatePresence mode="popLayout">
+                            {groupedLogs.length === 0 ? (
+                                <motion.div 
+                                    key="empty"
+                                    className={styles.emptyFeed}
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                >
+                                    <div className={styles.emptyIcon}>
+                                        <span className="material-symbols-rounded">mark_email_read</span>
                                     </div>
-                                ))}
-                            </div>
-                        </Card>
-                    )}
+                                    <h2>¡Todo al día!</h2>
+                                    <p>No hay nueva actividad pendiente de revisar en esta categoría.</p>
+                                    {onlyUnread && (
+                                        <Button variant="secondary" onClick={() => setOnlyUnread(false)}>
+                                            Ver actividad anterior
+                                        </Button>
+                                    )}
+                                </motion.div>
+                            ) : (
+                                groupedLogs.map(group => (
+                                    <section key={group.label} className={styles.feedSection}>
+                                        <h3 className={styles.dateHeader}>{group.label}</h3>
+                                        <div className={styles.itemsGrid}>
+                                            {group.items.map(log => (
+                                                <motion.div 
+                                                    layout
+                                                    key={log.id} 
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    className={`${styles.feedItem} ${log.isReadByAdmin ? styles.read : styles.unread}`}
+                                                    onClick={() => !log.isReadByAdmin && markAsRead(log.id)}
+                                                >
+                                                    <div 
+                                                        className={styles.itemIcon} 
+                                                        style={{ backgroundColor: CATEGORY_MAP[log.targetType]?.color || 'var(--pastel-rose)' }}
+                                                    >
+                                                        <span className="material-symbols-rounded">
+                                                            {getIcon(log.targetType)}
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    <div className={styles.itemContent}>
+                                                        <div className={styles.itemMain}>
+                                                            <span className={styles.itemAction}>{log.displayText}</span>
+                                                            <span className={styles.itemTime}>{getTimeAgo(log.createdAt)}</span>
+                                                        </div>
+                                                        <div className={styles.itemMeta}>
+                                                            <span className={styles.itemType}>{getLabel(log.targetType)}</span>
+                                                            <span className={styles.itemId}>#{log.targetId?.slice(-4)}</span>
+                                                        </div>
+                                                    </div>
 
-                    <Card className={styles.statsCard}>
-                        <div className={styles.stat}>
-                            <span className={styles.statLabel}>Sin leer</span>
-                            <span className={styles.unreadCountBadge}>{unreadCount}</span>
+                                                    {!log.isReadByAdmin && (
+                                                        <div className={styles.unreadBadge} />
+                                                    )}
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    </section>
+                                ))
+                            )}
+                        </AnimatePresence>
+
+                        {hasMore && (
+                            <div className={styles.loadMoreWrapper}>
+                                <button 
+                                    onClick={loadMore} 
+                                    disabled={isFetchingMore}
+                                    className={styles.loadMoreBtn}
+                                >
+                                    {isFetchingMore ? (
+                                        <div className={styles.inlineSpinner} />
+                                    ) : (
+                                        'Ver más actividades'
+                                    )}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </main>
+
+                {/* ── Right Sidebar: Summary Stats ── */}
+                <aside className={styles.statsSidebar}>
+                    <div className={styles.statsCard}>
+                        <h3 className={styles.statsTitle}>
+                            <span className="material-symbols-rounded">analytics</span>
+                            Resumen Semanal
+                        </h3>
+                        <div className={styles.statsGrid}>
+                            <div className={styles.statItem}>
+                                <span className={styles.statLabel}>Sin leer</span>
+                                <span className={styles.statValue}>{activityStats.unread}</span>
+                            </div>
+                            <div className={styles.statItem}>
+                                <span className={styles.statLabel}>Total</span>
+                                <span className={styles.statValue}>{activityStats.total}</span>
+                            </div>
                         </div>
-                    </Card>
+                        <div className={styles.miniChart}>
+                            {Object.entries(activityStats.byType).map(([type, count]) => (
+                                <div 
+                                    key={type}
+                                    className={styles.chartBarWrapper}
+                                    title={`${getLabel(type)}: ${count}`}
+                                >
+                                    <div 
+                                        className={styles.chartBar}
+                                        style={{ 
+                                            height: `${Math.max((count / activityStats.total) * 100, 10)}%`,
+                                            backgroundColor: CATEGORY_MAP[type]?.color 
+                                        }}
+                                    />
+                                    <span className="material-symbols-rounded">{getIcon(type)}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className={styles.helpCard}>
+                        <span className="material-symbols-rounded">stars</span>
+                        <p>Cada vez que tu partner añade algo, aparecerá aquí.</p>
+                    </div>
                 </aside>
             </div>
         </div>
     );
 }
-
