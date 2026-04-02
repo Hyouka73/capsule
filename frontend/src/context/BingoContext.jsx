@@ -276,10 +276,10 @@ export function BingoProvider({ children }) {
 
     const resetBingoBoard = useCallback(async () => {
         if (!rid) return;
+        triggerIris(); // Inicio inmediato de la transición visual
         try {
             const res = await resetBingoBoardApi();
             if (res.success) {
-                triggerIris();
                 toast.info('Tablero reseteado 🔄');
                 fetchBoard();
             }

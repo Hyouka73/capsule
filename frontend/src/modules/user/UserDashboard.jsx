@@ -371,7 +371,7 @@ export default function UserDashboard() {
                         clearCelebrationEvent();
                         if (hasNext) {
                             setActiveTab('bingo');
-                            setTimeout(() => { triggerFullBoardVictory(); }, 600);
+                            setTimeout(() => { triggerFullBoardVictory(); }, 300);
                         } else if (isFull) { resetBingoBoard(); }
                     }}
                 />
