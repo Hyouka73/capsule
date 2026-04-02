@@ -53,6 +53,13 @@ export const handler = async (request) => {
             updatedAt: now
         });
 
+        // config/names — Centralized display names
+        batch.set(configColl.doc(SINGLETON_DOCS.NAMES), {
+            admin: 'Admin',
+            partner: 'Pareja',
+            updatedAt: now
+        });
+
         // config/features — default feature flags
         batch.set(configColl.doc(SINGLETON_DOCS.FEATURES), {
             coupons: true, memories: true, bingo: true,

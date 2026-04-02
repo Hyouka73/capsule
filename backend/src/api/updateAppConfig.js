@@ -75,6 +75,36 @@ export const handler = async (request) => {
         if (update.wrapped !== undefined)
             batch.set(configColl.doc(SINGLETON_DOCS.WRAPPED_CONFIG), { ...update.wrapped, updatedAt: ts }, { merge: true });
 
+        if (update.names !== undefined) {
+            batch.set(configColl.doc(SINGLETON_DOCS.NAMES), { ...update.names, updatedAt: ts }, { merge: true });
+            
+            // Sync with User documents for consistency
+            try {
+                // Ensure we use the latest relationship metadata to find UIDs
+                const relSnap = await configColl.doc(SINGLETON_DOCS.RELATIONSHIP).get();
+                if (relSnap.exists) {
+                    const relData = relSnap.data();
+                    const adminUid = relData.adminUid;
+                    const partnerUid = relData.partnerUid;
+
+                    if (adminUid && update.names.admin) {
+                        batch.set(db.collection('users').doc(adminUid), { 
+                            displayName: update.names.admin,
+                            updatedAt: ts
+                        }, { merge: true });
+                    }
+                    if (partnerUid && update.names.partner) {
+                        batch.set(db.collection('users').doc(partnerUid), { 
+                            displayName: update.names.partner,
+                            updatedAt: ts
+                        }, { merge: true });
+                    }
+                }
+            } catch (err) {
+                logger.error('Critical failure syncing displayNames:', err);
+            }
+        }
+
         await batch.commit();
         return { success: true };
     } catch (error) {

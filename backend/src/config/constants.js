@@ -4,6 +4,7 @@
 export const COLLECTIONS = {
     // Core data
     USERS: 'users',
+    RELATIONSHIPS: 'relationships',
     INVITE_TOKENS: 'inviteTokens',
     PLACES: 'places',
     MEMORIES: 'memories',
@@ -34,6 +35,7 @@ export const SINGLETON_DOCS = {
     INVITE_CONFIG:  'inviteConfig',
     ONBOARDING:     'onboarding',
     MEMORY_TAGS:    'memoryTags',
+    NAMES:          'names',
     // Already-modular docs (unchanged)
     BINGO_BOARD:    'board',
     TEASER_CONFIG:  'teaser',
