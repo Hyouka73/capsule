@@ -1,14 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../../hooks/useAuth';
+import { useAppConfig } from '../../../hooks/useAppConfig';
 import Carousel from '../../../components/ui/Carousel/Carousel';
 import styles from './PhotoDetailOverlay.module.css';
 
 /**
  * PhotoDetailOverlay — Full screen photo viewer using the project's standard Carousel
  */
-export default function PhotoDetailOverlay({ photos, initialIndex, onClose }) {
+export default function PhotoDetailOverlay({ 
+    photos, 
+    initialIndex, 
+    onClose,
+    onNavigateNext, 
+    onNavigatePrev  
+}) {
+    const { user } = useAuth();
+    const config = useAppConfig(); // Contains names and relationship info
     const [currentIndex, setCurrentIndex] = useState(initialIndex || 0);
     const [drawerState, setDrawerState] = useState('peek');
+
+    // Handle photos change (when jumping between memories)
+    useEffect(() => {
+        setCurrentIndex(initialIndex);
+    }, [photos, initialIndex]);
 
     if (!photos || photos.length === 0) return null;
 
@@ -46,17 +61,20 @@ export default function PhotoDetailOverlay({ photos, initialIndex, onClose }) {
                 }}
             >
                 <Carousel 
+                    key={photos[0]?.url} // Force animation reset when photos array completely changes? Maybe not strictly needed if we have useEffect
                     items={photos}
                     initialIndex={initialIndex}
                     onIndexChange={(idx) => {
                         setCurrentIndex(idx);
                     }}
                     onBack={onClose}
+                    onAttemptNext={onNavigateNext}
+                    onAttemptPrev={onNavigatePrev}
                     renderItem={renderPhotoItem}
                 />
             </motion.div>
 
-            {/* Drawer UI - NO key or AnimatePresence here to avoid unmounting flicker */}
+            {/* Drawer UI */}
             <motion.div
                 className={styles.metadata}
                 drag="y"
@@ -74,7 +92,7 @@ export default function PhotoDetailOverlay({ photos, initialIndex, onClose }) {
                     open: { y: 0 }
                 }}
                 initial="peek"
-                animate={hasMetadata ? drawerState : "peek"} /* Hide content but keep drawer structure if no metadata? Actually hasMetadata handles text. */
+                animate={hasMetadata ? drawerState : "peek"}
                 style={{ display: hasMetadata ? 'flex' : 'none' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 220 }}
             >
@@ -88,14 +106,38 @@ export default function PhotoDetailOverlay({ photos, initialIndex, onClose }) {
                 <div className={styles.scrollableContent}>
                     <AnimatePresence mode="wait">
                         <motion.div
-                            key={currentIndex}
+                            key={photos[0]?.url || photos[0]?.storagePath || 'static-group'} // Stable key for same citation
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.2 }}
                             className={styles.contentInner}
                         >
-                            {currentPhoto.caption && <p className={styles.caption}>{currentPhoto.caption}</p>}
+                            {/* Snapshot Specific: User Emoji and Name */}
+                            {currentPhoto._type === 'snapshot' && (
+                                <div className={styles.snapshotUser}>
+                                    <span className={styles.userEmoji}>{currentPhoto.userEmoji || '📸'}</span>
+                                    <span className={styles.userName}>
+                                        {!currentPhoto.createdBy
+                                            ? 'Instantánea'
+                                            : (currentPhoto.createdBy === user?.uid 
+                                                ? 'Tú' 
+                                                : (currentPhoto.createdBy === config.adminUid 
+                                                    ? config.names?.admin || 'Admin'
+                                                    : (currentPhoto.createdBy === config.partnerUid 
+                                                        ? config.names?.partner || 'Pareja'
+                                                        : 'Instantánea')))
+                                        }
+                                    </span>
+                                </div>
+                            )}
+
+                            {(currentPhoto.caption || currentPhoto.message || currentPhoto.comment) && (
+                                <p className={styles.caption}>
+                                    {currentPhoto.caption || currentPhoto.message || currentPhoto.comment}
+                                </p>
+                            )}
+
                             {currentPhoto.title && <h3 className={styles.photoTitle}>{currentPhoto.title}</h3>}
                             {currentPhoto.description && <p className={styles.description}>{currentPhoto.description}</p>}
 
@@ -103,7 +145,10 @@ export default function PhotoDetailOverlay({ photos, initialIndex, onClose }) {
                                 {currentPhoto.createdAt && (
                                     <div className={styles.infoItem}>
                                         <span className="material-symbols-rounded">calendar_month</span>
-                                        <span>{new Date(currentPhoto.createdAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                        <span>
+                                            {new Date(currentPhoto.createdAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                            {currentPhoto._type === 'snapshot' && ` • ${new Date(currentPhoto.createdAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`}
+                                        </span>
                                     </div>
                                 )}
                                 {(currentPhoto.placeName || currentPhoto.location) && (

@@ -110,11 +110,18 @@ export default class SystemConfig {
 
         this.updatedAt = data.updatedAt || null;
         this.teaserLock = data.teaserLock || null;
+        this.adminUid = data.adminUid || null;
         this.partnerUid = data.partnerUid || null;
 
         this.partner = {
             welcomeMessage: data.partner?.welcomeMessage ?? '¡Bienvenida a nuestro espacio! 💖',
-            displayName: data.partner?.displayName ?? ''
+            displayName: data.partner?.displayName ?? '' // Legacy
+        };
+
+        this.names = {
+            admin: data.names?.admin || 'Admin',
+            partner: data.names?.partner || 'Pareja',
+            ...data.names
         };
 
         // ── Memory Tags ── Immutable ID system
@@ -196,6 +203,7 @@ export default class SystemConfig {
             modules: this.modules,
             partner: this.partner,
             partnerUid: this.partnerUid,
+            names: this.names,
             memoryTags: this.memoryTags,
             updatedAt: Date.now()
         };
@@ -234,6 +242,8 @@ export default class SystemConfig {
             teaser:        docs.teaser,
             modules:       docs.modules,
             partner:       docs.partner,
+            names:         docs.names,
+            adminUid:      docs.relationship?.adminUid,
             partnerUid:    docs.relationship?.partnerUid,
             updatedAt:     maxUpdatedAt
         });

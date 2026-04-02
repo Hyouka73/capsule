@@ -102,6 +102,30 @@
     background: rgba(255, 255, 255, 0.4);
 }
 
+.snapshotUser {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.userEmoji {
+    background: rgba(255, 255, 255, 0.15);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 1.2rem;
+}
+
+.userName {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--primary-color, #ff6b6b);
+}
+
 .photoTitle {
     font-family: var(--font-display);
     font-size: 1.4rem;
@@ -112,9 +136,9 @@
 
 .caption {
     font-size: 1.1rem;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.4;
-    color: rgba(255, 255, 255, 0.9);
+    color: #fff;
     margin: 0;
 }
 

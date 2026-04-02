@@ -14,7 +14,7 @@ import styles from './GalleryView.module.css';
 export default function GalleryView({ onOverlayStateChange }) {
     const { relationshipId } = useAuth();
     const { photos, loading, hasMore, loadMore, error } = useGallery(24);
-    const [filter, setFilter] = useState('memory'); // memory, snapshot
+    const [filter, setFilter] = useState('memory'); 
     const [viewerSelection, setViewerSelection] = useState(null);
     const [loadingMemoryId, setLoadingMemoryId] = useState(null);
     const observerTarget = useRef(null);
@@ -24,53 +24,82 @@ export default function GalleryView({ onOverlayStateChange }) {
         return photos.filter(p => p._type === filter);
     }, [photos, filter]);
 
-    const handlePhotoClick = async (photo, index) => {
+    const handlePhotoClick = async (photo, topLevelIndex) => {
         if (photo._type === 'memory') {
-            setLoadingMemoryId(photo.id);
-            try {
-                let photosArray = [];
-                const photosRef = collection(db, 'relationships', relationshipId, 'memories', photo.id, 'photos');
-                const snap = await getDocs(photosRef);
-                
-                if (!snap.empty) {
-                    photosArray = snap.docs.map(d => d.data());
-                }
-
-                if (photosArray.length === 0) {
-                    photosArray = [{ url: photo.url, storagePath: photo.storagePath }];
-                }
-
-                const items = photosArray.map(p => ({
-                    url: p.url || p.storagePath || photo.url,
-                    title: photo.title,
-                    description: photo.description,
-                    createdAt: photo.createdAt,
-                    placeName: photo.placeName,
-                    _type: 'memory'
-                }));
-                setViewerSelection({ items, index: 0 });
-            } catch (err) {
-                console.error("Error fetching memory photos:", err);
-                // Fallback on error
-                setViewerSelection({ 
-                    items: [{ url: photo.url, title: photo.title, description: photo.description, _type: 'memory' }], 
-                    index: 0 
-                });
-            } finally {
-                setLoadingMemoryId(null);
-            }
+            await loadCitationPhotos(photo, topLevelIndex, 0);
         } else {
-            setViewerSelection({ items: filteredPhotos, index });
+            setViewerSelection({ items: filteredPhotos, index: topLevelIndex, topLevelIndex });
         }
     };
 
+    const loadCitationPhotos = async (photo, topLevelIndex, direction = 1) => {
+        setLoadingMemoryId(photo.id);
+        try {
+            let photosArray = [];
+            const photosRef = collection(db, 'relationships', relationshipId, 'memories', photo.id, 'photos');
+            const snap = await getDocs(photosRef);
+            
+            if (!snap.empty) {
+                photosArray = snap.docs.map(d => d.data());
+            }
+
+            if (photosArray.length === 0) {
+                photosArray = [{ url: photo.url, storagePath: photo.storagePath }];
+            }
+
+            const items = photosArray.map(p => ({
+                url: p.url || p.storagePath || photo.url,
+                title: photo.title,
+                description: photo.description,
+                createdAt: photo.createdAt,
+                placeName: photo.placeName,
+                _type: 'memory'
+            }));
+
+            // If navigating BACK (-1), we jump to the LAST photo of the new citation
+            // If navigating FORWARD (1) or clicking (0), we jump to the FIRST photo (0)
+            const targetIndex = direction < 0 ? items.length - 1 : 0;
+
+            setViewerSelection({ items, index: targetIndex, topLevelIndex });
+        } catch (err) {
+            console.error("Error fetching memory photos:", err);
+            setViewerSelection({ 
+                items: [{ url: photo.url, title: photo.title, description: photo.description, _type: 'memory' }], 
+                index: 0,
+                topLevelIndex
+            });
+        } finally {
+            setLoadingMemoryId(null);
+        }
+    };
+
+    const navigateCitation = async (direction) => {
+        if (!viewerSelection) return;
+        const newTopLevelIndex = viewerSelection.topLevelIndex + direction;
+        
+        if (newTopLevelIndex < 0 || newTopLevelIndex >= filteredPhotos.length) {
+            return; // Boundary reached
+        }
+
+        const nextPhoto = filteredPhotos[newTopLevelIndex];
+        
+        if (filter === 'memory') {
+            await loadCitationPhotos(nextPhoto, newTopLevelIndex, direction); 
+        } else {
+            // Snapshots are just a flat list, no fetch needed
+            setViewerSelection(prev => ({
+                ...prev,
+                index: newTopLevelIndex,
+                topLevelIndex: newTopLevelIndex
+            }));
+        }
+    };
 
     // Handle overlay state for Navbar hiding
     useEffect(() => {
         if (onOverlayStateChange) {
             onOverlayStateChange(viewerSelection !== null);
         }
-        // Cleanup when unmounting the gallery tab
         return () => {
             if (onOverlayStateChange) onOverlayStateChange(false);
         };
@@ -95,7 +124,6 @@ export default function GalleryView({ onOverlayStateChange }) {
 
     return (
         <div className={styles.container}>
-            {/* Minimal Filter Bar */}
             <div className={styles.filterSection}>
                 <div className={styles.filterWrapper}>
                     <button 
@@ -165,7 +193,6 @@ export default function GalleryView({ onOverlayStateChange }) {
                     </div>
                 )}
 
-                {/* Observer Target for load more */}
                 <div ref={observerTarget} className={styles.loaderTarget}>
                     {loading && hasMore && (
                         <div className={styles.miniLoader}>
@@ -175,13 +202,14 @@ export default function GalleryView({ onOverlayStateChange }) {
                 </div>
             </main>
 
-            {/* Photo Detail Viewer */}
             <AnimatePresence>
                 {viewerSelection && (
                     <PhotoDetailOverlay
                         photos={viewerSelection.items}
                         initialIndex={viewerSelection.index}
                         onClose={() => setViewerSelection(null)}
+                        onNavigateNext={() => navigateCitation(1)}
+                        onNavigatePrev={() => navigateCitation(-1)}
                     />
                 )}
             </AnimatePresence>

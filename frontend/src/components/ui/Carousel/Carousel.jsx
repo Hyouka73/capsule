@@ -1,18 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from './Carousel.module.css';
 
 /**
- * Enhanced Carousel Component - Built-in Drag Logic (No Sticking)
+ * Enhanced Carousel Component - Optimized for high-speed swiping and responsiveness
  */
 export default function Carousel({ 
     items = [], 
     initialIndex = 0, 
     onBack,
     onIndexChange,
+    onAttemptNext, // New: Callback when swiping past the end
+    onAttemptPrev, // New: Callback when swiping before the start
     renderItem 
 }) {
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
+    const [direction, setDirection] = useState(0); 
+    const isTransitioning = useRef(false);
 
     React.useEffect(() => {
         if (onIndexChange) onIndexChange(currentIndex);
@@ -22,8 +26,27 @@ export default function Carousel({
 
     const paginate = (newDirection) => {
         const nextIdx = currentIndex + newDirection;
-        if (nextIdx < 0 || nextIdx >= items.length) return;
+        
+        // Handle boundaries
+        if (nextIdx < 0) {
+            if (onAttemptPrev) onAttemptPrev();
+            return;
+        }
+        if (nextIdx >= items.length) {
+            if (onAttemptNext) onAttemptNext();
+            return;
+        }
+
+        // Logical debounce (80ms)
+        if (isTransitioning.current) return;
+        isTransitioning.current = true;
+        
+        setDirection(newDirection);
         setCurrentIndex(nextIdx);
+
+        setTimeout(() => {
+            isTransitioning.current = false;
+        }, 80); 
     };
 
     return (
@@ -37,14 +60,16 @@ export default function Carousel({
 
             <div className={styles.mainStage}>
                 <div className={styles.track}>
-                    <AnimatePresence initial={false}>
+                    <AnimatePresence initial={false} custom={direction} mode="popLayout">
                         {items.map((item, idx) => {
                             const offset = idx - currentIndex;
-                            if (Math.abs(offset) > 1) return null;
+                            if (Math.abs(offset) > 2) return null;
+
+                            const slideKey = item.id || item.url || item.storagePath || idx;
 
                             return (
                                 <motion.div
-                                    key={idx}
+                                    key={slideKey}
                                     className={`${styles.slide} ${offset === 0 ? styles.activeSlide : styles.sideSlide}`}
                                     style={{ 
                                         left: '50%',
@@ -52,28 +77,34 @@ export default function Carousel({
                                     }}
                                     initial={false}
                                     animate={{
-                                        x: offset * 260, // Smashed slightly closer for a 'fuller' feel
+                                        x: offset * 260,
                                         translateX: '-50%',
                                         translateY: '-50%',
-                                        scale: offset === 0 ? 1 : 0.92, // Larger side cards
-                                        opacity: offset === 0 ? 1 : 0.3, // More transparent sides
+                                        scale: offset === 0 ? 1 : 0.92,
+                                        opacity: offset === 0 ? 1 : 0.4,
                                         zIndex: offset === 0 ? 10 : 5,
-                                        rotateZ: offset * 5,
-                                        z: offset !== 0 ? -200 : 0
+                                        rotateZ: offset * 4,
+                                        z: offset !== 0 ? -150 : 0
                                     }}
                                     transition={{
                                         type: "spring",
-                                        stiffness: 280,
-                                        damping: 28,
-                                        mass: 0.8
+                                        stiffness: 350,
+                                        damping: 30,
+                                        mass: 0.6
                                     }}
                                     drag="x"
                                     dragConstraints={{ left: 0, right: 0 }}
-                                    dragElastic={0.6} // Higher elasticity for a more "loose" interactive feel
+                                    dragElastic={0.4}
+                                    dragMomentum={false}
                                     onDragEnd={(e, { offset: delta, velocity }) => {
-                                        const swipe = Math.abs(delta.x) * velocity.x;
-                                        if (swipe < -2000) paginate(1);
-                                        else if (swipe > 2000) paginate(-1);
+                                        const SWIPE_THRESHOLD = 40;
+                                        const VELOCITY_THRESHOLD = 400;
+                                        
+                                        if (delta.x < -SWIPE_THRESHOLD || velocity.x < -VELOCITY_THRESHOLD) {
+                                            paginate(1);
+                                        } else if (delta.x > SWIPE_THRESHOLD || velocity.x > VELOCITY_THRESHOLD) {
+                                            paginate(-1);
+                                        }
                                     }}
                                 >
                                     <div className={styles.itemContainer}>
@@ -112,7 +143,12 @@ export default function Carousel({
                             <div 
                                 key={idx} 
                                 className={`${styles.dot} ${idx === currentIndex ? styles.dotActive : ''}`}
-                                onClick={() => setCurrentIndex(idx)}
+                                onClick={() => {
+                                    if (!isTransitioning.current) {
+                                        setDirection(idx > currentIndex ? 1 : -1);
+                                        setCurrentIndex(idx);
+                                    }
+                                }}
                             />
                         ))
                     )}

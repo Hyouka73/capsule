@@ -126,7 +126,7 @@ export default function GlobalSettings() {
                      payload = { wrapped: fullData.wrapped, multimedia: fullData.multimedia };
                      break;
                 case 'security':
-                     payload = { visibility: fullData.visibility };
+                     payload = { visibility: fullData.visibility, names: fullData.names };
                      break;
                 default:
                      payload = fullData;
@@ -649,6 +649,32 @@ export default function GlobalSettings() {
                                     <Button variant="ghost" onClick={() => setShowInviteConfirm(true)} className={styles.miniRevokeBtn}>↻</Button>
                                 </div>
                             </div>
+                            <div className={styles.divider} />
+                            
+                            <div className={styles.sectionHeader} style={{ marginTop: '1rem' }}>
+                                <span className={styles.sectionIcon}>✨</span>
+                                <h3>Nombres de la Relación</h3>
+                            </div>
+                            <p className={styles.sectionDesc}>Configura cómo se verán vuestros nombres en toda la aplicación (galería, mensajes, etc).</p>
+                            <div className={styles.citaInputs}>
+                                <div className={styles.inputField}>
+                                    <KawaiiInput
+                                        label="Tu Nombre (Admin)"
+                                        value={config.names?.admin || ''}
+                                        onChange={e => handleUpdate('names.admin', e.target.value)}
+                                        placeholder="Tu nombre..."
+                                    />
+                                </div>
+                                <div className={styles.inputField}>
+                                    <KawaiiInput
+                                        label="Su Nombre (Pareja)"
+                                        value={config.names?.partner || ''}
+                                        onChange={e => handleUpdate('names.partner', e.target.value)}
+                                        placeholder="Su nombre..."
+                                    />
+                                </div>
+                            </div>
+
                             <div className={styles.divider} />
                             <ToggleRow
                                 label="Notas del Administrador"

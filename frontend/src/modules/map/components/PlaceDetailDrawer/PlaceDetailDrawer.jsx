@@ -24,12 +24,7 @@ export default function PlaceDetailDrawer({
     const { relationshipId } = useAuth();
     const [loadingMemoryId, setLoadingMemoryId] = useState(null);
 
-    // Reset view state when place changes
-    useEffect(() => {
-        // No longer needed: local view state was removed
-    }, [selectedPlace?.id]);
-
-    const handleMemoryClick = async (memory) => {
+    const handleMemoryClick = async (memory, topLevelIndex, targetInitialIndex = 0) => {
         if (!onPhotoClick) return;
         setLoadingMemoryId(memory.id);
 
@@ -55,7 +50,13 @@ export default function PlaceDetailDrawer({
                 _type: 'memory'
             }));
 
-            onPhotoClick({ items, index: 0 });
+            // Sync with parent (UserDashboard) providing context for jumps
+            onPhotoClick({ 
+                items, 
+                index: targetInitialIndex, 
+                topLevelIndex,
+                contextList: placeMemories // Pass the siblings for navigation
+            });
         } catch (e) {
             console.error('Error fetching memory photos:', e);
             onPhotoClick({ 
@@ -67,7 +68,9 @@ export default function PlaceDetailDrawer({
                     placeName: selectedPlace.name, 
                     _type: 'memory' 
                 }], 
-                index: 0 
+                index: 0,
+                topLevelIndex,
+                contextList: placeMemories
             });
         } finally {
             setLoadingMemoryId(null);
@@ -98,7 +101,7 @@ export default function PlaceDetailDrawer({
                     </button>
                 </div>
 
-                {/* CITA CHECKER ACTION - Solo aparece cuando estamos en modo cita */}
+                {/* CITA CHECKER ACTION */}
                 {citaContext && (
                     <div className={styles.verificationSection}>
                         <button 
@@ -128,11 +131,11 @@ export default function PlaceDetailDrawer({
                             >
                                 <h3 className={styles.sectionTitle}>Bitácora de Memorias 📔</h3>
                                 {placeMemories.length > 0 ? (
-                                    placeMemories.map(memory => (
+                                    placeMemories.map((memory, index) => (
                                         <div
                                             key={memory.id}
                                             className={styles.memoryCard}
-                                            onClick={() => handleMemoryClick(memory)}
+                                            onClick={() => handleMemoryClick(memory, index)}
                                         >
                                             <div className={styles.memoryPhotoWrap}>
                                                 <MemoryPhoto 
@@ -179,6 +182,13 @@ export default function PlaceDetailDrawer({
                     </div>
                 )}
             </div>
+            
+            {/* Hidden navigation helper for UserDashboard */}
+            {selectedPlace && (
+                <div id="place-nav-helper" style={{ display: 'none' }} 
+                     data-memories={JSON.stringify(placeMemories)} 
+                     data-callback={handleMemoryClick.toString()} />
+            )}
         </div>
     );
 }

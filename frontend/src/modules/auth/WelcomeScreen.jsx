@@ -1,27 +1,30 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { doc, updateDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
-import { db } from '../../services/firebase';
-import { COLLECTIONS } from '../../config/constants';
 import Button from '../../components/ui/Button/Button';
 import LoadingScreen from '../../components/ui/LoadingScreen/LoadingScreen';
 import styles from './WelcomeScreen.module.css';
 
 export default function WelcomeScreen() {
-    const { user, completeWelcome } = useAuth();
+    const { user, role, completeWelcome } = useAuth();
+    const [name, setName] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [error, setError] = useState('');
     const navigate = useNavigate();
 
     const handleContinue = async () => {
+        if (!name.trim()) {
+            setError('Por favor, dinos cómo te llamas ✨');
+            return;
+        }
+
         setIsSaving(true);
         try {
             if (completeWelcome) {
-                await completeWelcome();
+                await completeWelcome(name.trim());
             }
             
-            // Short delay to allow state and route to settle
             setTimeout(() => {
                 if (navigate) navigate('/app');
             }, 100);
@@ -30,6 +33,8 @@ export default function WelcomeScreen() {
             setIsSaving(false);
         }
     };
+
+    const isPartner = role === 'partner';
 
     return (
         <div className={styles.welcomeContainer}>
@@ -53,19 +58,38 @@ export default function WelcomeScreen() {
                         transition={{ duration: 0.8, type: 'spring' }}
                     >
                         <h1 className={styles.welcomeTitle}>
-                            ¡Bienvenida, mi amora! 💖
+                            {isPartner ? '¡Bienvenida, mi amora! 💖' : '¡Bienvenido al inicio! ✨'}
                         </h1>
+                        
                         <p className={styles.welcomeText}>
-                            Aquí el tiempo se detiene y solo existimos nosotros. Cada rincón guarda un susurro 
-                            de lo que hemos vivido y una promesa de lo que vendrá. Adéntrate en este universo 
-                            que he construido para proteger nuestra historia...
+                            {isPartner 
+                                ? 'Aquí el tiempo se detiene y solo existimos nosotros. Para empezar este viaje, ¿cómo debería llamarte nuestro pequeño universo?'
+                                : 'Estás a punto de crear un espacio único para tu historia. Antes de entrar, ¿cuál es tu nombre?'}
                         </p>
+
+                        <div className={styles.inputSection}>
+                            <input 
+                                type="text"
+                                className={`${styles.nameInput} ${error ? styles.inputError : ''}`}
+                                placeholder="Escribe tu nombre aquí..."
+                                value={name}
+                                onChange={(e) => {
+                                    setName(e.target.value);
+                                    if (error) setError('');
+                                }}
+                                onKeyDown={(e) => e.key === 'Enter' && handleContinue()}
+                                autoFocus
+                            />
+                            {error && <p className={styles.errorMessage}>{error}</p>}
+                        </div>
+
                         <div className={styles.actions}>
                             <Button 
                                 variant="primary" 
                                 size="lg" 
                                 onClick={handleContinue}
                                 className={styles.continueBtn}
+                                disabled={!name.trim()}
                             >
                                 Abrir nuestro mundo →
                             </Button>
