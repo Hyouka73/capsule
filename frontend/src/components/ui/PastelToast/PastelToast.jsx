@@ -22,13 +22,20 @@ export const toast = {
      * This avoids stacking and re-entry animations.
      */
     promise: async (promise, { loading, success, error }) => {
-        const id = _dispatch?.({ op: 'add', type: 'loading', title: loading.title, description: loading.description, persist: true });
+        const loadingTitle = typeof loading === 'string' ? loading : loading?.title;
+        const loadingDesc = typeof loading === 'string' ? undefined : loading?.description;
+        const id = _dispatch?.({ op: 'add', type: 'loading', title: loadingTitle, description: loadingDesc, persist: true });
+        
         try {
             const result = await promise;
-            _dispatch?.({ op: 'update', id, type: 'success', title: success.title, description: success.description });
+            const successTitle = typeof success === 'string' ? success : success?.title;
+            const successDesc = typeof success === 'string' ? undefined : success?.description;
+            _dispatch?.({ op: 'update', id, type: 'success', title: successTitle, description: successDesc });
             return result;
         } catch (err) {
-            _dispatch?.({ op: 'update', id, type: 'error', title: error.title, description: error.description });
+            const errorTitle = typeof error === 'string' ? error : error?.title;
+            const errorDesc = typeof error === 'string' ? undefined : error?.description;
+            _dispatch?.({ op: 'update', id, type: 'error', title: errorTitle, description: errorDesc });
             throw err;
         }
     },
@@ -55,7 +62,7 @@ export function PastelToastProvider({ children }) {
                         onClick: action.onClick,
                     },
                     ...prev
-                ].slice(0, 3);
+                ].slice(0, 2);
                 return newToasts;
             });
 

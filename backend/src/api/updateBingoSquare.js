@@ -1,72 +1,69 @@
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { HttpsError } from 'firebase-functions/v2/https';
+import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
-import { COLLECTIONS, ACTIVITY_ACTIONS } from '../config/constants.js';
+import { COLLECTIONS, SINGLETON_DOCS, ACTIVITY_ACTIONS } from '../config/constants.js';
 
 /**
  * updateBingoSquare — Backend API (BFF)
  * 
  * Marca una casilla como completada, detecta logros (bingos) y otorga monedas.
- * Ruta: relationships/{relationshipId}/bingo/board
+ * Payload: { categoryId: string, memoryId: string, completedAt: ISO string }
  */
-export const updateBingoSquare = onCall({ region: 'us-central1', cors: true }, async (request) => {
-    if (!request.auth) {
-        throw new HttpsError('unauthenticated', 'Debes estar autenticado para actualizar el bingo.');
-    }
+export const handler = async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Unauthorized');
 
-    const { categoryId, memoryId, completedAt } = request.data;
-    const { uid } = request.auth;
-    const { relationshipId } = request.auth.token;
+    const { categoryId, memoryId, completedAt, uncheck } = request.data || {};
+    const { relationshipId, uid } = request.auth.token;
 
-    if (!relationshipId) {
-        throw new HttpsError('failed-precondition', 'El usuario no tiene una relación asignada.');
-    }
-
-    if (!categoryId) {
-        throw new HttpsError('invalid-argument', 'El categoryId es obligatorio.');
-    }
+    if (!relationshipId) throw new HttpsError('failed-precondition', 'No relationship found.');
+    if (!categoryId) throw new HttpsError('invalid-argument', 'categoryId is required.');
 
     const db = getFirestore();
-    const boardsColl = db.collection('relationships').doc(relationshipId).collection(COLLECTIONS.BINGO_BOARD);
+    const boardRef = db.collection('relationships')
+        .doc(relationshipId)
+        .collection(COLLECTIONS.BINGO_BOARD)
+        .doc(SINGLETON_DOCS.BINGO_BOARD);
 
     try {
         return await db.runTransaction(async (transaction) => {
-            const activeSnap = await transaction.get(boardsColl.where('status', '==', 'active').limit(1));
-            
-            let boardRef;
-            let boardData;
+            const boardSnap = await transaction.get(boardRef);
+            if (!boardSnap.exists) throw new HttpsError('not-found', 'Bingo board not found.');
 
-            if (activeSnap.empty) {
-                // Secondary check: legacy 'board' document
-                const legacyRef = boardsColl.doc('board');
-                const legacySnap = await transaction.get(legacyRef);
-                if (!legacySnap.exists) {
-                    throw new HttpsError('not-found', 'Tablero de bingo activo no encontrado.');
-                }
-                boardRef = legacyRef;
-                boardData = legacySnap.data();
-            } else {
-                boardRef = activeSnap.docs[0].ref;
-                boardData = activeSnap.docs[0].data();
-            }
+            const data = boardSnap.data();
+            const categories = [...(data.categories || [])];
+            const catIndex = categories.findIndex(c => c.id === categoryId);
 
-            const categories = boardData.categories || [];
-            const squareIndex = categories.findIndex(c => c.id === categoryId);
+            if (catIndex === -1) throw new HttpsError('not-found', `Categoría '${categoryId}' no encontrada.`);
 
-            if (squareIndex === -1) {
-                throw new HttpsError('not-found', `La categoría ${categoryId} no existe en el tablero.`);
-            }
+            const cat = categories[catIndex];
 
-            if (categories[squareIndex].completedMemoryId) {
-                return { success: true, message: 'La casilla ya estaba completada.' };
-            }
-
-            // 2. Actualizar Casilla
+            // 1. Guardar estado previo para comparación de logros
             const prevCategories = JSON.parse(JSON.stringify(categories));
-            categories[squareIndex].completedMemoryId = memoryId || 'manual_entry';
-            categories[squareIndex].completedAt = completedAt || new Date().toISOString();
 
-            // 3. Detección de Logros (4x4)
+            if (uncheck) {
+                categories[catIndex] = {
+                    ...cat,
+                    isCompleted: false,
+                    completedMemoryId: null,
+                    completedAt: null
+                };
+            } else {
+                if (cat.completedMemoryId) {
+                    return { success: true, message: 'La casilla ya estaba completada.' };
+                }
+                const resolvedAt = completedAt
+                    ? Timestamp.fromDate(new Date(completedAt))
+                    : FieldValue.serverTimestamp();
+
+                categories[catIndex] = {
+                    ...cat,
+                    isCompleted: true,
+                    completedMemoryId: memoryId || 'manual',
+                    completedAt: resolvedAt
+                };
+            }
+
+            // 2. Detección de Logros (4x4) - Restaurado del historial original
             const ROWS = 4;
             const COLS = 4;
 
@@ -113,16 +110,14 @@ export const updateBingoSquare = onCall({ region: 'us-central1', cors: true }, a
                 newAchievements.push({ type: 'full_board', label: '¡TABLERO COMPLETO! 🏆', coins: 50 });
             }
 
-            // Casilla Especial (+5) - solo si no es parte de un logro mayor en este turno para evitar spam?
-            // Pero el prompt dice premiar +15 (línea), +15 (diagonal), +50 (full). 
-            // La casilla especial es un plus.
-            if (categories[squareIndex].isSpecial) {
+            // Casilla Especial (+5)
+            if (!uncheck && categories[catIndex].isSpecial) {
                 newAchievements.push({ type: 'special', label: 'Casilla Especial ✨', coins: 5 });
             }
 
-            // 4. Procesar Recompensas
+            // 3. Recompensas (gameCoins) - Restaurado del historial original
             let totalCoinsEarned = 0;
-            if (newAchievements.length > 0) {
+            if (!uncheck && newAchievements.length > 0) {
                 totalCoinsEarned = newAchievements.reduce((sum, ac) => sum + ac.coins, 0);
                 const userRef = db.collection(COLLECTIONS.USERS).doc(uid);
 
@@ -140,48 +135,42 @@ export const updateBingoSquare = onCall({ region: 'us-central1', cors: true }, a
                 });
             }
 
-            // 5. Guardar Tablero
+            // 4. Guardar Tablero
+            const completedCount = categories.filter(c => c.completedMemoryId).length;
             transaction.update(boardRef, {
                 categories: categories,
-                completedCount: categories.filter(c => c.completedMemoryId).length,
+                completedCount,
                 updatedAt: FieldValue.serverTimestamp()
             });
 
-            // 6. Log Activity
-            if (totalCoinsEarned > 0) {
-                const activityRef = db
-                    .collection('relationships')
-                    .doc(relationshipId)
-                    .collection(COLLECTIONS.ACTIVITY_LOG)
-                    .doc();
+            // 5. Actividad y FCM - Restaurado del historial original
+            if (!uncheck && totalCoinsEarned > 0) {
+                const activityRef = db.collection('relationships').doc(relationshipId).collection(COLLECTIONS.ACTIVITY_LOG).doc();
                 transaction.set(activityRef, {
                     relationshipId,
                     userId: uid,
                     action: ACTIVITY_ACTIONS.BINGO_COMPLETED,
                     targetType: 'bingo',
                     targetId: categoryId,
-                    displayText: `Completó el reto "${categories[squareIndex].title || 'Bingo'}" y ganó ${totalCoinsEarned} monedas! 🎯`,
+                    displayText: `Completó el reto "${categories[catIndex].title || 'Bingo'}" y ganó ${totalCoinsEarned} monedas! 🎯`,
                     metadata: { achievements: newAchievements, coins: totalCoinsEarned },
                     isReadByAdmin: false,
                     readAt: null,
                     createdAt: FieldValue.serverTimestamp()
                 });
 
-                // --- FCM Notification for Achievements ---
-                // We only notify if there's a real achievement (not just a special square)
+                // FCM Push notification para logros reales
                 const realAchievements = newAchievements.filter(a => a.type !== 'special');
                 if (realAchievements.length > 0) {
                     try {
-                        // Notify the OTHER person in the relationship
-                        // Need to find the partner or admin UID
-                        const membersSnap = await transaction.get(db.collection('relationships').doc(relationshipId));
-                        const members = membersSnap.data()?.members || [];
-                        const otherUid = members.find(m => m !== uid);
+                        const relSnap = await transaction.get(db.collection('relationships').doc(relationshipId).collection('config').doc(SINGLETON_DOCS.RELATIONSHIP));
+                        const relData = relSnap.data() || {};
+                        // Identificar al otro miembro
+                        const adminUid = relData.adminUid;
+                        const partnerUid = relData.partnerUid;
+                        const otherUid = (uid === adminUid) ? partnerUid : adminUid;
                         
                         if (otherUid) {
-                            // We can't do await import inside transaction easily without complications in some envs, 
-                            // but for Firebase Functions it's usually fine if it's already loaded or top-level.
-                            // However, we'll do it safely.
                             const { sendToUser } = await import('../services/fcmService.js');
                             const topAchievement = realAchievements[0];
                             await sendToUser(otherUid, {
@@ -195,7 +184,7 @@ export const updateBingoSquare = onCall({ region: 'us-central1', cors: true }, a
                             });
                         }
                     } catch (fcmErr) {
-                        logger.error('[updateBingoSquare] FCM achievement notification failed:', fcmErr.message);
+                        logger.error('[updateBingoSquare] FCM notification failed:', fcmErr.message);
                     }
                 }
             }
@@ -208,8 +197,7 @@ export const updateBingoSquare = onCall({ region: 'us-central1', cors: true }, a
             };
         });
     } catch (error) {
-        logger.error('updateBingoSquare error:', { uid, relationshipId, error: error.message });
-        throw new HttpsError('internal', 'Error al actualizar la casilla de bingo.');
+        logger.error('updateBingoSquare error:', error.message);
+        throw new HttpsError('internal', error.message);
     }
-});
-
+};

@@ -1,74 +1,49 @@
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
-import { COLLECTIONS } from '../config/constants.js';
+import { COLLECTIONS, SINGLETON_DOCS } from '../config/constants.js';
 
-/**
- * resetBingoBoard — Backend API (BFF)
- * 
- * Resetea el tablero de bingo y archiva el actual en bingoHistory.
- * Ruta: relationships/{relationshipId}/bingo/board
- */
-export const resetBingoBoard = onCall({ region: 'us-central1', cors: true }, async (request) => {
-    if (!request.auth) {
-        throw new HttpsError('unauthenticated', 'Unauthorized');
-    }
+export const handler = async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Unauthorized');
+    
+    const { relationshipId } = request.auth.token;
 
-    const { relationshipId, uid, role } = request.auth.token;
-    // Allow both admin and partner to reset, provided they are in the relationship
-    if (role !== 'admin' && role !== 'partner') {
-        throw new HttpsError('permission-denied', 'No tienes permisos para resetear el tablero.');
-    }
+    // All members in the relationship can reset the board
+    if (!relationshipId) throw new HttpsError('failed-precondition', 'No relationship found.');
 
     const db = getFirestore();
-    const boardsColl = db.collection('relationships').doc(relationshipId).collection(COLLECTIONS.BINGO_BOARD);
+    const boardRef = db.collection('relationships')
+        .doc(relationshipId)
+        .collection(COLLECTIONS.BINGO_BOARD)
+        .doc(SINGLETON_DOCS.BINGO_BOARD);
 
     try {
-        return await db.runTransaction(async (transaction) => {
-            const activeSnap = await transaction.get(boardsColl.where('status', '==', 'active').limit(1));
-            
-            if (activeSnap.empty) {
-                throw new HttpsError('not-found', 'No hay un tablero activo para resetear.');
-            }
+        await db.runTransaction(async (transaction) => {
+            const boardSnap = await transaction.get(boardRef);
+            if (!boardSnap.exists) throw new HttpsError('not-found', 'Bingo board not found.');
 
-            const activeBoardRef = activeSnap.docs[0].ref;
-            const boardData = activeSnap.docs[0].data();
+            const data = boardSnap.data();
+            const currentCategories = data.categories || [];
 
-            // 1. Mark Current as Completed
-            transaction.update(activeBoardRef, {
-                status: 'completed',
-                completedAt: FieldValue.serverTimestamp(),
-                updatedAt: FieldValue.serverTimestamp()
-            });
-
-            // 2. Create NEW Active Board
-            const newBoardRef = boardsColl.doc();
-            const resetCats = (boardData.categories || []).map(c => ({
-                ...c,
+            // Reset all categories but keep IDs and titles
+            const resetCategories = currentCategories.map(cat => ({
+                ...cat,
+                isCompleted: false,
                 completedMemoryId: null,
                 completedAt: null
             }));
 
-            transaction.set(newBoardRef, {
-                categories: resetCats,
+            transaction.update(boardRef, {
+                categories: resetCategories,
+                status: 'active', // Should stay active for next round
                 completedCount: 0,
-                totalCount: boardData.totalCount || 16,
-                status: 'active',
-                level: (boardData.level || 1) + 1,
-                relationshipId,
-                createdAt: FieldValue.serverTimestamp(),
                 updatedAt: FieldValue.serverTimestamp()
             });
-
-            return {
-                success: true,
-                message: 'Tablero archivado y nuevo nivel generado.'
-            };
         });
-    } catch (error) {
-        logger.error('resetBingoBoard error:', { relationshipId, error: error.message });
-        if (error instanceof HttpsError) throw error;
-        throw new HttpsError('internal', 'Error al resetear el tablero.');
-    }
-});
 
+        return { success: true };
+    } catch (error) {
+        logger.error('resetBingoBoard error:', error.message);
+        throw new HttpsError('internal', error.message);
+    }
+};

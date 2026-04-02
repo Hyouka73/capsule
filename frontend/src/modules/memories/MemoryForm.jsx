@@ -1,21 +1,26 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
 import { useOfflineQueue } from '../../hooks/useOfflineQueue';
 import { useAppConfig } from '../../context/AppConfigContext';
+import { useBingo } from '../../hooks/useBingo';
 import Button from '../../components/ui/Button/Button';
 import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
-import MediaUploader from '../capsules/components/MediaUploader';
+import KawaiiSwitch from '../../components/ui/KawaiiSwitch/KawaiiSwitch';
+import MediaUploader from '../../components/ui/MediaUploader/MediaUploader';
 import PlacePickerBottomSheet from '../../components/PendingDates/PlacePickerBottomSheet';
 import styles from './MemoryForm.module.css';
 import { toast } from '../../components/ui/PastelToast/PastelToast';
 
 /**
- * MemoryForm - Optimized version for better density.
+ * MemoryForm - Optimized version with Flat Grid layout.
+ * Now using 100% dynamic tags from Config + Bingo.
  */
 export default function MemoryForm({ onSuccess, onCancel, initialData = null, bingoOrigin = null, defaultPlaces = [] }) {
     const { relationshipId } = useAuth();
     const { queueMemory } = useOfflineQueue();
     const { memoryTags } = useAppConfig();
+    const { availableTags } = useBingo();
     
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
@@ -29,19 +34,35 @@ export default function MemoryForm({ onSuccess, onCancel, initialData = null, bi
         };
     }, []);
 
-    const [formData, setFormData] = useState(initialData || {
-        title: '',
-        description: '',
-        eventDate: new Date().toISOString().split('T')[0],
-        tags: [],
-        placeName: '',
-        placeId: '',
-        placeLat: null,
-        placeLng: null,
-        isSpecial: false,
+    const [formData, setFormData] = useState(() => {
+        const data = initialData || {
+            title: '',
+            description: '',
+            eventDate: new Date().toISOString().split('T')[0],
+            tags: [],
+            placeName: '',
+            placeId: '',
+            placeLat: null,
+            placeLng: null,
+            isSpecial: false,
+        };
+
+        // Ensure date is in YYYY-MM-DD format for native picker
+        if (data.eventDate) {
+            try {
+                const datePart = data.eventDate.split('T')[0];
+                data.eventDate = datePart;
+            } catch (e) {
+                data.eventDate = new Date().toISOString().split('T')[0];
+            }
+        }
+        return data;
     });
 
     const [files, setFiles] = useState(initialData?.photos || []);
+
+    // ── Global Config Tags Only (uses immutable IDs) ──
+    const allAvailableTags = useMemo(() => memoryTags || [], [memoryTags]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -52,12 +73,15 @@ export default function MemoryForm({ onSuccess, onCancel, initialData = null, bi
     };
 
     const toggleTag = (tag) => {
-        setFormData(prev => ({
-            ...prev,
-            tags: prev.tags.includes(tag)
-                ? prev.tags.filter(t => t !== tag)
-                : [...prev.tags, tag]
-        }));
+        setFormData(prev => {
+            const currentTags = Array.isArray(prev.tags) ? prev.tags : [];
+            return {
+                ...prev,
+                tags: currentTags.includes(tag)
+                    ? currentTags.filter(t => t !== tag)
+                    : [...currentTags, tag]
+            };
+        });
     };
 
     const handleSubmit = async (e) => {
@@ -99,46 +123,81 @@ export default function MemoryForm({ onSuccess, onCancel, initialData = null, bi
         <form className={styles.form} onSubmit={handleSubmit}>
             {error && <div className={styles.error}>{error}</div>}
 
-            <div className={styles.scrollArea}>
-                <div className={styles.leftColumn}>
-                    <div className={`${styles.formRow} ${styles.compact}`}>
-                        <div className={styles.formSection} style={{ flex: 2 }}>
-                            <KawaiiInput
-                                label="¿Qué pasó hoy? ✨"
-                                name="title"
-                                required
-                                value={formData.title}
-                                onChange={handleChange}
-                                placeholder="Título..."
-                                iconLeft="edit"
-                            />
-                        </div>
-                        <div className={styles.formSection} style={{ flex: 1 }}>
-                            <KawaiiInput
-                                type="date"
-                                label="Fecha"
-                                name="eventDate"
-                                required
-                                value={formData.eventDate}
-                                onChange={handleChange}
-                                iconLeft="calendar_today"
-                            />
-                        </div>
-                    </div>
+            <div className={styles.splitLayout}>
+                {/* ── Columna Principal: El Corazón del Recuerdo ── */}
+                <div className={styles.mainColumn}>
+                    <motion.div 
+                        className={styles.formSection}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                    >
+                        <KawaiiInput
+                            label="¿Qué pasó hoy? ✨"
+                            name="title"
+                            required
+                            value={formData.title}
+                            onChange={handleChange}
+                            placeholder="Título del momento..."
+                            iconLeft="edit"
+                        />
+                    </motion.div>
 
-                    <div className={styles.formSection}>
+                    <motion.div 
+                        className={styles.formSection}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                    >
                         <KawaiiInput
                             type="textarea"
                             label="Cuéntame más... 📝"
                             name="description"
                             value={formData.description}
                             onChange={handleChange}
-                            placeholder="Escribe aquí los detalles..."
-                            rows={3}
+                            placeholder="Escribe aquí los detalles de este momento especial..."
+                            rows={6}
                         />
-                    </div>
+                    </motion.div>
 
-                    <div className={styles.formSection}>
+                    <motion.div 
+                        className={styles.formSection}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4 }}
+                    >
+                        <label className={styles.label}>📸 Fotos ({files.length}/50)</label>
+                        <div className={styles.mediaContainerCompact}>
+                            <MediaUploader files={files} onChange={setFiles} />
+                        </div>
+                    </motion.div>
+                </div>
+
+                {/* ── Columna Lateral: Detalles y Vibes ── */}
+                <div className={styles.sideColumn}>
+                    <motion.div 
+                        className={styles.formSection}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.15 }}
+                    >
+                        <KawaiiInput
+                            type="date"
+                            label="Fecha"
+                            name="eventDate"
+                            required
+                            value={formData.eventDate}
+                            onChange={handleChange}
+                            iconLeft="calendar_today"
+                        />
+                    </motion.div>
+
+                    <motion.div 
+                        className={styles.formSection}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.25 }}
+                    >
                         <label className={styles.label}>📍 ¿Dónde fue?</label>
                         <div 
                             className={`${styles.locationSelector} ${locationError ? styles.locationError : ''}`}
@@ -157,68 +216,66 @@ export default function MemoryForm({ onSuccess, onCancel, initialData = null, bi
                                         {formData.placeLat.toFixed(4)}, {formData.placeLng.toFixed(4)}
                                     </span>
                                 ) : (
-                                    <span className={styles.coords}>Toca para elegir</span>
+                                    <span className={styles.coords}>Toca para elegir ubicación</span>
                                 )}
                             </div>
-                            <span className="material-symbols-rounded">chevron_right</span>
+                            <span className={`material-symbols-rounded ${styles.chevronIcon}`}>chevron_right</span>
                         </div>
-                        {locationError && <p className={styles.errorText}>Por favor selecciona una ubicación.</p>}
-                    </div>
-                </div>
+                        {locationError && <p className={styles.errorText}>Por favor selecciona una ubicación para el mapa.</p>}
+                    </motion.div>
 
-                <div className={styles.rightColumn}>
-                    <div className={styles.formSection}>
-                        <label className={styles.label}>🏷️ Etiquetas</label>
-                        <div className={styles.tagsGrid}>
-                            {(memoryTags || []).map(tag => (
-                                <button
-                                    key={tag.value}
-                                    type="button"
-                                    className={`${styles.tagBtn} ${formData.tags.includes(tag.value) ? styles.tagBtnActive : ''}`}
-                                    onClick={() => toggleTag(tag.value)}
-                                >
-                                    {tag.label}
-                                </button>
-                            ))}
+                    <motion.div 
+                        className={styles.formSection}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.3 }}
+                    >
+                        <KawaiiSwitch 
+                            checked={formData.isSpecial} 
+                            onChange={(val) => setFormData(prev => ({ ...prev, isSpecial: val }))} 
+                            label="Evento Especial ⭐" 
+                            icon="👑"
+                        />
+                    </motion.div>
+
+                    <motion.div 
+                        className={`${styles.formSection} ${styles.tagsContainer}`}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.35 }}
+                    >
+                        <label className={styles.label}>🏷️ Etiquetas (Vibes)</label>
+                        <div className={styles.tagsGridCompact}>
+                            {allAvailableTags.length > 0 ? (
+                                allAvailableTags.map(tag => (
+                                    <motion.button
+                                        key={tag.id}
+                                        type="button"
+                                        whileTap={{ scale: 0.9 }}
+                                        className={`${styles.tagBtnSmall} ${formData.tags?.includes(tag.id) ? styles.tagBtnActiveSmall : ''}`}
+                                        onClick={() => toggleTag(tag.id)}
+                                    >
+                                        {tag.emoji} {tag.label}
+                                    </motion.button>
+                                ))
+                            ) : (
+                                <p className={styles.noTags}>Sin etiquetas ✨</p>
+                            )}
                         </div>
-                    </div>
-
-                    <div className={styles.formSection}>
-                        <div className={styles.specialToggleRow}>
-                            <div className={styles.specialInfo}>
-                                <span className={styles.specialIcon}>⭐</span>
-                                <div>
-                                    <strong>Momento Especial</strong>
-                                    <p>Destacar en su historia</p>
-                                </div>
-                            </div>
-                            <label className={styles.switch}>
-                                <input
-                                    type="checkbox"
-                                    name="isSpecial"
-                                    checked={formData.isSpecial}
-                                    onChange={handleChange}
-                                />
-                                <span className={styles.slider}></span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div className={styles.formSection}>
-                        <label className={styles.label}>📸 Fotos ({files.length})</label>
-                        <MediaUploader files={files} setFiles={setFiles} maxFiles={50} />
-                    </div>
+                    </motion.div>
                 </div>
             </div>
 
-            <div className={styles.actions}>
-                <Button variant="ghost" type="button" onClick={onCancel}>
-                    Cancelar
+            <motion.div 
+                className={styles.actionsSticky}
+                initial={{ y: 50 }}
+                animate={{ y: 0 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            >
+                <Button type="submit" isLoading={isSubmitting} disabled={isSubmitting} className={styles.submitBtn}>
+                    {isSubmitting ? 'Guardando...' : 'Guardar Recuerdo ✨'}
                 </Button>
-                <Button type="submit" isLoading={isSubmitting} disabled={isSubmitting}>
-                    {isSubmitting ? 'Guardando...' : 'Guardar Recuerdo'}
-                </Button>
-            </div>
+            </motion.div>
 
             <PlacePickerBottomSheet
                 isOpen={isPlacePickerOpen}

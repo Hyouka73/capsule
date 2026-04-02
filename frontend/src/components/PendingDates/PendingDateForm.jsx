@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import KawaiiInput from '../ui/KawaiiInput/KawaiiInput';
+import KawaiiSwitch from '../ui/KawaiiSwitch/KawaiiSwitch';
 import PlacePickerBottomSheet from './PlacePickerBottomSheet';
 import { reverseGeocode } from '../../services/mapService';
 import Carousel from '../ui/Carousel/Carousel';
@@ -11,6 +12,7 @@ import styles from './PendingDateForm.module.css';
 export default function PendingDateForm({ pendingDate, onClose, onSave, onAutoSave, defaultPlaces }) {
     const { availableTags } = useBingo();
     const { memoryTags } = useAppConfig();
+    
     // Determine initial location from metadata if available
     const [selectedPlaceId, setSelectedPlaceId] = useState(() => 
         pendingDate?.coordinates ? 'custom_map' : ''
@@ -19,6 +21,7 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, onAutoSa
     const [customPlaceName, setCustomPlaceName] = useState(pendingDate?.placeName || '');
     const [isPlacePickerOpen, setIsPlacePickerOpen] = useState(false);
     const [title, setTitle] = useState(pendingDate?.title || '');
+    
     const [eventDate, setEventDate] = useState(() => {
         try {
             // Priority: eventDate from form > rawDate from EXIF > createdAt
@@ -32,18 +35,23 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, onAutoSa
         }
         return new Date().toISOString().split('T')[0];
     });
+
     const [selectedTags, setSelectedTags] = useState(pendingDate?.tags || pendingDate?.suggestedTags || pendingDate?.context?.tags || []);
     const [isSpecial, setIsSpecial] = useState(pendingDate?.isSpecial || false);
     const [comments, setComments] = useState(pendingDate?.description || pendingDate?.comments || pendingDate?.context?.description || '');
     const [locationError, setLocationError] = useState(false);
     const [showCarousel, setShowCarousel] = useState(false);
 
+    // ── Global Config Tags Only ──
+    const allAvailableTags = useMemo(() => {
+        return memoryTags || [];
+    }, [memoryTags]);
+
     // Auto-save debounced
     useEffect(() => {
         if (!onAutoSave) return;
         
         const timer = setTimeout(() => {
-            // Only save if something looks "touched" or already exists
             const hasData = title || selectedTags.length > 0 || comments || selectedPlaceId || isSpecial;
             if (hasData) {
                 onAutoSave({
@@ -218,46 +226,30 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, onAutoSa
                     <div className={styles.formGroup}>
                         <label className={styles.label}>Etiquetas</label>
                         <div className={styles.tagsContainer}>
-                            {(() => {
-                                // Merge global config tags with dynamic Bingo tags
-                                const allTags = [...(memoryTags || [])];
-                                (availableTags || []).forEach(tag => {
-                                    if (!allTags.find(t => t.value === tag.value)) {
-                                        allTags.push(tag);
-                                    }
-                                });
-
-                                return allTags.map(({ value, label }) => (
+                            {allAvailableTags.length > 0 ? (
+                                allAvailableTags.map((tag) => (
                                     <button
-                                        key={value}
-                                        className={`${styles.tagBtn} ${selectedTags.includes(value) ? styles.tagBtnActive : ''}`}
-                                        onClick={() => toggleTag(value)}
+                                        key={tag.id}
+                                        type="button"
+                                        className={`${styles.tagBtn} ${selectedTags.includes(tag.id) ? styles.tagBtnActive : ''}`}
+                                        onClick={() => toggleTag(tag.id)}
                                     >
-                                        {label}
+                                        {tag.emoji} {tag.label}
                                     </button>
-                                ));
-                            })()}
+                                ))
+                            ) : (
+                                <p className={styles.noTags}>Configura etiquetas en el administrador ✨</p>
+                            )}
                         </div>
                     </div>
 
                     <div className={styles.formGroup}>
-                        <div className={styles.specialToggleContainer}>
-                            <div className={styles.specialToggleInfo}>
-                                <span className={styles.specialToggleIcon}>⭐</span>
-                                <div className={styles.specialToggleText}>
-                                    <span className={styles.specialToggleTitle}>Momento Especial</span>
-                                    <span className={styles.specialToggleSubtitle}>Destaca este recuerdo en su historia</span>
-                                </div>
-                            </div>
-                            <label className={styles.switch}>
-                                <input 
-                                    type="checkbox" 
-                                    checked={isSpecial} 
-                                    onChange={(e) => setIsSpecial(e.target.checked)} 
-                                />
-                                <span className={styles.slider}></span>
-                            </label>
-                        </div>
+                        <KawaiiSwitch 
+                            checked={isSpecial} 
+                            onChange={setIsSpecial} 
+                            label="¿Es un Especial? ⭐" 
+                            icon="👑"
+                        />
                     </div>
 
                     <div className={styles.formGroup}>

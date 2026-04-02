@@ -150,7 +150,6 @@
     padding: 0.25rem 0.6rem;
     border-radius: var(--radius-full);
     font-weight: 700;
-    text-transform: uppercase;
     background-color: var(--bg-card);
     color: var(--text-secondary);
     border: 1px solid rgba(0, 0, 0, 0.05);
@@ -384,49 +383,10 @@
     gap: 1.5rem;
 }
 
-.assignModal h3 {
-    margin: 0;
-    font-family: var(--font-display);
-    font-size: 1.5rem;
-}
-
-.assignModal p {
-    margin: 0;
-    color: var(--text-muted);
-    font-size: 0.9rem;
-}
-
-.partnerList {
+.modalActions {
     display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.partnerBtn {
-    display: flex;
-    align-items: center;
     gap: 1rem;
-    padding: 1rem;
-    background: var(--bg-card);
-    border: 3px solid var(--text-primary);
-    border-radius: 16px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: left;
-}
-
-.partnerBtn:hover {
-    transform: translateY(-2px);
-    box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
-}
-
-.partnerAvatar {
-    font-size: 2rem;
-}
-
-.partnerName {
-    font-weight: 900;
-    font-family: var(--font-display);
+    justify-content: center;
 }
 
 .cancelModal {
@@ -461,6 +421,50 @@
     border-radius: 6px;
     font-size: 0.75rem;
     font-weight: 900;
+}
+
+.assignedBadge {
+    padding: 0.2rem 0.6rem;
+    background: #E0F2F1;
+    color: #00897B;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 900;
+}
+
+.redemptionCard {
+    border-left-style: double;
+    border-left-width: 8px;
+}
+
+.pendingIndicator {
+    background: var(--color-warning, #FFB300);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 900;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+}
+
+.redemptionNotes {
+    font-style: italic;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0.5rem 0;
+    opacity: 0.8;
+}
+
+.dateLabel {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.statusLabel {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-secondary);
 }
 
 .assignBtn {

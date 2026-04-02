@@ -1,7 +1,9 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../../components/ui/Button/Button';
 import { useActivityLog } from '../../hooks/useActivityLog';
+import { useCoupons } from '../../hooks/useCoupons';
 import styles from './ActivityPanel.module.css';
 
 const CATEGORY_MAP = {
@@ -11,6 +13,7 @@ const CATEGORY_MAP = {
     capsule: { label: 'Cápsulas', icon: 'hourglass_empty', color: 'var(--pastel-mint)' },
     bingo: { label: 'Bingo', icon: 'grid_view', color: 'var(--pastel-orange, #ffb400)' },
     wrapped: { label: 'Wrapped', icon: 'movie', color: 'var(--pastel-lavender)' },
+    coupon: { label: 'Cupones', icon: 'confirmation_number', color: 'var(--pastel-orange, #ffb400)' },
 };
 
 export default function ActivityPanel({ filterType, setFilterType }) {
@@ -22,8 +25,24 @@ export default function ActivityPanel({ filterType, setFilterType }) {
         loadMore,
         markAsRead, 
         markAllAsRead, 
-        unreadCount 
+        unreadCount,
+        fetchLogs // Added fetchLogs for manual refreshes
     } = useActivityLog();
+
+    const { 
+        approveRedemption, 
+        postponeRedemption, 
+        redemptions // Added redemptions list to check current status
+    } = useCoupons();
+    
+    const [selectedActionLog, setSelectedActionLog] = useState(null);
+    const [postponeMsg, setPostponeMsg] = useState('');
+
+    // Check if a specific redemption is still pending approval
+    const isRedemptionPending = (redemptionId) => {
+        const r = redemptions?.find(r => r.id === redemptionId);
+        return r?.status === 'pending_approval';
+    };
 
     const [onlyUnread, setOnlyUnread] = useState(false);
     const scrollRef = useRef(null);
@@ -87,12 +106,27 @@ export default function ActivityPanel({ filterType, setFilterType }) {
     const filteredLogs = useMemo(() => {
         return (logs || []).filter(log => {
             if (log.targetType === 'snapshot') return false;
-            if (log.targetType === 'coupon') return false;
             const matchesType = filterType === 'all' || log.targetType === filterType;
             const matchesUnread = !onlyUnread || !log.isReadByAdmin;
             return matchesType && matchesUnread;
         });
     }, [logs, filterType, onlyUnread]);
+
+    // ── Date Handling ── 
+    const parseDate = (d) => {
+        if (!d) return new Date();
+        
+        // Handle Firestore Timestamp {seconds, nanoseconds} or {_seconds, _nanoseconds}
+        const s = d.seconds ?? d._seconds;
+        if (typeof s === 'number') return new Date(s * 1000);
+        
+        // Handle Firebase .toDate() method
+        if (typeof d.toDate === 'function') return d.toDate();
+        
+        // Final fallback: try raw parsing
+        const parsed = new Date(d);
+        return isNaN(parsed.getTime()) ? new Date() : parsed;
+    };
 
     const groupedLogs = useMemo(() => {
         const now = new Date();
@@ -102,14 +136,15 @@ export default function ActivityPanel({ filterType, setFilterType }) {
         const groups = {};
         
         filteredLogs.forEach(log => {
-            const d = new Date(log.createdAt);
-            const ts = d.getTime();
+            const date = parseDate(log.createdAt);
+            const ts = date.getTime();
             let label = '';
 
             if (ts >= todayTs) label = 'Hoy';
             else if (ts >= yesterdayTs) label = 'Ayer';
             else {
-                label = d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+                label = date.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+                // Capitalize
                 label = label.charAt(0).toUpperCase() + label.slice(1);
             }
 
@@ -135,14 +170,17 @@ export default function ActivityPanel({ filterType, setFilterType }) {
     }, [filteredLogs]);
 
     const getTimeAgo = (dateInput) => {
-        const date = new Date(dateInput);
-        const seconds = Math.floor((new Date() - date) / 1000);
+        const date = parseDate(dateInput);
+        const diff = new Date().getTime() - date.getTime();
+        const seconds = Math.floor(diff / 1000);
+        
         if (seconds < 60) return 'ahora';
         const minutes = Math.floor(seconds / 60);
         if (minutes < 60) return `${minutes}m`;
         const hours = Math.floor(minutes / 60);
         if (hours < 24) return `${hours}h`;
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
     };
 
     const getIcon = (type) => CATEGORY_MAP[type]?.icon || 'notifications';
@@ -277,18 +315,36 @@ export default function ActivityPanel({ filterType, setFilterType }) {
                                                     </div>
                                                     
                                                     <div className={styles.itemContent}>
-                                                        <div className={styles.itemMain}>
-                                                            <span className={styles.itemAction}>{log.displayText}</span>
-                                                            <span className={styles.itemTime}>{getTimeAgo(log.createdAt)}</span>
-                                                        </div>
-                                                        <div className={styles.itemMeta}>
-                                                            <span className={styles.itemType}>{getLabel(log.targetType)}</span>
-                                                            <span className={styles.itemId}>#{log.targetId?.slice(-4)}</span>
+                                                        <div className={styles.itemInfo}>
+                                                            <div className={styles.itemHeader}>
+                                                                <span className={styles.itemAction} title={log.displayText}>
+                                                                    {log.displayText}
+                                                                </span>
+                                                                <span className={styles.itemTime}>
+                                                                    {getTimeAgo(log.createdAt)}
+                                                                </span>
+                                                            </div>
+                                                            <div className={styles.itemMeta}>
+                                                                <span className={styles.itemType}>{getLabel(log.targetType)}</span>
+                                                                <span className={styles.itemId}>#{log.targetId?.slice(-4)}</span>
+                                                            </div>
                                                         </div>
                                                     </div>
 
-                                                    {!log.isReadByAdmin && (
-                                                        <div className={styles.unreadBadge} />
+                                                    {/* Manage Button: ONLY if log is a request AND its redemption is still pending */}
+                                                    {log.action === 'coupon_requested' && log.redemptionId && isRedemptionPending(log.redemptionId) && (
+                                                        <div className={styles.itemActions}>
+                                                            <Button 
+                                                                size="xs" 
+                                                                variant="primary"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setSelectedActionLog(log);
+                                                                }}
+                                                            >
+                                                                Gestionar
+                                                            </Button>
+                                                        </div>
                                                     )}
                                                 </motion.div>
                                             ))}
@@ -359,6 +415,78 @@ export default function ActivityPanel({ filterType, setFilterType }) {
                     </div>
                 </aside>
             </div>
+
+            {/* ── Action Modal (Using Portal) ── */}
+            {typeof document !== 'undefined' && createPortal(
+                <AnimatePresence>
+                    {selectedActionLog && (
+                        <div className={styles.modalOverlay} onClick={() => setSelectedActionLog(null)}>
+                            <motion.div 
+                                className={styles.actionModal}
+                                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                                animate={{ scale: 1, opacity: 1, y: 0 }}
+                                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className={styles.modalHeader}>
+                                    <div className={styles.modalIcon}>🎁</div>
+                                    <h3>Gestionar Petición</h3>
+                                    <button className={styles.closeBtn} onClick={() => setSelectedActionLog(null)}>
+                                        <span className="material-symbols-rounded">close</span>
+                                    </button>
+                                </div>
+
+                                <div className={styles.modalBody}>
+                                    <p className={styles.requestText}>
+                                        <strong>{selectedActionLog.displayText}</strong>
+                                    </p>
+                                    <p className={styles.requestContext}>
+                                        Tu partner está esperando este regalo. ¿Qué quieres hacer?
+                                    </p>
+
+                                    <div className={styles.postponeBox}>
+                                        <textarea 
+                                            placeholder="Motivo de posposición (opcional)..."
+                                            className={styles.modalTextarea}
+                                            value={postponeMsg}
+                                            onChange={(e) => setPostponeMsg(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className={styles.modalActions}>
+                                    <Button 
+                                        variant="secondary" 
+                                        onClick={async () => {
+                                            if (!selectedActionLog?.redemptionId) return;
+                                            await postponeRedemption(selectedActionLog.redemptionId, postponeMsg);
+                                            await markAsRead(selectedActionLog.id);
+                                            await fetchLogs(); // Core fix: Refresh logs to show the new "Postponed" entry
+                                            setSelectedActionLog(null);
+                                            setPostponeMsg('');
+                                        }}
+                                    >
+                                        Posponer
+                                    </Button>
+                                    <Button 
+                                        variant="primary" 
+                                        onClick={async () => {
+                                            if (!selectedActionLog?.redemptionId) return;
+                                            await approveRedemption(selectedActionLog.redemptionId);
+                                            await markAsRead(selectedActionLog.id);
+                                            await fetchLogs(); // Core fix: Refresh logs to show the new "Approved" entry
+                                            setSelectedActionLog(null);
+                                        }}
+                                    >
+                                        ¡Conceder Deseo! ✨
+                                    </Button>
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
         </div>
     );
 }

@@ -5,7 +5,16 @@
     border-radius: var(--radius-pill);
     padding: 4px;
     margin: 0 auto 32px;
-    max-width: 320px;
+    width: fit-content;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.tabsMenu::-webkit-scrollbar {
+    display: none;
 }
 
 .tabBtn {

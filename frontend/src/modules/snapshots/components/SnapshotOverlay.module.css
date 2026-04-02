@@ -134,24 +134,27 @@
 
 .progressRingSvg {
     position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    width: calc(100% + 8px);
+    height: calc(100% + 8px);
     pointer-events: none;
     z-index: 5;
+    overflow: visible;
 }
 
 .timerTrack {
     fill: none;
-    stroke: rgba(255, 255, 255, 0.1);
-    stroke-width: 0.008;
+    stroke: rgba(255, 255, 255, 0.15);
+    stroke-width: 0.015;
 }
 
 .timerFill {
     fill: none;
     stroke: var(--pastel-rose);
-    stroke-width: 0.008;
+    stroke-width: 0.018;
     stroke-linecap: round;
 }
 

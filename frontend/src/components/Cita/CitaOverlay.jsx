@@ -48,7 +48,7 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
         e.target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><rect width="64" height="64" fill="%2388d8b0"/><path d="M42 22H22c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h20c1.1 0 2-.9 2-2V24c0-1.1-.9-2-2-2zm0 18H22V24h20v16z" fill="white"/><path d="M30.5 33.33L27 36.5l-3-4-4 5.5h18z" fill="white"/></svg>';
     };
 
-    const minPhotos = citaContext?.minPhotos ?? 0;
+    const minPhotos = citaContext?.minPhotos ?? 5;
     const isComplete = sessionPhotos.length >= minPhotos;
 
     return (

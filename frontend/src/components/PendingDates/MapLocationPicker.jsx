@@ -262,12 +262,6 @@ export default function MapLocationPicker({ onConfirm, onCancel, initialCoordina
             </div>
 
             <div className={styles.mapWrapper}>
-                {isLocating && (
-                    <div className={styles.adjustingToast}>
-                        <div className={styles.miniSpinner} />
-                        <span>Ajustando a tu ubicación...</span>
-                    </div>
-                )}
 
                 <Map
                     viewport={viewport}

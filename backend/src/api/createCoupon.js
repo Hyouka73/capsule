@@ -1,85 +1,55 @@
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
-import { COLLECTIONS } from '../config/constants.js';
+import { COLLECTIONS, ACTIVITY_ACTIONS } from '../config/constants.js';
 
-/**
- * createCoupon — Admin-only API
- * 
- * Crea un cupón vinculado a la relación.
- */
-export const createCoupon = onCall({ region: 'us-central1', cors: true }, async (request) => {
+export const handler = async (request) => {
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Unauthorized');
     }
 
-    const { role, relationshipId } = request.auth.token;
+    const { title, description, maxRedemptions = 1, type = 'simple', emoji, tier = 1 } = request.data || {};
+    const { relationshipId, role, uid } = request.auth.token;
+
     if (role !== 'admin') {
-        throw new HttpsError('permission-denied', 'Solo el Admin puede crear cupones.');
+        throw new HttpsError('permission-denied', 'Only admin can create coupons.');
     }
 
-    const { title, description, type, emoji, maxRedemptions = 1 } = request.data;
-
     if (!title) {
-        throw new HttpsError('invalid-argument', 'El título del cupón es obligatorio.');
+        throw new HttpsError('invalid-argument', 'Title is required.');
     }
 
     const db = getFirestore();
+    const relRef = db.collection('relationships').doc(relationshipId);
+    const couponsColl = relRef.collection(COLLECTIONS.COUPONS);
 
     try {
+        const couponRef = couponsColl.doc();
+        const now = FieldValue.serverTimestamp();
+
         const couponData = {
+            id: couponRef.id,
             title,
             description: description || '',
-            type: type || 'custom',
-            emoji: emoji || '💝',
-            status: 'active', // active | redeemed | expired
             maxRedemptions,
             redemptionsLeft: maxRedemptions,
+            type,
+            emoji: emoji || '🎁',
+            tier: Number(tier),
+            status: 'active',
             relationshipId,
-            createdBy: request.auth.uid,
-            createdAt: FieldValue.serverTimestamp(),
-            updatedAt: FieldValue.serverTimestamp(),
+            createdAt: now,
+            updatedAt: now
         };
 
-        const docRef = await db.collection('relationships')
-            .doc(relationshipId)
-            .collection('coupons')
-            .add(couponData);
-
-        // --- FCM Notification to Partner ---
-        try {
-            const { sendBatchNotifications } = await import('../services/fcmService.js');
-            const partnerQuery = await db.collection(COLLECTIONS.USERS)
-                .where('relationshipId', '==', relationshipId)
-                .where('role', '==', 'partner')
-                .limit(1)
-                .get();
-
-            if (!partnerQuery.empty) {
-                const fcmTokens = partnerQuery.docs[0].data().fcmTokens || [];
-                if (fcmTokens.length > 0) {
-                    await sendBatchNotifications(fcmTokens, {
-                        title: '🎫 ¡Nuevo cupón!',
-                        body: `Has recibido un nuevo cupón: "${title}" ✨`,
-                        data: {
-                            type: 'coupon_created',
-                            couponId: docRef.id,
-                        },
-                    });
-                }
-            }
-        } catch (fcmError) {
-            logger.error('Error sending FCM for createCoupon:', fcmError);
-        }
+        await couponRef.set(couponData);
 
         return {
             success: true,
-            id: docRef.id,
-            message: 'Cupón creado exitosamente.'
+            couponId: couponRef.id
         };
     } catch (error) {
-        logger.error('createCoupon error:', { relationshipId, error: error.message });
+        logger.error('createCoupon error:', error.message);
         throw new HttpsError('internal', 'Error al crear el cupón.');
     }
-});
-
+};

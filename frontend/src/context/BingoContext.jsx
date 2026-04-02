@@ -361,11 +361,15 @@ export function BingoProvider({ children }) {
             try {
                 if (selectedCategoryIds.length > 0) {
                     for (const catId of selectedCategoryIds) {
-                        await markComplete(catId, memoryId);
+                        try {
+                            await markComplete(catId, memoryId);
+                        } catch (err) {
+                            console.error(`Error completing category ${catId}:`, err);
+                        }
                     }
                 }
-                setBingoQueue(prev => prev.filter(item => item.memoryId !== memoryId));
             } finally {
+                setBingoQueue(prev => prev.filter(item => item.memoryId !== memoryId));
                 setIsResolving(false);
             }
         }, [isResolving, markComplete])

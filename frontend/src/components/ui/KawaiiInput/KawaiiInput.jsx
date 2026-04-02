@@ -38,9 +38,24 @@ export default function KawaiiInput({
 
     const handleWrapperClick = () => {
         if (disabled) return;
-        if (inputRef.current && (type === 'text' || type === 'search' || type === 'textarea')) {
-            inputRef.current.focus();
+        
+        // Native triggers for select/date if ref exists and not custom onClick
+        if (!onClick && inputRef.current) {
+            if (type === 'date' || type === 'datetime-local' || type === 'select') {
+                if ('showPicker' in inputRef.current) {
+                    try {
+                        inputRef.current.showPicker();
+                    } catch (e) {
+                        inputRef.current.focus();
+                    }
+                } else {
+                    inputRef.current.focus();
+                }
+            } else if (type === 'text' || type === 'search' || type === 'textarea' || type === 'password') {
+                inputRef.current.focus();
+            }
         }
+        
         if (onClick) onClick();
     };
 
@@ -50,7 +65,7 @@ export default function KawaiiInput({
         error ? styles.inputWrapperError : '',
         disabled ? styles.inputWrapperDisabled : '',
         type === 'textarea' ? styles.inputWrapperTextarea : '',
-        (type === 'select' || type === 'date' || type === 'photo' || type === 'toggle' || onClick) ? styles.clickable : '',
+        (type === 'select' || type === 'date' || type === 'datetime-local' || type === 'photo' || type === 'toggle' || onClick) ? styles.clickable : '',
         className
     ].filter(Boolean).join(' ');
 
@@ -70,7 +85,8 @@ export default function KawaiiInput({
         if (!icon) {
             switch (type) {
                 case 'search': icon = 'search'; break;
-                case 'date': icon = 'calendar_month'; break;
+                case 'date': 
+                case 'datetime-local': icon = 'calendar_month'; break;
                 case 'password': icon = 'lock'; break;
                 default: icon = null;
             }
@@ -114,11 +130,35 @@ export default function KawaiiInput({
                 );
             }
             case 'date':
+            case 'datetime-local': {
+                // Prettify date for display: 
+                // YYYY-MM-DD -> DD/MM/YYYY
+                // YYYY-MM-DDTHH:mm -> DD/MM/YYYY - HH:mm
+                let displayDate = value || placeholder;
+                
+                if (value) {
+                    if (value.includes('T')) {
+                        // Datetime-local format: YYYY-MM-DDTHH:mm
+                        const [datePart, timePart] = value.split('T');
+                        const [y, m, d] = datePart.split('-');
+                        if (y && m && d && timePart) {
+                            displayDate = `${d}/${m}/${y} - ${timePart}`;
+                        }
+                    } else if (value.includes('-')) {
+                        // Date format: YYYY-MM-DD
+                        const [y, m, d] = value.split('-');
+                        if (y && m && d) {
+                            displayDate = `${d}/${m}/${y}`;
+                        }
+                    }
+                }
+
                 return (
                     <div className={`${styles.valueText} ${!value ? styles.valuePlaceholder : ''}`}>
-                        {value || placeholder}
+                        {displayDate}
                     </div>
                 );
+            }
             case 'photo':
                 return (
                     <div className={`${styles.valueText} ${!photos?.length ? styles.valuePlaceholder : ''}`}>
@@ -181,11 +221,7 @@ export default function KawaiiInput({
                     className={styles.rightAction}
                     onClick={(e) => {
                         e.stopPropagation();
-                        // Nota: onClear es requerido si se usa type === 'search'
-                        // No se provee fallback a onChange para evitar mutaciones silenciosas
-                        if (onClear) {
-                            onClear();
-                        }
+                        if (onClear) onClear();
                         if (inputRef.current) inputRef.current.focus();
                     }}
                 >
@@ -202,10 +238,12 @@ export default function KawaiiInput({
             );
         }
 
-        if (type === 'date') {
+        if (type === 'date' || type === 'datetime-local') {
             return (
                 <div className={styles.rightAction}>
-                    <span className="material-symbols-rounded">chevron_right</span>
+                    <span className="material-symbols-rounded">
+                        {type === 'datetime-local' ? 'schedule' : 'calendar_today'}
+                    </span>
                 </div>
             );
         }
@@ -259,11 +297,10 @@ export default function KawaiiInput({
 
                 {/* 
                  * Overlay native inputs for generic select/date.
-                 * Desactivamos intencionalmente (!onClick) si el componente padre maneja
-                 * la acción (ej. un Custom Bottom Sheet) para evitar conflictos con el UI nativo.
                  */}
                 {type === 'select' && options && options.length > 0 && !onClick && (
                     <select
+                        ref={inputRef}
                         className={styles.hiddenNativeInput}
                         name={name}
                         value={value || ''}
@@ -281,9 +318,10 @@ export default function KawaiiInput({
                     </select>
                 )}
 
-                {type === 'date' && !onClick && (
+                {(type === 'date' || type === 'datetime-local') && !onClick && (
                     <input
-                        type="date"
+                        ref={inputRef}
+                        type={type}
                         className={styles.hiddenNativeInput}
                         name={name}
                         value={value || ''}

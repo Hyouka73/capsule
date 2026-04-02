@@ -1,0 +1,295 @@
+.card {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--clay-bg-white);
+    border: 3px solid var(--pastel-rose-light);
+    box-shadow: var(--clay-shadow-sm);
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    height: 100%;
+}
+
+.cardHidden {
+    opacity: 0.85;
+    background: var(--bg-input);
+    border-style: dashed;
+}
+
+/* ── Image Section ── */
+.imageContainer {
+    position: relative;
+    height: 180px;
+    background: var(--pastel-bg-soft);
+    border-bottom: 3px solid var(--pastel-rose-light);
+    overflow: hidden;
+}
+
+.photoWrapper {
+    width: 100%;
+    height: 100%;
+}
+
+.mainPhoto {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s ease;
+}
+
+.card:hover .mainPhoto {
+    transform: scale(1.05);
+}
+
+.photoCountStack {
+    position: absolute;
+    bottom: 0.75rem;
+    right: 0.75rem;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.emptyPhoto {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+}
+
+.emptyPhoto .material-symbols-rounded {
+    font-size: 3rem;
+    opacity: 0.3;
+}
+
+/* ── Badges ── */
+.topBadges {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    display: flex;
+    gap: 0.5rem;
+    z-index: 2;
+}
+
+.badgeSpecial {
+    background: linear-gradient(135deg, #ffd700, #ffb300);
+    padding: 0.3rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #4b3d00;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    box-shadow: 0 4px 10px rgba(255, 179, 0, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.badgeSpecial .material-symbols-rounded {
+    font-size: 0.9rem;
+}
+
+.badgeHidden {
+    background: var(--clay-bg-white);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    box-shadow: var(--clay-shadow-sm);
+    color: var(--text-muted);
+}
+
+/* ── Actions Overlay ── */
+.actionsOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 182, 193, 0.2);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.card:hover .actionsOverlay {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.actionsOverlay::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        45deg,
+        transparent 45%,
+        rgba(255, 255, 255, 0.3) 50%,
+        transparent 55%
+    );
+    transform: rotate(-45deg) translateX(-100%);
+    transition: transform 0.6s ease-in-out;
+    pointer-events: none;
+}
+
+.card:hover .actionsOverlay::after {
+    transform: rotate(-45deg) translateX(100%);
+}
+
+.actionButtons {
+    display: flex;
+    gap: 0.75rem;
+    transform: translateY(10px);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.card:hover .actionButtons {
+    transform: translateY(0);
+}
+
+.actionBtn {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    border: 2px solid white;
+    background: var(--clay-bg-white);
+    color: var(--pastel-rose);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--clay-shadow-sm);
+    transition: all 0.2s ease;
+}
+
+.actionBtn:hover {
+    background: var(--pastel-rose);
+    color: white;
+    transform: scale(1.1);
+}
+
+.deleteBtn:hover {
+    background: #ff4d4d;
+}
+
+/* ── Content Section ── */
+.content {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    flex-grow: 1;
+}
+
+.title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.metaRow {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.metaItem {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.metaItem .material-symbols-rounded {
+    font-size: 1rem;
+    color: var(--pastel-rose);
+    opacity: 0.8;
+}
+
+.placeText {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Tag Cloud ── */
+.tagCloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: auto;
+    padding-top: 0.5rem;
+}
+
+.tag {
+    background: var(--pastel-rose-light);
+    color: var(--pastel-rose);
+    padding: 0.15rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.tagMore {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    padding: 0.15rem 0.4rem;
+}
+
+/* ── Mobile Overrides ── */
+@media (max-width: 600px) {
+    .actionsOverlay {
+        opacity: 1;
+        position: static;
+        background: transparent;
+        backdrop-filter: none;
+        padding-top: 0.5rem;
+        border-top: 2px dashed var(--pastel-rose-light);
+        margin-top: 0.5rem;
+        justify-content: flex-end;
+    }
+
+    .actionButtons {
+        transform: none;
+    }
+
+    .actionBtn {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+    }
+
+    .imageContainer {
+        height: 150px;
+    }
+}

@@ -34,7 +34,7 @@ export default function CapsuleManager() {
         setIsLoading(true);
         try {
             const result = await getCapsules();
-            setCapsules(result.docs || []);
+            setCapsules(result.capsules || []);
         } catch (err) {
             // Silently fail in prod
         } finally {
@@ -90,29 +90,26 @@ export default function CapsuleManager() {
             }
         });
     };
-
     // Render separated Form View
     if (showForm) {
         return (
-            <div className={styles.root}>
-                <div className={styles.formViewHeader}>
-                    <Button variant="ghost" onClick={() => setShowForm(false)} className={styles.backBtn}>
+            <div className={styles.editorView}>
+                <div className={styles.editorHeader}>
+                    <button className={styles.backBtnHeader} onClick={() => { setShowForm(false); setEditingCapsule(null); }}>
                         <span className="material-symbols-rounded">arrow_back</span>
-                        Volver al listado
-                    </Button>
-                </div>
-                
-                <Card className={styles.formPanelFull}>
-                    <div className={styles.formPanelHeader}>
-                        <h2>{editingCapsule ? '✍️ Editar Cápsula' : '✨ Nueva Cápsula Real'}</h2>
-                        <p className={styles.formSubtitle}>Escribe mensajes para el futuro y prográmalos.</p>
+                    </button>
+                    <div className={styles.editorTitles}>
+                        <h2>{editingCapsule ? 'Editando Cápsula ⏳' : 'Nueva Cápsula ✨'}</h2>
+                        <p>Asegúrate de que el mensaje llegue intacto al futuro</p>
                     </div>
+                </div>
+
+                <div className={styles.editorCard}>
                     <CapsuleForm
                         initialData={editingCapsule}
                         onSuccess={handleCreated}
-                        onCancel={() => setShowForm(false)}
                     />
-                </Card>
+                </div>
             </div>
         );
     }

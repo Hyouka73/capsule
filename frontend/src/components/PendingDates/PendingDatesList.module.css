@@ -1,10 +1,9 @@
 .overlay {
     position: fixed;
     inset: 0;
-    background-color: var(--bg-overlay-soft);
+    background-color: var(--bg-main);
     background-image: var(--bg-dots-pattern);
     background-size: var(--bg-dots-size);
-    backdrop-filter: blur(8px);
     z-index: 2000;
     display: flex;
     align-items: center;
@@ -138,7 +137,7 @@
     cursor: grab;
     width: 100%;
     min-height: 6.8rem;
-    border: var(--border-glass);
+    border: 3px solid var(--pastel-rose-light);
     box-shadow: var(--clay-shadow-sm);
     position: relative;
     z-index: 2;

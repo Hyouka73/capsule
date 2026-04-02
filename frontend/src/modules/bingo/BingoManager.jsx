@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useBingo } from '../../hooks/useBingo';
 import { useAppConfig } from '../../context/AppConfigContext';
+import { useTagResolver } from '../../hooks/useTagResolver';
 import styles from './BingoManager.module.css';
 
 // Sub-components
@@ -27,18 +28,14 @@ export default function BingoManager() {
         isEnabled: true
     });
 
+    const { resolveTags } = useTagResolver();
+
     const handleEdit = (square) => {
         setEditingSquare(square);
         
-        // Sanitize tags: convert strings to objects using config tags
+        // Sanitize tags: use the resolver to ensure we have valid labels for the IDs saved in DB
         const rawTags = square.suggestedTags || [];
-        const sanitizedTags = rawTags.map(tag => {
-            if (typeof tag === 'string') {
-                const tagInfo = (memoryTags || []).find(t => t.value === tag);
-                return tagInfo ? { value: tagInfo.value, label: tagInfo.label } : { value: tag, label: tag };
-            }
-            return tag;
-        });
+        const sanitizedTags = resolveTags(rawTags.map(t => typeof t === 'string' ? t : t.value));
 
         setFormData({
             title: square.title || square.label || '',

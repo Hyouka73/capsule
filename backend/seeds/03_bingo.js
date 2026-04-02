@@ -8,8 +8,8 @@ export default async function seedBingo(admin, db, relationshipId, adminUid, isF
             emoji: '🍿', 
             minPhotos: 1, 
             suggestedTags: [
-                { value: 'cine', label: 'Cine 🍿' },
-                { value: 'romántico', label: 'Romántico ❤️' }
+                { id: 'tag_cine' },
+                { id: 'tag_romantico' }
             ], 
             isSpecial: false, 
             isEnabled: true 
@@ -20,16 +20,16 @@ export default async function seedBingo(admin, db, relationshipId, adminUid, isF
             emoji: '🍝', 
             minPhotos: 1, 
             suggestedTags: [
-                { value: 'comida', label: 'Comida 🍕' },
-                { value: 'especial', label: 'Especial ✨' }
+                { id: 'tag_comida' },
+                { id: 'tag_cita' }
             ], 
             isSpecial: true, 
             isEnabled: true 
         },
-        { id: 'viaje', title: 'Viaje a la playa', emoji: '🏖️', minPhotos: 1, suggestedTags: [{ value: 'viaje', label: 'Viaje ✈️' }], isSpecial: false, isEnabled: true },
-        { id: 'aventura', title: 'Paseo en bosque', emoji: '🌲', minPhotos: 3, suggestedTags: [{ value: 'aventura', label: 'Aventura 🌲' }], isSpecial: false, isEnabled: true },
-        { id: 'musica', title: 'Nuestra canción', emoji: '🎵', minPhotos: 1, suggestedTags: [{ value: 'musica', label: 'Música 🎵' }], isSpecial: false, isEnabled: true },
-        { id: 'relax', title: 'Tarde de spa', emoji: '💆‍♂️', minPhotos: 1, suggestedTags: [{ value: 'relax', label: 'Relax 💆‍♂️' }], isSpecial: true, isEnabled: true }
+        { id: 'viaje',    title: 'Viaje a la playa',  emoji: '🏖️', minPhotos: 1, suggestedTags: [{ id: 'tag_viaje' }],    isSpecial: false, isEnabled: true },
+        { id: 'aventura', title: 'Paseo en bosque',   emoji: '🌲', minPhotos: 3, suggestedTags: [{ id: 'tag_aventura' }], isSpecial: false, isEnabled: true },
+        { id: 'musica',   title: 'Nuestra canción',   emoji: '🎵', minPhotos: 1, suggestedTags: [{ id: 'tag_musica' }],   isSpecial: false, isEnabled: true },
+        { id: 'relax',    title: 'Tarde de spa',      emoji: '💆‍♂️', minPhotos: 1, suggestedTags: [{ id: 'tag_relax' }],    isSpecial: true,  isEnabled: true }
     ];
     
     // Fill up to 16

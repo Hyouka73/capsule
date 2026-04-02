@@ -1,176 +1,256 @@
-/* Boleto Horizontal Design */
-.couponCard {
-    display: flex;
-    flex-direction: row;
-    min-height: 150px;
-    border-radius: 24px;
-    box-shadow: 0 8px 0 rgba(0,0,0,0.05);
-    background: transparent;
-    border: 3px solid var(--text-primary);
-    padding: 0;
-    margin-bottom: 12px;
+.card {
+  width: 100%;
+  max-width: 500px;
+  min-height: 160px;
+  border-radius: var(--radius-card, 24px);
+  background: var(--card-bg, var(--bg-card, white));
+  border: 3px solid var(--text-primary);
+  position: relative;
+  overflow: visible;
+  /* Chunky style shadow from project */
+  box-shadow: var(--clay-shadow-md, 0 6px 0 #d1c1c1);
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+  /* Remove translate on popIn since framer-motion handles it, or use standard transition */
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
-/* Lado izquierdo (.ticketStub) */
-.ticketStub {
-    width: 90px;
-    min-height: 140px;
-    background: var(--gradient-pastel-mint, #b7e4c7);
+.clickable {
+  cursor: pointer;
+}
+.clickable:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--clay-shadow-lg, 0 10px 0 #c2b1b1);
+}
+.clickable:active {
+  transform: translateY(2px);
+  box-shadow: var(--clay-shadow-pressed, 0 2px 0 #d1c1c1);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  width: 200px;
+  height: 180px;
+  border-radius: 50%;
+  /* Highlight effect using existing subtle colors like white / pastel light */
+  background: radial-gradient(ellipse, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
+  top: -40px;
+  left: -20px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.iconWrapper {
+  position: absolute;
+  right: -10px;
+  top: -28px;
+  z-index: 10;
+  transform: rotate(8deg);
+  animation: tilt 4s ease-in-out infinite;
+}
+
+.icon {
+  font-size: 80px;
+  line-height: 1;
+  /* Instead of dark gray shadow, let's use a subtle warm shadow or primary text shadow */
+  filter: drop-shadow(0 8px 12px rgba(74, 50, 50, 0.2));
+  color: var(--text-primary);
+}
+
+@keyframes tilt {
+  0%, 100% { transform: rotate(8deg) translateY(0); }
+  50% { transform: rotate(4deg) translateY(-6px); }
+}
+
+.content {
+  padding: 24px 110px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  width: 100%;
+  position: relative;
+  z-index: 2;
+  gap: 12px;
+}
+
+.top {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tier {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+}
+
+.tierLine {
+  width: 24px;
+  height: 2px;
+  background: var(--text-secondary);
+  opacity: 0.5;
+  border-radius: 2px;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.15;
+  margin: 0;
+}
+
+.descWrapper {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    z-index: 1;
-    flex-shrink: 0;
-    border-right: 3px dashed var(--text-primary);
+    gap: 8px;
 }
 
-/* Las mordidas de perforación (Top and Bottom) */
-.ticketStub::before,
-.ticketStub::after {
-    content: '';
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--bg-main);
-    right: -11.5px;
-    z-index: 5;
-    border: 3px solid var(--text-primary);
+.desc {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 0;
 }
 
-.ticketStub::before {
-    top: -11.5px;
-}
-
-.ticketStub::after {
-    bottom: -11.5px;
-}
-
-.serialNumber {
-    position: absolute;
-    left: 8px;
-    top: 50%;
-    transform: translateY(-50%) rotate(-90deg);
-    font-family: var(--font-display);
-    font-size: 10px;
-    font-weight: 800;
-    color: rgba(0, 0, 0, 0.4);
-    letter-spacing: 1px;
-    white-space: nowrap;
-}
-
-.couponIcon {
-    font-size: 32px;
+.tracker {
     display: flex;
     align-items: center;
-    justify-content: center;
-    filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.1));
-}
-
-/* Lado derecho (.ticketBody) */
-.ticketBody {
-    flex: 1;
-    background: white;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
-.couponText h3 {
-    font-family: var(--font-display);
-    font-size: 18px;
-    font-weight: 900;
-    color: var(--text-primary);
-    margin: 0 0 4px;
-    line-height: 1.2;
-}
-
-.couponText p {
-    font-family: var(--font-body);
-    font-size: 13px;
-    line-height: 1.4;
-    color: var(--text-muted);
-    margin: 0;
-}
-
-/* Multi-use tracker */
-.redemptionTracker {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 10px;
-    padding-top: 8px;
-    border-top: 1px dashed #eee;
-}
-
-.punchHole {
-    font-size: 16px;
-    color: #eee;
-    line-height: 1;
-}
-
-.punched {
-    color: var(--color-mint, #b7e4c7);
-    filter: drop-shadow(1px 1px 0 rgba(0,0,0,0.1));
-}
-
-.redemptionCount {
-    font-size: 10px;
+    gap: 8px;
+    font-size: 11px;
     font-weight: 700;
     color: var(--text-muted);
     text-transform: uppercase;
-    margin-left: 4px;
 }
 
-.ticketAction {
+.dots {
     display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    margin-top: 8px;
+    gap: 4px;
 }
 
-.redeemBtn {
+.dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
     background: var(--text-primary);
+    opacity: 0.2;
+}
+
+.dotUsed {
+    opacity: 1;
+}
+
+.used {
+    filter: grayscale(0.9);
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.usedOverlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: inherit;
+    z-index: 15;
+    pointer-events: none;
+}
+
+.statusOverlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: inherit;
+    z-index: 15;
+    pointer-events: none;
+    text-align: center;
+    padding: 20px;
+}
+
+.statusOverlay span {
+    padding: 8px 20px;
+    border-radius: 14px;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 20px;
+    border: 3px solid white;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    transform: rotate(-3deg);
+}
+
+.statusOverlay p {
+    margin: 12px 0 0;
+    font-size: 12px;
+    font-weight: 800;
+    background: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    color: var(--text-primary);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.pendingOverlay {
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(2px);
+}
+
+.pendingOverlay span {
+    background: var(--color-warning, #FFB300);
     color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 12px;
-    font-family: var(--font-display);
-    font-weight: 900;
-    font-size: 14px;
-    cursor: pointer;
-    box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
-    transition: all 0.2s ease;
 }
 
-.redeemBtn:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 6px 6px 0 rgba(0,0,0,0.1);
+.approvedOverlay {
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(2px);
 }
 
-.redeemBtn:active {
-    transform: translate(2px, 2px);
-    box-shadow: 0 0 0 rgba(0,0,0,0.1);
+.approvedOverlay span {
+    background: var(--color-success, #00C853);
+    color: white;
+    animation: pulse 2s infinite;
 }
 
-/* Used State */
-.couponUsed {
-    opacity: 0.8;
+@keyframes pulse {
+    0% { transform: scale(1) rotate(-3deg); }
+    50% { transform: scale(1.05) rotate(-3deg); }
+    100% { transform: scale(1) rotate(-3deg); }
 }
 
-.couponUsed .ticketStub {
-    background: #e9ecef;
-    filter: grayscale(1);
+.postponedOverlay {
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(2px);
 }
 
-.usedStamp {
-    color: var(--text-muted);
-    font-family: var(--font-display);
-    font-size: 14px;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+.postponedOverlay span {
+    background: var(--text-secondary, #9E9E9E);
+    color: white;
+}
+
+.dismissHint {
+    margin: 8px 0 0;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    background: rgba(255,255,255,0.85);
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.03em;
+    pointer-events: none;
 }

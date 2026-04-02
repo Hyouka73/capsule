@@ -2,14 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useOfflineQueue } from '../../hooks/useOfflineQueue';
 import Button from '../../components/ui/Button/Button';
-import DescriptiveCheckbox from '../../components/ui/DescriptiveCheckbox/DescriptiveCheckbox';
 import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
-import MediaUploader from './components/MediaUploader';
+import KawaiiSwitch from '../../components/ui/KawaiiSwitch/KawaiiSwitch';
+import MediaUploader from '../../components/ui/MediaUploader/MediaUploader';
 import { useAppConfig } from '../../context/AppConfigContext';
 import styles from './CapsuleForm.module.css';
 import { toast } from '../../components/ui/PastelToast/PastelToast';
 
-export default function CapsuleForm({ onSuccess, onCancel }) {
+export default function CapsuleForm({ onSuccess, onCancel, initialData = null }) {
     const { partnerUid, partnerEmail, relationshipId } = useAppConfig();
     const { queueCapsule } = useOfflineQueue();
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -22,15 +22,31 @@ export default function CapsuleForm({ onSuccess, onCancel }) {
         };
     }, []);
 
+    // Helper to format dates for HTML input
+    const formatDateForInput = (date) => {
+        if (!date) return '';
+        const d = date.toDate ? date.toDate() : new Date(date);
+        if (isNaN(d.getTime())) return '';
+        return d.toISOString().slice(0, 16);
+    };
+
     // Initial state
-    const [formData, setFormData] = useState({
-        title: '',
-        teaserMessage: '',
-        message: '',
-        unlockTrigger: 'date',
-        unlockDate: '',
-        autoDestroy: true,
-        notifyOnUnlock: true,
+    const [formData, setFormData] = useState(() => {
+        if (initialData) {
+            return {
+                ...initialData,
+                unlockDate: formatDateForInput(initialData.unlockDate || initialData.unlockAt)
+            };
+        }
+        return {
+            title: '',
+            teaserMessage: '',
+            message: '',
+            unlockTrigger: 'date',
+            unlockDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+            autoDestroy: true,
+            notifyOnUnlock: true,
+        };
     });
 
     const [files, setFiles] = useState([]);
@@ -81,120 +97,140 @@ export default function CapsuleForm({ onSuccess, onCancel }) {
         <form className={styles.form} onSubmit={handleSubmit}>
             {error && <div className={styles.error}>{error}</div>}
 
-            <div className={styles.field}>
-                <KawaiiInput
-                    type="text"
-                    label="Título (Secreto Interno)"
-                    name="title"
-                    required
-                    value={formData.title}
-                    onChange={handleChange}
-                    placeholder="Ej. Aniversario 2026, San Valentín..."
-                />
-            </div>
+            <div className={styles.splitLayout}>
+                {/* ── Columna Principal: El Tesoro ── */}
+                <div className={styles.mainColumn}>
+                    <div className={styles.sectionHeader}>
+                        <span className={styles.sectionIcon}>💌</span>
+                        <div className={styles.sectionText}>
+                            <h3 className={styles.sectionTitle}>Contenido de la Cápsula</h3>
+                            <p className={styles.sectionDesc}>Lo que tu pareja encontrará al abrirla.</p>
+                        </div>
+                    </div>
 
-            <div className={styles.field}>
-                <KawaiiInput
-                    type="text"
-                    label="Mensaje Gancho / Teaser (Visible antes de abrir)"
-                    name="teaserMessage"
-                    required
-                    value={formData.teaserMessage}
-                    onChange={handleChange}
-                    placeholder="Ej. No abras esto hasta estar sola..."
-                />
-            </div>
-
-            <div className={styles.row}>
-                <div className={styles.field}>
-                    <KawaiiInput
-                        type="select"
-                        label="Condición de Apertura"
-                        name="unlockTrigger"
-                        value={formData.unlockTrigger}
-                        onChange={handleChange}
-                        options={[
-                            { value: 'date', label: 'Fecha y Hora Específica' },
-                            { value: 'manual', label: 'Manual (Tú decides cuándo)' }
-                        ]}
-                    />
-                </div>
-
-                {formData.unlockTrigger === 'date' && (
-                    <div className={styles.field}>
+                    <div className={styles.formField}>
                         <KawaiiInput
-                            type="date"
-                            label="Fecha de Desbloqueo"
-                            name="unlockDate"
+                            type="text"
+                            label="Título Secreto"
+                            name="title"
                             required
-                            value={formData.unlockDate}
+                            value={formData.title}
                             onChange={handleChange}
+                            placeholder="Ej: Para nuestra boda, Sorpresa de aniversario..."
+                            iconLeft="edit"
                         />
                     </div>
-                )}
-            </div>
 
-            <div className={styles.field}>
-                <KawaiiInput
-                    type="textarea"
-                    label="El Mensaje Secreto"
-                    name="message"
-                    required
-                    value={formData.message}
-                    onChange={handleChange}
-                    placeholder="Escribe la carta o mensaje que quieres que lea..."
-                />
-            </div>
-
-            <div className={styles.partnerInfo}>
-                <p>👤 <b>Partner:</b> {partnerEmail || 'Cargando...'}</p>
-                <p>🔗 <b>Relación:</b> <small>{relationshipId}</small></p>
-                <p className={styles.warning}>⚠️ Esta cápsula solo será visible para este destinatario.</p>
-            </div>
-
-            <div className={styles.checkboxContainer}>
-                <DescriptiveCheckbox
-                    name="autoDestroy"
-                    checked={formData.autoDestroy}
-                    onChange={handleChange}
-                    title="💥 Autodestrucción Rápida (Modal 30s)"
-                    description="La cápsula se eliminará por completo de la base de datos y de las fotos tras ser abierta."
-                />
-
-                <DescriptiveCheckbox
-                    name="notifyOnUnlock"
-                    checked={formData.notifyOnUnlock}
-                    onChange={handleChange}
-                    title="🔔 Notificación Push (Cloud Tasks)"
-                    description="Dará un aviso inmediato en el momento exacto del desbloqueo."
-                />
-            </div>
-
-            <div className={styles.field}>
-                <MediaUploader files={files} onChange={setFiles} />
-                {isSubmitting && files.length > 0 && (
-                    <div className={styles.progressContainer}>
-                        <div className={styles.progressBar} style={{ width: `100%` }} />
-                        <span className={styles.progressText}>Preparando para segundo plano...</span>
+                    <div className={styles.formField}>
+                        <KawaiiInput
+                            type="textarea"
+                            label="Tu Mensaje"
+                            name="message"
+                            required
+                            value={formData.message}
+                            onChange={handleChange}
+                            placeholder="Escribe aquí tu carta o mensaje secreto para el futuro..."
+                            rows={8}
+                        />
                     </div>
-                )}
+
+                    <div className={styles.formField}>
+                        <label className={styles.label}>📸 Adjuntos Multimedia</label>
+                        <div className={styles.mediaContainerCompact}>
+                            <MediaUploader files={files} onChange={setFiles} />
+                        </div>
+                        {isSubmitting && files.length > 0 && (
+                            <div className={styles.progressContainer}>
+                                <div className={styles.progressBar} style={{ width: `100%` }} />
+                                <span className={styles.progressText}>Preparando envío de {files.length} archivos...</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* ── Columna Lateral: Configuración y Reglas ── */}
+                <div className={styles.sideColumn}>
+                    <div className={styles.sectionHeader}>
+                        <span className={styles.sectionIcon}>🔑</span>
+                        <div className={styles.sectionText}>
+                            <h3 className={styles.sectionTitle}>Reglas de Apertura</h3>
+                            <p className={styles.sectionDesc}>¿Cuándo se revelará el secreto?</p>
+                        </div>
+                    </div>
+
+                    <div className={styles.formField}>
+                        <KawaiiInput
+                            type="text"
+                            label="Mensaje Teaser"
+                            name="teaserMessage"
+                            required
+                            value={formData.teaserMessage}
+                            onChange={handleChange}
+                            placeholder="Visible antes de abrir... 👋"
+                            iconLeft="visibility"
+                        />
+                    </div>
+
+                    <div className={styles.formField}>
+                        <KawaiiInput
+                            type="select"
+                            label="Activador"
+                            name="unlockTrigger"
+                            value={formData.unlockTrigger}
+                            onChange={handleChange}
+                            iconLeft="lock_open"
+                            options={[
+                                { value: 'date', label: 'Fecha y Hora' },
+                                { value: 'manual', label: 'Manual (Tú decides)' }
+                            ]}
+                        />
+                    </div>
+
+                    {formData.unlockTrigger === 'date' && (
+                        <div className={styles.formField}>
+                            <KawaiiInput
+                                type="datetime-local"
+                                label="Fecha de Desbloqueo"
+                                name="unlockDate"
+                                required
+                                value={formData.unlockDate}
+                                onChange={handleChange}
+                                iconLeft="schedule"
+                            />
+                        </div>
+                    )}
+
+                    <div className={styles.configContainer}>
+                        <h4 className={styles.configTitle}>Configuración Extra</h4>
+                        <div className={styles.configList}>
+                            <KawaiiSwitch 
+                                checked={formData.autoDestroy} 
+                                onChange={(val) => setFormData(prev => ({ ...prev, autoDestroy: val }))} 
+                                label="Autodestrucción" 
+                                icon="💥"
+                                variant="rose"
+                            />
+
+                            <KawaiiSwitch 
+                                checked={formData.notifyOnUnlock} 
+                                onChange={(val) => setFormData(prev => ({ ...prev, notifyOnUnlock: val }))} 
+                                label="Notificar al abrir" 
+                                icon="🔔"
+                                variant="mint"
+                            />
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div className={styles.actions}>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={onCancel}
-                    disabled={isSubmitting}
-                >
-                    Cancelar
-                </Button>
+            <div className={styles.actionsSticky}>
                 <Button
                     type="submit"
                     disabled={isSubmitting}
                     isLoading={isSubmitting}
+                    className={styles.submitBtn}
                 >
-                    {isSubmitting ? 'Enterrando...' : 'Enterrar Cápsula'}
+                    {isSubmitting ? 'Enterrando...' : 'Enterrar Cápsula ⏳'}
                 </Button>
             </div>
         </form>

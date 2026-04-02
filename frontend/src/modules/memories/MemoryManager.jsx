@@ -1,6 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getMemories, updateMemory, deleteMemory } from '../../apiClient';
 import MemoryForm from './MemoryForm';
+import MemoryCard from './components/MemoryCard';
+import MemorySkeleton from './components/MemorySkeleton';
 import Button from '../../components/ui/Button/Button';
 import Card from '../../components/ui/Card/Card';
 import PageHeader from '../../components/ui/PageHeader/PageHeader';
@@ -100,15 +103,17 @@ export default function MemoryManager() {
     if (showForm) {
         return (
             <div className={styles.editorView}>
-                <PageHeader
-                    title={editingMemory ? '✍️ Editar recuerdo' : '✨ Nuevo recuerdo'}
-                    subtitle={editingMemory ? 'Refina los detalles de este momento.' : 'Añade momentos mágicos a su historia.'}
-                    actionLabel="Volver al listado"
-                    actionIcon="⬅️"
-                    onAction={() => { setShowForm(false); setEditingMemory(null); }}
-                />
+                <div className={styles.editorHeader}>
+                    <button className={styles.backBtnHeader} onClick={() => { setShowForm(false); setEditingMemory(null); }}>
+                        <span className="material-symbols-rounded">arrow_back</span>
+                    </button>
+                    <div className={styles.editorTitles}>
+                        <h2>{editingMemory ? 'Editando Momento ✨' : 'Nuevo Recuerdo 📸'}</h2>
+                        <p>{editingMemory ? 'Perfecciona esta memoria para el futuro' : 'Documenta un nuevo capítulo de su historia'}</p>
+                    </div>
+                </div>
 
-                <Card className={styles.editorCard} glass>
+                <Card className={styles.editorCard}>
                     <MemoryForm
                         initialData={editingMemory}
                         onSuccess={handleCreated}
@@ -132,158 +137,105 @@ export default function MemoryManager() {
             />
 
             {/* ── Toolbar ── */}
-            {!isLoading && memories.length > 0 && (
-                <div className={styles.toolbar}>
-                    <div className={styles.searchBox}>
-                        <span className={styles.searchIcon}>🔍</span>
-                        <input
-                            type="text"
-                            placeholder="Buscar por título, lugar o tag..."
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                            className={styles.searchInput}
-                        />
-                    </div>
+            {!isLoading && (memories.length > 0 || searchQuery) && (
+                <div className={styles.toolbarWrapper}>
+                    <div className={styles.toolbar}>
+                        <div className={styles.searchBox}>
+                            <span className="material-symbols-rounded">search</span>
+                            <input
+                                type="text"
+                                placeholder="Buscar por título, lugar o tag..."
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                className={styles.searchInput}
+                            />
+                        </div>
 
-                    <div className={styles.filters}>
-                        <select
-                            value={filterStatus}
-                            onChange={e => setFilterStatus(e.target.value)}
-                            className={styles.select}
-                        >
-                            <option value="all">Todos los estados</option>
-                            <option value="public">Públicos 👁️</option>
-                            <option value="hidden">Ocultos 🙈</option>
-                        </select>
+                        <div className={styles.filters}>
+                            <div className={styles.selectWrapper}>
+                                <select
+                                    value={filterStatus}
+                                    onChange={e => setFilterStatus(e.target.value)}
+                                    className={styles.select}
+                                >
+                                    <option value="all">Todos los estados</option>
+                                    <option value="public">Públicos 👁️</option>
+                                    <option value="hidden">Ocultos 🙈</option>
+                                </select>
+                                <span className="material-symbols-rounded">expand_more</span>
+                            </div>
 
-                        <select
-                            value={sortBy}
-                            onChange={e => setSortBy(e.target.value)}
-                            className={styles.select}
-                        >
-                            <option value="date_desc">Más recientes primero</option>
-                            <option value="date_asc">Más antiguos primero</option>
-                            <option value="title">Alfabético</option>
-                        </select>
+                            <div className={styles.selectWrapper}>
+                                <select
+                                    value={sortBy}
+                                    onChange={e => setSortBy(e.target.value)}
+                                    className={styles.select}
+                                >
+                                    <option value="date_desc">Más recientes primero</option>
+                                    <option value="date_asc">Más antiguos primero</option>
+                                    <option value="title">Alfabético</option>
+                                </select>
+                                <span className="material-symbols-rounded">sort</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
 
             {/* ── Memory grid ── */}
-            {isLoading ? (
-                <div className={styles.loading}>
-                    <div className={styles.spinner}></div>
-                    <p>Cargando recuerdos...</p>
-                </div>
-            ) : memories.length === 0 ? (
-                <EmptyState
-                    icon="📸"
-                    title="Aún no hay recuerdos"
-                    description="Sube fotos y documenta sus mejores momentos juntos."
-                    action={
-                        <Button onClick={() => setShowForm(true)} className={styles.newBtn}>
-                            ¡Crea el primero!
-                        </Button>
-                    }
-                />
-            ) : (
-                <div className={styles.grid}>
-                    {filteredMemories.map(memory => (
-                        <MemoryCard
-                            key={memory.id}
-                            memory={memory}
-                            onEdit={() => { setEditingMemory(memory); setShowForm(true); }}
-                            onToggleVisibility={() => handleToggleVisibility(memory.id)}
-                            onDelete={() => handleDelete(memory.id)}
-                        />
-                    ))}
-
-                    {filteredMemories.length === 0 && (
-                        <div className={styles.emptySearch}>
-                            <p className={styles.emptySearchIcon}>🕵️‍♀️</p>
-                            <p>No se encontraron recuerdos con esos filtros.</p>
+            <div className={styles.gridContainer}>
+                {isLoading ? (
+                    <div className={styles.grid}>
+                        {[1, 2, 3, 4, 5, 6].map(i => <MemorySkeleton key={i} />)}
+                    </div>
+                ) : memories.length === 0 ? (
+                    <EmptyState
+                        icon="📸"
+                        title="Aún no hay recuerdos"
+                        description="Sube fotos y documenta sus mejores momentos juntos."
+                        action={
+                            <Button onClick={() => setShowForm(true)} className={styles.newBtn}>
+                                ¡Crea el primero!
+                            </Button>
+                        }
+                    />
+                ) : (
+                    <>
+                        <div className={styles.grid}>
+                            <AnimatePresence mode="popLayout">
+                                {filteredMemories.map((memory, idx) => (
+                                    <MemoryCard
+                                        key={memory.id}
+                                        memory={memory}
+                                        index={idx}
+                                        onEdit={() => { setEditingMemory(memory); setShowForm(true); }}
+                                        onToggleVisibility={() => handleToggleVisibility(memory.id)}
+                                        onDelete={() => handleDelete(memory.id)}
+                                    />
+                                ))}
+                            </AnimatePresence>
                         </div>
-                    )}
-                </div>
-            )}
+
+                        {filteredMemories.length === 0 && (
+                            <motion.div 
+                                className={styles.emptySearch}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                            >
+                                <div className={styles.emptySearchIcon}>🕵️‍♀️</div>
+                                <h3>No se encontraron recuerdos</h3>
+                                <p>Prueba con otros términos de búsqueda o filtros.</p>
+                                <Button 
+                                    variant="ghost" 
+                                    onClick={() => { setSearchQuery(''); setFilterStatus('all'); }}
+                                >
+                                    Limpiar filtros
+                                </Button>
+                            </motion.div>
+                        )}
+                    </>
+                )}
+            </div>
         </div>
     );
 }
-
-function MemoryCard({ memory, onEdit, onToggleVisibility, onDelete }) {
-    const date = memory.eventDate ? new Date(memory.eventDate).toLocaleDateString('es-MX', {
-        day: 'numeric', month: 'short', year: 'numeric',
-    }) : '—';
-
-    let photos = memory.photos || [];
-    if (memory.mainPhotoUrl && !photos.includes(memory.mainPhotoUrl)) {
-        photos = [memory.mainPhotoUrl, ...photos];
-    }
-
-    return (
-        <Card className={`${styles.card} ${memory.isHidden ? styles.cardHidden : ''}`}>
-            {/* Image Gallery Header */}
-            <div className={styles.cardHeader}>
-                {photos.length > 0 ? (
-                    <div className={styles.photoGallery}>
-                        {photos.map((photo, idx) => (
-                            <img
-                                key={`${memory.id}-photo-${idx}`}
-                                src={photo}
-                                alt={`${memory.title ?? 'Recuerdo'} ${idx + 1}`}
-                                className={styles.cardPhoto}
-                                loading="lazy"
-                            />
-                        ))}
-                    </div>
-                ) : (
-                    <div className={styles.cardPhotoEmpty}>📷</div>
-                )}
-
-                {/* Status Badges */}
-                <div className={styles.badges}>
-                    {memory.isSpecial && <span className={styles.badgeSpecial}>⭐ Especial</span>}
-                    {memory.isHidden && <span className={styles.badgeHidden}>🙈 Oculto</span>}
-                    <span className={styles.badgePhotos}>📸 {photos.length}</span>
-                </div>
-
-                {/* Cover Actions Overlay */}
-                <div className={styles.cardActionsOverlay}>
-                    <button className={styles.actionBtn} onClick={onToggleVisibility} title={memory.isHidden ? "Mostrar" : "Ocultar"}>
-                        {memory.isHidden ? '👁️' : '🙈'}
-                    </button>
-                    <button className={styles.actionBtn} onClick={onEdit} title="Editar">
-                        ✏️
-                    </button>
-                    <button className={`${styles.actionBtn} ${styles.deleteBtn}`} onClick={onDelete} title="Eliminar">
-                        🗑️
-                    </button>
-                </div>
-            </div>
-
-            {/* Card Body */}
-            <div className={styles.cardInfo}>
-                <h3 className={styles.cardTitle}>{memory.title ?? 'Sin título'}</h3>
-                <p className={styles.cardMeta}>{date}</p>
-
-                {memory.placeName && (
-                    <p className={styles.cardPlace} title={memory.placeName}>
-                        <span className={styles.placeIcon}>📍</span> {memory.placeName}
-                    </p>
-                )}
-
-                {memory.tags?.length > 0 && (
-                    <div className={styles.tags}>
-                        {memory.tags.slice(0, 3).map(tag => (
-                            <span key={tag} className={styles.tag}>{tag}</span>
-                        ))}
-                        {memory.tags.length > 3 && (
-                            <span className={styles.tagMore}>+{memory.tags.length - 3}</span>
-                        )}
-                    </div>
-                )}
-            </div>
-        </Card>
-    );
-}
-

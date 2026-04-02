@@ -288,56 +288,93 @@
     }
 }
 
-/* ── Form View Specifics ── */
-.formViewHeader {
-    margin-bottom: 2rem;
+/* ── Editor View ── */
+.editorView {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding-top: 1.5rem;
+    animation: fadeIn 0.3s ease-out;
 }
 
-.backBtn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 600;
-    color: var(--text-secondary);
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-.formPanelFull {
-    max-width: 800px;
-    margin: 0.5rem auto;
-    padding: 2rem;
-    background: var(--clay-bg-white);
-    border-radius: var(--radius-xl);
-    box-shadow: var(--clay-shadow-md);
+.editorHeader {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 0.5rem 1rem;
+}
+
+.backBtnHeader {
+    width: 50px;
+    height: 50px;
+    border-radius: 16px;
     border: 3px solid var(--pastel-rose-light);
+    background: var(--clay-bg-white);
+    color: var(--pastel-rose);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: var(--clay-shadow-sm);
 }
 
-.formPanelHeader {
-    text-align: center;
-    margin-bottom: 2rem;
+.backBtnHeader:hover {
+    transform: scale(1.05) translateX(-3px);
+    box-shadow: var(--clay-shadow-md);
+    background: var(--clay-bg-rose);
 }
 
-.formPanelHeader h2 {
+.editorTitles h1 {
     font-family: var(--font-display);
-    font-size: 1.8rem;
+    font-size: 2.2rem;
     color: var(--text-primary);
-    margin-bottom: 0.4rem;
+    margin: 0;
+    line-height: 1.1;
 }
 
-.formSubtitle {
+.editorTitles p {
+    margin: 0.25rem 0 0;
     color: var(--text-muted);
-    font-size: 0.95rem;
+    font-size: 1rem;
+}
+
+.editorCard {
+    padding: 2.5rem !important;
+    max-width: 1200px; /* Enhanced Desktop Width */
+    margin: 0 auto;
+    width: 100%;
 }
 
 @media (max-width: 600px) {
-    .formPanelFull {
-        padding: 1.25rem;
-        border-radius: var(--radius-lg);
+    .editorHeader {
+        gap: 1rem;
+        padding: 0.5rem;
+    }
+
+    .editorTitles h1 {
+        font-size: 1.6rem;
+    }
+
+    .editorTitles p {
+        font-size: 0.85rem;
+    }
+
+    .editorCard {
+        padding: 1rem !important;
+        max-width: 100%;
         margin: 0;
     }
-    
-    .formPanelHeader h2 {
-        font-size: 1.4rem;
+
+    .backBtnHeader {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
     }
 }
+

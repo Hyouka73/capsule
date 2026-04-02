@@ -8,31 +8,48 @@ import BottomSheetModal from '../../components/ui/BottomSheetModal/BottomSheetMo
 
 import { MOCK_COUPONS } from '../../data/couponsData';
 
+import KawaiiInput from '../../components/ui/KawaiiInput/KawaiiInput';
+import { toast } from '../../components/ui/PastelToast/PastelToast';
+
 import { useCoupons } from '../../hooks/useCoupons';
 
 export default function UserCoupons({ onModalStateChange }) {
     const [activeTab, setActiveTab] = useState('available');
-    const { coupons, redemptions, isLoading, redeemCoupon, claimRedemption } = useCoupons();
+    const { coupons, redemptions, isLoading, redeemCoupon, claimRedemption, dismissRedemption } = useCoupons();
     const [actionCoupon, setActionCoupon] = useState(null);
     const [actionType, setActionType] = useState('redeem'); // 'redeem' or 'claim'
+    const [customWish, setCustomWish] = useState('');
 
     // Logic:
     // 1. Available: All active coupons (Pool) + redemptions with status 'assigned'
     // 2. Pending: Redemptions with status 'pending_approval' or 'approved'/'pending_claim'
     // 3. Claimed: Redemptions with status 'claimed'
 
+    const pending = (redemptions || []).filter(r => ['pending_approval', 'approved', 'pending_claim', 'postponed'].includes(r.status)).map(r => {
+        const coupon = coupons.find(c => c.id === r.couponId);
+        return { ...coupon, id: r.couponId, redemptionId: r.id, redemptionStatus: r.status, adminNote: r.adminNote || '' };
+    }).filter(item => item.id);
+
     const available = [
-        ...(coupons || []).filter(c => c.status === 'activo' && (c.redemptionsLeft === undefined || c.redemptionsLeft > 0)),
+        // Only coupons explicitly assigned to the partner
+        ...(coupons || []).filter(c => c.assignedTo === 'partner' && c.status === 'active').map(c => ({
+            ...c,
+            isAssigned: true
+        })),
+        // Legacy/Redemption-based assignments
         ...(redemptions || []).filter(r => r.status === 'assigned').map(r => {
             const coupon = coupons.find(c => c.id === r.couponId);
             return { ...coupon, id: r.couponId, redemptionId: r.id, isAssigned: true };
         })
-    ].filter(item => item.id); // Ensure we have a valid coupon object
-
-    const pending = (redemptions || []).filter(r => r.status === 'pending_approval' || r.status === 'approved' || r.status === 'pending_claim').map(r => {
-        const coupon = coupons.find(c => c.id === r.couponId);
-        return { ...coupon, id: r.couponId, redemptionId: r.id, redemptionStatus: r.status };
-    }).filter(item => item.id);
+    ].filter((item, index, self) => {
+        // 1. Ensure valid ID
+        if (!item.id) return false;
+        // 2. Remove duplicates
+        if (self.findIndex(t => t.id === item.id) !== index) return false;
+        // 3. Remove if it's already in pending (so it doesn't duplicate)
+        if (pending.some(p => p.id === item.id)) return false;
+        return true;
+    });
 
     const claimed = (redemptions || []).filter(r => r.status === 'claimed').map(r => {
         const coupon = coupons.find(c => c.id === r.couponId);
@@ -46,27 +63,37 @@ export default function UserCoupons({ onModalStateChange }) {
     const handleConfirmAction = async () => {
         if (!actionCoupon) return;
 
+        const isDiamond = actionCoupon.tier === 4 || actionCoupon.type === 'diamond';
+        
+        if (actionType === 'redeem' && isDiamond && !customWish.trim()) {
+            toast.error('Debes escribir tu deseo antes de usar este cupón Diamante. 💎');
+            return;
+        }
+
         let res;
         if (actionType === 'redeem') {
-            res = await redeemCoupon(actionCoupon.id);
+            res = await redeemCoupon(actionCoupon.id, isDiamond ? customWish : '');
         } else {
             res = await claimRedemption(actionCoupon.redemptionId);
         }
 
         if (res.success) {
             setActionCoupon(null);
+            setCustomWish('');
             if (onModalStateChange) onModalStateChange(false);
         }
     };
 
     const handleCloseModal = () => {
         setActionCoupon(null);
+        setCustomWish('');
         if (onModalStateChange) onModalStateChange(false);
     };
 
     const openRedeemModal = (coupon) => {
         setActionType('redeem');
         setActionCoupon(coupon);
+        setCustomWish('');
         if (onModalStateChange) onModalStateChange(true);
     };
 
@@ -76,6 +103,11 @@ export default function UserCoupons({ onModalStateChange }) {
         if (onModalStateChange) onModalStateChange(true);
     };
 
+    const handleDismissPostponed = async (coupon) => {
+        await dismissRedemption(coupon.redemptionId);
+        // Coupon will re-appear in available since it's still assigned
+    };
+
     if (isLoading && coupons.length === 0) {
         return (
             <div className={styles.root}>
@@ -83,6 +115,8 @@ export default function UserCoupons({ onModalStateChange }) {
             </div>
         );
     }
+
+    const isDiamondAction = actionCoupon && (actionCoupon.tier === 4 || actionCoupon.type === 'diamond');
 
     return (
         <div className={styles.root}>
@@ -122,8 +156,20 @@ export default function UserCoupons({ onModalStateChange }) {
                         {activeTab === 'pending' && pending.map(coupon => (
                             <CouponTicket
                                 key={coupon.redemptionId}
-                                coupon={{ ...coupon, isPending: true }}
-                                onRedeem={() => coupon.redemptionStatus !== 'pending_approval' && openClaimModal(coupon)}
+                                coupon={{ 
+                                    ...coupon, 
+                                    isPending: coupon.redemptionStatus === 'pending_approval',
+                                    isApproved: coupon.redemptionStatus === 'approved',
+                                    isPostponed: coupon.redemptionStatus === 'postponed',
+                                    adminNote: coupon.adminNote
+                                }}
+                                onRedeem={
+                                    coupon.redemptionStatus === 'approved'
+                                        ? () => openClaimModal(coupon)
+                                        : coupon.redemptionStatus === 'postponed'
+                                            ? () => handleDismissPostponed(coupon)
+                                            : undefined
+                                }
                             />
                         ))}
 
@@ -150,14 +196,32 @@ export default function UserCoupons({ onModalStateChange }) {
             <BottomSheetModal
                 isOpen={!!actionCoupon}
                 onClose={handleCloseModal}
-                emoji={actionCoupon?.emoji}
+                emoji={isDiamondAction ? '💎' : actionCoupon?.emoji}
                 title={actionCoupon?.title || actionCoupon?.name}
-                description={actionType === 'redeem' ? "¿Segura que quieres solicitar este vale?" : "¿Ya recibiste tu regalo? Esto lo marcará como cobrado definitivamente."}
-                confirmText={actionType === 'redeem' ? "¡Sí, por favor! 💝" : "¡Sí, lo cobré! ✅"}
+                description={
+                    isDiamondAction && actionType === 'redeem'
+                    ? "Este es un pase VIP Diamante. Pide lo que quieras."
+                    : actionType === 'redeem' ? "¿Segura que quieres solicitar este vale?" : "¿Ya recibiste tu regalo? Esto lo marcará como cobrado definitivamente."
+                }
+                confirmText={isDiamondAction && actionType === 'redeem' ? "Solicitar Deseo 💎" : actionType === 'redeem' ? "¡Sí, por favor! 💝" : "¡Sí, lo cobré! ✅"}
                 cancelText="Mejor después"
                 onConfirm={handleConfirmAction}
                 onCancel={handleCloseModal}
-            />
+            >
+                {isDiamondAction && actionType === 'redeem' && (
+                    <div style={{ marginTop: '1rem' }}>
+                        <KawaiiInput
+                            type="textarea"
+                            label="Escribe aquí tu deseo (Límite: tu imaginación)"
+                            required
+                            rows="4"
+                            placeholder="Tus deseos son órdenes..."
+                            value={customWish}
+                            onChange={(e) => setCustomWish(e.target.value)}
+                        />
+                    </div>
+                )}
+            </BottomSheetModal>
         </div>
     );
 }

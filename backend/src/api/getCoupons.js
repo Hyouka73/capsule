@@ -1,4 +1,4 @@
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import { COLLECTIONS } from '../config/constants.js';
@@ -6,20 +6,21 @@ import { COLLECTIONS } from '../config/constants.js';
 /**
  * getCoupons — Backend API (BFF)
  * 
- * Lista todos los cupones de la relación.
+ * Lists all coupons and redemptions for the relationship.
  */
-export const getCoupons = onCall({ region: 'us-central1', cors: true }, async (request) => {
+export const handler = async (request) => {
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Unauthorized');
     }
 
     const { relationshipId } = request.auth.token;
     const db = getFirestore();
+    const relRef = db.collection('relationships').doc(relationshipId);
 
     try {
-        const couponsSnap = await db.collection('relationships')
-            .doc(relationshipId)
-            .collection('coupons')
+        // 1. Fetch Coupons
+        const couponsSnap = await relRef
+            .collection(COLLECTIONS.COUPONS)
             .orderBy('createdAt', 'desc')
             .get();
 
@@ -30,13 +31,26 @@ export const getCoupons = onCall({ region: 'us-central1', cors: true }, async (r
             updatedAt: doc.data().updatedAt?.toDate()?.toISOString() || null
         }));
 
+        // 2. Fetch Redemptions
+        const redemptionsSnap = await relRef
+            .collection(COLLECTIONS.REDEMPTIONS)
+            .orderBy('createdAt', 'desc')
+            .get();
+
+        const redemptions = redemptionsSnap.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate()?.toISOString() || null,
+            updatedAt: doc.data().updatedAt?.toDate()?.toISOString() || null
+        }));
+
         return {
             success: true,
-            coupons
+            coupons,
+            redemptions
         };
     } catch (error) {
         logger.error('getCoupons error:', { relationshipId, error: error.message });
         throw new HttpsError('internal', 'Error al obtener los cupones.');
     }
-});
-
+};

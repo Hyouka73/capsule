@@ -82,26 +82,16 @@ export default function MemoryDetailsForm({
 
             <div className={styles.sectionLabel}>🏷️ Tags</div>
             <div className={styles.tags}>
-                {(() => {
-                    // Combine global config tags with dynamic Bingo tags
-                    const allTags = [...(memoryTags || [])];
-                    (availableTags || []).forEach(tag => {
-                        if (!allTags.find(t => t.value === tag.value)) {
-                            allTags.push(tag);
-                        }
-                    });
-
-                    return allTags.map(({ value, label }) => (
-                        <button
-                            key={value}
-                            type="button"
-                            className={`${styles.tagBtn} ${form.tags.includes(value) ? styles.tagActive : ''}`}
-                            onClick={() => toggleTag(value)}
-                        >
-                            {label}
-                        </button>
-                    ));
-                })()}
+                {(memoryTags || []).map((tag) => (
+                    <button
+                        key={tag.id}
+                        type="button"
+                        className={`${styles.tagBtn} ${form.tags.includes(tag.id) ? styles.tagActive : ''}`}
+                        onClick={() => toggleTag(tag.id)}
+                    >
+                        {tag.emoji} {tag.label}
+                    </button>
+                ))}
             </div>
 
             {error && <p className={styles.error}>{error}</p>}

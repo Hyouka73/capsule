@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { markSnapshotAsSeen } from '../../../apiClient';
 import { useAppConfig } from '../../../hooks/useAppConfig';
+import { useSnapshots } from '../hooks/useSnapshots';
 import styles from './SnapshotOverlay.module.css';
 
 /**
@@ -17,49 +17,54 @@ const squirclePath = "M0.5,0 C0.42,0 0,0.42 0,0.5 C0,0.58 0.42,1 0.5,1 C0.58,1 1
 
 export default function SnapshotOverlay({ snapshots = [], onClose }) {
     const { snapshotConfig } = useAppConfig();
+    const { markAsSeen } = useSnapshots();
     const timerSeconds = snapshotConfig?.timerSeconds ?? 8;
 
     const [currentIndex, setCurrentIndex] = useState(0);
     const [progress, setProgress] = useState(0);
     const [isFinished, setIsFinished] = useState(false);
+    const [isAdvancing, setIsAdvancing] = useState(false);
 
     const totalCount = snapshots.length;
     const currentSnapshot = snapshots[currentIndex];
     const isLast = currentIndex >= totalCount - 1;
 
-    const markAsSeenAndAdvance = useCallback(async () => {
-        if (!currentSnapshot || isFinished) return;
+    const markAsSeenAndAdvance = useCallback(() => {
+        if (!currentSnapshot || isFinished || isAdvancing) return;
 
-        try {
-            await markSnapshotAsSeen({ snapshotId: currentSnapshot.id });
-        } catch (err) {
-            // silent fail
-        }
+        // 1. Marcar como visto (Optimista vía hook)
+        markAsSeen(currentSnapshot.id);
+
+        // 2. Avanzar UI de inmediato
+        setIsAdvancing(true);
 
         if (isLast) {
             setIsFinished(true);
-            // Signal parent that we are finished, so it can pre-mount the camera
-            if (onClose) onClose(true, true); // shouldReply: true, isEarly: true
+            if (onClose) onClose(true, true); // shouldReply, isEarly
             
             setTimeout(() => {
-                onClose(false); // Close overlay completely
+                onClose(false); 
             }, 1800);
         } else {
-            setCurrentIndex(prev => prev + 1);
-            setProgress(0);
+            // Delay mínimo para dejar que la animación de la tarjeta actual empiece
+            setTimeout(() => {
+                setCurrentIndex(prev => prev + 1);
+                setProgress(0);
+                setIsAdvancing(false);
+            }, 50);
         }
-    }, [currentSnapshot, isLast, isFinished, onClose]);
+    }, [currentSnapshot, isLast, isFinished, isAdvancing, onClose, markAsSeen]);
 
     const handleClose = () => {
         if (currentSnapshot && !isFinished) {
-            markSnapshotAsSeen({ snapshotId: currentSnapshot.id }).catch(() => { });
+            markAsSeen(currentSnapshot.id);
         }
         onClose(false);
     };
 
     /* Progress Timer & Auto-advance */
     useEffect(() => {
-        if (isFinished) return;
+        if (isFinished || isAdvancing) return;
         
         let start = null;
         let raf;
@@ -75,17 +80,14 @@ export default function SnapshotOverlay({ snapshots = [], onClose }) {
             if (pct < 1) {
                 raf = requestAnimationFrame(step);
             } else {
-                setProgress(1); // Ensure it's visually full
-                // Give it 150ms to "stay full" before advancing (snappier transition)
-                setTimeout(() => {
-                    markAsSeenAndAdvance();
-                }, 150);
+                setProgress(1);
+                markAsSeenAndAdvance();
             }
         };
 
         raf = requestAnimationFrame(step);
         return () => cancelAnimationFrame(raf);
-    }, [timerSeconds, currentIndex, isFinished, markAsSeenAndAdvance]);
+    }, [timerSeconds, currentIndex, isFinished, isAdvancing, markAsSeenAndAdvance]);
 
     if (!currentSnapshot && !isFinished) return null;
 
@@ -184,9 +186,9 @@ export default function SnapshotOverlay({ snapshots = [], onClose }) {
                                 <div className={styles.photoWrapper}>
                                     <div className={styles.photoInner}>
                                         <img src={snap.photoUrl} alt="" className={styles.photo} />
-                                        {isActive && snap.message && (
+                                        {isActive && (snap.message || snap.caption) && (
                                             <div className={styles.messageOverlay}>
-                                                <p className={styles.messageText}>{snap.message}</p>
+                                                <p className={styles.messageText}>{snap.message || snap.caption}</p>
                                             </div>
                                         )}
                                     </div>
@@ -204,11 +206,9 @@ export default function SnapshotOverlay({ snapshots = [], onClose }) {
                                             className={styles.timerFill} 
                                             transform="rotate(45 0.5 0.5)" 
                                             initial={{ pathLength: 0 }}
-                                            animate={{ pathLength: progress >= 0.99 ? 1.06 : progress }}
-                                            exit={{ pathLength: 1.06, opacity: 0 }}
+                                            animate={{ pathLength: progress >= 0.99 ? 1.05 : progress }}
                                             transition={{ 
-                                                pathLength: { type: "tween", ease: "linear", duration: isActive ? 0 : 0.2 },
-                                                opacity: { duration: 0.2 }
+                                                pathLength: { type: "tween", ease: "linear", duration: 0 }
                                             }}
                                         />
                                     </svg>

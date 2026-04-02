@@ -29,9 +29,14 @@ export default function BingoSuggestionSheet({
     const [selectedIds, setSelectedIds] = useState(availableSuggestions.map(s => s.categoryId));
 
     useEffect(() => {
-        setSelectedIds(availableSuggestions.map(s => s.categoryId));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [suggestions]);
+        const available = suggestions.filter(s => isCategoryAvailable(s.categoryId));
+        setSelectedIds(available.map(s => s.categoryId));
+
+        // Auto-close if no valid suggestions remain to avoid blocking UI
+        if (isOpen && available.length === 0) {
+            onCancel();
+        }
+    }, [suggestions, isOpen, isCategoryAvailable, onCancel]);
 
 
     const toggleSelection = (id) => {

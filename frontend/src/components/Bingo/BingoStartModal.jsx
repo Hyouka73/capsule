@@ -1,11 +1,15 @@
 import { motion } from 'framer-motion';
-import { MEMORY_TAGS } from '../../config/constants';
+import { useAppConfig } from '../../context/AppConfigContext';
 import { usePlaces } from '../../modules/map/hooks/usePlaces';
 import styles from './BingoStartModal.module.css';
 
 export default function BingoStartModal({ bingoItem, onClose, onStartCita, defaultMinPhotos = 3 }) {
     const { places } = usePlaces();
+    const { memoryTags = [] } = useAppConfig();
     const minPhotosVal = bingoItem.minPhotos || defaultMinPhotos;
+
+    // Build a lookup map: id → { label, emoji }
+    const tagMap = Object.fromEntries(memoryTags.map(t => [t.id, t]));
 
     const matchedPlace = (places || []).find(p => p.name === bingoItem.suggestedPlace);
 
@@ -17,7 +21,8 @@ export default function BingoStartModal({ bingoItem, onClose, onStartCita, defau
                 bingoLabel: `${bingoItem.emoji} ${bingoItem.title}`,
                 minPhotos: minPhotosVal,
                 description: bingoItem.description,
-                tags: (bingoItem.suggestedTags || []).map(t => typeof t === 'string' ? t : t.value)
+                // Pass tag IDs — the new format
+                tags: (bingoItem.suggestedTags || []).map(t => t.id || t)
             });
         }
     };
@@ -68,13 +73,12 @@ export default function BingoStartModal({ bingoItem, onClose, onStartCita, defau
                         {bingoItem.suggestedTags?.length > 0 && (
                             <div className={styles.tagsContainer}>
                                 {bingoItem.suggestedTags.map(tag => {
-                                    const tagValue = typeof tag === 'string' ? tag : tag.value;
-                                    const tagLabel = typeof tag === 'string' 
-                                        ? (Object.values(MEMORY_TAGS).find(t => t.value === tag)?.label || tag)
-                                        : tag.label;
+                                    const tagId = tag.id || tag;
+                                    const resolved = tagMap[tagId];
+                                    if (!resolved) return null;
                                     return (
-                                        <span key={tagValue} className={styles.tagPill}>
-                                            {tagLabel}
+                                        <span key={tagId} className={styles.tagPill}>
+                                            {resolved.emoji} {resolved.label}
                                         </span>
                                     );
                                 })}

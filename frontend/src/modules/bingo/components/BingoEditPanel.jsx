@@ -2,6 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import KawaiiInput from '../../../components/ui/KawaiiInput/KawaiiInput';
 import { useAppConfig } from '../../../context/AppConfigContext';
+import { useBingo } from '../../../hooks/useBingo';
 import { usePlaces } from '../../map/hooks/usePlaces';
 import styles from '../BingoManager.module.css';
 
@@ -18,22 +19,26 @@ export default function BingoEditPanel({
     // TODO v1.1: Pool system with random selection per user.
     const { memoryTags } = useAppConfig();
     const { places } = usePlaces();
+    
     if (!editingSquare) return null;
 
-    // formData.suggestedTags is an ARRAY of OBJECTS: { value, label }
+    // Only show global config tags (no bingo squares)
+    const allOptions = memoryTags || [];
+
+    // formData.suggestedTags is an ARRAY of ID objects: [{ id: 'tag_cita' }]
     const currentTags = formData.suggestedTags || [];
 
-    const toggleTag = (opt) => {
-        const exists = currentTags.some(t => t.value === opt.value);
+    const toggleTag = (tag) => {
+        const exists = currentTags.some(t => t.id === tag.id);
         if (exists) {
             setFormData({ 
                 ...formData, 
-                suggestedTags: currentTags.filter(t => t.value !== opt.value) 
+                suggestedTags: currentTags.filter(t => t.id !== tag.id) 
             });
         } else {
             setFormData({ 
                 ...formData, 
-                suggestedTags: [...currentTags, { value: opt.value, label: opt.label }] 
+                suggestedTags: [...currentTags, { id: tag.id }] 
             });
         }
     };
@@ -88,16 +93,16 @@ export default function BingoEditPanel({
                             Las fotos con estos "tags" marcarán esta casilla automáticamente.
                         </p>
                         <div className={styles.tagsGrid}>
-                            {(memoryTags || []).map(opt => {
-                                const isActive = currentTags.some(t => t.value === opt.value);
+                            {(allOptions || []).map(tag => {
+                                const isActive = currentTags.some(t => t.id === tag.id);
                                 return (
                                     <button
-                                        key={opt.value}
+                                        key={tag.id}
                                         type="button"
-                                        onClick={() => toggleTag(opt)}
+                                        onClick={() => toggleTag(tag)}
                                         className={`${styles.tagBtn} ${isActive ? styles.active : ''}`}
                                     >
-                                        {opt.label}
+                                        {tag.emoji} {tag.label}
                                     </button>
                                 );
                             })}

@@ -1,15 +1,9 @@
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import { COLLECTIONS } from '../config/constants.js';
 
-/**
- * getBingoBoard — Backend API (BFF)
- * 
- * Obtiene el tablero de bingo actual de la relación.
- * Ruta: relationships/{relationshipId}/bingo/board
- */
-export const getBingoBoard = onCall({ region: 'us-central1', cors: true }, async (request) => {
+export const handler = async (request) => {
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Unauthorized');
     }
@@ -26,7 +20,6 @@ export const getBingoBoard = onCall({ region: 'us-central1', cors: true }, async
         const activeSnap = await boardsColl.where('status', '==', 'active').limit(1).get();
 
         if (activeSnap.empty) {
-            // Fallback: Check for legacy 'board' document
             const legacyRef = boardsColl.doc('board');
             const legacySnap = await legacyRef.get();
 
@@ -53,5 +46,4 @@ export const getBingoBoard = onCall({ region: 'us-central1', cors: true }, async
         logger.error('getBingoBoard error:', { relationshipId, error: error.message });
         throw new HttpsError('internal', 'Error al obtener el tablero de bingo.');
     }
-});
-
+};
