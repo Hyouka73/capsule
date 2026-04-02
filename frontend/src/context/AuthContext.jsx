@@ -20,12 +20,12 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [role, setRole] = useState(null);
     const [deviceId, setDeviceId] = useState(null);
-    const [onboardingCompleted, setOnboardingCompleted] = useState(null);
-    const [welcomeSeen, setWelcomeSeen] = useState(null);
-    const [teaserCompleted, setTeaserCompleted] = useState(null);
+    const [onboardingCompleted, setOnboardingCompleted] = useState(false);
+    const [welcomeSeen, setWelcomeSeen] = useState(false);
+    const [teaserCompleted, setTeaserCompleted] = useState(false);
     const [teaserLock, setTeaserLock] = useState(null);
     const [gameCoins, setGameCoins] = useState(0);
-    const [accountStatus, setAccountStatus] = useState('active'); // 'active' | 'revoked' | 'pending'
+    const [accountStatus, setAccountStatus] = useState(null); // 'active' | 'revoked' | 'pending' | null (loading)
     const [relationshipId, setRelationshipId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -108,10 +108,21 @@ export function AuthProvider({ children }) {
                     setTeaserCompleted(data.teaserCompleted ?? false);
                     setTeaserLock(data.teaserLock || null);
                     setGameCoins(data.gameCoins ?? 0);
-                    setAccountStatus(data.accountStatus || (data.isRevoked ? 'revoked' : 'active'));
+                    const status = data.accountStatus || (data.isRevoked ? 'revoked' : 'active');
+                    console.log(`[AuthContext] User document snapshot received. Status: ${status}`, data);
+                    setAccountStatus(status);
                     setRelationshipId(data.relationshipId || null);
                     if (data.relationshipId) {
                         localStorage.setItem('capsule_relationship_id', data.relationshipId);
+                    }
+
+                    // AUTO-SIGN-OUT: If access is revoked, kill session immediately
+                    if (data.accountStatus === 'revoked') {
+                        console.warn('[AuthContext] Access revoked. Signing out.');
+                        authSignOut();
+                        toast.error('Tu acceso ha sido desactivado.');
+                        setIsLoading(false);
+                        return;
                     }
                     
                     // Defensive: If role is ADMIN, they shouldn't be blocked by teaser/welcome flags

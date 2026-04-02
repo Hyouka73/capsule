@@ -10,6 +10,7 @@ import { getMemories } from '../../apiClient';
 import SystemConfig from '../../models/SystemConfig';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { getMapConfigCache, setMapConfigCache } from '../../utils/offlineCache';
+import { useTagResolver } from '../../hooks/useTagResolver';
 
 // Sub-components
 import PlaceDetailDrawer from './components/PlaceDetailDrawer/PlaceDetailDrawer';
@@ -116,13 +117,18 @@ export default function MapView({
         'todos': 'favorite'
     };
 
+    const { resolveTag } = useTagResolver();
+
     const activeFilters = [
         { id: 'todos', label: 'Todos', icon: 'favorite' },
-        ...uniqueTags.map(tag => ({
-            id: tag,
-            label: tag.charAt(0).toUpperCase() + tag.slice(1),
-            icon: TAG_ICONS[tag] || 'bookmark'
-        }))
+        ...uniqueTags.map(tagId => {
+            const resolved = resolveTag(tagId);
+            return {
+                id: tagId,
+                label: resolved.label,
+                icon: TAG_ICONS[tagId] || 'bookmark'
+            };
+        })
     ];
 
     const handleMarkerClick = useCallback((place) => {

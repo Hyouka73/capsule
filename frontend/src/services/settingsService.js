@@ -4,14 +4,14 @@ import { getAppConfig, updateAppConfig as updateAppConfigApi } from '../apiClien
  * Persist global application settings via BFF
  */
 export async function saveGlobalSettings(settings) {
-    return updateAppConfigApi({ config: settings });
+    return updateAppConfigApi({ update: settings });
 }
 
 /**
  * Update partial settings via BFF
  */
 export async function updateConfig(partialSettings) {
-    return updateAppConfigApi({ config: partialSettings });
+    return updateAppConfigApi({ update: partialSettings });
 }
 
 /**

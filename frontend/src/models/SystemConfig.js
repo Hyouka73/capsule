@@ -59,8 +59,16 @@ export default class SystemConfig {
             ...data.snapshotConfig
         };
 
+        const rawUnlockAt = data.teaser?.unlockAt;
+        let unlockAt = 1775260800000; // Default to April 4, 2026 (ms)
+        if (rawUnlockAt) {
+            unlockAt = (rawUnlockAt.toMillis) ? rawUnlockAt.toMillis() : 
+                       (rawUnlockAt.seconds) ? rawUnlockAt.seconds * 1000 :
+                       new Date(rawUnlockAt).getTime();
+        }
+
         this.teaser = {
-            unlockAt: data.teaser?.unlockAt ?? 1775260800000, // Default to April 4, 2026 (ms)
+            unlockAt: isNaN(unlockAt) ? 1775260800000 : unlockAt,
             isEnabled: data.teaser?.isEnabled ?? true
         };
 
@@ -109,40 +117,62 @@ export default class SystemConfig {
             displayName: data.partner?.displayName ?? ''
         };
 
-        // Ensure memoryTags is always an array of objects (Firestore objects-wrapped-array fix)
+        // ── Memory Tags ── Immutable ID system
+        // New format: { id: 'tag_viaje', label: 'Viaje', emoji: '✈️' }
+        // Legacy format (auto-migrated): { value: 'viaje', label: 'Viaje ✈️' }
         let incomingTags = data.memoryTags;
         if (incomingTags && typeof incomingTags === 'object' && !Array.isArray(incomingTags)) {
-            // Remove 'updatedAt' from the object values before mapping
             const { updatedAt, ...indices } = incomingTags;
             incomingTags = Object.values(indices);
         }
-        
+
         const defaultTags = [
-            { value: 'viaje', label: 'Viaje ✈️' },
-            { value: 'cita', label: 'Cita 🍷' },
-            { value: 'aniversario', label: 'Aniversario 💝' },
-            { value: 'random', label: 'Random 🤪' },
-            { value: 'logro', label: 'Logro 🎯' },
-            { value: 'hito', label: 'Hito 🌟' },
-            { value: 'familia', label: 'Familia 👨‍👩‍👦' },
-            { value: 'amigos', label: 'Amigos 👯‍♂️' },
-            { value: 'cine', label: 'Cine 🍿' },
-            { value: 'comida', label: 'Comida 🍝' },
-            { value: 'aventura', label: 'Aventura 🌲' },
-            { value: 'musica', label: 'Música 🎵' },
-            { value: 'relax', label: 'Relax 💆‍♂️' },
-            { value: 'deporte', label: 'Deporte 🏃‍♀️' },
-            { value: 'arte', label: 'Arte 🎨' },
-            { value: 'casa', label: 'En Casa 🏠' }
+            { id: 'tag_viaje',      label: 'Viaje',      emoji: '✈️'    },
+            { id: 'tag_cita',       label: 'Cita',       emoji: '🍷'    },
+            { id: 'tag_romantico',  label: 'Romántico',  emoji: '❤️'    },
+            { id: 'tag_aniversario',label: 'Aniversario',emoji: '💝'    },
+            { id: 'tag_random',     label: 'Random',     emoji: '🤪'    },
+            { id: 'tag_logro',      label: 'Logro',      emoji: '🎯'    },
+            { id: 'tag_hito',       label: 'Hito',       emoji: '🌟'    },
+            { id: 'tag_familia',    label: 'Familia',    emoji: '👨‍👩‍👦'  },
+            { id: 'tag_amigos',     label: 'Amigos',     emoji: '👯‍♂️'  },
+            { id: 'tag_cine',       label: 'Cine',       emoji: '🍿'    },
+            { id: 'tag_comida',     label: 'Comida',     emoji: '🍝'    },
+            { id: 'tag_aventura',   label: 'Aventura',   emoji: '🌲'    },
+            { id: 'tag_musica',     label: 'Música',     emoji: '🎵'    },
+            { id: 'tag_relax',      label: 'Relax',      emoji: '💆‍♂️' },
+            { id: 'tag_deporte',    label: 'Deporte',    emoji: '🏃‍♀️' },
+            { id: 'tag_arte',       label: 'Arte',       emoji: '🎨'    },
+            { id: 'tag_casa',       label: 'En Casa',    emoji: '🏠'    },
         ];
 
-        this.memoryTags = (Array.isArray(incomingTags) && incomingTags.length > 0) 
+        this.memoryTags = (Array.isArray(incomingTags) && incomingTags.length > 0)
             ? incomingTags
-                .filter(tag => tag && typeof tag === 'object' && tag.value)
-                .map(tag => ({ 
-                    value: tag.value, 
-                    label: tag.label || `${tag.value} 🏷️`
-                }))
+                .filter(tag => tag && typeof tag === 'object')
+                .map(tag => {
+                    // New format already has id
+                    if (tag.id) {
+                        return {
+                            id: tag.id,
+                            label: tag.label || '',
+                            emoji: tag.emoji || '🏷️'
+                        };
+                    }
+                    // Migration from legacy {value, label} format
+                    // e.g. { value: 'viaje', label: 'Viaje ✈️' } → { id: 'tag_viaje', label: 'Viaje', emoji: '✈️' }
+                    if (tag.value) {
+                        const parts = (tag.label || tag.value).split(' ');
+                        const emoji = parts.length > 1 ? parts[parts.length - 1] : '🏷️';
+                        const text = parts.length > 1 ? parts.slice(0, -1).join(' ') : tag.value;
+                        return {
+                            id: `tag_${tag.value}`,
+                            label: text,
+                            emoji: emoji,
+                        };
+                    }
+                    return null;
+                })
+                .filter(Boolean)
             : defaultTags;
     }
 
@@ -150,57 +180,62 @@ export default class SystemConfig {
      * Converts to plain object for Firestore persistence
      */
     toFirestore() {
-        const data = {
+        return {
             features: this.features,
             visibility: this.visibility,
             wrapped: this.wrappedConfig,
-            mapConfig: this.mapConfig,
+            map: this.mapConfig,
             notifications: this.notifications,
-            snapshotConfig: this.snapshotConfig,
+            multimedia: {
+                snapshotConfig: this.snapshotConfig,
+                citaConfig: this.citaConfig
+            },
             teaser: this.teaser,
             inviteConfig: this.inviteConfig,
-            citaConfig: this.citaConfig,
             onboarding: this.onboarding,
             modules: this.modules,
             partner: this.partner,
             partnerUid: this.partnerUid,
             memoryTags: this.memoryTags,
-            updatedAt: Date.now() // Use numeric timestamp in MS
+            updatedAt: Date.now()
         };
-        
-        // Remove undefined/null strictly to avoid wipes
-        Object.keys(data).forEach(key => {
-            if (data[key] === undefined || data[key] === null) {
-                delete data[key];
-            }
-        });
-        
-        return data;
     }
 
-    /**
-     * static fromFirestore
-     */
-    static fromFirestore(data) {
-        if (!data) return new SystemConfig();
-        
+    static fromFirestore(res) {
+        if (!res || !res.config) return new SystemConfig();
+
+        const docs = res.config;
+        const multimedia = docs.multimedia || {};
+
+        // Compute max updatedAt across all config docs for cache invalidation
+        const allUpdatedAts = Object.values(docs)
+            .map(d => {
+                const v = d?.updatedAt;
+                if (!v) return 0;
+                if (typeof v.toMillis === 'function') return v.toMillis();
+                if (v.seconds) return v.seconds * 1000;
+                if (typeof v === 'number') return v;
+                return 0;
+            });
+        const maxUpdatedAt = allUpdatedAts.length ? Math.max(...allUpdatedAts) : null;
+
         return new SystemConfig({
-            features: data.features,
-            visibility: data.visibility,
-            wrappedConfig: data.wrapped,
-            mapConfig: data.mapConfig || data.map,
-            notifications: data.notifications,
-            snapshotConfig: data.snapshotConfig,
-            teaser: data.teaser,
-            teaserLock: data.teaserLock,
-            inviteConfig: data.inviteConfig,
-            citaConfig: data.citaConfig,
-            onboarding: data.onboarding,
-            modules: data.modules,
-            partner: data.partner,
-            partnerUid: data.partnerUid,
-            memoryTags: data.memoryTags,
-            updatedAt: data.updatedAt
+            features:      docs.features,
+            visibility:    docs.visibility,
+            notifications: docs.notifications,
+            // Consolidated Multimedia (snapshot + cita), fallback to legacy docs if exists
+            snapshotConfig: multimedia.snapshotConfig || docs.snapshotConfig,
+            citaConfig:    multimedia.citaConfig || docs.citaConfig,
+            inviteConfig:  docs.inviteConfig,
+            onboarding:    docs.onboarding,
+            memoryTags:    Array.isArray(docs.memoryTags?.tags) ? docs.memoryTags.tags : undefined,
+            wrappedConfig: docs.wrapped,
+            mapConfig:     docs.map,
+            teaser:        docs.teaser,
+            modules:       docs.modules,
+            partner:       docs.partner,
+            partnerUid:    docs.relationship?.partnerUid,
+            updatedAt:     maxUpdatedAt
         });
     }
 

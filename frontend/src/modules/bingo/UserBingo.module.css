@@ -6,10 +6,11 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 1.5rem 0 3rem;
-    gap: 1.25rem;
+    padding: 0 0 1rem;
+    gap: 1rem;
     background: transparent;
-    min-height: 100dvh;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .header {
@@ -20,10 +21,11 @@
 
 .title {
     font-family: var(--font-display);
-    font-size: 2.2rem;
+    font-size: 2.1rem;
     font-weight: 700;
     color: var(--text-primary);
     margin: 0;
+    line-height: 1.1;
 }
 
 .subtitle {
@@ -118,9 +120,18 @@
 .grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    /* Rule: gap 10px entre casillas */
-    gap: 10px;
+    /* Rule: gap 8px entre casillas (reducido de 10px para ganar espacio) */
+    gap: 8px;
     width: 100%;
+}
+
+.footerHint {
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-align: center;
+    margin: 0.5rem 0 0;
+    opacity: 0.8;
 }
 
 /* ── Precision Squares (Individual Tiles) ── */
@@ -309,7 +320,7 @@
     color: #2b2b2b;
 }
 
-.title {
+.polaroidTitle {
     margin: 0;
     font-size: 1.6rem !important;
     font-weight: 700 !important;

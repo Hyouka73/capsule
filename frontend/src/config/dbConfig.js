@@ -7,7 +7,7 @@
  */
 
 export const DB_NAME = 'capsule_offline_queue';
-export const DB_VERSION = 7;
+export const DB_VERSION = 8;
 
 /**
  * Genera una llave prefijada por relationshipId para asegurar el aislamiento de datos.
@@ -60,6 +60,11 @@ export function openDB() {
             if (!db.objectStoreNames.contains('place_thumbnails')) {
                 const s = db.createObjectStore('place_thumbnails', { keyPath: 'placeId' });
                 s.createIndex('cachedAt', 'cachedAt', { unique: false });
+            }
+
+            // 7. Instantáneas vistas (Offline-first)
+            if (!db.objectStoreNames.contains('seen_snapshots')) {
+                db.createObjectStore('seen_snapshots', { keyPath: 'id' });
             }
             
         };

@@ -116,8 +116,16 @@ export function createCoupon(payload) {
     return callBackendApi('createCoupon', payload);
 }
 
+export function updateCoupon(payload) {
+    return callBackendApi('updateCoupon', payload);
+}
+
 export function redeemCoupon(payload) {
     return callBackendApi('redeemCoupon', payload);
+}
+
+export function updateRedemptionStatus(payload) {
+    return callBackendApi('updateRedemptionStatus', payload);
 }
 
 export function getCoupons(payload) {

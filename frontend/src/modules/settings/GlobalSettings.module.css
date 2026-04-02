@@ -650,3 +650,19 @@
     background: white !important;
 }
 
+.tagIdBadge {
+    font-size: 0.65rem;
+    font-family: monospace;
+    font-weight: 700;
+    color: var(--text-muted);
+    background: var(--clay-bg-white, #f9f5f7);
+    border: 1px solid var(--pastel-mist, #f0eafa);
+    border-radius: var(--radius-pill, 9999px);
+    padding: 2px 8px;
+    white-space: nowrap;
+    opacity: 0.7;
+    flex-shrink: 0;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

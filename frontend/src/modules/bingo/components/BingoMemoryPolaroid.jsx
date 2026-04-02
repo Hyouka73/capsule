@@ -87,7 +87,7 @@ export default function BingoMemoryPolaroid({ selectedSquare, onClose, onShowGal
                         </div>
 
                         <div className={styles.polaroidText}>
-                            <h2 className={styles.title}>{displayTitle}</h2>
+                            <h2 className={styles.polaroidTitle}>{displayTitle}</h2>
                             <p className={styles.description}>{displayDescription}</p>
                             
                             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>

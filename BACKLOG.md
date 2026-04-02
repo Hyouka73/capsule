@@ -16,9 +16,9 @@
       Implementar junto con el resto del bloque Bingo.
 
 ## 🔔 Pendientes Toasts (implementar pronto)
-- [ ] Eliminar toast "Sincronizando recuerdo..." 
+- [x] Eliminar toast "Sincronizando recuerdo..." 
       (useOfflineQueue.js ~L199)
-- [ ] Eliminar toast "Ubicación encontrada / centrando mapa"
+- [x] Eliminar toast "Ubicación encontrada / centrando mapa"
       (buscar en archivos del mapa)
-- [ ] Bajar límite de toasts simultáneos de 3 a 2
+- [x] Bajar límite de toasts simultáneos de 3 a 2
       (PastelToast.jsx ~L58: .slice(0, 3) → .slice(0, 2))

@@ -9,7 +9,10 @@ const AppConfigContext = createContext(null);
 
 /**
  * App Config Provider — reads relationship-scoped config from BFF.
- * Path: relationships/{id}/config/main
+ * Architecture: relationships/{id}/config/ — each field in its own document
+ *   partner-relevant: memoryTags, features, citaConfig, modules, partner
+ *   admin-only: visibility, notifications, snapshotConfig, inviteConfig, onboarding
+ *   already-modular: teaser, map, wrapped
  */
 export function AppConfigProvider({ children }) {
     const { relationshipId } = useAuth();
@@ -24,7 +27,10 @@ export function AppConfigProvider({ children }) {
     }, [config]);
 
     const fetchConfig = useCallback(async (force = false) => {
-        if (!relationshipId) return;
+        if (!relationshipId) {
+            setIsConfigLoaded(true);
+            return;
+        }
         
         try {
             // Explicitly convert Date/Timestamp to numeric MS for reliable backend comparison

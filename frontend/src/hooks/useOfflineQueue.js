@@ -436,7 +436,6 @@ export function useOfflineQueue() {
 
         // 2. Sync on connectivity change
         const handleOnline = () => {
-            toast.info('Conexión restaurada', 'Sincronizando recuerdos pendientes...');
             processQueue();
         };
 

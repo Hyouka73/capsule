@@ -16,7 +16,8 @@ import {
     updateBingoSquare, 
     registerExercise, 
     createMemory,
-    redeemCoupon
+    redeemCoupon,
+    createCoupon
 } from '../apiClient';
 
 const ACTION_STORE = 'pending_actions';

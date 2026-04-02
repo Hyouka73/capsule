@@ -108,9 +108,33 @@ export default function GlobalSettings() {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            await saveGlobalSettings(config.toFirestore());
+            const fullData = config.toFirestore();
+            let payload = {};
+            
+            // Only send the configuration chunks that belong to the active tab
+            switch(activeTab) {
+                case 'modules':
+                     payload = { modules: fullData.modules, features: fullData.features, onboarding: fullData.onboarding };
+                     break;
+                case 'services':
+                     payload = { mapConfig: fullData.mapConfig, notifications: fullData.notifications };
+                     break;
+                case 'custom':
+                     payload = { teaser: fullData.teaser, memoryTags: fullData.memoryTags };
+                     break;
+                case 'multimedia':
+                     payload = { wrapped: fullData.wrapped, multimedia: fullData.multimedia };
+                     break;
+                case 'security':
+                     payload = { visibility: fullData.visibility };
+                     break;
+                default:
+                     payload = fullData;
+            }
+
+            await updateConfig(payload);
             await refreshConfig(true); // force=true: bypass cache, always fetch fresh
-            toast.success('¡Configuración Guardada!', 'Los cambios se han aplicado en toda la app.');
+            toast.success('¡Guardado!', `Cambios de ${activeTab} aplicados.`);
         } catch (err) {
             toast.error('Error al guardar.', 'No se pudo aplicar la configuración.');
         } finally {
@@ -131,25 +155,30 @@ export default function GlobalSettings() {
         setShowInviteConfirm(false);
         setIsRegenerating(true);
         try {
-            const { tokenId } = await generateInviteToken({ expiresInDays: 7 });
-            const BASE_URL = import.meta.env.VITE_APP_URL || window.location.origin;
-            const inviteUrl = `${BASE_URL}/join?t=${tokenId}`;
-            const now = new Date().toISOString();
+            const { tokenId, inviteUrl } = await generateInviteToken({ expiresAtDays: 7 });
             
-            // 1. Update local state
-            handleUpdate('inviteConfig.inviteLink', inviteUrl);
-            handleUpdate('inviteConfig.generatedAt', now);
+            // We NO LONGER need to call updateConfig here because the backend 
+            // already updated the Firestore document. Doing it twice 
+            // causes race conditions that 'reactivate' the old partner.
+            
+            // However, we MUST update our local context state so the UI 
+            // shows the new link and doesn't think there's still a partner.
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + 7);
 
-            // 2. Persist automatically
-            await updateConfig({ 
-                inviteConfig: { 
-                    inviteLink: inviteUrl, 
-                    generatedAt: now 
-                } 
+            setConfig(prev => {
+                const newConfig = new SystemConfig(prev);
+                newConfig.partnerUid = null; // Correct property in SystemConfig model
+                newConfig.inviteConfig = {
+                    inviteLink: inviteUrl,
+                    generatedAt: new Date().toISOString(),
+                    expiresAt: expiresAt.toISOString(),
+                    isActive: true
+                };
+                return newConfig;
             });
 
-            await refreshConfig();
-            toast.success('¡Enlace generado!', 'Link generado y guardado ✓');
+            toast.success('¡Link Regenerado!', 'Se ha creado un nuevo código de invitación.');
         } catch (err) {
             toast.error('Error al generar enlace', 'Link generado pero no se pudo guardar. Cópialo antes de cerrar.');
         } finally {
@@ -443,36 +472,36 @@ export default function GlobalSettings() {
                                     <span className={styles.sectionIcon}>🏷️</span>
                                     <h3>Gestión de Tags</h3>
                                 </div>
-                                <p className={styles.sectionDesc}>Personaliza las etiquetas para vuestros recuerdos.</p>
+                                <p className={styles.sectionDesc}>Personaliza las etiquetas. El ID es permanente — puedes cambiar el nombre y emoji sin romper nada.</p>
                                 <div className={styles.tagsContainer}>
                                     <div className={styles.tagsList}>
                                         {config.memoryTags.map((tag, index) => (
-                                            <div key={index} className={styles.tagEditRow}>
+                                            <div key={tag.id || index} className={styles.tagEditRow}>
                                                 <input 
                                                     type="text" 
                                                     className={styles.tagInputEmoji}
-                                                    value={(tag?.label || '').split(' ').pop()} 
+                                                    placeholder="✨"
+                                                    value={tag.emoji || ''} 
                                                     onChange={(e) => {
-                                                         const currentLabel = tag?.label || '';
                                                          const newTags = [...config.memoryTags];
-                                                         const text = currentLabel.split(' ').slice(0, -1).join(' ');
-                                                         newTags[index].label = `${text} ${e.target.value}`;
+                                                         newTags[index] = { ...newTags[index], emoji: e.target.value };
                                                          handleUpdate('memoryTags', newTags);
                                                     }}
                                                 />
                                                 <input 
                                                     type="text" 
                                                     className={styles.tagInputLabel}
-                                                    value={(tag?.label || '').split(' ').slice(0, -1).join(' ')} 
+                                                    placeholder="Nombre"
+                                                    value={tag.label || ''} 
                                                     onChange={(e) => {
-                                                         const currentLabel = tag?.label || '';
                                                          const newTags = [...config.memoryTags];
-                                                         const emoji = currentLabel.split(' ').pop();
-                                                         newTags[index].label = `${e.target.value} ${emoji}`;
-                                                         newTags[index].value = e.target.value.toLowerCase().replace(/\s+/g, '_');
-                                                        handleUpdate('memoryTags', newTags);
+                                                         newTags[index] = { ...newTags[index], label: e.target.value };
+                                                         handleUpdate('memoryTags', newTags);
                                                     }}
                                                 />
+                                                <span className={styles.tagIdBadge} title={`ID: ${tag.id}`}>
+                                                    #{(tag.id || '').replace('tag_', '')}
+                                                </span>
                                                 <button 
                                                     className={styles.tagRemoveBtn}
                                                     onClick={() => {
@@ -487,7 +516,14 @@ export default function GlobalSettings() {
                                         variant="ghost" 
                                         size="sm" 
                                         className={styles.addTagBtn}
-                                        onClick={() => handleUpdate('memoryTags', [...config.memoryTags, { value: 'nuevo', label: 'Nuevo ✨' }])}
+                                        onClick={() => handleUpdate('memoryTags', [
+                                            ...config.memoryTags, 
+                                            { 
+                                                id: `tag_${crypto.randomUUID().replace(/-/g, '').slice(0, 8)}`, 
+                                                label: 'Nuevo', 
+                                                emoji: '✨' 
+                                            }
+                                        ])}
                                     >
                                         + Añadir Etiqueta
                                     </Button>

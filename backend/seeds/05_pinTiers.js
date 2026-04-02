@@ -32,41 +32,48 @@ export default async function seedPinTiers(admin, db, relationshipId, adminUid, 
         await db.collection('places').doc(place.id).set(placeData, { merge: true });
     }
 
-    // Default pin tiers configuration in AppConfig
-    const pinTiers = [
-        { minVisits: 1, label: 'Bronce', color: '#cd7f32' },
-        { minVisits: 5, label: 'Plata', color: '#c0c0c0' },
-        { minVisits: 10, label: 'Oro', color: '#ffd700' },
-        { minVisits: 20, label: 'Diamante', color: '#b9f2ff' }
-    ];
 
-    const memoryTags = [
-        { value: 'romántico', label: 'Romántico ❤️' },
-        { value: 'comida', label: 'Comida 🍜' },
-        { value: 'cena', label: 'Cena 🕯️' },
-        { value: 'vista', label: 'Vista 🔭' },
-        { value: 'cine', label: 'Cine 🍿' }
-    ];
-
-    // ── TARGETED CLEANUP ──
+    // ── TARGETED CLEANUP: remove phantom legacy doc ──
     const configColl = db.collection('relationships').doc(relationshipId).collection('config');
-    await configColl.doc('map').delete().catch(() => {});
-    console.log(`🧹 Config legacy removed for ${relationshipId}.`);
+    await configColl.doc('memoryTags').delete().catch(() => {}); // delete phantom doc if exists
+    console.log(`🧹 Config legacy doc cleaned for ${relationshipId}.`);
 
     const now = admin.firestore.FieldValue.serverTimestamp();
 
-    // 1. Update mapConfig document
-    // We update only pinTiers, but using set(merge: true) to keep other mapConfig fields if they exist,
-    // though in a full seed they might have just been created by auth.
-    await configColl.doc('mapConfig').set({
-        pinTiers: pinTiers,
+    // 1. mapConfig → config/map  (SINGLETON_DOCS.MAP_CONFIG = 'map')
+    await configColl.doc('map').set({
+        pinTiers: [
+            { minVisits: 1, color: '#cd7f32', scale: 0.8 },
+            { minVisits: 5, color: '#c0c0c0', scale: 1.0 },
+            { minVisits: 10, color: '#ffd700', scale: 1.2 },
+            { minVisits: 20, color: '#b9f2ff', scale: 1.4 }
+        ],
         updatedAt: now
     }, { merge: true });
 
-    // 2. Update memoryTags document
-    // Standardize as object-wrapped array for consistency with our new saving logic
+    // 2. memoryTags → config/memoryTags  (SINGLETON_DOCS.MEMORY_TAGS = 'memoryTags')
+    //    Stored as { tags: [...], updatedAt } — NOT as array directly
+    //    SystemConfig.fromFirestore reads docs.memoryTags?.tags
     await configColl.doc('memoryTags').set({
-        ...memoryTags,
+        tags: [
+            { id: 'tag_viaje',       label: 'Viaje',       emoji: '✈️'    },
+            { id: 'tag_cita',        label: 'Cita',        emoji: '🍷'    },
+            { id: 'tag_romantico',   label: 'Romántico',   emoji: '❤️'    },
+            { id: 'tag_aniversario', label: 'Aniversario', emoji: '💝'    },
+            { id: 'tag_random',      label: 'Random',      emoji: '🤪'    },
+            { id: 'tag_logro',       label: 'Logro',       emoji: '🎯'    },
+            { id: 'tag_hito',        label: 'Hito',        emoji: '🌟'    },
+            { id: 'tag_familia',     label: 'Familia',     emoji: '👨‍👩‍👦'  },
+            { id: 'tag_amigos',      label: 'Amigos',      emoji: '👯‍♂️'  },
+            { id: 'tag_cine',        label: 'Cine',        emoji: '🍿'    },
+            { id: 'tag_comida',      label: 'Comida',      emoji: '🍝'    },
+            { id: 'tag_aventura',    label: 'Aventura',    emoji: '🌲'    },
+            { id: 'tag_musica',      label: 'Música',      emoji: '🎵'    },
+            { id: 'tag_relax',       label: 'Relax',       emoji: '💆‍♂️' },
+            { id: 'tag_deporte',     label: 'Deporte',     emoji: '🏃‍♀️' },
+            { id: 'tag_arte',        label: 'Arte',        emoji: '🎨'    },
+            { id: 'tag_casa',        label: 'En Casa',     emoji: '🏠'    },
+        ],
         updatedAt: now
     });
 
