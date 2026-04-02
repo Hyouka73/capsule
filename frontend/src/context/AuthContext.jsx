@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
 import { getToken, onMessage } from 'firebase/messaging';
-import { arrayUnion, doc, updateDoc, onSnapshot } from 'firebase/firestore';
+import { arrayUnion, doc, updateDoc, onSnapshot, writeBatch } from 'firebase/firestore';
 import { auth, messaging, db } from '../services/firebase';
 import firebaseConfig from '../config/firebase';
 import {
@@ -294,19 +294,36 @@ export function AuthProvider({ children }) {
         }
     }, [user?.uid]);
 
-    const completeWelcome = useCallback(async () => {
-        if (!user?.uid) return;
-        // Optimistic update: trigger navigation immediately
+    const completeWelcome = useCallback(async (name) => {
+        if (!user?.uid || !relationshipId) return;
+        // Optimistic update
         setWelcomeSeen(true);
         try {
+            const batch = writeBatch(db);
+            
+            // 1. Mark welcome as seen on user doc
             const userRef = doc(db, COLLECTIONS.USERS, user.uid);
-            await updateDoc(userRef, { welcomeSeen: true });
+            batch.update(userRef, { 
+                welcomeSeen: true,
+                displayName: name || (role === ROLES.ADMIN ? 'Admin' : 'Pareja')
+            });
+
+            // 2. Update centralized names config
+            const namesRef = doc(db, COLLECTIONS.RELATIONSHIPS, relationshipId, 'config', 'names');
+            const field = role === ROLES.ADMIN ? 'admin' : 'partner';
+            
+            batch.set(namesRef, {
+                [field]: name || (role === ROLES.ADMIN ? 'Admin' : 'Pareja'),
+                updatedAt: new Date()
+            }, { merge: true });
+
+            await batch.commit();
         } catch (err) {
             console.error("Error updating welcome:", err);
             // setWelcomeSeen(false);
             throw err;
         }
-    }, [user?.uid]);
+    }, [user?.uid, relationshipId, role]);
 
     const value = useMemo(() => ({
         user,

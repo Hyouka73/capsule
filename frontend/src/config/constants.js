@@ -4,6 +4,7 @@
 
 export const COLLECTIONS = {
     USERS: 'users',
+    RELATIONSHIPS: 'relationships',
     INVITE_TOKENS: 'inviteTokens',
     PLACES: 'places',
     MEMORIES: 'memories',
