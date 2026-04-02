@@ -1,44 +1,30 @@
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import { COLLECTIONS } from '../config/constants.js';
 
-/**
- * GetActivityLogs API
- * Fetches activity logs for the current relationship.
- * Supports pagination via limit and startAfter.
- */
-export const getActivityLogs = onCall({ region: 'us-central1', cors: true }, async (request) => {
+export const handler = async (request) => {
     if (!request.auth) {
-        throw new HttpsError('unauthenticated', 'Debes iniciar sesión.');
+        throw new HttpsError('unauthenticated', 'Unauthorized');
     }
 
-    const relationshipId = request.auth.token.relationshipId;
+    const { relationshipId } = request.auth.token;
+    const { lastDocId, limit = 20 } = request.data || {};
+
     if (!relationshipId) {
-        throw new HttpsError('failed-precondition', 'El usuario no tiene una relación activa.');
+        throw new HttpsError('failed-precondition', 'El usuario no tiene una relación asignada.');
     }
-
-    const { limit = 50, startAfterLogId = null } = request.data;
 
     const db = getFirestore();
-    let query = db
-        .collection('relationships')
-        .doc(relationshipId)
-        .collection(COLLECTIONS.ACTIVITY_LOG)
-        .orderBy('createdAt', 'desc')
-        .limit(Math.min(limit, 100)); // Cap limit at 100 for safety
+    const logsColl = db.collection('relationships').doc(relationshipId).collection(COLLECTIONS.ACTIVITY_LOG);
 
     try {
-        if (startAfterLogId) {
-            const lastDoc = await db
-                .collection('relationships')
-                .doc(relationshipId)
-                .collection(COLLECTIONS.ACTIVITY_LOG)
-                .doc(startAfterLogId)
-                .get();
-            
-            if (lastDoc.exists) {
-                query = query.startAfter(lastDoc);
+        let query = logsColl.orderBy('createdAt', 'desc').limit(limit);
+
+        if (lastDocId) {
+            const lastDocSnap = await logsColl.doc(lastDocId).get();
+            if (lastDocSnap.exists) {
+                query = query.startAfter(lastDocSnap);
             }
         }
 
@@ -46,19 +32,17 @@ export const getActivityLogs = onCall({ region: 'us-central1', cors: true }, asy
         const logs = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
-            createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
-            readAt: doc.data().readAt?.toDate?.()?.toISOString() || doc.data().readAt,
+            createdAt: doc.data().createdAt?.toDate() || null
         }));
 
         return {
             success: true,
             logs,
-            hasMore: logs.length === limit,
-            lastId: logs.length > 0 ? logs[logs.length - 1].id : null
+            count: snapshot.size,
+            hasMore: snapshot.size === limit
         };
     } catch (error) {
-        logger.error('Error fetching activity logs:', error);
-        throw new HttpsError('internal', 'Error al obtener los logs de actividad.');
+        logger.error('getActivityLogs error:', { relationshipId, error: error.message });
+        throw new HttpsError('internal', 'Error al obtener los registros de actividad.');
     }
-});
-
+};

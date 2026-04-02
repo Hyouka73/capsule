@@ -1,49 +1,28 @@
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import { COLLECTIONS } from '../config/constants.js';
 
-/**
- * getSnapshots — Backend API (BFF)
- * 
- * Obtiene todas las instantáneas de la relación.
- */
-export const getSnapshots = onCall({ region: 'us-central1', cors: true }, async (request) => {
-    if (!request.auth) {
-        throw new HttpsError('unauthenticated', 'Unauthorized');
-    }
+export const handler = async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Unauthorized');
 
     const { relationshipId } = request.auth.token;
-    if (!relationshipId) {
-        throw new HttpsError('failed-precondition', 'Relationship ID missing in token');
-    }
+    if (!relationshipId) throw new HttpsError('failed-precondition', 'No relationship found.');
 
     const db = getFirestore();
+    const snapshotsColl = db.collection('relationships').doc(relationshipId).collection(COLLECTIONS.INSTANTANEAS);
 
     try {
-        // Subcollection path: relationships/{id}/snapshots
-        const snapshotsSnap = await db.collection('relationships')
-            .doc(relationshipId)
-            .collection(COLLECTIONS.INSTANTANEAS)
-            .orderBy('createdAt', 'desc')
-            .get();
-
-        const snapshots = snapshotsSnap.docs.map(doc => ({
+        const snapshot = await snapshotsColl.orderBy('createdAt', 'desc').limit(20).get();
+        const snapshots = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
-            createdAt: doc.data().createdAt?.toDate()?.toISOString() || null,
-            expiresAt: doc.data().expiresAt?.toDate()?.toISOString() || null,
-            seenAt: doc.data().seenAt?.toDate()?.toISOString() || null,
-            archivedAt: doc.data().archivedAt?.toDate()?.toISOString() || null
+            createdAt: doc.data().createdAt?.toDate() || null
         }));
 
-        return {
-            success: true,
-            snapshots
-        };
+        return { success: true, snapshots };
     } catch (error) {
-        logger.error('[getSnapshots] Error:', { relationshipId, error: error.message });
-        throw new HttpsError('internal', 'Error al obtener las instantáneas.');
+        logger.error('getSnapshots error:', error);
+        throw new HttpsError('internal', error.message);
     }
-});
-
+};

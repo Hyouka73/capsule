@@ -1,54 +1,30 @@
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { HttpsError } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions';
-import { COLLECTIONS } from '../config/constants.js';
+import { logActivity as svcLogActivity } from '../services/activityService.js';
 
-/**
- * LogActivity API 
- * Mapeo controlado del log de actividades.
- */
-export const logActivity = onCall({ region: 'us-central1', cors: true }, async (request) => {
-    if (!request.auth) {
-        throw new HttpsError('unauthenticated', 'Operación denegada.');
-    }
+export const handler = async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Unauthorized');
 
-    const { action, targetType, targetId, metadata, displayText } = request.data;
-    const relationshipId = request.auth.token.relationshipId;
+    const { action, targetType, targetId, displayText, metadata } = request.data || {};
+    const { relationshipId, uid } = request.auth.token;
 
-    if (!action || !targetType || !targetId) {
-        throw new HttpsError('invalid-argument', 'Faltan campos obligatorios para el log.');
-    }
-
-    if (!relationshipId) {
-        throw new HttpsError('failed-precondition', 'El usuario no tiene una relación activa.');
-    }
-
-    const db = getFirestore();
-
-    const logData = {
-        userId: request.auth.uid,
-        relationshipId,
-        action,
-        targetType,
-        targetId,
-        metadata: metadata || {},
-        displayText: displayText || 'Realizó una acción',
-        isReadByAdmin: false,
-        readAt: null,
-        createdAt: FieldValue.serverTimestamp(),
-    };
+    if (!action || !displayText) throw new HttpsError('invalid-argument', 'Action and displayText are required.');
+    if (!relationshipId) throw new HttpsError('failed-precondition', 'No relationship found.');
 
     try {
-        await db
-            .collection('relationships')
-            .doc(relationshipId)
-            .collection(COLLECTIONS.ACTIVITY_LOG)
-            .add(logData);
-        return { success: true };
-    } catch (error) {
-        logger.error('Error logging activity:', error);
-        // Fallamos silenciosamente para no bloquear la app
-        return { success: false, error: 'Error interno del servidor.' };
-    }
-});
+        const result = await svcLogActivity({
+            relationshipId,
+            userId: uid,
+            action,
+            targetType: targetType || null,
+            targetId: targetId || null,
+            displayText,
+            metadata: metadata || {}
+        });
 
+        return { success: true, logId: result.id };
+    } catch (error) {
+        logger.error('logActivity error:', error);
+        throw new HttpsError('internal', error.message);
+    }
+};

@@ -1,13 +1,9 @@
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, Filter } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import { COLLECTIONS } from '../config/constants.js';
 
-/**
- * getGallery API
- * Optimized chronological photo feed merging memory photos and snapshots.
- */
-export const getGallery = onCall({ region: 'us-central1', cors: true }, async (request) => {
+export const handler = async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Unauthorized');
 
     const { limit = 30, lastId, lastCreatedAt } = request.data || {};
@@ -16,17 +12,14 @@ export const getGallery = onCall({ region: 'us-central1', cors: true }, async (r
     try {
         const relationshipId = request.auth.token.relationshipId;
 
-        // 1. Fetch memories via Collection Group (to show main photo of each cita)
         let memoriesQuery = db.collectionGroup(COLLECTIONS.MEMORIES)
             .where('relationshipId', '==', relationshipId)
             .orderBy('createdAt', 'desc');
 
-        // 2. Fetch snapshots from relationship subcollection (Seen or Archived)
         const snapshotsRef = db.collection('relationships')
             .doc(relationshipId)
             .collection(COLLECTIONS.INSTANTANEAS);
 
-        // Snapshots that are either seen by the partner OR officially archived after 24h
         let snapshotsQuery = snapshotsRef
             .where(Filter.or(
                 Filter.where('isSeen', '==', true),
@@ -34,7 +27,6 @@ export const getGallery = onCall({ region: 'us-central1', cors: true }, async (r
             ))
             .orderBy('createdAt', 'desc');
 
-        // Apply cursor if provided
         if (lastCreatedAt) {
             const cursorDate = new Date(lastCreatedAt);
             memoriesQuery = memoriesQuery.startAfter(cursorDate);
@@ -51,11 +43,11 @@ export const getGallery = onCall({ region: 'us-central1', cors: true }, async (r
             return {
                 id: doc.id,
                 ...data,
-                url: data.mainPhotoUrl, // Use memory's main photo
+                url: data.mainPhotoUrl,
                 _type: 'memory',
                 createdAt: data.createdAt?.toDate()?.toISOString() || null
             };
-        }).filter(m => !!m.url); // Only show memories with a main photo
+        }).filter(m => !!m.url);
 
         const archivedSnapshots = snapshotsSnap.docs.map(doc => ({
             id: doc.id,
@@ -67,7 +59,6 @@ export const getGallery = onCall({ region: 'us-central1', cors: true }, async (r
             createdAt: doc.data().createdAt?.toDate()?.toISOString() || null
         }));
 
-        // 3. Merge and sort
         const allPhotos = [...memoryEntries, ...archivedSnapshots]
             .sort((a, b) => {
                 const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -84,5 +75,4 @@ export const getGallery = onCall({ region: 'us-central1', cors: true }, async (r
         logger.error('Error fetching gallery:', error);
         return { success: false, error: error.message };
     }
-});
-
+};

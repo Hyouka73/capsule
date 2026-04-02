@@ -1,12 +1,12 @@
-import { onCall } from 'firebase-functions/v2/https';
+import { HttpsError } from 'firebase-functions/v2/https';
+import { logger } from 'firebase-functions';
 
-export const ping = onCall({ region: 'us-central1', cors: true }, async (request) => {
+export const handler = async (request) => {
+    logger.info('Ping received from:', request.auth?.uid || 'anonymous');
     return {
         success: true,
-        message: 'Pong! Cloud Functions emulator is reachable.',
+        message: 'pong',
         timestamp: new Date().toISOString(),
-        project: process.env.GCLOUD_PROJECT,
-        emulator: process.env.FUNCTIONS_EMULATOR
+        auth: !!request.auth
     };
-});
-
+};

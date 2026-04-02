@@ -1,15 +1,16 @@
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { getFunctions } from 'firebase-admin/functions';
 import { logger } from 'firebase-functions';
-import { COLLECTIONS } from '../config/constants.js';
+import { COLLECTIONS, ACTIVITY_ACTIONS } from '../config/constants.js';
+import { logActivity } from '../services/activityService.js';
 
 /**
  * createCapsule — Serverless BFF API
  * 
  * Crea una nueva cápsula del tiempo en la subcolección de la relación.
  */
-export const createCapsule = onCall({ region: 'us-central1', cors: true }, async (request) => {
+export const handler = async (request) => {
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Debes iniciar sesión para crear una cápsula.');
     }
@@ -113,6 +114,21 @@ export const createCapsule = onCall({ region: 'us-central1', cors: true }, async
             logger.warn('FCM notification failed in createCapsule:', fcmErr.message);
         }
 
+        // 4. Log Activity
+        await logActivity({
+            relationshipId,
+            userId: uid,
+            action: ACTIVITY_ACTIONS.CAPSULE_CREATED,
+            targetType: COLLECTIONS.CAPSULES,
+            targetId: capsuleRef.id,
+            displayText: `enterró una nueva cápsula: ${title}`,
+            metadata: {
+                title,
+                unlockTrigger,
+                unlockDate: parsedUnlockDate ? parsedUnlockDate.toDate() : null
+            }
+        });
+
         return {
             success: true,
             capsuleId: capsuleRef.id,
@@ -122,5 +138,5 @@ export const createCapsule = onCall({ region: 'us-central1', cors: true }, async
         logger.error('Error in createCapsule:', error);
         throw new HttpsError('internal', 'Ocurrió un error al persistir la cápsula en base de datos.');
     }
-});
+};
 

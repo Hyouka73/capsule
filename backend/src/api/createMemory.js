@@ -1,13 +1,14 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
-import { COLLECTIONS, SINGLETON_DOCS } from '../config/constants.js';
+import { COLLECTIONS, SINGLETON_DOCS, ACTIVITY_ACTIONS } from '../config/constants.js';
+import { logActivity } from '../services/activityService.js';
 
 /**
  * createMemory API - Solo para usuarios autenticados (Admin o Partner)
  * Valida los datos y maneja la escritura en Firestore de forma segura.
  */
-export const createMemory = onCall({ region: 'us-central1', cors: true }, async (request) => {
+export const handler = async (request) => {
     // 1. Verificar autenticación
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Debes iniciar sesión para crear un recuerdo.');
@@ -155,20 +156,27 @@ export const createMemory = onCall({ region: 'us-central1', cors: true }, async 
                 
                 bingoSuggestions = categories
                     .filter(cat => {
-                        if (cat.completedMemoryId) return false;
-                        if (cat.isEnabled === false) return false;
+                        if (cat.completedMemoryId || cat.isEnabled === false) return false;
+                        
+                        // Detection Logic:
+                        // 1. Direct ID match: memory.tags includes this category's own ID
+                        const isIdMatch = memoryTagsLower.includes(cat.id.toLowerCase());
 
-                        // Strict AND logic: memory must have ALL suggested tags of the category to match
+                        // 2. Suggested Tag IDs match: memory has ANY suggested tag ID of this category
+                        // suggestedTags format: [{ id: 'tag_cita' }, { id: 'tag_cine' }]
                         const suggestedTags = cat.suggestedTags || [];
-                        if (suggestedTags.length === 0) return false;
-
-                        const hasAllTagsMatch = suggestedTags.every(st => {
-                            const catTag = (typeof st === 'string' ? st : st.value).toLowerCase().trim();
-                            return memoryTagsLower.includes(catTag);
+                        const hasTagIdMatch = suggestedTags.length > 0 && suggestedTags.some(st => {
+                            // New format: { id: 'tag_cine' }
+                            if (st.id) return memoryTagsLower.includes(st.id.toLowerCase());
+                            // Legacy format fallback: { value: 'cine', label: '...' }
+                            if (st.value) return memoryTagsLower.includes(st.value.toLowerCase().trim());
+                            // Raw string fallback
+                            if (typeof st === 'string') return memoryTagsLower.includes(st.toLowerCase().trim());
+                            return false;
                         });
                         
                         const isMovieMatch = cat.id === 'movies' && request.data.movieData;
-                        return hasAllTagsMatch || isMovieMatch;
+                        return isIdMatch || hasTagIdMatch || isMovieMatch;
                     })
                     .map(cat => ({
                         categoryId: cat.id,
@@ -203,6 +211,21 @@ export const createMemory = onCall({ region: 'us-central1', cors: true }, async 
             logger.warn('Bingo suggestion check failed:', bingoErr);
         }
 
+        // 7. Log Activity
+        await logActivity({
+            relationshipId,
+            userId: uid,
+            action: ACTIVITY_ACTIONS.MEMORY_CREATED,
+            targetType: COLLECTIONS.MEMORIES,
+            targetId: memoryId,
+            displayText: `creó un nuevo recuerdo: ${memoryData.title}`,
+            metadata: {
+                title: memoryData.title,
+                photoCount: photoCount,
+                hasPlace: !!memoryData.placeId
+            }
+        });
+
         return {
             success: true,
             memoryId: memoryId,
@@ -214,5 +237,5 @@ export const createMemory = onCall({ region: 'us-central1', cors: true }, async 
         logger.error('Error in createMemory:', error);
         throw new HttpsError('internal', 'Falló la creación del recuerdo en la base de datos.');
     }
-});
+};
 

@@ -1,74 +1,84 @@
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import { SINGLETON_DOCS } from '../config/constants.js';
 
-/**
- * updateAppConfig — Admin-only API
- * 
- * Actualiza la configuración de la relación.
- * Ruta: relationships/{id}/config/main
- */
-export const updateAppConfig = onCall({ region: 'us-central1', cors: true }, async (request) => {
-    if (!request.auth) {
-        throw new HttpsError('unauthenticated', 'Unauthorized');
-    }
+export const handler = async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Unauthorized');
 
-    const { role, relationshipId } = request.auth.token;
-    if (role !== 'admin') {
-        throw new HttpsError('permission-denied', 'Solo el Admin puede actualizar la configuración.');
-    }
+    const { relationshipId, role } = request.auth.token;
+    if (role !== 'admin') throw new HttpsError('permission-denied', 'Only admin can update config.');
 
-    const { config } = request.data;
-    if (!config || typeof config !== 'object') {
-        throw new HttpsError('invalid-argument', 'El objeto config es obligatorio.');
-    }
+    const { update } = request.data || {};
+    if (!update) throw new HttpsError('invalid-argument', 'Update data is required.');
 
     const db = getFirestore();
+    const configColl = db.collection('relationships').doc(relationshipId).collection('config');
+    const batch = db.batch();
+    const ts = FieldValue.serverTimestamp();
 
     try {
-        const configColl = db.collection('relationships').doc(relationshipId).collection('config');
-        const batch = db.batch();
-        const now = FieldValue.serverTimestamp();
+        // Each key goes to its own independent config document.
+        // Format: batch.set(configColl.doc(DOC_NAME), { ...data, updatedAt: ts }, { merge: true })
 
-        // Separate sections from main-level fields
-        const sections = [
-            'teaser', 'snapshotConfig', 'wrapped', 'mapConfig', 'notifications', 
-            'onboarding', 'modules', 'partner', 'citaConfig', 'memoryTags'
-        ];
+        if (update.features !== undefined)
+            batch.set(configColl.doc(SINGLETON_DOCS.FEATURES), { ...update.features, updatedAt: ts }, { merge: true });
 
-        const mainData = { updatedAt: now };
-        const updatesBySection = {};
+        if (update.visibility !== undefined)
+            batch.set(configColl.doc(SINGLETON_DOCS.VISIBILITY), { ...update.visibility, updatedAt: ts }, { merge: true });
 
-        Object.keys(config).forEach(key => {
-            if (sections.includes(key)) {
-                updatesBySection[key] = { ...config[key], updatedAt: now };
-            } else if (!['updatedAt', 'map'].includes(key)) { 
-                // Specifically ignore legacy 'map' and other calculated fields in main
-                mainData[key] = config[key];
-            }
-        });
+        if (update.notifications !== undefined)
+            batch.set(configColl.doc(SINGLETON_DOCS.NOTIFICATIONS), { ...update.notifications, updatedAt: ts }, { merge: true });
 
-        // 1. Update 'main' document
-        batch.set(configColl.doc(SINGLETON_DOCS.APP_CONFIG), mainData, { merge: true });
+        // Multimedia: snap and cita config consolidated into one doc
+        if (update.multimedia !== undefined || update.snapshotConfig !== undefined || update.citaConfig !== undefined) {
+            const multimediaData = {
+                ...(update.multimedia || {}),
+                ...(update.snapshotConfig ? { snapshotConfig: update.snapshotConfig } : {}),
+                ...(update.citaConfig ? { citaConfig: update.citaConfig } : {}),
+                updatedAt: ts
+            };
+            batch.set(configColl.doc(SINGLETON_DOCS.MULTIMEDIA), multimediaData, { merge: true });
+        }
 
-        // 2. Explicitly wipe legacy 'map' document to avoid conflicts
-        batch.delete(configColl.doc('map'));
+        if (update.onboarding !== undefined)
+            batch.set(configColl.doc(SINGLETON_DOCS.ONBOARDING), { ...update.onboarding, updatedAt: ts }, { merge: true });
 
-        // 3. Update each section document (CLEAN SAVE - NO MERGE)
-        Object.entries(updatesBySection).forEach(([section, data]) => {
-            batch.set(configColl.doc(section), data, { merge: false });
-        });
+        // memoryTags stored as { tags: [...], updatedAt } — array under a named key
+        // so Firestore doesn't treat it as a document with numeric keys
+        if (update.memoryTags !== undefined) {
+            const tagsArray = Array.isArray(update.memoryTags) ? update.memoryTags : Object.values(update.memoryTags);
+            batch.set(configColl.doc(SINGLETON_DOCS.MEMORY_TAGS), { tags: tagsArray, updatedAt: ts });
+        }
+
+        // partnerUid goes to the relationship doc
+        if (update.partnerUid !== undefined)
+            batch.set(configColl.doc(SINGLETON_DOCS.RELATIONSHIP), { partnerUid: update.partnerUid, updatedAt: ts }, { merge: true });
+
+        // inviteConfig → its own doc
+        if (update.inviteConfig !== undefined)
+            batch.set(configColl.doc(SINGLETON_DOCS.INVITE_CONFIG), { ...update.inviteConfig, updatedAt: ts }, { merge: true });
+
+        // Already-modular docs
+        if (update.teaser !== undefined)
+            batch.set(configColl.doc(SINGLETON_DOCS.TEASER_CONFIG), { ...update.teaser, updatedAt: ts }, { merge: true });
+
+        if (update.mapConfig !== undefined)
+            batch.set(configColl.doc(SINGLETON_DOCS.MAP_CONFIG), { ...update.mapConfig, updatedAt: ts }, { merge: true });
+
+        if (update.modules !== undefined)
+            batch.set(configColl.doc(SINGLETON_DOCS.MODULES_CONFIG), { ...update.modules, updatedAt: ts }, { merge: true });
+
+        if (update.partner !== undefined)
+            batch.set(configColl.doc(SINGLETON_DOCS.PARTNER_CONFIG), { ...update.partner, updatedAt: ts }, { merge: true });
+
+        if (update.wrapped !== undefined)
+            batch.set(configColl.doc(SINGLETON_DOCS.WRAPPED_CONFIG), { ...update.wrapped, updatedAt: ts }, { merge: true });
 
         await batch.commit();
-
-        return {
-            success: true,
-            message: 'Configuración actualizada (Multi-doc) correctamente.'
-        };
+        return { success: true };
     } catch (error) {
-        logger.error('updateAppConfig error:', { relationshipId, error: error.message });
-        throw new HttpsError('internal', 'Error al actualizar la configuración.');
+        logger.error('updateAppConfig error:', error);
+        throw new HttpsError('internal', error.message);
     }
-});
-
+};

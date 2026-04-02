@@ -1,90 +1,104 @@
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { HttpsError } from 'firebase-functions/v2/https';
+import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 import { logger } from 'firebase-functions';
+import { COLLECTIONS, SINGLETON_DOCS } from '../config/constants.js';
 import { v4 as uuidv4 } from 'uuid';
 
-export const generateInviteToken = onCall({ region: 'us-central1', cors: true }, async (request) => {
-    // Must be authenticated as admin
-    if (!request.auth || request.auth.token.role !== 'admin') {
-        const uid = request.auth?.uid || 'anonymous';
-        logger.warn(`Unauthorized attempt to generate invite token by ${uid}`);
-        throw new HttpsError('permission-denied', 'Solo el admin puede generar tokens de invitación');
-    }
+export const handler = async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Unauthorized');
 
-    const { expiresAtDays = 7 } = request.data ?? {};
-    const { relationshipId } = request.auth.token;
-    
-    if (!relationshipId) {
-        throw new HttpsError('failed-precondition', 'El admin no tiene una relación asignada.');
-    }
+    const { role, relationshipId, uid } = request.auth.token;
+    if (role !== 'admin') throw new HttpsError('permission-denied', 'Only admin can generate invite tokens.');
 
     const db = getFirestore();
-    const baseUrl = process.env.APP_URL || 'https://capsule-sooty.vercel.app';
+    const token = uuidv4().substring(0, 8).toUpperCase();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    const configColl = db.collection('relationships').doc(relationshipId).collection('config');
+    const inviteConfigRef = configColl.doc(SINGLETON_DOCS.INVITE_CONFIG);
+    const relationshipRef = configColl.doc(SINGLETON_DOCS.RELATIONSHIP);
 
     try {
-        // --- AUTO-REVOKE PREVIOUS PARTNER ---
-        const configRef = db.collection('relationships').doc(relationshipId)
-            .collection('config').doc('main');
-        const configSnap = await configRef.get();
 
-        if (configSnap.exists) {
-            const { partnerUid } = configSnap.data();
-            if (partnerUid) {
-                logger.info(`[generateInviteToken] Revoking existing partner ${partnerUid} before generating new token for relationship ${relationshipId}`);
-                
-                // 1. Mark partner as revoked in Firestore
-                await db.collection('users').doc(partnerUid).update({
-                    accountStatus: 'revoked',
-                    updatedAt: Timestamp.now()
-                });
+        // 1. ROBUST REVOCATION: Find any user with role 'partner' in this relationship
+        const partnersSnap = await db.collection(COLLECTIONS.USERS)
+            .where('relationshipId', '==', relationshipId)
+            .where('role', '==', 'partner')
+            .get();
 
-                // 2. Clear partnerUid from config (it will be refilled when new partner joins)
-                await configRef.update({
-                    partnerUid: null
+        if (!partnersSnap.empty) {
+            logger.info(`[generateInviteToken] Found ${partnersSnap.size} partner(s) to revoke for relationship ${relationshipId}`);
+            
+            for (const partnerDoc of partnersSnap.docs) {
+                const partnerUid = partnerDoc.id;
+                await partnerDoc.ref.update({
+                    accountStatus: 'revoked', isRevoked: true,
+                    revokedAt: FieldValue.serverTimestamp(),
+                    updatedAt: FieldValue.serverTimestamp()
                 });
-                
-                // Note: Real-time revocation (auth.revokeRefreshTokens) could be added here
-                // but setting status to 'revoked' handles most app logic.
+                try {
+                    await getAuth().revokeRefreshTokens(partnerUid);
+                    logger.info(`[generateInviteToken] Revoked refresh tokens for partner: ${partnerUid}`);
+                } catch (authError) {
+                    logger.warn(`[generateInviteToken] Could not revoke refresh tokens for ${partnerUid}: ${authError.message}`);
+                }
             }
+
+            // Clear partnerUid from config/relationship and deactivate inviteConfig
+            await relationshipRef.set({ partnerUid: null, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+            await inviteConfigRef.set({ isActive: false, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
         }
-        // 1. Generate new token
-        const tokenId = uuidv4();
-        const expiresAt = Timestamp.fromDate(new Date(Date.now() + expiresAtDays * 86400000));
 
-        const inviteUrl = `${baseUrl}/join?t=${tokenId}`;
+        // Revoke all previous ACTIVE tokens for this relationship
+        const activeTokensSnap = await db.collection(COLLECTIONS.INVITE_TOKENS)
+            .where('relationshipId', '==', relationshipId)
+            .where('isRevoked', '==', false)
+            .get();
 
-        // 2. Save token globally for lookup during claim
-        await db.collection('inviteTokens').doc(tokenId).set({
-            token: tokenId,
+        if (!activeTokensSnap.empty) {
+            const tokenBatch = db.batch();
+            activeTokensSnap.forEach(doc => {
+                tokenBatch.update(doc.ref, { 
+                    isRevoked: true,
+                    revokedAt: FieldValue.serverTimestamp(),
+                    revokedBy: uid
+                });
+            });
+            await tokenBatch.commit();
+            logger.info(`[generateInviteToken] Revoked ${activeTokensSnap.size} existing tokens for relationship ${relationshipId}`);
+        }
+
+        await db.collection(COLLECTIONS.INVITE_TOKENS).doc(token).set({
+            token,
             relationshipId,
-            createdBy: request.auth.uid,
-            createdAt: Timestamp.now(),
-            expiresAt,
+            createdBy: uid,
+            createdAt: FieldValue.serverTimestamp(),
+            expiresAt: Timestamp.fromDate(expiresAt),
             isClaimed: false,
-            isRevoked: false,
+            isRevoked: false
         });
 
-        // 3. Update Relationship Config with the new link
-        // configRef is already defined above during auto-revoke check
-        await configRef.set({
-            inviteConfig: {
-                inviteLink: inviteUrl,
-                generatedAt: Timestamp.now().toDate().toISOString(),
-                expiresAt: expiresAt.toDate().toISOString(),
-                isActive: true
-            }
+        const baseUrl = process.env.APP_URL || 'http://localhost:5173';
+        const inviteUrl = `${baseUrl}/join?t=${token}`;
+
+        // Update config/inviteConfig doc
+        await inviteConfigRef.set({
+            token,
+            inviteUrl,
+            generatedAt: FieldValue.serverTimestamp(),
+            expiresAt: Timestamp.fromDate(expiresAt),
+            isActive: true,
+            updatedAt: FieldValue.serverTimestamp()
         }, { merge: true });
 
-        logger.info(`Invite token ${tokenId} generated for relationship ${relationshipId}`);
-
-        return {
-            success: true,
-            tokenId,
-            inviteUrl
+        return { 
+            success: true, 
+            token, 
+            inviteUrl,
+            expiresAt: expiresAt.toISOString()
         };
     } catch (error) {
-        logger.error('Error generating invite token:', error);
-        throw new HttpsError('internal', 'Error al generar el token en la base de datos.');
+        logger.error('generateInviteToken error:', error);
+        throw new HttpsError('internal', error.message);
     }
-});
-
+};

@@ -1,115 +1,42 @@
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
+import { HttpsError } from 'firebase-functions/v2/https';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
-import { COLLECTIONS, CAPSULE_DESTRUCTION_WINDOW_MS } from '../config/constants.js';
+import { COLLECTIONS } from '../config/constants.js';
 
-export const openCapsule = onCall({ region: 'us-central1', cors: true }, async (request) => {
-    if (!request.auth) {
-        throw new HttpsError('unauthenticated', 'Debes iniciar sesión para abrir una cápsula.');
-    }
+export const handler = async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Unauthorized');
 
-    const { relationshipId, role, uid } = request.auth.token;
-    if (!relationshipId) {
-        throw new HttpsError('failed-precondition', 'Usuario sin relación activa.');
-    }
+    const { capsuleId } = request.data || {};
+    const { relationshipId, uid } = request.auth.token;
 
-    const { capsuleId } = request.data;
-    if (!capsuleId) {
-        throw new HttpsError('invalid-argument', 'Se requiere el ID de la cápsula.');
-    }
+    if (!capsuleId) throw new HttpsError('invalid-argument', 'Capsule ID is required.');
 
     const db = getFirestore();
     const capsuleRef = db.collection('relationships').doc(relationshipId).collection(COLLECTIONS.CAPSULES).doc(capsuleId);
 
     try {
-        let capsuleData;
+        const capsuleSnap = await capsuleRef.get();
+        if (!capsuleSnap.exists) throw new HttpsError('not-found', 'Cápsula no encontrada.');
 
-        // 1. Transactional Update
-        await db.runTransaction(async (t) => {
-            const snap = await t.get(capsuleRef);
-            if (!snap.exists) {
-                throw new HttpsError('not-found', 'Cápsula no encontrada.');
-            }
-            capsuleData = snap.data();
+        const data = capsuleSnap.data();
+        if (data.recipientUid !== uid) throw new HttpsError('permission-denied', 'No puedes abrir esta cápsula.');
+        if (data.status === 'unlocked') return { success: true, capsule: data };
 
-            if (!capsuleData.isUnlocked) {
-                throw new HttpsError('permission-denied', 'Esta cápsula aún está bloqueada.');
-            }
-
-            if (capsuleData.status === 'destroyed') {
-                throw new HttpsError('failed-precondition', 'Esta cápsula ya fue destruida.');
-            }
-
-            const updates = {
-                openedAt: FieldValue.serverTimestamp(),
-                status: 'opened'
-            };
-
-            // Behavior: Auto-Destruct
-            if (capsuleData.autoDestroy) {
-                // We mark it as 'pending_destruction' and set a 24h window.
-                updates.status = 'pending_destruction';
-                updates.destroyedAt = Timestamp.fromMillis(Date.now() + CAPSULE_DESTRUCTION_WINDOW_MS);
-            }
-
-            t.update(capsuleRef, updates);
-
-            // 2. Activity Log
-            const logEntry = {
-                userId: uid,
-                relationshipId: relationshipId,
-                action: 'capsule_opened',
-                targetType: 'capsule',
-                targetId: capsuleId,
-                displayText: `Abrió la cápsula: ${capsuleData.title || 'sin título'}`,
-                isReadByAdmin: false,
-                readAt: null,
-                createdAt: FieldValue.serverTimestamp(),
-            };
-            const logRef = db
-                .collection('relationships')
-                .doc(relationshipId)
-                .collection(COLLECTIONS.ACTIVITY_LOG)
-                .doc();
-            t.set(logRef, logEntry);
-        });
-
-        // 3. FCM Notification to Admin (partner opened)
-        if (role !== 'admin') {
-            try {
-                const relSnap = await db.collection('relationships').doc(relationshipId).get();
-                const members = relSnap.data()?.members || [];
-                const adminUid = members.find(m => m !== uid);
-                
-                if (adminUid) {
-                    const { sendToUser } = await import('../services/fcmService.js');
-                    await sendToUser(adminUid, {
-                        title: '📂 Cápsula Abierta',
-                        body: `Tu pareja ha abierto la cápsula: ${capsuleData.title || 'sin título'}.`,
-                        data: {
-                            type: 'capsule_opened',
-                            capsuleId: capsuleId,
-                        }
-                    });
-                }
-            } catch (fcmErr) {
-                logger.warn('FCM notification failed in openCapsule:', fcmErr.message);
-            }
+        // Check if unlock criteria met (if date-based)
+        if (data.unlockTrigger === 'date' && data.unlockDate.toDate() > new Date()) {
+            throw new HttpsError('failed-precondition', 'La cápsula aún está bloqueada.');
         }
 
-        return {
-            success: true,
-            capsule: {
-                ...capsuleData,
-                id: capsuleId,
-                status: capsuleData.autoDestroy ? 'pending_destruction' : 'opened'
-            }
-        };
+        await capsuleRef.update({
+            isUnlocked: true,
+            status: 'unlocked',
+            unlockedAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp()
+        });
 
+        return { success: true };
     } catch (error) {
-        logger.error(`Error in openCapsule [${capsuleId}]:`, error);
-        if (error instanceof HttpsError) throw error;
-        throw new HttpsError('internal', 'Falló la apertura de la cápsula.');
+        logger.error('openCapsule error:', error);
+        throw new HttpsError('internal', error.message);
     }
-});
-
+};

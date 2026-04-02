@@ -1,4 +1,4 @@
-import { onCall } from 'firebase-functions/v2/https';
+import { HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import { COLLECTIONS } from '../config/constants.js';
@@ -7,7 +7,7 @@ import { COLLECTIONS } from '../config/constants.js';
  * getMemories API 
  * Retorna las memorias filtradas y ordenadas centralizando la lógica en el backend.
  */
-export const getMemories = onCall({ region: 'us-central1', cors: true }, async (request) => {
+export const handler = async (request) => {
     if (!request.auth) return { success: false, error: 'Unauthorized' };
 
     const { limit, pageSize, tag, isSpecial, placeId, lastEventDate, includeHidden = false } = request.data || {};
@@ -83,5 +83,5 @@ export const getMemories = onCall({ region: 'us-central1', cors: true }, async (
         logger.error('Error fetching memories:', error);
         return { success: false, error: 'Error interno del servidor.' };
     }
-});
+};
 

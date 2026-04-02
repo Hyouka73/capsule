@@ -98,24 +98,45 @@ export default class SystemConfig {
             displayName: data.partner?.displayName ?? ''
         };
 
-        this.memoryTags = data.memoryTags || [
-            { value: 'viaje', label: 'Viaje ✈️' },
-            { value: 'cita', label: 'Cita 🍷' },
-            { value: 'aniversario', label: 'Aniversario 💝' },
-            { value: 'random', label: 'Random 🤪' },
-            { value: 'logro', label: 'Logro 🎯' },
-            { value: 'hito', label: 'Hito 🌟' },
-            { value: 'familia', label: 'Familia 👨‍👩‍👦' },
-            { value: 'amigos', label: 'Amigos 👯‍♂️' },
-            { value: 'cine', label: 'Cine 🍿' },
-            { value: 'comida', label: 'Comida 🍝' },
-            { value: 'aventura', label: 'Aventura 🌲' },
-            { value: 'musica', label: 'Música 🎵' },
-            { value: 'relax', label: 'Relax 💆‍♂️' },
-            { value: 'deporte', label: 'Deporte 🏃‍♀️' },
-            { value: 'arte', label: 'Arte 🎨' },
-            { value: 'casa', label: 'En Casa 🏠' }
+        // ── Memory Tags ── Immutable ID system
+        // New format: { id: 'tag_viaje', label: 'Viaje', emoji: '✈️' }
+        // Legacy format (auto-migrated): { value: 'viaje', label: 'Viaje ✈️' }
+        const rawTags = data.memoryTags;
+        const defaultTags = [
+            { id: 'tag_viaje',       label: 'Viaje',       emoji: '✈️'    },
+            { id: 'tag_cita',        label: 'Cita',        emoji: '🍷'    },
+            { id: 'tag_romantico',   label: 'Romántico',   emoji: '❤️'    },
+            { id: 'tag_aniversario', label: 'Aniversario', emoji: '💝'    },
+            { id: 'tag_random',      label: 'Random',      emoji: '🤪'    },
+            { id: 'tag_logro',       label: 'Logro',       emoji: '🎯'    },
+            { id: 'tag_hito',        label: 'Hito',        emoji: '🌟'    },
+            { id: 'tag_familia',     label: 'Familia',     emoji: '👨‍👩‍👦'  },
+            { id: 'tag_amigos',      label: 'Amigos',      emoji: '👯‍♂️'  },
+            { id: 'tag_cine',        label: 'Cine',        emoji: '🍿'    },
+            { id: 'tag_comida',      label: 'Comida',      emoji: '🍝'    },
+            { id: 'tag_aventura',    label: 'Aventura',    emoji: '🌲'    },
+            { id: 'tag_musica',      label: 'Música',      emoji: '🎵'    },
+            { id: 'tag_relax',       label: 'Relax',       emoji: '💆‍♂️' },
+            { id: 'tag_deporte',     label: 'Deporte',     emoji: '🏃‍♀️' },
+            { id: 'tag_arte',        label: 'Arte',        emoji: '🎨'    },
+            { id: 'tag_casa',        label: 'En Casa',     emoji: '🏠'    },
         ];
+
+        this.memoryTags = Array.isArray(rawTags) && rawTags.length > 0
+            ? rawTags.filter(t => t && typeof t === 'object').map(tag => {
+                if (tag.id) return { id: tag.id, label: tag.label || '', emoji: tag.emoji || '🏷️' };
+                // Migrate legacy {value, label}
+                if (tag.value) {
+                    const parts = (tag.label || tag.value).split(' ');
+                    return {
+                        id: `tag_${tag.value}`,
+                        label: parts.length > 1 ? parts.slice(0, -1).join(' ') : tag.value,
+                        emoji: parts.length > 1 ? parts[parts.length - 1] : '🏷️',
+                    };
+                }
+                return null;
+            }).filter(Boolean)
+            : defaultTags;
     }
     
     _toDate(val) {
