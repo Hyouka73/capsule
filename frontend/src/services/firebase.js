@@ -42,7 +42,9 @@ if (import.meta.env.VITE_USE_EMULATORS !== 'true') {
 
 // In DEV mode, always connect the emulators when needed.
 if (import.meta.env.DEV) {
-    const host = window.location.hostname;
+    // Normalize localhost to 127.0.0.1 to avoid IPv6 (::1) issues on Windows
+    let host = window.location.hostname;
+    if (host === 'localhost') host = '127.0.0.1';
     
     try {
         connectFunctionsEmulator(functions, host, 5001);

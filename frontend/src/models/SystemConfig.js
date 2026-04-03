@@ -1,214 +1,159 @@
+
 /**
- * SystemConfig Model
+ * SystemConfig — Source of Truth para la configuración global de la relación.
  * 
- * Data class to represent and validate system-wide configurations.
+ * Este modelo consolida la información de múltiples documentos de la subcolección `config`
+ * y la relación principal en un solo objeto inmutable para el frontend.
  */
 export default class SystemConfig {
     constructor(data = {}) {
-        this.features = {
-            memoryMap: true,
-            photoGallery: true,
-            timeCapsules: true,
-            coupons: true,
-            bingoBoard: true,
-            movieTracking: false,
-            onboarding: false,
-            easterEggs: false,
-            games: false,
-            exercise: false,
-            ...data.features
+        // Core features (flags de funcionalidad)
+        this.features = data.features || {
+            capsules: true,
+            multimedia: true,
+            snapshots: true,
+            bingo: true,
+            wrapped: false,
+            teaser: false
         };
 
-        this.visibility = {
-            showAdminNotes: false,
-            ...data.visibility
+        // Visibilidad y privacidad
+        this.visibility = data.visibility || {
+            mapMemories: 'shared',
+            gallery: 'shared'
         };
 
-        this.wrappedConfig = {
-            anniversaryDate: '04-04',
-            anniversaryYear: 2022,
-            nextWrappedDate: '2026-04-04',
-            defaultStatsMode: 'eventDate',
-            ...data.wrappedConfig
+        // Notificaciones y canales
+        this.notifications = data.notifications || {
+            fcmEnabled: true,
+            emailEnabled: true,
+            types: ['memory', 'capsule', 'daily_moment', 'bingo']
         };
 
-        const rawMap = data.mapConfig || data.map || {};
+        // Configuración de Multimedia/Instantáneas
+        this.snapshotConfig = data.snapshotConfig || {
+            frequency: 'daily',
+            maxPerDay: 1,
+            retentionDays: 30
+        };
+
+        this.citaConfig = data.citaConfig || {
+            allowManual: true,
+            maxActive: 3
+        };
+
+        // Invitaciones y Registro
+        this.inviteConfig = data.inviteConfig || {
+            allowInvites: true,
+            maxMembers: 2
+        };
+
+        // Onboarding Meta
+        this.onboarding = data.onboarding || {
+            isCompleted: false,
+            step: 0
+        };
+
+        // Etiquetas de recuerdos personalizadas
+        this.memoryTags = data.memoryTags || [];
+
+        // Configuración de Wrapped (Anual)
+        this.wrappedConfig = data.wrappedConfig || {
+            isEnabled: false,
+            year: new Date().getFullYear()
+        };
+
+        // Details of the map (initially from mapConfig or legacy docs.map)
+        const map = data.mapConfig || {};
         this.mapConfig = {
-            defaultCenter: { lat: 16.7521, lng: -93.1152 },
-            defaultZoom: 12,
-            style: 'romantic-vintage',
-            lastActTimestamp: rawMap.lastActTimestamp || null,
-            pinTiers: (rawMap.pinTiers || [
-                { minVisits: 1, color: "#FFB6C1", scale: 0.8 },
-                { minVisits: 3, color: "#BF7DB1", scale: 1.0 },
-                { minVisits: 5, color: "#F38686", scale: 1.2 },
-                { minVisits: 10, color: "#F3E595", scale: 1.4 },
-                { minVisits: 15, color: "#CCFFF7", scale: 1.6 }
-            ]).slice(0, 5),
-            ...rawMap
+            defaultZoom: map.defaultZoom ?? 12,
+            defaultCenter: {
+                lat: map.defaultCenter?.lat ?? 0,
+                lng: map.defaultCenter?.lng ?? 0
+            },
+            style: map.style || 'pastel',
+            clustering: map.clustering !== false,
+            pinTiers: Array.isArray(map.pinTiers) ? map.pinTiers : [
+                { minVisits: 0, color: "#FFB6C1", scale: 1.0 },
+                { minVisits: 5, color: "#FF69B4", scale: 1.2 },
+                { minVisits: 15, color: "#FF1493", scale: 1.5 }
+            ]
         };
 
-        this.notifications = {
-            partnerFcmEnabled: true,
-            adminActivityLogEnabled: true,
-            ...data.notifications
-        };
-
-        this.snapshotConfig = {
-            timerSeconds: 9,
-            ...data.snapshotConfig
-        };
-
-        const rawUnlockAt = data.teaser?.unlockAt;
-        let unlockAt = 1775260800000; // Default to April 4, 2026 (ms)
-        if (rawUnlockAt) {
-            unlockAt = (rawUnlockAt.toMillis) ? rawUnlockAt.toMillis() : 
-                       (rawUnlockAt.seconds) ? rawUnlockAt.seconds * 1000 :
-                       new Date(rawUnlockAt).getTime();
+        // Teaser / Coming Soon
+        const teaserData = data.teaser || {};
+        
+        // Robust converter for date/timestamp
+        let rDate = teaserData.revealDate || null;
+        if (rDate && typeof rDate === 'object') {
+            if (rDate.toMillis) rDate = rDate.toMillis();
+            else if (rDate.seconds) rDate = rDate.seconds * 1000;
+            else if (rDate._seconds) rDate = rDate._seconds * 1000;
         }
 
+        const parsedDate = (typeof rDate === 'number') ? rDate : (rDate ? new Date(rDate).getTime() : null);
+
         this.teaser = {
-            unlockAt: isNaN(unlockAt) ? 1775260800000 : unlockAt,
-            isEnabled: data.teaser?.isEnabled ?? true
+            isEnabled: teaserData.isEnabled !== false,
+            message: teaserData.message || '',
+            revealDate: (!parsedDate || isNaN(parsedDate)) ? null : parsedDate
         };
 
-        this.inviteConfig = {
-            inviteLink: data.inviteConfig?.inviteLink ?? null,
-            generatedAt: data.inviteConfig?.generatedAt ?? null,
-            expiresAt: data.inviteConfig?.expiresAt ?? null,
-            isActive: data.inviteConfig?.isActive ?? true
-        };
-
-        this.citaConfig = {
-            minPhotosSpontaneous: 5,
-            minPhotosBingoDefault: 3,
-            ...data.citaConfig
-        };
-
-        this.onboarding = {
-            enabled: data.onboarding?.enabled ?? false,
-            modules: {
-                map: data.onboarding?.modules?.map ?? true,
-                bingo: data.onboarding?.modules?.bingo ?? true,
-                capsules: data.onboarding?.modules?.capsules ?? true,
-                coupons: data.onboarding?.modules?.coupons ?? true,
-                snapshots: data.onboarding?.modules?.snapshots ?? true,
-                gallery: data.onboarding?.modules?.gallery ?? true,
-                movies: data.onboarding?.modules?.movies ?? true,
-                games: data.onboarding?.modules?.games ?? true,
+        // Modules (Core business features)
+        const modData = data.modules || {};
+        this.modules = {
+            capsules: { 
+                isEnabled: modData.capsules?.isEnabled ?? true, 
+                onboardingEnabled: modData.capsules?.onboardingEnabled ?? false 
+            },
+            snapshots: { 
+                isEnabled: modData.snapshots?.isEnabled ?? true, 
+                onboardingEnabled: modData.snapshots?.onboardingEnabled ?? false 
+            },
+            bingo: { 
+                isEnabled: modData.bingo?.isEnabled ?? true, 
+                onboardingEnabled: modData.bingo?.onboardingEnabled ?? false 
+            },
+            coupons: { 
+                isEnabled: modData.coupons?.isEnabled ?? true, 
+                onboardingEnabled: modData.coupons?.onboardingEnabled ?? false 
+            },
+            movies: { 
+                isEnabled: modData.movies?.isEnabled ?? false, 
+                onboardingEnabled: modData.movies?.onboardingEnabled ?? false 
             }
         };
 
-        this.modules = {
-            bingo: { isEnabled: data.modules?.bingo?.isEnabled ?? true },
-            capsules: { isEnabled: data.modules?.capsules?.isEnabled ?? true },
-            coupons: { isEnabled: data.modules?.coupons?.isEnabled ?? true },
-            snapshots: { isEnabled: data.modules?.snapshots?.isEnabled ?? true },
-            movies: { isEnabled: data.modules?.movies?.isEnabled ?? true },
-            ...data.modules
+        // Partner details
+        const partnerData = data.partner || {};
+        this.partner = {
+            uid: partnerData.uid || null,
+            displayName: partnerData.displayName || '',
+            photoURL: partnerData.photoURL || '',
+            lastActive: partnerData.lastActive || null
         };
 
-        this.updatedAt = data.updatedAt || null;
-        this.teaserLock = data.teaserLock || null;
+        // Nombres/Apodos personalizados
+        this.names = data.names || {
+            admin: 'Tú',
+            partner: 'Tu Pareja'
+        };
+
+        // Identidad de la relación
         this.adminUid = data.adminUid || null;
         this.partnerUid = data.partnerUid || null;
-
-        this.partner = {
-            welcomeMessage: data.partner?.welcomeMessage ?? '¡Bienvenida a nuestro espacio! 💖',
-            displayName: data.partner?.displayName ?? '' // Legacy
-        };
-
-        this.names = {
-            admin: data.names?.admin || 'Admin',
-            partner: data.names?.partner || 'Pareja',
-            ...data.names
-        };
-
-        // ── Memory Tags ── Immutable ID system
-        // New format: { id: 'tag_viaje', label: 'Viaje', emoji: '✈️' }
-        // Legacy format (auto-migrated): { value: 'viaje', label: 'Viaje ✈️' }
-        let incomingTags = data.memoryTags;
-        if (incomingTags && typeof incomingTags === 'object' && !Array.isArray(incomingTags)) {
-            const { updatedAt, ...indices } = incomingTags;
-            incomingTags = Object.values(indices);
-        }
-
-        const defaultTags = [
-            { id: 'tag_viaje',      label: 'Viaje',      emoji: '✈️'    },
-            { id: 'tag_cita',       label: 'Cita',       emoji: '🍷'    },
-            { id: 'tag_romantico',  label: 'Romántico',  emoji: '❤️'    },
-            { id: 'tag_aniversario',label: 'Aniversario',emoji: '💝'    },
-            { id: 'tag_random',     label: 'Random',     emoji: '🤪'    },
-            { id: 'tag_logro',      label: 'Logro',      emoji: '🎯'    },
-            { id: 'tag_hito',       label: 'Hito',       emoji: '🌟'    },
-            { id: 'tag_familia',    label: 'Familia',    emoji: '👨‍👩‍👦'  },
-            { id: 'tag_amigos',     label: 'Amigos',     emoji: '👯‍♂️'  },
-            { id: 'tag_cine',       label: 'Cine',       emoji: '🍿'    },
-            { id: 'tag_comida',     label: 'Comida',     emoji: '🍝'    },
-            { id: 'tag_aventura',   label: 'Aventura',   emoji: '🌲'    },
-            { id: 'tag_musica',     label: 'Música',     emoji: '🎵'    },
-            { id: 'tag_relax',      label: 'Relax',      emoji: '💆‍♂️' },
-            { id: 'tag_deporte',    label: 'Deporte',    emoji: '🏃‍♀️' },
-            { id: 'tag_arte',       label: 'Arte',       emoji: '🎨'    },
-            { id: 'tag_casa',       label: 'En Casa',    emoji: '🏠'    },
-        ];
-
-        this.memoryTags = (Array.isArray(incomingTags) && incomingTags.length > 0)
-            ? incomingTags
-                .filter(tag => tag && typeof tag === 'object')
-                .map(tag => {
-                    // New format already has id
-                    if (tag.id) {
-                        return {
-                            id: tag.id,
-                            label: tag.label || '',
-                            emoji: tag.emoji || '🏷️'
-                        };
-                    }
-                    // Migration from legacy {value, label} format
-                    // e.g. { value: 'viaje', label: 'Viaje ✈️' } → { id: 'tag_viaje', label: 'Viaje', emoji: '✈️' }
-                    if (tag.value) {
-                        const parts = (tag.label || tag.value).split(' ');
-                        const emoji = parts.length > 1 ? parts[parts.length - 1] : '🏷️';
-                        const text = parts.length > 1 ? parts.slice(0, -1).join(' ') : tag.value;
-                        return {
-                            id: `tag_${tag.value}`,
-                            label: text,
-                            emoji: emoji,
-                        };
-                    }
-                    return null;
-                })
-                .filter(Boolean)
-            : defaultTags;
+        this.members = Array.isArray(data.members) ? data.members : [];
+        
+        // Metadata
+        this.updatedAt = data.updatedAt || 0;
     }
 
     /**
-     * Converts to plain object for Firestore persistence
+     * Reconstruye el modelo a partir de los documentos de Firestore traídos por getAppConfig.
+     * 
+     * @param {Object} res - Respuesta balanceada del API getAppConfig
+     * @returns {SystemConfig}
      */
-    toFirestore() {
-        return {
-            features: this.features,
-            visibility: this.visibility,
-            wrapped: this.wrappedConfig,
-            map: this.mapConfig,
-            notifications: this.notifications,
-            multimedia: {
-                snapshotConfig: this.snapshotConfig,
-                citaConfig: this.citaConfig
-            },
-            teaser: this.teaser,
-            inviteConfig: this.inviteConfig,
-            onboarding: this.onboarding,
-            modules: this.modules,
-            partner: this.partner,
-            partnerUid: this.partnerUid,
-            names: this.names,
-            memoryTags: this.memoryTags,
-            updatedAt: Date.now()
-        };
-    }
-
     static fromFirestore(res) {
         if (!res || !res.config) return new SystemConfig();
 
@@ -227,6 +172,17 @@ export default class SystemConfig {
             });
         const maxUpdatedAt = allUpdatedAts.length ? Math.max(...allUpdatedAts) : null;
 
+        // Extraer identidad y miembros
+        const relDoc = docs.relationship || {};
+        const members = relDoc.members || [];
+        const adminUid = relDoc.adminUid || (members.length > 0 ? members[0] : null);
+        
+        // El partner es el miembro que NO es el admin
+        let partnerUid = relDoc.partnerUid;
+        if (!partnerUid && members.length > 1) {
+            partnerUid = members.find(m => m !== adminUid);
+        }
+
         return new SystemConfig({
             features:      docs.features,
             visibility:    docs.visibility,
@@ -243,9 +199,10 @@ export default class SystemConfig {
             modules:       docs.modules,
             partner:       docs.partner,
             names:         docs.names,
-            adminUid:      docs.relationship?.adminUid,
-            partnerUid:    docs.relationship?.partnerUid,
-            updatedAt:     maxUpdatedAt
+            adminUid,
+            partnerUid,
+            members,
+            updatedAt:     res.serverUpdatedAt || maxUpdatedAt
         });
     }
 
@@ -253,6 +210,32 @@ export default class SystemConfig {
      * Helper to check if a feature is on
      */
     isFeatureOn(name) {
-        return this.features[name] === true;
+        return this.features && this.features[name] === true;
+    }
+
+    /**
+     * Serializes the model into a structure expected by the updateAppConfig Cloud Function.
+     * Maps local model properties back to their corresponding document names in Firestore.
+     */
+    toFirestore() {
+        return {
+            features: this.features,
+            visibility: this.visibility,
+            notifications: this.notifications,
+            // Multimedia document combines these two
+            multimedia: {
+                snapshotConfig: this.snapshotConfig,
+                citaConfig: this.citaConfig
+            },
+            inviteConfig: this.inviteConfig,
+            onboarding: this.onboarding,
+            memoryTags: this.memoryTags, // Corrected: Backend expects raw array
+            wrapped: this.wrappedConfig,
+            mapConfig: this.mapConfig, // Corrected: Match backend 'mapConfig' trigger
+            teaser: this.teaser, // { isEnabled, message, revealDate }
+            modules: this.modules,
+            partner: this.partner,
+            names: this.names
+        };
     }
 }
