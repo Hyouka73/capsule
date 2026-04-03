@@ -195,12 +195,19 @@
 }
 
 .domainPill {
-    background-color: var(--bg-main); /* #f7fafc -> bg-main */
-    color: var(--text-muted); /* #a0aec0 -> text-muted */
-    font-size: 0.75rem;
-    padding: 0.25rem 0.7rem;
-    border-radius: 8px;
     font-family: var(--font-body);
+}
+
+.cardAutodestroy {
+    box-shadow: 0 0 15px rgba(255, 117, 143, 0.4) !important;
+    animation: glowPulse 3s infinite ease-in-out;
+    border: 2.5px solid var(--pastel-rose) !important;
+}
+
+@keyframes glowPulse {
+    0% { box-shadow: 0 0 5px rgba(255, 117, 143, 0.2); }
+    50% { box-shadow: 0 0 25px rgba(255, 117, 143, 0.6); }
+    100% { box-shadow: 0 0 5px rgba(255, 117, 143, 0.2); }
 }
 
 /* --- Actions --- */
@@ -395,6 +402,73 @@
 
 .linkIcon {
     font-size: 1.25rem;
+}
+
+.linkInfo {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+}
+
+.fileName {
+    font-size: 0.95rem;
+    word-break: break-all;
+}
+
+.fileSize {
+    font-size: 0.7rem;
+    opacity: 0.6;
+    font-weight: 400;
+}
+
+/* --- Media Gallery --- */
+.mediaGallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 1rem;
+    width: 100%;
+    margin-bottom: 2rem;
+}
+
+.mediaItem {
+    position: relative;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    aspect-ratio: 1;
+    background: var(--bg-input);
+    border: 3px solid var(--clay-bg-white);
+    box-shadow: var(--clay-shadow-sm);
+    transition: transform 0.3s ease;
+}
+
+.mediaItem:hover {
+    transform: scale(1.03);
+}
+
+.mediaPreview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.downloadOverlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    text-decoration: none;
+}
+
+.mediaItem:hover .downloadOverlay {
+    opacity: 1;
 }
 
 /* --- Destruct Modal --- */

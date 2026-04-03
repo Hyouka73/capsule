@@ -3,37 +3,60 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from './UserCapsules.module.css';
 import { CapsuleIcons } from '../../icons/CapsuleIcons';
-import { getCapsules, openCapsule, deleteCapsule } from '../../apiClient';
+import { getCapsules, openCapsule } from '../../apiClient';
+import { db } from '../../services/firebase';
+import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
+import { useAuth } from '../../hooks/useAuth';
+import { useOfflineQueue } from '../../hooks/useOfflineQueue';
 import Button from '../../components/ui/Button/Button';
 
 /**
  * Normaliza los campos raw de Firestore a los campos derivados que espera la UI.
  */
-function normalizeCapsule(raw) {
-    const now = Date.now();
-    const opensAtRaw = raw.unlockDate || raw.opensAt;
-    const opensAt = opensAtRaw ? new Date(opensAtRaw).getTime() : null;
+/**
+ * Normaliza los campos raw de Firestore a los campos derivados que espera la UI.
+ */
+function normalizeCapsule(raw, now = Date.now()) {
+    const opensAtRaw = raw.unlockDate || raw.opensAt || raw.unlockAt;
+    const opensAt = opensAtRaw 
+        ? (opensAtRaw.toDate ? opensAtRaw.toDate().getTime() : new Date(opensAtRaw).getTime())
+        : null;
 
     let status = raw.status || 'locked';
     
-    // Fallback logic if status is missing or needs derivation
-    if (!raw.status) {
-        if (raw.isUnlocked) {
-            status = 'unlocked';
-        } else if (opensAt && opensAt > now) {
-            status = 'locked';
-        }
+    // Si ya expiró el tiempo, forzar estado unlocked si no es manual
+    if (status === 'locked' && !raw.isUnlocked && opensAt && opensAt <= now && raw.unlockTrigger === 'date') {
+        status = 'unlocked';
+    } else if (!raw.status) {
+        if (raw.isUnlocked) status = 'unlocked';
+        else if (opensAt && opensAt > now) status = 'locked';
     }
 
-    const opensInDays = opensAt ? Math.ceil((opensAt - now) / 86400000) : null;
+    const opensInMs = opensAt ? opensAt - now : null;
+    
+    let unlockPrompt = '';
+    if (opensInMs && opensInMs > 0) {
+        if (opensInMs < 86400000) {
+            // MENOS DE 24 HORAS: Mostrar horas y minutos
+            const hours = Math.floor(opensInMs / 3600000);
+            const minutes = Math.floor((opensInMs % 3600000) / 60000);
+            unlockPrompt = `Faltan ${hours}h ${minutes}m`;
+        } else {
+            // MÁS DE 24 HORAS: Mostrar días redondeados hacia arriba
+            const daysRemaining = Math.ceil(opensInMs / 86400000);
+            unlockPrompt = `Faltan ${daysRemaining} ${daysRemaining === 1 ? 'día' : 'días'}`;
+        }
+    }
 
     return {
         ...raw,
         status,
-        autoDestroy: !!(raw.autoDestroy || raw.autoDestruct),
+        autoDestroy: !!(raw.autoDestroy),
         type: raw.type || 'standard',
-        opensInDays,
-        destroyedAt: raw.destroyedAt ? new Date(raw.destroyedAt).getTime() : null,
+        unlockPrompt,
+        destroyedAt: raw.destroyedAt 
+            ? (raw.destroyedAt.toDate ? raw.destroyedAt.toDate().getTime() : new Date(raw.destroyedAt).getTime())
+            : null,
     };
 }
 
@@ -41,37 +64,52 @@ function normalizeCapsule(raw) {
  * UserCapsules — Vista de Cápsulas del Tiempo (Buzón)
  * Rediseñado con tokens y lógica de estados (locked, unlocked, destructible).
  */
-export default function UserCapsules() {
+export default function UserCapsules({ onModalStateChange }) {
+    const { relationshipId } = useAuth();
+    const { queueDeleteCapsule } = useOfflineQueue();
     const [capsules, setCapsules] = useState([]);
+    const [locallyDeletedIds, setLocallyDeletedIds] = useState(new Set());
     const [activeTab, setActiveTab] = useState('unopened'); // 'unopened' | 'opened'
     const [isLoading, setIsLoading] = useState(true);
     const [selectedCapsule, setSelectedCapsule] = useState(null);
     const [showDestruct, setShowDestruct] = useState(false);
+    const [tick, setTick] = useState(Date.now()); // Para forzar re-render de timers
     const isMounted = useRef(true);
-    const hasOpenedRef = useRef(new Set()); 
 
-    const fetchCapsules = useCallback(async () => {
-        try {
-            const res = await getCapsules({});
-            if (!isMounted.current) return;
-            const normalized = (res.docs || []).map(normalizeCapsule);
-            setCapsules(normalized.filter(c => c.status !== 'destroyed'));
-        } catch {
-            // Silently fail in prod
-        } finally {
-            if (isMounted.current) setIsLoading(false);
+    // Notificar al padre si hay un modal abierto para ocultar el nav
+    useEffect(() => {
+        if (onModalStateChange) {
+            onModalStateChange(!!selectedCapsule || showDestruct);
         }
-    }, []);
+    }, [selectedCapsule, showDestruct, onModalStateChange]);
 
     useEffect(() => {
-        return () => {
-            isMounted.current = false;
-        };
-    }, []);
+        if (!relationshipId) return;
 
+        setIsLoading(true);
+        const capsRef = collection(db, 'relationships', relationshipId, 'capsules');
+        const q = query(capsRef, orderBy('createdAt', 'desc'));
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const caps = snapshot.docs.map(doc => normalizeCapsule({ id: doc.id, ...doc.data() }, Date.now()));
+            setCapsules(caps.filter(c => c.status !== 'destroyed'));
+            setIsLoading(false);
+        }, (err) => {
+            console.error('[UserCapsules] Snapshot error:', err);
+            setIsLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, [relationshipId]);
+
+    // Intervalo de 60 segundos para refrescar contadores locales
     useEffect(() => {
-        fetchCapsules();
-    }, [fetchCapsules]);
+        const interval = setInterval(() => {
+            setTick(Date.now());
+            setCapsules(prev => prev.map(c => normalizeCapsule(c, Date.now())));
+        }, 60000);
+        return () => clearInterval(interval);
+    }, []);
 
     const handleDownloadFiles = (files) => {
         if (!files || files.length === 0) return;
@@ -87,7 +125,7 @@ export default function UserCapsules() {
     };
 
     const handleOpenCapsule = async (capsule) => {
-        // Si ya está abierta o en espera de destrucción, solo mostrar
+        // Solo omitir la llamada si YA se registró como abierta o en proceso de destrucción
         if (capsule.status === 'opened' || capsule.status === 'pending_destruction') {
             setSelectedCapsule(capsule);
             return;
@@ -97,7 +135,9 @@ export default function UserCapsules() {
             const res = await openCapsule({ capsuleId: capsule.id });
             if (!isMounted.current) return;
             if (res.success) {
-                const updatedCapsule = normalizeCapsule(res.capsule);
+                // Sincronizar el estado local inmediatamente
+                const updatedCapsule = normalizeCapsule(res.capsule, Date.now());
+                setCapsules(prev => prev.map(c => c.id === updatedCapsule.id ? updatedCapsule : c));
                 setSelectedCapsule(updatedCapsule);
             }
         } catch {
@@ -108,25 +148,38 @@ export default function UserCapsules() {
     const handleFinalClose = async () => {
         setSelectedCapsule(null);
         setShowDestruct(false);
-        if (isMounted.current) fetchCapsules();
     };
 
-    const handleDestroy = async () => {
-        if (!selectedCapsule) return;
-        try {
-            await deleteCapsule({ capsuleId: selectedCapsule.id });
-        } catch (err) {
-            // Silently fail in prod
-        } finally {
-            if (isMounted.current) handleFinalClose();
-        }
+    const handleDestroy = (capsuleIdOverride = null) => {
+        const id = capsuleIdOverride || selectedCapsule?.id;
+        if (!id) return;
+
+        // 1. Borrado OPTIMISTA: Ocultar inmediatamente en la UI
+        setLocallyDeletedIds(prev => new Set(prev).add(id));
+
+        // 2. Encolar borrado real en segundo plano
+        queueDeleteCapsule(id).catch(err => {
+            console.error('[UserCapsules] Error encolando borrado:', err);
+        });
+
+        // 3. Cerrar modales inmediatamente
+        handleFinalClose();
     };
 
     const handleToggleModal = (capsule) => {
         if (!capsule) {
-            // Case: Closing from the content modal
-            if (selectedCapsule?.autoDestroy && selectedCapsule.status !== 'pending_destruction') {
-                setShowDestruct(true);
+            // Caso: Cerrando el modal después de ver el contenido
+            const wasAutoDestroy = selectedCapsule?.autoDestroy;
+            const hasFiles = selectedCapsule?.files?.length > 0;
+
+            if (wasAutoDestroy) {
+                if (hasFiles) {
+                    // Si tiene archivos, dar 30s para descargar
+                    setShowDestruct(true);
+                } else {
+                    // Si NO tiene archivos, borrar de inmediato y cerrar modal sin esperar
+                    handleDestroy(selectedCapsule.id);
+                }
             } else {
                 handleFinalClose();
             }
@@ -136,8 +189,18 @@ export default function UserCapsules() {
     };
 
     const filteredCapsules = capsules.filter(c => {
-        if (activeTab === 'unopened') return c.status === 'locked' || c.status === 'unlocked' || c.status === 'pending_destruction';
-        if (activeTab === 'opened') return c.status === 'opened';
+        // Filtro optimista: No mostrar si está marcado para borrar localmente
+        if (locallyDeletedIds.has(c.id)) return false;
+
+        // Pestaña "Regalos" (Sin abrir / Pendientes)
+        if (activeTab === 'unopened') {
+            // Incluimos explícitamente las bloqueadas (programadas) para que el partner vea el cronómetro
+            return c.status === 'locked' || c.status === 'unlocked' || c.status === 'pending_destruction';
+        }
+        // Pestaña "Abiertas"
+        if (activeTab === 'opened') {
+            return c.status === 'opened';
+        }
         return false;
     });
 
@@ -213,11 +276,47 @@ export default function UserCapsules() {
 }
 
 function CapsuleCard({ capsule, onOpen }) {
-    const { status, type, teaserMessage, title, opensInDays, destroysInHours, domain } = capsule;
+    const { status, type, teaserMessage, title, opensInDays, unlockPrompt, domain } = capsule;
+    const [isGlowing, setIsGlowing] = useState(false);
 
     const isLocked = status === 'locked';
     const isDestructing = status === 'pending_destruction';
     const isUnlocked = status === 'unlocked' || status === 'opened';
+
+    // Lógica de resplandor ALEATORIO
+    useEffect(() => {
+        if (!capsule.autoDestroy) return;
+        
+        let timeoutId;
+        let isActive = true;
+
+        const triggerGlow = () => {
+            if (!isActive) return;
+            
+            // Tiempo que permanece ENCENDIDO (1.5s a 4s)
+            const glowDuration = Math.random() * 2500 + 1500;
+            // Tiempo que permanece APAGADO (2s a 6s)
+            const darkDuration = Math.random() * 4000 + 2000;
+
+            setIsGlowing(true);
+            
+            timeoutId = setTimeout(() => {
+                if (!isActive) return;
+                setIsGlowing(false);
+                
+                timeoutId = setTimeout(triggerGlow, darkDuration);
+            }, glowDuration);
+        };
+
+        // Iniciar ciclo con un pequeño retraso inicial random para que no todas brillen a la vez
+        const initialDelay = Math.random() * 3000;
+        timeoutId = setTimeout(triggerGlow, initialDelay);
+
+        return () => {
+            isActive = false;
+            clearTimeout(timeoutId);
+        };
+    }, [capsule.autoDestroy]);
 
     // Icono dinámico desde el módulo externo
     const Icon = CapsuleIcons[type] || CapsuleIcons['message'];
@@ -232,15 +331,18 @@ function CapsuleCard({ capsule, onOpen }) {
         <motion.div
             whileHover={!isLocked ? { scale: 1.02 } : {}}
             whileTap={!isLocked ? { scale: 0.98 } : {}}
-            className={`${styles.card} ${getCardClass()}`}
+            className={`${styles.card} ${getCardClass()} ${isGlowing ? styles.cardAutodestroy : ''}`}
             onClick={() => {
                 if (!isLocked) onOpen();
             }}
         >
             {/* Header / Badge */}
             <div className={styles.cardHeader}>
-                {isLocked && (
-                    <span className={styles.badgeLocked}>⏳ Se abre en {opensInDays} días</span>
+                {isLocked && unlockPrompt && (
+                    <span className={styles.badgeLocked}>⏳ {unlockPrompt}</span>
+                )}
+                {isLocked && !unlockPrompt && (
+                    <span className={styles.badgeLocked}>🔐 Aún no es el momento...</span>
                 )}
                 {isDestructing && (
                     <span className={styles.badgeDestructible}>💥 ¡Destrucción en progreso!</span>
@@ -340,6 +442,34 @@ function CapsuleModal({ capsule, onClose }) {
 
                     {files && files.length > 0 && (
                         <motion.div style={{ width: '100%' }} variants={itemVariants}>
+                            <p className={styles.sectionTitle}>Contenido Multimedia</p>
+                            
+                            {/* Render visual media directly */}
+                            <div className={styles.mediaGallery}>
+                                {files.map((file, idx) => {
+                                    const mime = file.mimeType || file.fileName || '';
+                                    const isImage = mime.includes('image') || /\.(jpg|jpeg|png|webp|gif)$/i.test(mime);
+                                    const isVideo = mime.includes('video') || /\.(mp4|mov|webm)$/i.test(mime);
+                                    
+                                    if (isImage) {
+                                        return (
+                                            <div key={idx} className={styles.mediaItem}>
+                                                <img src={file.url} alt={file.fileName} className={styles.mediaPreview} />
+                                                <a href={file.url} target="_blank" rel="noreferrer" className={styles.downloadOverlay}>💾</a>
+                                            </div>
+                                        );
+                                    }
+                                    if (isVideo) {
+                                        return (
+                                            <div key={idx} className={styles.mediaItem}>
+                                                <video src={file.url} controls className={styles.mediaPreview} />
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })}
+                            </div>
+
                             <p className={styles.sectionTitle}>Archivos adjuntos</p>
                             <div className={styles.contentList}>
                                 {files.map((file, idx) => (
@@ -351,7 +481,10 @@ function CapsuleModal({ capsule, onClose }) {
                                         className={styles.contentLink}
                                     >
                                         <span className={styles.linkIcon}>📎</span>
-                                        {file.fileName || file.name || 'Descargar archivo'}
+                                        <div className={styles.linkInfo}>
+                                            <span className={styles.fileName}>{file.fileName || file.name || 'Descargar archivo'}</span>
+                                            {file.size && <span className={styles.fileSize}>{(file.size / 1024).toFixed(1)} KB</span>}
+                                        </div>
                                     </a>
                                 ))}
                             </div>
@@ -397,13 +530,19 @@ function CapsuleModal({ capsule, onClose }) {
  */
 function DestructModal({ files, onDownload, onSkip, onTimeUp }) {
     const [seconds, setSeconds] = useState(30);
+    const [glow, setGlow] = useState(false);
     const timerRef = useRef(null);
 
     useEffect(() => {
+        const interval = setInterval(() => {
+            setGlow(prev => !prev);
+        }, 1500);
+
         timerRef.current = setInterval(() => {
             setSeconds(prev => {
                 if (prev <= 1) {
                     clearInterval(timerRef.current);
+                    clearInterval(interval);
                     onTimeUp();
                     return 0;
                 }
@@ -413,6 +552,7 @@ function DestructModal({ files, onDownload, onSkip, onTimeUp }) {
 
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
+            clearInterval(interval);
         };
     }, [onTimeUp]);
 

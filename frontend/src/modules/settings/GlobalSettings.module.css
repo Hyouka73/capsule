@@ -43,14 +43,14 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-radius: 1.25rem;
-    border: 1px solid rgba(255, 173, 199, 0.2);
+    border: 1px solid var(--accent-soft);
     overflow-x: auto;
     scrollbar-width: none;
     position: sticky;
     top: 1rem;
     z-index: 100;
     margin-bottom: 1rem;
-    box-shadow: 0 4px 15px rgba(255, 173, 199, 0.1);
+    box-shadow: 0 4px 15px var(--bg-overlay-soft);
 }
 .tabsNav::-webkit-scrollbar { display: none; }
 
@@ -69,19 +69,19 @@
 }
 
 .tabBtn:hover {
-    background: rgba(255, 255, 255, 0.8);
+    background: var(--bg-card);
 }
 
 .tabLabel {
     font-size: 0.95rem;
     font-weight: 600;
-    color: #8b6e6e;
+    color: var(--pastel-text-muted);
     transition: color 0.2s ease;
     font-family: var(--font-display, sans-serif);
 }
 
 .tabActive .tabLabel {
-    color: #ff6b9d;
+    color: var(--pastel-rose-dark);
 }
 
 .tabUnderline {
@@ -90,9 +90,9 @@
     left: 20%;
     right: 20%;
     height: 3px;
-    background: #ff6b9d;
+    background: var(--pastel-rose-dark);
     border-radius: 9999px;
-    box-shadow: 0 2px 4px rgba(255, 107, 157, 0.3);
+    box-shadow: 0 2px 4px var(--bg-overlay-soft);
 }
 
 .grid {
@@ -157,35 +157,36 @@
     margin: 2rem 0;
 }
 
-/* Toggles */
+/* Toggles & Modules List */
 .togglesList {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1.25rem;
 }
 
 .toggleRow {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
     align-items: center;
-    gap: 1.5rem;
-    padding: 1rem;
+    gap: 2rem;
+    padding: 1.25rem 1.5rem;
     background: var(--clay-bg-white);
     border-radius: var(--radius-lg);
     border: var(--border-glass);
     box-shadow: var(--clay-shadow-sm);
-    transition: box-shadow 0.2s ease, transform 0.15s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .toggleRow:hover {
     box-shadow: var(--clay-shadow-md);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    border-color: var(--pastel-rose);
 }
 
 .toggleInfo {
     display: flex;
     flex-direction: column;
-    flex: 1;
+    gap: 0.25rem;
 }
 
 .toggleTitleWrapper {
@@ -195,28 +196,47 @@
 }
 
 .toggleLabel {
-    font-weight: 700;
-    font-size: 1.05rem;
+    font-weight: 800;
+    font-size: 1.1rem;
     color: var(--text-primary);
+    font-family: var(--font-display);
 }
 
 .moduleDisabledBadge {
-    background: #fff0f3;
-    color: #ff9fb4;
+    background: var(--clay-bg-rose);
+    color: var(--pastel-rose-dark);
     font-size: 0.6rem;
-    font-weight: 700;
-    padding: 0.15rem 0.5rem;
-    border-radius: 9999px;
-    border: 1px solid #ffdae3;
+    font-weight: 800;
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--pastel-rose-light);
     text-transform: uppercase;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.5px;
 }
 
 .toggleDesc {
     font-size: 0.85rem;
     color: var(--text-muted);
-    line-height: 1.5;
-    margin-top: 0.3rem;
+    line-height: 1.4;
+    opacity: 0.9;
+}
+
+.onboardingToggleArea {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    background: var(--clay-bg-rose);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--pastel-rose-light);
+}
+
+.onboardingLabel {
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--pastel-rose-dark);
+    letter-spacing: 0.5px;
 }
 
 
@@ -250,7 +270,7 @@
     font-size: 0.75rem;
     color: var(--text-muted);
     font-weight: 600;
-    background: white;
+    background: var(--bg-card);
     padding: 2px 8px;
     border-radius: var(--radius-pill);
     border: 1px solid var(--pastel-rose-light);
@@ -339,9 +359,9 @@
 .dot {
     width: 8px;
     height: 8px;
-    background: var(--color-success, #4ade80);
+    background: var(--color-success);
     border-radius: 50%;
-    box-shadow: 0 0 8px var(--color-success, #4ade80);
+    box-shadow: 0 0 8px var(--color-success);
     animation: pulse 2s infinite;
 }
 
@@ -445,7 +465,7 @@
     grid-template-columns: 80px 140px 1fr 40px;
     gap: 1rem;
     align-items: center;
-    background: white;
+    background: var(--bg-card);
     padding: 0.75rem 1rem;
     border-radius: var(--radius-lg);
     border: 1px solid var(--pastel-mist);
@@ -520,8 +540,8 @@
 }
 
 .tierRemoveBtn {
-    background: #FFEBEE;
-    color: #FF5252;
+    background: var(--clay-bg-rose);
+    color: var(--color-error);
     border: none;
     width: 32px;
     height: 32px;
@@ -535,7 +555,7 @@
 }
 
 .tierRemoveBtn:hover {
-    background: #FF5252;
+    background: var(--color-error);
     color: white;
     transform: rotate(90deg);
 }
@@ -551,7 +571,7 @@
 .addTierBtn:hover {
     border-color: var(--pastel-rose) !important;
     color: var(--pastel-rose) !important;
-    background: white !important;
+    background: var(--bg-card) !important;
 }
 
 @media (max-width: 800px) {
@@ -590,7 +610,7 @@
     display: flex;
     gap: 0.5rem;
     align-items: center;
-    background: white;
+    background: var(--bg-card);
     padding: 0.5rem;
     border-radius: var(--radius-lg);
     border: 1px solid var(--pastel-mist);
@@ -617,8 +637,8 @@
 }
 
 .tagRemoveBtn {
-    background: #FFEBEE;
-    color: #FF5252;
+    background: var(--clay-bg-rose);
+    color: var(--color-error);
     border: none;
     width: 32px;
     height: 32px;
@@ -632,7 +652,7 @@
 }
 
 .tagRemoveBtn:hover {
-    background: #FF5252;
+    background: var(--color-error);
     color: white;
     transform: rotate(90deg);
 }
@@ -647,7 +667,7 @@
 .addTagBtn:hover {
     border-color: var(--pastel-rose) !important;
     color: var(--pastel-rose) !important;
-    background: white !important;
+    background: var(--bg-card) !important;
 }
 
 .tagIdBadge {
@@ -655,8 +675,8 @@
     font-family: monospace;
     font-weight: 700;
     color: var(--text-muted);
-    background: var(--clay-bg-white, #f9f5f7);
-    border: 1px solid var(--pastel-mist, #f0eafa);
+    background: var(--clay-bg-white);
+    border: 1px solid var(--pastel-mist);
     border-radius: var(--radius-pill, 9999px);
     padding: 2px 8px;
     white-space: nowrap;

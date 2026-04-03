@@ -63,6 +63,7 @@ export default function UserDashboard() {
     const [viewerSelection, setViewerSelection] = useState(null);
     const [isPendingListOpen, setIsPendingListOpen] = useState(false);
     const [isGalleryDetailOpen, setIsGalleryDetailOpen] = useState(false);
+    const [isCapsuleModalOpen, setIsCapsuleModalOpen] = useState(false);
 
     // ── INTER-CITATION NAVIGATION (MAP VIEW) ──
     const navigateCitation = async (direction) => {
@@ -110,7 +111,7 @@ export default function UserDashboard() {
         }
     };
 
-    const hasAnyOverlayOpen = !!citaContext || isBingoModalOpen || isCouponsModalOpen || isSnapshotOpen || isCameraOpen || isHistoryOpen || isPendingListOpen || !!selectedPendingDate || !!viewerSelection || bingoQueue.length > 0 || !!celebrationEvent || isGalleryDetailOpen || isPlaceSelected;
+    const hasAnyOverlayOpen = !!citaContext || isBingoModalOpen || isCouponsModalOpen || isSnapshotOpen || isCameraOpen || isHistoryOpen || isPendingListOpen || !!selectedPendingDate || !!viewerSelection || bingoQueue.length > 0 || !!celebrationEvent || isGalleryDetailOpen || isPlaceSelected || isCapsuleModalOpen;
     const shouldHideNav = hasAnyOverlayOpen;
     const shouldShowMap = activeTab === 'lugares'; 
 
@@ -187,7 +188,7 @@ export default function UserDashboard() {
     const renderContent = () => {
         const TAB_MAP = {
             galeria: <GalleryView onOverlayStateChange={setIsGalleryDetailOpen} />,
-            sorpresas: <UserCapsules />,
+            sorpresas: <UserCapsules onModalStateChange={setIsCapsuleModalOpen} />,
             caprichos: <UserCoupons onModalStateChange={setIsCouponsModalOpen} />,
             bingo: <UserBingo setActiveTab={setActiveTab} setBingoContextToMap={setBingoContextToMap} setIsModalOpen={setIsBingoModalOpen} />
         };

@@ -35,7 +35,7 @@ const itemVariants = {
 };
 
 export default function GlobalSettings() {
-    const { refreshConfig } = useAppConfig();
+    const { config: globalConfig, isConfigLoaded: isGlobalLoaded, refreshConfig } = useAppConfig();
     const [config, setConfig] = useState(new SystemConfig());
     const [isSaving, setIsSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -44,62 +44,38 @@ export default function GlobalSettings() {
     const [showRevokeConfirm, setShowRevokeConfirm] = useState(false);
     const [tempTeaserDate, setTempTeaserDate] = useState('');
 
-
+    // SYNC: When global config from context changes (e.g. after a save + refreshConfig), 
+    // update our local 'draft' config and the temp date picker.
     useEffect(() => {
-        async function load() {
-            try {
-                const data = await getGlobalSettings();
-                if (data) {
-                    const loadedConfig = SystemConfig.fromFirestore(data);
-                    setConfig(loadedConfig);
-                    // Sync local date string
-                    if (loadedConfig.teaser?.unlockAt) {
-                        const d = new Date(loadedConfig.teaser.unlockAt);
-                        const iso = d.toLocaleString('sv').replace(' ', 'T').slice(0, 16);
-                        setTempTeaserDate(iso);
-                    }
-                }
-            } catch (err) {
-                toast.error('Error', 'No se pudo cargar la configuración.');
-            } finally {
-                setIsLoading(false);
+        if (isGlobalLoaded && globalConfig) {
+            setConfig(new SystemConfig(globalConfig));
+            if (globalConfig.teaser?.revealDate) {
+                const d = new Date(globalConfig.teaser.revealDate);
+                const iso = d.toLocaleString('sv').replace(' ', 'T').slice(0, 16);
+                setTempTeaserDate(iso);
             }
+            setIsLoading(false);
         }
-        load();
-    }, []);
+    }, [globalConfig, isGlobalLoaded]);
 
     const handleUpdate = (path, value) => {
-        const parts = path.split('.');
         setConfig(prev => {
-            const newConfig = new SystemConfig({
-                features: { ...prev.features },
-                visibility: { ...prev.visibility },
-                wrappedConfig: { ...prev.wrappedConfig },
-                mapConfig: { ...prev.mapConfig },
-                notifications: { ...prev.notifications },
-                snapshotConfig: { ...prev.snapshotConfig },
-                partner: { ...prev.partner },
-                memoryTags: [...prev.memoryTags],
-                teaser: { ...prev.teaser },
-                inviteConfig: { ...prev.inviteConfig },
-                citaConfig: { ...prev.citaConfig },
-                onboarding: { 
-                    ...prev.onboarding,
-                    modules: { ...prev.onboarding?.modules }
-                },
-                modules: { ...prev.modules }
-            });
-            
-            if (parts.length === 1) {
-                newConfig[parts[0]] = value;
-            } else if (parts.length === 2) {
-                newConfig[parts[0]][parts[1]] = value;
-            } else if (parts.length === 3) {
-                // Handle nested objects like mapConfig.defaultCenter.lat
-                newConfig[parts[0]][parts[1]][parts[2]] = value;
-            } else if (parts.length === 4) {
-                // Handle modules.bingo.isEnabled
-                newConfig[parts[0]][parts[1]][parts[2]][parts[3]] = value;
+            // Create a deep copy using the model's structure
+            const newConfig = new SystemConfig(prev);
+            const parts = path.split('.');
+            let current = newConfig;
+
+            for (let i = 0; i < parts.length; i++) {
+                const part = parts[i];
+                if (i === parts.length - 1) {
+                    current[part] = value;
+                } else {
+                    // Ensure the intermediate object exists
+                    if (!current[part]) current[part] = {};
+                    // Make a shallow copy of the intermediate level for immutability
+                    current[part] = { ...current[part] };
+                    current = current[part];
+                }
             }
             return newConfig;
         });
@@ -112,21 +88,38 @@ export default function GlobalSettings() {
             let payload = {};
             
             // Only send the configuration chunks that belong to the active tab
+            // The toFirestore() method returns keys matching Firestore document names.
             switch(activeTab) {
                 case 'modules':
-                     payload = { modules: fullData.modules, features: fullData.features, onboarding: fullData.onboarding };
+                     payload = { 
+                         modules: fullData.modules, 
+                         features: fullData.features, 
+                         onboarding: fullData.onboarding 
+                     };
                      break;
                 case 'services':
-                     payload = { mapConfig: fullData.mapConfig, notifications: fullData.notifications };
+                     payload = { 
+                         mapConfig: fullData.mapConfig, 
+                         notifications: fullData.notifications 
+                     };
                      break;
                 case 'custom':
-                     payload = { teaser: fullData.teaser, memoryTags: fullData.memoryTags };
+                     payload = { 
+                         teaser: fullData.teaser, 
+                         memoryTags: fullData.memoryTags 
+                     };
                      break;
                 case 'multimedia':
-                     payload = { wrapped: fullData.wrapped, multimedia: fullData.multimedia };
+                     payload = { 
+                         multimedia: fullData.multimedia, 
+                         wrapped: fullData.wrapped 
+                     };
                      break;
                 case 'security':
-                     payload = { visibility: fullData.visibility, names: fullData.names };
+                     payload = { 
+                         visibility: fullData.visibility, 
+                         names: fullData.names 
+                     };
                      break;
                 default:
                      payload = fullData;
@@ -265,7 +258,7 @@ export default function GlobalSettings() {
                                             <KawaiiInput
                                                 type="number"
                                                 label="Latitud"
-                                                value={config.mapConfig.defaultCenter.lat}
+                                                value={config.mapConfig?.defaultCenter?.lat ?? 0}
                                                 onChange={e => handleUpdate('mapConfig.defaultCenter.lat', parseFloat(e.target.value) || 0)}
                                             />
                                         </div>
@@ -273,7 +266,7 @@ export default function GlobalSettings() {
                                             <KawaiiInput
                                                 type="number"
                                                 label="Longitud"
-                                                value={config.mapConfig.defaultCenter.lng}
+                                                value={config.mapConfig?.defaultCenter?.lng ?? 0}
                                                 onChange={e => handleUpdate('mapConfig.defaultCenter.lng', parseFloat(e.target.value) || 0)}
                                             />
                                         </div>
@@ -449,7 +442,7 @@ export default function GlobalSettings() {
 
                                             const ms = new Date(val).getTime();
                                             if (!isNaN(ms)) {
-                                                handleUpdate('teaser.unlockAt', ms);
+                                                handleUpdate('teaser.revealDate', ms);
                                             }
                                         }}
                                         helpText="Fecha en que ella podrá entrar a la app por primera vez."

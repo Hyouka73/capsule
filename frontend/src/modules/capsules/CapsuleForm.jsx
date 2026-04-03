@@ -17,6 +17,7 @@ export default function CapsuleForm({ onSuccess, onCancel, initialData = null })
     const isMounted = useRef(true);
 
     useEffect(() => {
+        isMounted.current = true; // Reset on StrictMode re-mount
         return () => {
             isMounted.current = false;
         };
@@ -27,7 +28,16 @@ export default function CapsuleForm({ onSuccess, onCancel, initialData = null })
         if (!date) return '';
         const d = date.toDate ? date.toDate() : new Date(date);
         if (isNaN(d.getTime())) return '';
-        return d.toISOString().slice(0, 16);
+        
+        // Formateo manual para evitar el desfase de toISOString() que es UTC
+        const pad = (num) => String(num).padStart(2, '0');
+        const year = d.getFullYear();
+        const month = pad(d.getMonth() + 1);
+        const day = pad(d.getDate());
+        const hours = pad(d.getHours());
+        const minutes = pad(d.getMinutes());
+        
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
     };
 
     // Initial state
@@ -35,6 +45,8 @@ export default function CapsuleForm({ onSuccess, onCancel, initialData = null })
         if (initialData) {
             return {
                 ...initialData,
+                // Preserve the capsule ID so the backend knows this is an edit, not a creation
+                id: initialData.id,
                 unlockDate: formatDateForInput(initialData.unlockDate || initialData.unlockAt)
             };
         }
@@ -43,7 +55,7 @@ export default function CapsuleForm({ onSuccess, onCancel, initialData = null })
             teaserMessage: '',
             message: '',
             unlockTrigger: 'date',
-            unlockDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+            unlockDate: formatDateForInput(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
             autoDestroy: true,
             notifyOnUnlock: true,
         };
@@ -71,24 +83,45 @@ export default function CapsuleForm({ onSuccess, onCancel, initialData = null })
         setIsSubmitting(true);
 
         try {
-            const res = await queueCapsule({
-                ...formData,
+            console.log('[CapsuleForm] Calling queueCapsule...');
+            // CRITICAL: Only send fields the backend expects.
+            // Do NOT spread formData — it contains raw Firestore fields 
+            // (Timestamps, server metadata) that will crash the backend.
+            const cleanPayload = {
+                id: formData.id || undefined,  // undefined = new, string = edit
+                title: formData.title,
+                teaserMessage: formData.teaserMessage,
+                message: formData.message,
+                unlockTrigger: formData.unlockTrigger,
+                unlockDate: formData.unlockDate ? new Date(formData.unlockDate).toISOString() : null,
+                autoDestroy: formData.autoDestroy,
+                notifyOnUnlock: formData.notifyOnUnlock,
                 relationshipId,
                 recipientUid: partnerUid,
-            }, files);
+            };
+            console.log('[CapsuleForm] Clean payload:', cleanPayload);
+            const res = await queueCapsule(cleanPayload, files);
 
-            if (!isMounted.current) return;
+            console.log('[CapsuleForm] queueCapsule result:', res);
 
             if (res.queued) {
-                toast.success('¡Cápsula enterrada!', 'Se sincronizará en cuanto haya conexión ✨');
-                onSuccess();
+                const isEdit = !!initialData?.id;
+                toast.success(
+                    isEdit ? '¡Cápsula actualizada!' : '¡Cápsula enterrada!',
+                    isEdit ? 'Los cambios se sincronizarán en breve ✅' : 'Se sincronizará en cuanto haya conexión ✨'
+                );
+                onSuccess(cleanPayload);
             } else {
+                console.warn('[CapsuleForm] res.queued is false');
                 setError('No se pudo encolar la cápsula. Intenta de nuevo.');
             }
         } catch (err) {
-            if (!isMounted.current) return;
-            setError(err.message || 'Ocurrió un error inesperado al guardar la cápsula.');
+            console.error('[CapsuleForm] Error in handleSubmit:', err);
+            if (isMounted.current) {
+                setError(err.message || 'Ocurrió un error inesperado al guardar la cápsula.');
+            }
         } finally {
+            console.log('[CapsuleForm] Submitting finished');
             if (isMounted.current) setIsSubmitting(false);
         }
     };
@@ -230,7 +263,9 @@ export default function CapsuleForm({ onSuccess, onCancel, initialData = null })
                     isLoading={isSubmitting}
                     className={styles.submitBtn}
                 >
-                    {isSubmitting ? 'Enterrando...' : 'Enterrar Cápsula ⏳'}
+                    {isSubmitting 
+                        ? (initialData ? 'Guardando cambios...' : 'Enterrando...') 
+                        : (initialData ? 'Guardar Cambios ✨' : 'Enterrar Cápsula ⏳')}
                 </Button>
             </div>
         </form>

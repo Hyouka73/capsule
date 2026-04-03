@@ -35,6 +35,8 @@ export default function SystemConfig({ config, handleUpdate }) {
                         safeUpdate('modules.snapshots.isEnabled', newValue);
                         safeUpdate('features.memoryMap', newValue);
                     }}
+                    onboardingStatus={config.modules.snapshots.onboardingEnabled}
+                    onOnboardingChange={() => safeUpdate('modules.snapshots.onboardingEnabled', !config.modules.snapshots.onboardingEnabled)}
                     isModule
                 />
                 <ToggleRow
@@ -52,6 +54,8 @@ export default function SystemConfig({ config, handleUpdate }) {
                         safeUpdate('modules.capsules.isEnabled', newValue);
                         safeUpdate('features.timeCapsules', newValue);
                     }}
+                    onboardingStatus={config.modules.capsules.onboardingEnabled}
+                    onOnboardingChange={() => safeUpdate('modules.capsules.onboardingEnabled', !config.modules.capsules.onboardingEnabled)}
                     isModule
                 />
                 <ToggleRow
@@ -63,6 +67,8 @@ export default function SystemConfig({ config, handleUpdate }) {
                         safeUpdate('modules.coupons.isEnabled', newValue);
                         safeUpdate('features.coupons', newValue);
                     }}
+                    onboardingStatus={config.modules.coupons.onboardingEnabled}
+                    onOnboardingChange={() => safeUpdate('modules.coupons.onboardingEnabled', !config.modules.coupons.onboardingEnabled)}
                     isModule
                 />
                 <ToggleRow
@@ -74,6 +80,8 @@ export default function SystemConfig({ config, handleUpdate }) {
                         safeUpdate('modules.bingo.isEnabled', newValue);
                         safeUpdate('features.bingoBoard', newValue);
                     }}
+                    onboardingStatus={config.modules.bingo.onboardingEnabled}
+                    onOnboardingChange={() => safeUpdate('modules.bingo.onboardingEnabled', !config.modules.bingo.onboardingEnabled)}
                     isModule
                 />
             </div>
@@ -96,6 +104,8 @@ export default function SystemConfig({ config, handleUpdate }) {
                         safeUpdate('modules.movies.isEnabled', newValue);
                         safeUpdate('features.movieTracking', newValue);
                     }}
+                    onboardingStatus={config.modules.movies.onboardingEnabled}
+                    onOnboardingChange={() => safeUpdate('modules.movies.onboardingEnabled', !config.modules.movies.onboardingEnabled)}
                     isModule
                 />
                 <ToggleRow

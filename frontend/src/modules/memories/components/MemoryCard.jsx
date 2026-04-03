@@ -133,7 +133,7 @@ export default function MemoryCard({ memory, onEdit, onToggleVisibility, onDelet
                 {memory.tags?.length > 0 && (
                     <div className={styles.tagCloud}>
                         {resolveTags(memory.tags).slice(0, 2).map(tagObj => (
-                            <span key={tagObj.value} className={styles.tag}>
+                            <span key={tagObj.id} className={styles.tag}>
                                 {tagObj.emoji} {tagObj.label.replace(/^[^\s]+\s+/, '')}
                             </span>
                         ))}

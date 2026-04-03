@@ -60,6 +60,46 @@
     color: var(--color-error);
 }
 
+/* ── Filtros ── */
+.filterTabs {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    background: var(--pastel-bg);
+    border-radius: var(--radius-lg);
+    overflow-x: auto;
+    scrollbar-width: none; /* Firefox */
+}
+
+.filterTabs::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+}
+
+.filterTab {
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--radius-md);
+    border: 2px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    font-weight: 700;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.filterTab:hover {
+    color: var(--pastel-rose);
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.filterTabActive {
+    background: var(--clay-bg-white);
+    color: var(--pastel-rose-dark) !important;
+    border-color: var(--pastel-rose-light);
+    box-shadow: var(--clay-shadow-sm);
+}
+
 /* ── Grid & Cards ── */
 .grid {
     display: grid;
