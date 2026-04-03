@@ -10,7 +10,7 @@ export default class Capsule {
         this.teaserMessage = data.teaserMessage || '';
 
         // Behavior
-        this.autoDestruct = !!data.autoDestruct;
+        this.autoDestroy = !!(data.autoDestroy || data.autoDestruct);
         this.hasAttachments = !!data.hasAttachments;
         this.notifyOnUnlock = !!data.notifyOnUnlock;
 
