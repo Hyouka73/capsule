@@ -42,6 +42,16 @@ export const taskUnlockCapsule = onTaskDispatched(
                 }
 
                 const data = docSnap.data();
+                const now = Date.now();
+                const unlockMillis = data.unlockDate ? (data.unlockDate.toMillis ? data.unlockDate.toMillis() : new Date(data.unlockDate).getTime()) : 0;
+
+                // CRITICAL SAFETY CHECK: Prevent premature unlocking
+                if (unlockMillis > now + 2000) { // 2s Grace margin for clock drift
+                    const diffSeconds = Math.round((unlockMillis - now) / 1000);
+                    logger.warn(`Task triggered prematurely! Faltan ${diffSeconds}s para desbloquear la cápsula ${capsuleId}. Ignorando disparo.`);
+                    return;
+                }
+
                 if (data.isUnlocked) {
                     logger.info(`Capsule ${capsuleId} already unlocked.`);
                     return;
@@ -49,6 +59,7 @@ export const taskUnlockCapsule = onTaskDispatched(
 
                 t.update(capsuleRef, {
                     isUnlocked: true,
+                    status: 'unlocked',
                     unlockedAt: Timestamp.now(),
                     unlockedByTrigger: 'scheduled_task',
                 });

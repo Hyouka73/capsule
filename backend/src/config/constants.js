@@ -91,6 +91,7 @@ export const ACTIVITY_ACTIONS = {
     SNAPSHOT_CREATED: 'snapshot_created', // Fixed missing constant
     SNAPSHOT_SEEN: 'snapshot_seen',
     CAPSULE_CREATED: 'capsule_created',
+    CAPSULE_UPDATED: 'capsule_updated',
     PLACE_CREATED: 'place_created',
     RELATIONSHIP_CREATED: 'relationship_created',
 };

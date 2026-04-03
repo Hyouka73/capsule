@@ -41,9 +41,10 @@ export const handler = async (request) => {
             lastActiveAt: now,
         }, { merge: true });
 
+        // 4. Initialize comprehensive modular config
         const configColl = db.collection('relationships').doc(relationshipId).collection('config');
 
-        // config/relationship — metadata (replaces main for identity fields)
+        // config/relationship — metadata
         batch.set(configColl.doc(SINGLETON_DOCS.RELATIONSHIP), {
             relationshipId,
             adminUid,
@@ -55,17 +56,75 @@ export const handler = async (request) => {
 
         // config/names — Centralized display names
         batch.set(configColl.doc(SINGLETON_DOCS.NAMES), {
-            admin: 'Admin',
+            admin: request.auth.token.name || 'Admin',
             partner: 'Pareja',
             updatedAt: now
         });
 
-        // config/features — default feature flags
+        // config/features — Global functionality flags
         batch.set(configColl.doc(SINGLETON_DOCS.FEATURES), {
-            coupons: true, memories: true, bingo: true,
-            memoryMap: true, photoGallery: true, timeCapsules: true,
-            bingoBoard: true, movieTracking: false, onboarding: false,
-            easterEggs: false, games: false, exercise: false,
+            capsules: true, multimedia: true, snapshots: true, bingo: true,
+            wrapped: false, teaser: true, photoGallery: true,
+            memoryMap: true, timeCapsules: true, coupons: true,
+            onboarding: true, movieTracking: false, exercise: false,
+            games: false, easterEggs: false,
+            updatedAt: now
+        });
+
+        // config/modules — Status + Onboarding per module
+        batch.set(configColl.doc(SINGLETON_DOCS.MODULES_CONFIG), {
+            capsules: { isEnabled: true, onboardingEnabled: true },
+            snapshots: { isEnabled: true, onboardingEnabled: true },
+            bingo: { isEnabled: true, onboardingEnabled: true },
+            coupons: { isEnabled: true, onboardingEnabled: true },
+            exercise: { isEnabled: false, onboardingEnabled: false },
+            movies: { isEnabled: false, onboardingEnabled: false },
+            updatedAt: now
+        });
+
+        // config/teaser — Launch countdown
+        batch.set(configColl.doc(SINGLETON_DOCS.TEASER_CONFIG), {
+            isEnabled: true,
+            message: 'Algo especial está llegando...',
+            revealDate: null,
+            updatedAt: now
+        });
+
+        // config/visibility — Privacy levels
+        batch.set(configColl.doc(SINGLETON_DOCS.VISIBILITY), {
+            mapMemories: 'shared',
+            gallery: 'shared',
+            updatedAt: now
+        });
+
+        // config/notifications — Channels
+        batch.set(configColl.doc(SINGLETON_DOCS.NOTIFICATIONS), {
+            fcmEnabled: true,
+            emailEnabled: true,
+            types: ['memory', 'capsule', 'daily_moment', 'bingo'],
+            updatedAt: now
+        });
+
+        // config/multimedia — Snapshots and Dates
+        batch.set(configColl.doc(SINGLETON_DOCS.MULTIMEDIA), {
+            snapshotConfig: { frequency: 'daily', maxPerDay: 1, retentionDays: 30 },
+            citaConfig: { allowManual: true, maxActive: 3 },
+            updatedAt: now
+        });
+
+        // config/map — Map aesthetics
+        batch.set(configColl.doc(SINGLETON_DOCS.MAP_CONFIG), {
+            defaultZoom: 12,
+            defaultCenter: { lat: 0, lng: 0 },
+            style: 'pastel',
+            clustering: true,
+            updatedAt: now
+        });
+
+        // config/onboarding — Progress State
+        batch.set(configColl.doc(SINGLETON_DOCS.ONBOARDING), {
+            isCompleted: false,
+            step: 0,
             updatedAt: now
         });
 
@@ -78,7 +137,7 @@ export const handler = async (request) => {
             updatedAt: now
         });
 
-        // Invite Token lookup doc
+        // Invite Token lookup doc (external to relationship)
         batch.set(db.collection(COLLECTIONS.INVITE_TOKENS).doc(token), {
             token,
             relationshipId,

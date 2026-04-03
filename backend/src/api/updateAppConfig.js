@@ -60,8 +60,10 @@ export const handler = async (request) => {
             batch.set(configColl.doc(SINGLETON_DOCS.INVITE_CONFIG), { ...update.inviteConfig, updatedAt: ts }, { merge: true });
 
         // Already-modular docs
-        if (update.teaser !== undefined)
-            batch.set(configColl.doc(SINGLETON_DOCS.TEASER_CONFIG), { ...update.teaser, updatedAt: ts }, { merge: true });
+        if (update.teaser !== undefined) {
+            // No merge here to ensure we wipe legacy/duplicate keys like 'unlockAt'
+            batch.set(configColl.doc(SINGLETON_DOCS.TEASER_CONFIG), { ...update.teaser, updatedAt: ts });
+        }
 
         if (update.mapConfig !== undefined)
             batch.set(configColl.doc(SINGLETON_DOCS.MAP_CONFIG), { ...update.mapConfig, updatedAt: ts }, { merge: true });
