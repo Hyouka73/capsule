@@ -1,42 +1,73 @@
 import { initializeApp, getApps } from 'firebase-admin/app';
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { getStorage } from 'firebase-admin/storage';
+import { onCall, onRequest, HttpsError } from 'firebase-functions/v2/https';
 import { setGlobalOptions } from 'firebase-functions/v2';
 import { logger } from 'firebase-functions';
 
 // 1. Initialize Firebase Admin
 if (getApps().length === 0) {
     initializeApp({
-        projectId: 'capsule-valentins-day'
+        projectId: 'capsule-valentins-day',
+        storageBucket: 'capsule-valentins-day.firebasestorage.app'
     });
 }
 
-// 2. Configuración de Emuladores para Cloud Tasks
-// Si estamos en el emulador, necesitamos apuntar al host local de tasks.
+// 2. Emulator configuration
 if (process.env.FUNCTIONS_EMULATOR === 'true') {
     logger.info('[DEBUG] Running in Emulator. Setting CLOUD_TASKS_EMULATOR_HOST=localhost:9124');
     process.env.CLOUD_TASKS_EMULATOR_HOST = 'localhost:9124';
 }
 
-/**
- * GLOBAL CONFIGURATION (v2)
- * Se aplica a todas las funciones exportadas si no se sobreescribe.
- */
+const ALLOWED_ORIGINS = [
+    /localhost:\d+$/, 
+    /127\.0\.0\.1:\d+$/,
+    /0\.0\.0\.0:\d+$/,
+    /\.web\.app$/,
+    /\.firebaseapp\.com$/,
+    'https://capsule-sooty.vercel.app'
+];
+
 setGlobalOptions({
     region: 'us-central1',
-    cors: true, // Esto habilita el soporte global para CORS (vía middleware interno de onCall)
+    cors: ALLOWED_ORIGINS,
     maxInstances: 10
 });
 
 /**
- * lazyOnCall — Wrapper para carga dinámica de funciones.
- * 
- * Usamos una configuración de CORS más explícita para el entorno de desarrollo
- * y el emulador para evitar errores de preflight (OPTIONS).
+ * TEMPORARY: setStorageCors
+ * Configures the Storage bucket to allow direct photo downloads on Android.
+ * This function can be called once via its URL after deployment.
  */
+export const setStorageCors = onRequest({ cors: true }, async (req, res) => {
+    try {
+        const bucket = getStorage().bucket('capsule-valentins-day.firebasestorage.app');
+        
+        const corsConfiguration = [
+            {
+                origin: ['*'], 
+                method: ['GET', 'HEAD', 'OPTIONS'],
+                maxAgeSeconds: 3600,
+                responseHeader: [
+                    'Content-Type', 
+                    'Access-Control-Allow-Origin', 
+                    'Authorization'
+                ]
+            }
+        ];
+
+        logger.info(`[CORS] Attempting to set config on bucket: ${bucket.name}`);
+        await bucket.setCorsConfiguration(corsConfiguration);
+        
+        logger.info('[CORS] SUCCESS: Configuration applied.');
+        res.status(200).send('✅ Firebase Storage CORS updated successfully! You can now delete this function and use the "Save" button in the gallery.');
+    } catch (error) {
+        logger.error('[CORS] FAILED:', error);
+        res.status(500).send(`❌ Error setting CORS: ${error.message}`);
+    }
+});
+
 const lazyOnCall = (path, name) => onCall({ 
-    // Mantenemos cors: true pero añadimos más seguridad en el manejo de errores
-    // ya que un error no capturado/mal devuelto en v2 rompe las cabeceras CORS.
-    cors: true 
+    cors: ALLOWED_ORIGINS
 }, async (request) => {
     try {
         const mod = await import(path);
@@ -50,7 +81,6 @@ const lazyOnCall = (path, name) => onCall({
         const result = await handler(request);
         return result || { success: true };
     } catch (err) {
-        // ERROR LOGGING CRÍTICO
         logger.error(`[lazyOnCall] Error in function ${name || 'unknown'}:`, {
             path,
             error: err.message,
@@ -58,21 +88,8 @@ const lazyOnCall = (path, name) => onCall({
             code: err.code
         });
         
-        // REGLA DE ORO DE CORS EN FUNCTIONS:
-        // Todas las respuestas DEBEN ser HttpsError para que el SDK v2 
-        // pueda inyectar las cabeceras CORS correctamente en la respuesta de error.
-        
-        if (err instanceof HttpsError) {
-             throw err;
-        }
-
-        // Si es un error con código pero no es HttpsError (ej: Firestore)
-        if (err.code && typeof err.code === 'string') {
-            // Intentamos mapear códigos comunes o simplemente envolverlo
-            throw new HttpsError('internal', err.message || 'Internal logic error', err);
-        }
-        
-        // Fallback genérico
+        if (err instanceof HttpsError) throw err;
+        if (err.code && typeof err.code === 'string') throw new HttpsError('internal', err.message || 'Internal logic error', err);
         throw new HttpsError('internal', err.message || 'Unexpected server error');
     }
 });
@@ -83,12 +100,11 @@ import { handler as getCapsulesHandler } from './src/api/getCapsules.js';
 import { handler as openCapsuleHandler } from './src/api/openCapsule.js';
 import { handler as getAppConfigHandler } from './src/api/getAppConfig.js';
 
-export const createCapsule = onCall({ cors: true }, createCapsuleHandler);
-export const getCapsules = onCall({ cors: true }, getCapsulesHandler);
-export const openCapsule = onCall({ cors: true }, openCapsuleHandler);
-export const getAppConfig = onCall({ cors: true }, getAppConfigHandler);
+export const createCapsule = onCall({ cors: ALLOWED_ORIGINS }, createCapsuleHandler);
+export const getCapsules = onCall({ cors: ALLOWED_ORIGINS }, getCapsulesHandler);
+export const openCapsule = onCall({ cors: ALLOWED_ORIGINS }, openCapsuleHandler);
+export const getAppConfig = onCall({ cors: ALLOWED_ORIGINS }, getAppConfigHandler);
 
-// Mantener lazyOnCall solo para el resto para no sobrecargar el inicio físico
 export const createMemory = lazyOnCall('./src/api/createMemory.js', 'createMemory');
 export const createSnapshot = lazyOnCall('./src/api/createSnapshot.js', 'createSnapshot');
 export const exchangeInviteToken = lazyOnCall('./src/api/exchangeInviteToken.js', 'exchangeInviteToken');
@@ -123,6 +139,7 @@ export const revokePartner = lazyOnCall('./src/api/revokePartner.js', 'revokePar
 export const getTeaserConfig = lazyOnCall('./src/api/getTeaserConfig.js', 'getTeaserConfig');
 export const completeTeaser = lazyOnCall('./src/api/completeTeaser.js', 'completeTeaser');
 export const getActivityLogs = lazyOnCall('./src/api/getActivityLogs.js', 'getActivityLogs');
+export const repairAuth = lazyOnCall('./src/api/repairAuth.js', 'repairAuth');
 export const ping = lazyOnCall('./src/api/ping.js', 'ping');
 
 // --- Triggers ---
@@ -132,4 +149,4 @@ export { onMemoryCreated } from './src/triggers/onMemoryCreated.js';
 export { taskUnlockCapsule } from './src/triggers/taskUnlockCapsule.js';
 export { taskArchiveSnapshot } from './src/triggers/taskArchiveSnapshot.js';
 export { cleanupExpiredTokens } from './src/triggers/cleanupExpiredTokens.js';
-
+export { onSnapshotCreated } from './src/triggers/onSnapshotCreated.js';

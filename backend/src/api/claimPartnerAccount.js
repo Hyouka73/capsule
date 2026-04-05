@@ -27,16 +27,24 @@ export const handler = async (request) => {
 
         await db.runTransaction(async (transaction) => {
             const userRef = db.collection(COLLECTIONS.USERS).doc(uid);
-            transaction.set(userRef, {
+            const userSnap = await transaction.get(userRef);
+            const ts = FieldValue.serverTimestamp();
+
+            const userData = {
                 uid, email,
                 displayName: name || 'Pareja',
                 photoURL: picture || null,
                 role: 'partner',
                 relationshipId,
                 accountStatus: 'active',
-                createdAt: ts,
                 updatedAt: ts
-            }, { merge: true });
+            };
+
+            if (!userSnap.exists) {
+                userData.createdAt = ts;
+            }
+
+            transaction.set(userRef, userData, { merge: true });
 
             // partnerUid → config/relationship
             transaction.set(configColl.doc(SINGLETON_DOCS.RELATIONSHIP), {

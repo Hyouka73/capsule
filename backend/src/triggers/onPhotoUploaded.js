@@ -1,7 +1,6 @@
 import { onObjectFinalized } from 'firebase-functions/v2/storage';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
-import sharp from 'sharp';
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
@@ -37,23 +36,27 @@ export const onPhotoUploaded = onObjectFinalized({
 
     const rootFolder = parts[0]; 
     const isMain = metadata.isMain === 'true';
-    
+    const isSnapshot = metadata.isSnapshot === 'true' || rootFolder === 'snapshots' || parts[1] === 'snapshots';
+    const isMemory = !isSnapshot && rootFolder === 'memories';
+    const isCapsule = !isSnapshot && rootFolder === 'capsules';
+
     let photoId;
     let memoryId = null;
     let snapshotId = null;
     let capsuleId = null;
 
-    if (rootFolder === 'memories') {
+    if (isSnapshot) {
+        // Handle both: snapshots/id.jpg AND relId/snapshots/id.orig
+        // parts[0] = relationshipId, parts[1] = 'snapshots', parts[2] = snapshotId.ext
+        const filename = parts[parts.length - 1];
+        if (!filename) return;
+        snapshotId = path.parse(filename).name; // This correctly gets ID from id.orig or id.jpg
+        photoId = snapshotId;
+    } else if (isMemory) {
         if (parts.length < 3) return;
         memoryId = parts[1];
         photoId = path.parse(parts[2]).name;
-    } else if (rootFolder === 'snapshots' || parts[1] === 'snapshots') {
-        // Handle both: snapshots/id.jpg AND relId/snapshots/id.jpg
-        const filename = parts[0] === 'snapshots' ? parts[1] : parts[2];
-        if (!filename) return;
-        snapshotId = path.parse(filename).name;
-        photoId = snapshotId;
-    } else if (rootFolder === 'capsules') {
+    } else if (isCapsule) {
         if (parts.length < 3) return;
         capsuleId = parts[1];
         photoId = path.parse(parts[2]).name;
@@ -61,26 +64,31 @@ export const onPhotoUploaded = onObjectFinalized({
         return;
     }
 
-    const isSnapshot = !!snapshotId;
-    const isMemory = !!memoryId;
-    const isCapsule = !!capsuleId;
-
     const db = getFirestore();
     const storageBucket = getStorage().bucket(bucketName);
     
-    // Paths
+    // Relationship determination
+    const finalRelId = (rootFolder !== 'snapshots' && rootFolder !== 'memories' && rootFolder !== 'capsules') 
+        ? rootFolder 
+        : (metadata.relationshipId || 'legacy');
+
+    // Final clean paths (always .webp)
     let fullStoragePath;
-    if (isMemory) fullStoragePath = `memories/${memoryId}/${photoId}.webp`;
-    else if (isSnapshot) fullStoragePath = `snapshots/${photoId}.webp`;
-    else fullStoragePath = `capsules/${capsuleId}/${photoId}.webp`;
+    let detailStoragePath = null;
+    if (isSnapshot) {
+        fullStoragePath = `${finalRelId}/snapshots/${photoId}.webp`;
+    } else if (isMemory) {
+        fullStoragePath = `memories/${memoryId}/${photoId}.webp`;
+        detailStoragePath = `memories/${memoryId}/detail_${photoId}.webp`;
+    } else if (isCapsule) {
+        fullStoragePath = `capsules/${capsuleId}/${photoId}.webp`;
+    } else {
+        return;
+    }
 
     const thumbStoragePath = isMemory
         ? `memories/${memoryId}/thumb_${photoId}.webp`
-        : (isSnapshot ? `snapshots/thumb_${snapshotId}.webp` : null);
-
-    const detailStoragePath = isMemory
-        ? `memories/${memoryId}/detail_${photoId}.webp`
-        : null;
+        : (isSnapshot ? `${finalRelId}/snapshots/thumb_${snapshotId}.webp` : null);
 
     const tmpDir = os.tmpdir();
     const originalTmpPath = path.join(tmpDir, `${photoId}_orig`);
@@ -92,9 +100,48 @@ export const onPhotoUploaded = onObjectFinalized({
         // Download original
         await storageBucket.file(filePath).download({ destination: originalTmpPath });
 
-        // 2. Process Versions
+        // 2. Process Versions - LAZY LOAD SHARP
+        const { default: sharp } = await import('sharp');
         const pipeline = sharp(originalTmpPath).rotate();
 
+        // --- SNAPSHOT SPECIAL HANDLING (CLEAN & SINGLE WEBP) ---
+        if (isSnapshot) {
+            const snapshotTmpPath = path.join(tmpDir, `${photoId}_snap.webp`);
+            await pipeline.clone().webp({ quality: 80 }).toFile(snapshotTmpPath);
+            
+            await storageBucket.upload(snapshotTmpPath, {
+                destination: fullStoragePath,
+                metadata: { contentType: 'image/webp' }
+            });
+            
+            const fullFile = storageBucket.file(fullStoragePath);
+            await fullFile.makePublic();
+            const fullUrl = `https://storage.googleapis.com/${bucketName}/${fullStoragePath}`;
+
+            // Update Firestore Snapshot Doc in its correct subcollection
+            const photoRef = db.collection(COLLECTIONS.RELATIONSHIPS).doc(finalRelId).collection(COLLECTIONS.INSTANTANEAS).doc(snapshotId);
+            await photoRef.set({
+                photoUrl: fullUrl,
+                storagePath: fullStoragePath,
+                isProcessed: true,
+                updatedAt: FieldValue.serverTimestamp(),
+            }, { merge: true });
+
+            // Cleanup: DELETE the trigger file (.orig or .jpg) immediately
+            // Ensure we don't accidentally delete the file we just uploaded if they have the same path
+            if (filePath !== fullStoragePath) {
+                await storageBucket.file(filePath).delete().catch(err => {
+                    logger.warn(`[onPhotoUploaded] Failed to delete original trigger: ${filePath}`, err);
+                });
+            }
+            
+            if (fs.existsSync(snapshotTmpPath)) fs.unlinkSync(snapshotTmpPath);
+            if (fs.existsSync(originalTmpPath)) fs.unlinkSync(originalTmpPath);
+            logger.info(`[onPhotoUploaded] Snapshot naming & conversion finished: ${fullStoragePath}`);
+            return;
+        }
+
+        // --- MEMORY/CAPSULE VERSION GENERATION (FULL + THUMB + DETAIL) ---
         // 2a. Full Optimized (Always)
         const fullQuality = isMain ? 85 : 80;
         await pipeline.clone().webp({ quality: fullQuality }).toFile(fullTmpPath);
@@ -109,8 +156,8 @@ export const onPhotoUploaded = onObjectFinalized({
         let thumbUrl = null;
         let detailUrl = null;
 
-        // 2b. Thumb & Detail (Main photos or Snapshots) - SKIP for Capsules
-        if (!isCapsule && (isMain || isSnapshot)) {
+        // 2b. Thumb & Detail (Main photos) - SKIP for Capsules
+        if (!isCapsule && isMain) {
             // Thumb
             await pipeline.clone()
                 .resize(150, 150, { fit: 'cover' })
@@ -182,7 +229,7 @@ export const onPhotoUploaded = onObjectFinalized({
                     photos: updatedPhotos
                 };
 
-                if (isMain) {
+                if (isMain || !memoryData.mainPhotoUrl) {
                     updates.mainPhotoUrl = fullUrl;
                     updates.mainPhotoThumb = thumbUrl;
                     updates.mainPhotoDetail = detailUrl;
@@ -199,7 +246,12 @@ export const onPhotoUploaded = onObjectFinalized({
                     });
                 }
             } else if (isSnapshot) {
-                const photoRef = db.collection(COLLECTIONS.INSTANTANEAS).doc(snapshotId);
+                // Fix: Snapshots are subcollections of relationships
+                const relId = (rootFolder !== 'snapshots' && rootFolder !== 'memories' && rootFolder !== 'capsules') 
+                    ? rootFolder 
+                    : (metadata.relationshipId || 'legacy');
+                
+                const photoRef = db.collection(COLLECTIONS.RELATIONSHIPS).doc(relId).collection(COLLECTIONS.INSTANTANEAS).doc(snapshotId);
                 const photoSnap = await transaction.get(photoRef);
                 if (photoSnap.exists && photoSnap.data().isProcessed) return;
 
@@ -239,6 +291,12 @@ export const onPhotoUploaded = onObjectFinalized({
         });
 
         // 4. Cleanup original if it was converted
+        if (filePath !== fullStoragePath) {
+            await storageBucket.file(filePath).delete().catch(err => {
+                logger.warn(`[onPhotoUploaded] Failed to delete original: ${filePath}`, err);
+            });
+            console.log(`[onPhotoUploaded] Original deleted: ${filePath}`);
+        }
 
     } catch (error) {
         logger.error('[onPhotoUploaded] Error:', error);
