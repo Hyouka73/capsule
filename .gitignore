@@ -10,7 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
-*.local
+.local/
 backend/.env
 
 # Editor directories and files
@@ -36,6 +36,8 @@ FLUJOS_APP.md
 diagnostic_report.md
 problemas.txt
 implementation_plan.md
+task.md
+walkthrough.md
 
 .firebase/
 serviceAccountKey.json
