@@ -125,11 +125,11 @@ export default defineConfig({
         ],
       },
       manifest: {
-        name: 'Capsule',
-        short_name: 'Capsule',
-        description: 'Nuestros recuerdos, siempre contigo',
-        theme_color: '#ffadc7',
-        background_color: '#fff9fa',
+        name: 'Nuestro Universo Privado',
+        short_name: 'Nosotros',
+        description: 'Una historia de amor infinita ✨',
+        theme_color: '#0a0a12',
+        background_color: '#0a0a12',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
@@ -152,6 +152,28 @@ export default defineConfig({
             purpose: 'any maskable'
           }
         ],
+        shortcuts: [
+          {
+            name: 'Tomar Snapshot',
+            short_name: 'Snapshot',
+            description: 'Captura un momento al instante',
+            url: '/snapshots/capture',
+            icons: [
+              { src: '/icons/camera_icon.png', sizes: '96x96' },
+              { src: '/icons/camera_icon.png', sizes: '192x192' }
+            ]
+          },
+          {
+            name: 'Ver Recuerdos',
+            short_name: 'Recuerdos',
+            description: 'Mira vuestra historia de amor',
+            url: '/snapshots',
+            icons: [
+              { src: '/icons/image_icon.png', sizes: '96x96' },
+              { src: '/icons/image_icon.png', sizes: '192x192' }
+            ]
+          }
+        ]
       },
     }),
     tailwindcss(),
