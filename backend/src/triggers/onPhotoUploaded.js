@@ -13,12 +13,18 @@ import { COLLECTIONS } from '../config/constants.js';
  * Implements idempotency to avoid double-counting photoCount.
  */
 export const onPhotoUploaded = onObjectFinalized({ 
-    bucket: 'capsule-valentins-day.firebasestorage.app' 
+    memory: '1GiB',
+    timeoutSeconds: 300 
 }, async (event) => {
     const filePath = event.data.name; 
     const contentType = event.data.contentType;
     const bucketName = event.data.bucket;
     const metadata = event.data.metadata || {};
+
+    if (metadata.isProcessed === 'true') {
+        logger.info(`[onPhotoUploaded] Skipping already-processed file: ${filePath}`);
+        return;
+    }
 
     // 1. Initial filters
     const fileName = path.basename(filePath);
@@ -104,42 +110,6 @@ export const onPhotoUploaded = onObjectFinalized({
         const { default: sharp } = await import('sharp');
         const pipeline = sharp(originalTmpPath).rotate();
 
-        // --- SNAPSHOT SPECIAL HANDLING (CLEAN & SINGLE WEBP) ---
-        if (isSnapshot) {
-            const snapshotTmpPath = path.join(tmpDir, `${photoId}_snap.webp`);
-            await pipeline.clone().webp({ quality: 80 }).toFile(snapshotTmpPath);
-            
-            await storageBucket.upload(snapshotTmpPath, {
-                destination: fullStoragePath,
-                metadata: { contentType: 'image/webp' }
-            });
-            
-            const fullFile = storageBucket.file(fullStoragePath);
-            await fullFile.makePublic();
-            const fullUrl = `https://storage.googleapis.com/${bucketName}/${fullStoragePath}`;
-
-            // Update Firestore Snapshot Doc in its correct subcollection
-            const photoRef = db.collection(COLLECTIONS.RELATIONSHIPS).doc(finalRelId).collection(COLLECTIONS.INSTANTANEAS).doc(snapshotId);
-            await photoRef.set({
-                photoUrl: fullUrl,
-                storagePath: fullStoragePath,
-                isProcessed: true,
-                updatedAt: FieldValue.serverTimestamp(),
-            }, { merge: true });
-
-            // Cleanup: DELETE the trigger file (.orig or .jpg) immediately
-            // Ensure we don't accidentally delete the file we just uploaded if they have the same path
-            if (filePath !== fullStoragePath) {
-                await storageBucket.file(filePath).delete().catch(err => {
-                    logger.warn(`[onPhotoUploaded] Failed to delete original trigger: ${filePath}`, err);
-                });
-            }
-            
-            if (fs.existsSync(snapshotTmpPath)) fs.unlinkSync(snapshotTmpPath);
-            if (fs.existsSync(originalTmpPath)) fs.unlinkSync(originalTmpPath);
-            logger.info(`[onPhotoUploaded] Snapshot naming & conversion finished: ${fullStoragePath}`);
-            return;
-        }
 
         // --- MEMORY/CAPSULE VERSION GENERATION (FULL + THUMB + DETAIL) ---
         // 2a. Full Optimized (Always)
@@ -147,7 +117,10 @@ export const onPhotoUploaded = onObjectFinalized({
         await pipeline.clone().webp({ quality: fullQuality }).toFile(fullTmpPath);
         await storageBucket.upload(fullTmpPath, {
             destination: fullStoragePath,
-            metadata: { contentType: 'image/webp' }
+            metadata: {
+                contentType: 'image/webp',
+                metadata: { isProcessed: 'true' }
+            }
         });
         const fullFile = storageBucket.file(fullStoragePath);
         await fullFile.makePublic();
@@ -165,7 +138,10 @@ export const onPhotoUploaded = onObjectFinalized({
                 .toFile(thumbTmpPath);
             await storageBucket.upload(thumbTmpPath, {
                 destination: thumbStoragePath,
-                metadata: { contentType: 'image/webp' }
+                metadata: {
+                    contentType: 'image/webp',
+                    metadata: { isProcessed: 'true' }
+                }
             });
             const thumbFile = storageBucket.file(thumbStoragePath);
             await thumbFile.makePublic();
@@ -179,7 +155,10 @@ export const onPhotoUploaded = onObjectFinalized({
                     .toFile(detailTmpPath);
                 await storageBucket.upload(detailTmpPath, {
                     destination: detailStoragePath,
-                    metadata: { contentType: 'image/webp' }
+                    metadata: {
+                        contentType: 'image/webp',
+                        metadata: { isProcessed: 'true' }
+                    }
                 });
                 const detailFile = storageBucket.file(detailStoragePath);
                 await detailFile.makePublic();
@@ -253,7 +232,13 @@ export const onPhotoUploaded = onObjectFinalized({
                 
                 const photoRef = db.collection(COLLECTIONS.RELATIONSHIPS).doc(relId).collection(COLLECTIONS.INSTANTANEAS).doc(snapshotId);
                 const photoSnap = await transaction.get(photoRef);
-                if (photoSnap.exists && photoSnap.data().isProcessed) return;
+
+                if (!photoSnap.exists) {
+                    logger.warn(`[onPhotoUploaded] Snapshot doc not found, skipping update: ${snapshotId}`);
+                    return;
+                }
+
+                if (photoSnap.data().isProcessed) return;
 
                 transaction.update(photoRef, {
                     photoUrl: fullUrl,
@@ -295,7 +280,6 @@ export const onPhotoUploaded = onObjectFinalized({
             await storageBucket.file(filePath).delete().catch(err => {
                 logger.warn(`[onPhotoUploaded] Failed to delete original: ${filePath}`, err);
             });
-            console.log(`[onPhotoUploaded] Original deleted: ${filePath}`);
         }
 
     } catch (error) {

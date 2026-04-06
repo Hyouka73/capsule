@@ -1,15 +1,31 @@
-import { initializeApp, getApps } from 'firebase-admin/app';
-import { getStorage } from 'firebase-admin/storage';
-import { onCall, onRequest, HttpsError } from 'firebase-functions/v2/https';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { setGlobalOptions } from 'firebase-functions/v2';
 import { logger } from 'firebase-functions';
+import fs from 'fs';
+import path from 'path';
 
 // 1. Initialize Firebase Admin
 if (getApps().length === 0) {
-    initializeApp({
+    const serviceAccountPath = path.resolve(process.cwd(), 'serviceAccountKey.json');
+    const config = {
         projectId: 'capsule-valentins-day',
         storageBucket: 'capsule-valentins-day.firebasestorage.app'
-    });
+    };
+
+    if (fs.existsSync(serviceAccountPath)) {
+        logger.info('[Firebase Admin] Initializing with serviceAccountKey.json');
+        try {
+            const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+            config.credential = cert(serviceAccount);
+        } catch (err) {
+            logger.error('[Firebase Admin] Failed to parse serviceAccountKey.json:', err);
+        }
+    } else {
+        logger.info('[Firebase Admin] Initializing with default credentials');
+    }
+
+    initializeApp(config);
 }
 
 // 2. Emulator configuration
@@ -34,38 +50,8 @@ setGlobalOptions({
 });
 
 /**
- * TEMPORARY: setStorageCors
- * Configures the Storage bucket to allow direct photo downloads on Android.
- * This function can be called once via its URL after deployment.
+ * lazyOnCall — Wrapper para carga dinámica de funciones onCall.
  */
-export const setStorageCors = onRequest({ cors: true }, async (req, res) => {
-    try {
-        const bucket = getStorage().bucket('capsule-valentins-day.firebasestorage.app');
-        
-        const corsConfiguration = [
-            {
-                origin: ['*'], 
-                method: ['GET', 'HEAD', 'OPTIONS'],
-                maxAgeSeconds: 3600,
-                responseHeader: [
-                    'Content-Type', 
-                    'Access-Control-Allow-Origin', 
-                    'Authorization'
-                ]
-            }
-        ];
-
-        logger.info(`[CORS] Attempting to set config on bucket: ${bucket.name}`);
-        await bucket.setCorsConfiguration(corsConfiguration);
-        
-        logger.info('[CORS] SUCCESS: Configuration applied.');
-        res.status(200).send('✅ Firebase Storage CORS updated successfully! You can now delete this function and use the "Save" button in the gallery.');
-    } catch (error) {
-        logger.error('[CORS] FAILED:', error);
-        res.status(500).send(`❌ Error setting CORS: ${error.message}`);
-    }
-});
-
 const lazyOnCall = (path, name) => onCall({ 
     cors: ALLOWED_ORIGINS
 }, async (request) => {
@@ -95,18 +81,14 @@ const lazyOnCall = (path, name) => onCall({
 });
 
 // --- API Functions (HTTPS onCall) ---
-import { handler as createCapsuleHandler } from './src/api/createCapsule.js';
-import { handler as getCapsulesHandler } from './src/api/getCapsules.js';
-import { handler as openCapsuleHandler } from './src/api/openCapsule.js';
-import { handler as getAppConfigHandler } from './src/api/getAppConfig.js';
 
-export const createCapsule = onCall({ cors: ALLOWED_ORIGINS }, createCapsuleHandler);
-export const getCapsules = onCall({ cors: ALLOWED_ORIGINS }, getCapsulesHandler);
-export const openCapsule = onCall({ cors: ALLOWED_ORIGINS }, openCapsuleHandler);
-export const getAppConfig = onCall({ cors: ALLOWED_ORIGINS }, getAppConfigHandler);
+export const createCapsule = lazyOnCall('./src/api/createCapsule.js', 'handler');
+export const getCapsules = lazyOnCall('./src/api/getCapsules.js', 'handler');
+export const openCapsule = lazyOnCall('./src/api/openCapsule.js', 'handler');
+export const getAppConfig = lazyOnCall('./src/api/getAppConfig.js', 'handler');
 
 export const createMemory = lazyOnCall('./src/api/createMemory.js', 'createMemory');
-export const createSnapshot = lazyOnCall('./src/api/createSnapshot.js', 'createSnapshot');
+export const createSnapshot = lazyOnCall('./src/api/createSnapshot.js', 'handler');
 export const exchangeInviteToken = lazyOnCall('./src/api/exchangeInviteToken.js', 'exchangeInviteToken');
 export const findOrCreatePlace = lazyOnCall('./src/api/findOrCreatePlace.js', 'findOrCreatePlace');
 export const generateInviteToken = lazyOnCall('./src/api/generateInviteToken.js', 'generateInviteToken');
