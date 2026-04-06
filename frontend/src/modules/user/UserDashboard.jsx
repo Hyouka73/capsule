@@ -72,9 +72,12 @@ export default function UserDashboard() {
         const action = searchParams.get('action');
         const tab = searchParams.get('tab');
 
-        if (action === 'capture' || tab === 'galeria') {
+        if (action === 'capture' || tab === 'galeria' || action === 'cita') {
             if (action === 'capture') {
                 setIsCameraOpen(true);
+            }
+            if (action === 'cita') {
+                handlePlusClick();
             }
             if (tab === 'galeria') {
                 setActiveTab('galeria');

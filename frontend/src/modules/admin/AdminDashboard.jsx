@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useAppConfig } from '../../context/AppConfigContext';
 import { toast } from '../../components/ui/PastelToast/PastelToast';
@@ -51,6 +52,16 @@ export default function AdminDashboard() {
     const [isCameraOpen, setIsCameraOpen] = useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [activeSnapshots, setActiveSnapshots] = useState([]);
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    // ── APP SHORTCUTS HANDLER ──
+    useEffect(() => {
+        const action = searchParams.get('action');
+        if (action === 'capture') {
+            setIsCameraOpen(true);
+            setSearchParams({}, { replace: true });
+        }
+    }, [searchParams, setSearchParams]);
 
     const { unreadCount: filteredUnreadCount } = useActivityLog({ filterType });
 

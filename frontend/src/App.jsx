@@ -37,7 +37,18 @@ export default function App() {
   } = useAuth();
 
   const { teaser, isConfigLoaded } = useAppConfig();
-  const teaserEnabled = teaser?.isEnabled !== false; // treat undefined as true (safe default)
+  const teaserEnabled = teaser?.isEnabled !== false;
+
+  // ── MANIFEST SWAPPER (PRO PWA) ──
+  useEffect(() => {
+    if (isAuthenticated) {
+      const manifestLink = document.getElementById('manifest-link');
+      if (manifestLink) {
+        // Change manifest based on role to dynamic shortcuts if supported
+        manifestLink.setAttribute('href', isAdmin ? '/manifest-admin.json' : '/manifest-user.json');
+      }
+    }
+  }, [isAuthenticated, isAdmin]);
 
   // While resolving Firebase auth, show nothing (prevents flash)
   if (isLoading) return <LoadingScreen />;
@@ -58,12 +69,12 @@ export default function App() {
           !isAuthenticated 
             ? <Navigate to="/join" replace /> 
             : isAdmin 
-              ? <Navigate to="/admin" replace />
+              ? <Navigate to={`/admin${window.location.search}`} replace />
               : (teaserEnabled && teaserCompleted === false)
-                ? <Navigate to="/teaser" replace />
+                ? <Navigate to={`/teaser${window.location.search}`} replace />
                 : welcomeSeen === false
-                  ? <Navigate to="/welcome" replace />
-                  : <Navigate to="/app" replace />
+                  ? <Navigate to={`/welcome${window.location.search}`} replace />
+                  : <Navigate to={`/app${window.location.search}`} replace />
         } />
 
         {/* Flujo de invitación (público) */}
@@ -127,11 +138,20 @@ export default function App() {
                   : <BingoProvider><UserDashboard /><VersionBadge /></BingoProvider>
         } />
 
-        {/* Accesos directos (App Shortcuts) — Redirigir al dashboard con acción específica */}
+        {/* Accesos directos (App Shortcuts) — Redirigir al dashboard adecuado con acción específica */}
         <Route path="/snapshots/capture" element={
           !isAuthenticated 
             ? <Navigate to="/join" replace /> 
-            : <Navigate to="/app?action=capture" replace />
+            : isAdmin
+              ? <Navigate to="/admin?action=capture" replace />
+              : <Navigate to="/app?action=capture" replace />
+        } />
+        <Route path="/cita/instantanea" element={
+          !isAuthenticated 
+            ? <Navigate to="/join" replace /> 
+            : isAdmin
+              ? <Navigate to="/admin" replace /> // Admin no tiene citas, solo dashboard
+              : <Navigate to="/app?action=cita" replace />
         } />
         <Route path="/snapshots" element={
           !isAuthenticated 
