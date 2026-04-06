@@ -7,17 +7,17 @@ import { logActivity } from '../services/activityService.js';
 export const handler = async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Unauthorized');
 
-    const { photoUrl, storagePath, message = '', type = 'daily' } = request.data || {};
+    const { id, photoUrl, storagePath, message = '', type = 'daily' } = request.data || {};
     const { relationshipId, uid } = request.auth.token;
 
-    if (!photoUrl) throw new HttpsError('invalid-argument', 'Photo URL (photoUrl) is required.');
+    if (!id) throw new HttpsError('invalid-argument', 'Snapshot ID is required.');
     if (!relationshipId) throw new HttpsError('failed-precondition', 'No relationship found.');
 
     const db = getFirestore();
     const snapshotsColl = db.collection('relationships').doc(relationshipId).collection(COLLECTIONS.INSTANTANEAS);
 
     try {
-        const snapshotRef = snapshotsColl.doc();
+        const snapshotRef = id ? snapshotsColl.doc(id) : snapshotsColl.doc();
         const now = FieldValue.serverTimestamp();
 
         await snapshotRef.set({

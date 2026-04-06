@@ -44,8 +44,8 @@ export const handler = async (request) => {
                 }
             }
 
-            // Clear partnerUid from config/relationship and deactivate inviteConfig
-            await relationshipRef.set({ partnerUid: null, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+            // Keep partnerUid in config/relationship, just deactivate inviteConfig
+            await relationshipRef.set({ updatedAt: FieldValue.serverTimestamp() }, { merge: true });
             await inviteConfigRef.set({ isActive: false, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
         }
 
@@ -78,7 +78,7 @@ export const handler = async (request) => {
             isRevoked: false
         });
 
-        const baseUrl = process.env.APP_URL || 'http://localhost:5173';
+        const baseUrl = process.env.APP_URL || (process.env.FUNCTIONS_EMULATOR ? 'http://localhost:5173' : 'https://capsule-sooty.vercel.app');
         const inviteUrl = `${baseUrl}/join?t=${token}`;
 
         // Update config/inviteConfig doc

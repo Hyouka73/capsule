@@ -49,10 +49,10 @@ export const SINGLETON_DOCS = {
 // export const PARTNER_SINGLETON_ID = 'partner_main'; // Deprecated: Use role-based search instead
 
 export const STORAGE_PATHS = {
-    PHOTO_ORIGINAL: (memoryId, photoId) => `memories/${memoryId}/${photoId}.jpg`,
-    PHOTO_THUMB: (memoryId, photoId) => `memories/${memoryId}/thumb_${photoId}.jpg`,
-    SNAPSHOT_ORIGINAL: (relationshipId, snapshotId) => `${relationshipId}/snapshots/${snapshotId}.jpg`,
-    SNAPSHOT_THUMB: (relationshipId, snapshotId) => `${relationshipId}/snapshots/thumb_${snapshotId}.jpg`,
+    PHOTO_ORIGINAL: (memoryId, photoId) => `memories/${memoryId}/${photoId}.webp`,
+    PHOTO_THUMB: (memoryId, photoId) => `memories/${memoryId}/thumb_${photoId}.webp`,
+    SNAPSHOT_ORIGINAL: (relationshipId, snapshotId) => `${relationshipId}/snapshots/${snapshotId}.webp`,
+    SNAPSHOT_THUMB: (relationshipId, snapshotId) => `${relationshipId}/snapshots/thumb_${snapshotId}.webp`,
     CAPSULE_ORIGINAL: (relationshipId, capsuleId, fileId) => `${relationshipId}/capsules/${capsuleId}/${fileId}.webp`
 };
 

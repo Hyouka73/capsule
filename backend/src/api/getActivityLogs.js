@@ -29,16 +29,20 @@ export const handler = async (request) => {
         }
 
         const snapshot = await query.get();
-        const logs = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: doc.data().createdAt?.toDate() || null
-        }));
+        const logs = snapshot.docs
+            .map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                createdAt: doc.data().createdAt?.toDate() || null
+            }))
+            // Filter out logs created by the current user to keep the feed focused on the partner
+            .filter(log => log.userId !== request.auth.uid)
+            .slice(0, limit); // Ensure we still return up to 'limit' logs after filtering
 
         return {
             success: true,
             logs,
-            count: snapshot.size,
+            count: logs.length,
             hasMore: snapshot.size === limit
         };
     } catch (error) {

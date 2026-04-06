@@ -26,14 +26,14 @@ service cloud.firestore {
       // Read access: self OR shared relationship
       allow read: if isAuthenticated() && (
         request.auth.uid == userId || 
-        matchesRelationship(resource.data.relationshipId)
+        (resource != null && matchesRelationship(resource.data.relationshipId))
       );
 
       // Write access (Update): self only (limited for partner, full for admin)
       allow update: if isAuthenticated() && request.auth.uid == userId && (
         (request.auth.token.role == "partner" &&
          request.resource.data.diff(resource.data).affectedKeys()
-           .hasOnly(["preferences", "fcmTokens", "lastActiveAt", "deviceInfo", "welcomeSeen", "teaserCompleted", "onboardingCompleted", "gameCoins", "coinTransactions"]))
+           .hasOnly(["displayName", "photoURL", "preferences", "fcmTokens", "lastActiveAt", "deviceInfo", "welcomeSeen", "teaserCompleted", "onboardingCompleted", "gameCoins", "coinTransactions"]))
         ||
         (request.auth.token.role == "admin")
       );

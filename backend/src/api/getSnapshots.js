@@ -13,12 +13,16 @@ export const handler = async (request) => {
     const snapshotsColl = db.collection('relationships').doc(relationshipId).collection(COLLECTIONS.INSTANTANEAS);
 
     try {
-        const snapshot = await snapshotsColl.orderBy('createdAt', 'desc').limit(20).get();
-        const snapshots = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: doc.data().createdAt?.toDate() || null
-        }));
+        const querySnapshot = await snapshotsColl.orderBy('createdAt', 'desc').limit(40).get();
+        const snapshots = querySnapshot.docs
+            .map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                createdAt: doc.data().createdAt?.toDate() || null
+            }))
+            // Filter out snapshots created by the current user
+            .filter(s => s.createdBy !== request.auth.uid)
+            .slice(0, 20); // Keep only the last 20 after filtering
 
         return { success: true, snapshots };
     } catch (error) {

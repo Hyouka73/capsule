@@ -51,14 +51,32 @@ export const handler = async (request) => {
         const partnerTokens = partnerData.fcmTokens || [];
 
         const batch = db.batch();
+        // 1. Mark partner as revoked
         batch.update(partnerRef, {
             accountStatus: 'revoked',
             fcmTokens: [],
             updatedAt: FieldValue.serverTimestamp()
         });
 
+        // 2. IMPORTANT: Revoke all active invite tokens for this relationship
+        // This ensures the partner cannot "use an old link" to get back in.
+        const activeTokensSnap = await db.collection(COLLECTIONS.INVITE_TOKENS)
+            .where('relationshipId', '==', relationshipId)
+            .where('isRevoked', '==', false)
+            .get();
+        
+        if (!activeTokensSnap.empty) {
+            activeTokensSnap.forEach(doc => {
+                batch.update(doc.ref, {
+                    isRevoked: true,
+                    revokedAt: FieldValue.serverTimestamp(),
+                    revokedBy: request.auth.uid
+                });
+            });
+        }
+
+        // 3. Update relationship config - keep partnerUid but update timestamp
         batch.update(configRef, {
-            partnerUid: null,
             updatedAt: FieldValue.serverTimestamp()
         });
 

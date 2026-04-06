@@ -1,7 +1,9 @@
 import { HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
-import { COLLECTIONS } from '../config/constants.js';
+import { COLLECTIONS, SINGLETON_DOCS } from '../config/constants.js';
+
+// V2 ROBUSTNESS - 2026-04-05 FORCED REFRESH
 
 export const handler = async (request) => {
     let rawToken = typeof request.data === 'string' ? request.data : request.data?.token;
@@ -25,29 +27,31 @@ export const handler = async (request) => {
             throw new HttpsError('deadline-exceeded', 'Este enlace ha expirado.');
         }
 
-        if (data.isClaimed || data.isRevoked) {
-            throw new HttpsError('permission-denied', 'Este enlace ya ha sido utilizado o revocado.');
+        // V2: Don't block isClaimed tokens. We show the join screen anyway, 
+        // and exchangeInviteToken will decide if they get their session back.
+        if (data.isRevoked) {
+            throw new HttpsError('permission-denied', 'Este enlace ha sido revocado.');
         }
 
         const { relationshipId } = data;
         
-        // Check config/relationship (not config/main) for existing active partner
+        // Check config/relationship for existing identity info
         const configRef = db.collection('relationships').doc(relationshipId)
-            .collection('config').doc('relationship');
+            .collection('config').doc(SINGLETON_DOCS.RELATIONSHIP);
         const configSnap = await configRef.get();
 
         const { partnerUid } = configSnap.data() || {};
-        if (partnerUid) {
-            const partnerRef = db.collection(COLLECTIONS.USERS).doc(partnerUid);
-            const partnerSnap = await partnerRef.get();
-
-            if (partnerSnap.exists && partnerSnap.data().accountStatus === 'active') {
-                throw new HttpsError('failed-precondition', 'Esta invitación ya fue utilizada.');
-            }
-            if (partnerSnap.exists && partnerSnap.data().accountStatus === 'revoked') {
-                throw new HttpsError('permission-denied', 'Esta cuenta ha sido revocada.');
-            }
-        }
+        
+        // V2: No strict user-level blocks here. We trust the EXCHANGE step to 
+        // manage UID/Fingerprint matching. This enables multi-device re-entry.
+        
+        return {
+            success: true,
+            valid: true,
+            isClaimed: data.isClaimed === true,
+            relationshipId: data.relationshipId,
+            partnerUid: partnerUid || data.claimedBy || null
+        };
 
         return {
             success: true,

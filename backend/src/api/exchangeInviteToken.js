@@ -4,6 +4,10 @@ import { getAuth } from 'firebase-admin/auth';
 import { logger } from 'firebase-functions';
 import { COLLECTIONS, SINGLETON_DOCS } from '../config/constants.js';
 
+/**
+ * exchangeInviteToken - V2 Robustness Update (2026-04-05 FORCED)
+ * Uses a transaction to ensure atomic claim and re-entry logic.
+ */
 export const handler = async (request) => {
     try {
         const { token: rawToken, deviceFingerprint } = request.data;
@@ -12,115 +16,129 @@ export const handler = async (request) => {
         }
 
         const token = rawToken.trim().toUpperCase();
-
         const db = getFirestore();
         const auth = getAuth();
 
-        // 1. Validate the invite token
-        const tokenRef = db.collection(COLLECTIONS.INVITE_TOKENS).doc(token);
-        const tokenSnap = await tokenRef.get();
+        const result = await db.runTransaction(async (transaction) => {
+            // 1. Get Token Data
+            const tokenRef = db.collection(COLLECTIONS.INVITE_TOKENS).doc(token);
+            const tokenSnap = await transaction.get(tokenRef);
 
-        if (!tokenSnap.exists) {
-            throw new HttpsError('not-found', 'Token de invitación no encontrado');
-        }
+            if (!tokenSnap.exists) throw new HttpsError('not-found', 'Token no encontrado.');
+            const tokenData = tokenSnap.data();
+            if (tokenData.isRevoked) throw new HttpsError('permission-denied', 'Este token ha sido revocado.');
 
-        const tokenData = tokenSnap.data();
+            const { relationshipId } = tokenData;
+            if (!relationshipId) throw new HttpsError('internal', 'Invite token is not linked to a relationship.');
 
-        if (tokenData.isRevoked) {
-            throw new HttpsError('permission-denied', 'Este token ha sido revocado');
-        }
+            // 2. Resolve Partner UID (Smart Reuse Logic)
+            let realPartnerUid = null;
 
-        if (tokenData.isClaimed && tokenData.claimedDeviceId !== deviceFingerprint) {
-            throw new HttpsError('permission-denied', 'Este token ya fue usado en otro dispositivo');
-        }
+            // Check if already claimed by this device (Idempotency)
+            if (tokenData.isClaimed) {
+                if (tokenData.claimedDeviceId === deviceFingerprint) {
+                    realPartnerUid = tokenData.claimedBy;
+                } else {
+                    const relConfigRef = db.collection('relationships').doc(relationshipId).collection('config').doc(SINGLETON_DOCS.RELATIONSHIP);
+                    const relConfigSnap = await transaction.get(relConfigRef);
+                    const currentPartnerUid = relConfigSnap.exists ? relConfigSnap.data().partnerUid : null;
 
-        const { relationshipId, expiresAt } = tokenData;
-        if (expiresAt) {
-            const expiryDate = (typeof expiresAt.toDate === 'function') 
-                ? expiresAt.toDate() 
-                : new Date(expiresAt);
-            
-            if (expiryDate < new Date()) {
-                throw new HttpsError('deadline-exceeded', 'Este token ha expirado');
+                    if (currentPartnerUid) {
+                        realPartnerUid = currentPartnerUid; // Allow re-entry for existing partner
+                    } else {
+                        throw new HttpsError('permission-denied', 'Este token ya fue usado.');
+                    }
+                }
             }
-        }
 
-        // 2. Find or create the partner user in Firebase Auth
-        let userRecord = await auth.createUser({
-            displayName: 'Partner'
+            // 2.1 Check Relationship config for existing partner identity
+            if (!realPartnerUid) {
+                const relConfigRef = db.collection('relationships').doc(relationshipId).collection('config').doc(SINGLETON_DOCS.RELATIONSHIP);
+                const relConfigSnap = await transaction.get(relConfigRef);
+                if (relConfigSnap.exists && relConfigSnap.data().partnerUid) {
+                    realPartnerUid = relConfigSnap.data().partnerUid;
+                }
+            }
+
+            // 3. Obtain User Auth Record
+            let userRecord;
+            if (realPartnerUid) {
+                try {
+                    userRecord = await auth.getUser(realPartnerUid);
+                } catch (authError) {
+                    if (authError.code === 'auth/user-not-found') {
+                        userRecord = await auth.createUser({ uid: realPartnerUid, displayName: 'Partner' });
+                    } else throw authError;
+                }
+            } else {
+                userRecord = await auth.createUser({ displayName: 'Partner' });
+                realPartnerUid = userRecord.uid;
+            }
+
+            // 4. Update Partner User Document in Firestore
+            const userRef = db.collection(COLLECTIONS.USERS).doc(realPartnerUid);
+            const userSnap = await transaction.get(userRef);
+            const existingData = userSnap.exists ? userSnap.data() : {};
+
+            transaction.set(userRef, {
+                uid: realPartnerUid,
+                role: 'partner',
+                accountStatus: 'active',
+                relationshipId,
+                displayName: existingData.displayName || 'Pareja',
+                deviceId: deviceFingerprint,
+                deviceInfo: {
+                    ...existingData.deviceInfo,
+                    lastSeenAt: FieldValue.serverTimestamp(),
+                    platform: 'web',
+                    userAgent: request.rawRequest?.headers?.['user-agent'] ?? '',
+                },
+                isRevoked: false,
+                updatedAt: FieldValue.serverTimestamp(),
+                lastActiveAt: FieldValue.serverTimestamp(),
+                createdAt: existingData.createdAt || FieldValue.serverTimestamp(),
+            }, { merge: true });
+
+            // 5. Update Relationship Config & Token Status
+            const relConfigRef = db.collection('relationships').doc(relationshipId).collection('config').doc(SINGLETON_DOCS.RELATIONSHIP);
+            transaction.set(relConfigRef, { partnerUid: realPartnerUid, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+
+            const inviteConfigRef = db.collection('relationships').doc(relationshipId).collection('config').doc(SINGLETON_DOCS.INVITE_CONFIG);
+            transaction.set(inviteConfigRef, { isActive: false, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+
+            if (!tokenData.isClaimed) {
+                transaction.update(tokenRef, {
+                    isClaimed: true,
+                    claimedBy: realPartnerUid,
+                    claimedAt: FieldValue.serverTimestamp(),
+                    claimedDeviceId: deviceFingerprint,
+                });
+            }
+
+            return { realPartnerUid, relationshipId };
         });
 
-        const realPartnerUid = userRecord.uid;
+        const { realPartnerUid, relationshipId: finalRelId } = result;
 
-        // 3. Set custom claims: { role, deviceId, relationshipId }
+        // 6. Finalize: Set Custom Claims & Return Custom Token
         await auth.setCustomUserClaims(realPartnerUid, {
             role: 'partner',
             deviceId: deviceFingerprint,
-            ...(relationshipId && { relationshipId }),
+            relationshipId: finalRelId,
         });
 
-        // 4. Mark invite token as claimed
-        await tokenRef.update({
-            isClaimed: true,
-            claimedBy: realPartnerUid,
-            claimedAt: FieldValue.serverTimestamp(),
-            claimedDeviceId: deviceFingerprint,
-        });
-
-        // 5. Update Relationship Config — link new Partner and deactivate invite
-        const configColl = db.collection('relationships').doc(relationshipId).collection('config');
-        await configColl.doc(SINGLETON_DOCS.RELATIONSHIP).set({
-            partnerUid: realPartnerUid,
-            updatedAt: FieldValue.serverTimestamp()
-        }, { merge: true });
-        await configColl.doc(SINGLETON_DOCS.INVITE_CONFIG).set({
-            isActive: false,
-            updatedAt: FieldValue.serverTimestamp()
-        }, { merge: true });
-
-        // 6. Update/create user doc in Firestore
-        const userRef = db.collection(COLLECTIONS.USERS).doc(realPartnerUid);
-        await userRef.set({
-            uid: realPartnerUid,
-            role: 'partner',
-            accountStatus: 'active',
-            relationshipId: relationshipId || null,
-            displayName: 'Partner',
-            deviceId: deviceFingerprint,
-            deviceInfo: {
-                registeredAt: FieldValue.serverTimestamp(),
-                lastSeenAt: FieldValue.serverTimestamp(),
-                platform: 'web',
-                userAgent: request.rawRequest?.headers?.['user-agent'] ?? '',
-            },
-            isRevoked: false,
-            accountStatus: 'active',
-            fcmTokens: [],
-            welcomeSeen: false,
-            teaserCompleted: false, // Force them to see the intro
-            createdAt: FieldValue.serverTimestamp(),
-            lastActiveAt: FieldValue.serverTimestamp(),
-            gameCoins: 100,
-            coinTransactions: []
-        }, { merge: true });
-
-        // 7. Generate and return the custom token
         const customToken = await auth.createCustomToken(realPartnerUid, {
             role: 'partner',
             deviceId: deviceFingerprint,
-            ...(relationshipId && { relationshipId }),
+            relationshipId: finalRelId,
         });
 
-        logger.info(`Invite token ${token} successfully exchanged. User ${realPartnerUid} authenticated on device ${deviceFingerprint}.`);
+        logger.info(`[exchangeInviteToken] V2 Success for ${realPartnerUid} in ${finalRelId}`);
+        return { success: true, customToken, userId: realPartnerUid };
 
-        return {
-            success: true,
-            customToken,
-            userId: realPartnerUid
-        };
     } catch (error) {
         logger.error('exchangeInviteToken error:', error);
         if (error instanceof HttpsError) throw error;
-        throw new HttpsError('internal', 'Error al procesar el token. ' + error.message);
+        throw new HttpsError('internal', 'Error al procesar el token: ' + error.message);
     }
 };

@@ -1,5 +1,19 @@
 {
-    "indexes": [
+  "indexes": [
+    {
+      "collectionGroup": "memories",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "relationshipId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
         {
             "collectionGroup": "memories",
             "queryScope": "COLLECTION",
