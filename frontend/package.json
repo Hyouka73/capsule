@@ -1,11 +1,11 @@
 {
   "name": "app",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.38",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:emulators": "VITE_USE_EMULATORS=true vite",
+    "dev:emulators": "cross-env VITE_USE_EMULATORS=true vite --host localhost",
     "generate-sw": "node scripts/generate-sw.js",
     "prebuild": "npm run generate-sw",
     "build": "vite build",
