@@ -22,6 +22,24 @@
             ]
         },
         {
+            "source": "/manifest.json",
+            "headers": [
+                { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" }
+            ]
+        },
+        {
+            "source": "/manifest-admin.json",
+            "headers": [
+                { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" }
+            ]
+        },
+        {
+            "source": "/manifest-user.json",
+            "headers": [
+                { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" }
+            ]
+        },
+        {
             "source": "/manifest.webmanifest",
             "headers": [
                 { "key": "Cache-Control", "value": "no-cache, max-age=0" }

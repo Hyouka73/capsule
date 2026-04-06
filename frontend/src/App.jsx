@@ -46,7 +46,9 @@ export default function App() {
       const manifestLink = document.getElementById('manifest-link');
       if (manifestLink) {
         // Change manifest based on role to dynamic shortcuts if supported
-        manifestLink.setAttribute('href', isAdmin ? '/manifest-admin.json' : '/manifest-user.json');
+        // Added cache-buster to ensure the browser re-evaluates
+        const v = Date.now();
+        manifestLink.setAttribute('href', isAdmin ? `/manifest-admin.json?v=${v}` : `/manifest-user.json?v=${v}`);
       }
     }
   }, [isAuthenticated, isAdmin]);
