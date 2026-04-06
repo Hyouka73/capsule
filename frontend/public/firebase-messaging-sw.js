@@ -14,15 +14,57 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-messaging.onBackgroundMessage((payload) => {
+// Force immediate activation to skip the "waiting" state when credentials change
+self.addEventListener('install', (event) => {
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+    event.waitUntil(clients.claim());
+});
+
+messaging.onBackgroundMessage(async (payload) => {
     console.log('[firebase-messaging-sw.js] Received background message ', payload);
-    
-    const notificationTitle = payload.notification.title;
+
+    // Si la app está abierta y visible, no mostrar notificación nativa.
+    // El foreground listener de la app ya mostró el toast.
+    const clientList = await clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true
+    });
+    const appIsVisible = clientList.some(client => client.visibilityState === 'visible');
+    if (appIsVisible) {
+        console.log('[firebase-messaging-sw.js] App is visible, skipping native notification.');
+        return;
+    }
+
+    const notificationTitle = payload.notification?.title || '📸 ¡Nueva Instantánea!';
     const notificationOptions = {
-        body: payload.notification.body,
+        body: payload.notification?.body || 'Tu pareja ha capturado un momento para ti.',
         icon: '/logo.svg',
         data: payload.data
     };
 
     self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+/**
+ * Handle notification click — Focus or open the app on the main screen.
+ */
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+            for (let i = 0; i < windowClients.length; i++) {
+                const client = windowClients[i];
+                if ('focus' in client) {
+                    return client.focus();
+                }
+            }
+            if (clients.openWindow) {
+                return clients.openWindow('/');
+            }
+        })
+    );
 });

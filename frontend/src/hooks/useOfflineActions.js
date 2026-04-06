@@ -19,6 +19,7 @@ import {
     redeemCoupon,
     createCoupon
 } from '../apiClient';
+import { generateUUID } from '../utils/uuid';
 
 const ACTION_STORE = 'pending_actions';
 
@@ -285,7 +286,7 @@ export function useOfflineActions() {
     const queueAction = useCallback(async (type, payload) => {
         if (!relationshipId) return { queued: false };
         
-        const actionId = crypto.randomUUID();
+        const actionId = generateUUID();
         await saveAction({
             id: getStoreKey(actionId, relationshipId),
             originalId: actionId,

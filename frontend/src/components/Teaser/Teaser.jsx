@@ -33,15 +33,18 @@ function Teaser() {
         navigateRef.current = navigate;
     }, [completeTeaser, navigate]);
 
-    const unlockAt = useMemo(() => {
-        if (!teaser?.unlockAt) return new Date('2026-04-04T00:00:00').getTime();
-        if (teaser.unlockAt && typeof teaser.unlockAt === 'object' && teaser.unlockAt.seconds) {
-            return teaser.unlockAt.seconds * 1000;
+    const revealDate = useMemo(() => {
+        if (!teaser?.revealDate) return new Date('2026-04-04T00:00:00').getTime();
+        // Since the model already normalizes this to milliseconds, 
+        // we handle Firestore Timestamp objects just in case of race conditions during load.
+        if (teaser.revealDate && typeof teaser.revealDate === 'object') {
+            if (teaser.revealDate.seconds) return teaser.revealDate.seconds * 1000;
+            if (teaser.revealDate._seconds) return teaser.revealDate._seconds * 1000;
         }
-        if (typeof teaser.unlockAt === 'number') return teaser.unlockAt;
-        const d = new Date(teaser.unlockAt);
+        if (typeof teaser.revealDate === 'number') return teaser.revealDate;
+        const d = new Date(teaser.revealDate);
         return isNaN(d.getTime()) ? new Date('2026-04-04T00:00:00').getTime() : d.getTime();
-    }, [teaser?.unlockAt]);
+    }, [teaser?.revealDate]);
 
     const handleIntroComplete = useCallback(() => {
         setPhase('flowers');
@@ -171,7 +174,7 @@ function Teaser() {
                                     >
                                         <Countdown 
                                             visible={true} 
-                                            targetDate={unlockAt}
+                                            targetDate={revealDate}
                                             onComplete={handleCountdownComplete}
                                         />
 

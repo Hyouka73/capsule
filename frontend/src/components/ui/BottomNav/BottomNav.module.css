@@ -264,3 +264,44 @@
         padding: 10px 8px;
     }
 }
+
+/* ── Inactive Modules / Coming Soon ───────────────────────────────────── */
+.moreItemDisabled {
+    opacity: 0.6;
+    filter: grayscale(0.8);
+    cursor: default;
+    pointer-events: auto; /* Allow click for toast */
+}
+
+.moreItemDisabled .moreIcon {
+    background: #f0f0f0;
+    color: #999;
+}
+
+.moreItemDisabled:hover {
+    transform: none;
+    border-color: #eee;
+    box-shadow: none;
+}
+
+.soonBubble {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: var(--pastel-rose);
+    color: white;
+    font-size: 0.55rem;
+    padding: 2px 5px;
+    border-radius: 6px;
+    font-weight: 800;
+    text-transform: uppercase;
+    box-shadow: 0 2px 4px rgba(255, 175, 204, 0.3);
+    pointer-events: none;
+    z-index: 5;
+    animation: floatSoon 2.5s ease-in-out infinite;
+}
+
+@keyframes floatSoon {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}

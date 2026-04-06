@@ -1,12 +1,15 @@
 import React from 'react';
 import './VersionBadge.css';
 
-const APP_VERSION = 'v0.0.15';
+/* global __APP_VERSION__ */
+const CURRENT_VERSION = typeof __APP_VERSION__ !== 'undefined' ? (
+    __APP_VERSION__.startsWith('v') ? __APP_VERSION__ : `v${__APP_VERSION__}`
+) : 'v0.0.25-debug';
 
 export default function VersionBadge() {
     return (
         <div className="version-badge">
-            {APP_VERSION}
+            {CURRENT_VERSION}
         </div>
     );
 }

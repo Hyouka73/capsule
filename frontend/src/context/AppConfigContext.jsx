@@ -99,6 +99,14 @@ export function AppConfigProvider({ children }) {
             fetchConfig();
         }
 
+        // 3. Cache-bust migration: If we loaded from cache but it lacks membership data (new system),
+        // force a refresh to get the new structure.
+        setTimeout(() => {
+            if (isConfigLoaded && (!configRef.current?.members || configRef.current.members.length === 0)) {
+                fetchConfig(true);
+            }
+        }, 1000);
+
         // 3. Sync on online
         const handleOnline = () => {
             if (relationshipId) fetchConfig();

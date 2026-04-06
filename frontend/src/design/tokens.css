@@ -1,3 +1,5 @@
+/* CSS Variables & Theme Utilities */
+
 /*
   ╔══════════════════════════════════════════════════════════════════╗
   ║     CAPSULE — Design System: "Warm & Cozy"                       ║
@@ -176,6 +178,60 @@
     --gradient-warm:         linear-gradient(160deg, #fff5f7 0%, #fffbf0 100%);
     --gradient-amber:        linear-gradient(135deg, #ffd166, #ff9f1c);
     --gradient-lavender:     linear-gradient(135deg, #d4aaff, #c77dff);
+
+    /* ──────────────────────────────────────────────
+       CAPSULE RITUAL — Experience Tokens
+    ────────────────────────────────────────────── */
+    --capsule-paper-bg:      var(--pastel-cream);
+    --capsule-paper-line:    rgba(225, 217, 193, 0.4);
+    --capsule-paper-ink:     var(--pastel-text);
+    --capsule-wizard-bg:     var(--bg-card);
+    --capsule-wizard-step:   var(--bg-main);
+    --capsule-recording:     var(--color-error);
+    --pastel-rose-alpha:     rgba(255, 173, 199, 0.4);
+    --bg-overlay-black:      rgba(0, 0, 0, 0.8);
+
+    /* ──────────────────────────────────────────────
+       PRESTIGE RITUAL — Velvet Tokens (v4.1)
+    ────────────────────────────────────────────── */
+    --prestige-parchment:        #fdf9f0;
+    --prestige-parchment-dark:   #f1eee5;
+    --prestige-wax-crimson:      #ab3333;
+    --prestige-wax-crimson-glow: #b03737;
+    --prestige-text:             #1c1c17;
+    --prestige-shadow-diffuse:   0 20px 40px rgba(28, 28, 23, 0.08); /* Cinematic depth */
+    --prestige-radius:           1.5rem; /* Standard 'xl' but for ritual */
+
+    /* === CapsuleRitual Design Tokens === */
+    /* Tipografía exclusiva del Ritual — NO reemplaza --font-body global */
+    --ritual-font-handwriting: 'Caveat', cursive;
+    --ritual-font-serif: 'Playfair Display', serif;
+
+    /* Pergamino */
+    --prestige-parchment: #f5ead0;
+    --prestige-parchment-dark: #e8d4a8;
+
+    /* Lacre */
+    --prestige-wax-crimson: #c0392b;
+    --prestige-wax-crimson-glow: rgba(192, 57, 43, 0.6);
+    --prestige-wax-crimson-dark: #922b21;
+
+    /* Layout */
+    --prestige-radius: 8px;
+    --prestige-shadow-diffuse: 0 20px 60px rgba(0,0,0,0.4), 0 8px 20px rgba(0,0,0,0.2);
+
+    /* Overlays */
+    --bg-overlay-black: rgba(10, 8, 5, 0.92);
+    --bg-overlay-ghost: rgba(0, 0, 0, 0.25);
+
+    /* Ritual accent (no tocar --pastel-rose si ya existe globalmente) */
+    --ritual-accent-rose: #e8a0b0;
+
+    /* Texto y Radios específicos para el ritual (no compatibles con globales) */
+    --ritual-text-primary: #1a1208;
+    --ritual-text-muted: #7a6a50;
+    --ritual-text-inverse: #f5ead0;
+    --ritual-radius-md: 12px;
 }
 
 /* ──────────────────────────────────────────────────

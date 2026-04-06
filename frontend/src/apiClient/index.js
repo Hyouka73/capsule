@@ -10,10 +10,15 @@ import { functions } from '../services/firebase';
  * @param {object} data - Datos JSON a enviar (payload)
  * @returns {Promise<any>} Respuesta del servidor
  */
-export async function callBackendApi(name, data = {}) {
+export async function callBackendApi(name, data = {}, timeout = 60000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeout);
+
     try {
         const callable = httpsCallable(functions, name);
         const result = await callable(data);
+        
+        clearTimeout(timer);
 
         // Si el backend explicitamente dice success: false, lanzamos el error que mandó
         if (result.data && result.data.success === false) {
@@ -28,6 +33,10 @@ export async function callBackendApi(name, data = {}) {
 
         return result.data;
     } catch (error) {
+        clearTimeout(timer);
+        if (error.name === 'AbortError') {
+            throw new Error(`La petición a ${name} excedió el tiempo límite de ${timeout/1000}s.`);
+        }
         // Logueamos el error completo para debuggear en la consola del cliente
         // error logged silently
         throw error;

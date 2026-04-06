@@ -1,20 +1,49 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAppConfig } from '../../../hooks/useAppConfig';
+import { toast } from '../PastelToast/PastelToast';
 import styles from './BottomNav.module.css';
 
 /**
  * Reusable Bottom Navigation Component with "More" menu support.
- * 
- * @param {object} props
- * @param {string} props.activeTab - Current active tab ID
- * @param {function} props.setActiveTab - Function to update active tab
- * @param {Array} props.tabs - Main tabs to display in the primary bar
- * @param {Array} props.moreTabs - Secondary tabs to display in the "More" sheet
- * @param {number} props.pendingCount - Count for the notification badge
  */
 export default function BottomNav({ activeTab, setActiveTab, tabs = [], moreTabs = [], pendingCount = 0, pendingBingoCount = 0, onPlusClick, isPartner }) {
     const [isMoreOpen, setIsMoreOpen] = useState(false);
+    const { config } = useAppConfig();
     const moreMenuRef = useRef(null);
+
+    // Map tab.id to config.modules keys
+    const getModuleStatus = (tabId) => {
+        const mapping = {
+            'sorpresas': 'capsules',
+            'caprichos': 'coupons',
+            'bingo': 'bingo',
+            'movies': 'movies'
+        };
+        const featureKey = mapping[tabId];
+        
+        // Static coming soon for not-yet-implemented features
+        if (tabId === 'juegos' || tabId === 'ejercicio') return false;
+        
+        // If it's a known module, check config
+        if (featureKey && config?.modules) {
+            return config.modules[featureKey]?.isEnabled ?? false;
+        }
+        
+        return true; // Default to on for core tabs (map, gallery)
+    };
+
+    const handleTabSelect = (tabId) => {
+        const isActive = getModuleStatus(tabId);
+        
+        if (!isActive && moreTabs.some(t => t.id === tabId)) {
+            toast.info('¡Próximamente! ✨', 'Estamos preparando algo especial para ustedes.');
+            return;
+        }
+
+        setActiveTab(tabId);
+        setIsMoreOpen(false);
+    };
 
     const renderNavItem = (tab) => {
         const isActive = activeTab === tab.id;
@@ -72,11 +101,6 @@ export default function BottomNav({ activeTab, setActiveTab, tabs = [], moreTabs
     // Check if the currently active tab is one of the "more" tabs
     const isMoreActive = moreTabs.some(t => t.id === activeTab);
 
-    const handleTabSelect = (tabId) => {
-        setActiveTab(tabId);
-        setIsMoreOpen(false);
-    };
-
     return (
         <div className={styles.bottomNavContainer} ref={moreMenuRef}>
             {/* --- "More" Sheet --- */}
@@ -89,29 +113,33 @@ export default function BottomNav({ activeTab, setActiveTab, tabs = [], moreTabs
                         exit={{ opacity: 0, y: 20, scale: 0.95 }}
                     >
                         <div className={styles.moreGrid}>
-                            {moreTabs.map(tab => (
-                                <button
-                                    key={tab.id}
-                                    className={`${styles.moreItem} ${activeTab === tab.id ? styles.moreItemActive : ''}`}
-                                    onClick={() => handleTabSelect(tab.id)}
-                                >
-                                    <div className={styles.iconWrapper}>
-                                        <span className={`material-symbols-rounded ${styles.moreIcon}`}>
-                                            {tab.icon}
-                                        </span>
-                                        {tab.id === 'bingo' && pendingBingoCount > 0 && (
-                                            <motion.div
-                                                className={styles.badgeLeft}
-                                                initial={{ scale: 0 }}
-                                                animate={{ scale: 1 }}
-                                            >
-                                                {pendingBingoCount}
-                                            </motion.div>
-                                        )}
-                                    </div>
-                                    <span className={styles.moreLabel}>{tab.label}</span>
-                                </button>
-                            ))}
+                            {moreTabs.map(tab => {
+                                const isEnabled = getModuleStatus(tab.id);
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        className={`${styles.moreItem} ${activeTab === tab.id ? styles.moreItemActive : ''} ${!isEnabled ? styles.moreItemDisabled : ''}`}
+                                        onClick={() => handleTabSelect(tab.id)}
+                                    >
+                                        <div className={styles.iconWrapper}>
+                                            <span className={`material-symbols-rounded ${styles.moreIcon}`}>
+                                                {tab.icon}
+                                            </span>
+                                            {tab.id === 'bingo' && pendingBingoCount > 0 && isEnabled && (
+                                                <motion.div
+                                                    className={styles.badgeLeft}
+                                                    initial={{ scale: 0 }}
+                                                    animate={{ scale: 1 }}
+                                                >
+                                                    {pendingBingoCount}
+                                                </motion.div>
+                                            )}
+                                        </div>
+                                        <span className={styles.moreLabel}>{tab.label}</span>
+                                        {!isEnabled && <span className={styles.soonBubble}>Pronto</span>}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </motion.div>
                 )}

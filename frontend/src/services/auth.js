@@ -7,6 +7,7 @@ import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { auth, db, functions } from './firebase';
 import { COLLECTIONS } from '../config/constants';
+import { generateUUID } from '../utils/uuid';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Device Fingerprint
@@ -23,7 +24,7 @@ const DEVICE_FINGERPRINT_KEY = 'capsule_device_id';
 export function generateDeviceFingerprint() {
     let fingerprint = localStorage.getItem(DEVICE_FINGERPRINT_KEY);
     if (!fingerprint) {
-        fingerprint = crypto.randomUUID();
+        fingerprint = generateUUID();
         localStorage.setItem(DEVICE_FINGERPRINT_KEY, fingerprint);
     }
     return fingerprint;
@@ -80,11 +81,9 @@ export async function callSetupRelationship(adminUid) {
  * @returns {Promise<{ valid: boolean, relationshipId: string }>}
  */
 export async function callValidateInviteToken(token) {
-    console.log('[AuthService] Validating token:', token);
     try {
         const fn = httpsCallable(functions, 'validateInviteToken');
         const result = await fn({ token });
-        console.log('[AuthService] Validation success:', result.data);
         return result.data;
     } catch (error) {
         console.error('[AuthService] Validation failed:', error);
@@ -124,6 +123,26 @@ export async function exchangeInviteToken(inviteToken, deviceFingerprint) {
     const exchange = httpsCallable(functions, 'exchangeInviteToken');
     const result = await exchange({ token: inviteToken, deviceFingerprint });
     return result.data;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Repair & Sync
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * repairAuth — Self-healing call
+ * 
+ * Sincroniza claims (role, relationshipId) desde Firestore a Firebase Auth.
+ */
+export async function callRepairAuth() {
+    try {
+        const repair = httpsCallable(functions, 'repairAuth');
+        const result = await repair();
+        return result.data;
+    } catch (error) {
+        console.error('[AuthService] Repair failed:', error);
+        throw error;
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

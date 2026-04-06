@@ -33,30 +33,45 @@ const functions = getFunctions(app, 'us-central1');
 
 // Messaging — lazy initialization
 let messaging = null;
-// SKIP Messaging in emulator mode to avoid installations 400 errors during Callable calls
-if (import.meta.env.VITE_USE_EMULATORS !== 'true') {
-    isSupported().then(supported => {
-        if (supported) messaging = getMessaging(app);
-    });
-}
+isSupported().then(supported => {
+    if (supported) {
+        messaging = getMessaging(app);
+        console.log('[Firebase] Messaging supported and initialized.');
+    }
+});
 
 // In DEV mode, always connect the emulators when needed.
 if (import.meta.env.DEV) {
-    // Normalize localhost to 127.0.0.1 to avoid IPv6 (::1) issues on Windows
-    let host = window.location.hostname;
-    if (host === 'localhost') host = '127.0.0.1';
+    /**
+     * DYNAMIC EMULATOR HOST DETECTION
+     * 1. Check for manual override in localStorage (useful for mobile via tunnel)
+     * 2. If accessing via Local IP or localhost, use current hostname.
+     * 3. Default to 127.0.0.1 for maximum compatibility with local HTTPS pages.
+     */
+    const savedHost = localStorage.getItem('firebase_emulator_host');
+    const currentHost = window.location.hostname;
+    const isLocalAddress = currentHost === 'localhost' || 
+                           currentHost === '127.0.0.1' || 
+                           /^192\.168\./.test(currentHost) || 
+                           /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(currentHost) || 
+                           /^10\./.test(currentHost);
+
+    const emulatorHost = savedHost || (isLocalAddress ? currentHost : '127.0.0.1');
     
+    if (!savedHost && !isLocalAddress) {
+        console.info(`[Firebase] Using default 127.0.0.1. To test on mobile via tunnel, run: \nlocalStorage.setItem('firebase_emulator_host', 'YOUR_COMPUTER_IP')`);
+    }
+
     try {
-        connectFunctionsEmulator(functions, host, 5001);
+        connectFunctionsEmulator(functions, emulatorHost, 5001);
     } catch { /* already connected */ }
 
     if (import.meta.env.VITE_USE_EMULATORS === 'true') {
         try {
-            connectFirestoreEmulator(db, host, 8080);
-            connectStorageEmulator(storage, host, 9199);
+            connectFirestoreEmulator(db, emulatorHost, 8080);
+            connectStorageEmulator(storage, emulatorHost, 9199);
             // v9+ connectAuthEmulator expects the full URL including scheme
-            connectAuthEmulator(auth, `http://${host}:9099`, { disableWarnings: true });
-            console.log(`[Firebase] Connected to emulators on ${host}`);
+            connectAuthEmulator(auth, `http://${emulatorHost}:9099`, { disableWarnings: true });
         } catch (err) {
             console.warn('[Firebase] Emulator connection error:', err.message);
         }

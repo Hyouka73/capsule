@@ -3,7 +3,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--pastel-bg);
+    background: radial-gradient(circle at center, #fff9fa 0%, #ffeef2 100%);
     color: var(--text-primary);
     font-family: var(--font-display);
 }

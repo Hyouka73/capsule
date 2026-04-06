@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 import { openDB } from '../config/dbConfig';
 import { autoDetectMetadata } from '../utils/extractGpsFromFile';
+import { generateUUID } from '../utils/uuid';
 const STORE_NAME = 'pending_citas';
 
 export function usePendingCitas() {
@@ -70,7 +71,7 @@ export function usePendingCitas() {
 
     const addPendingCita = useCallback(async (files, context = null) => {
         const db = await openDB();
-        const id = crypto.randomUUID();
+        const id = generateUUID();
         const newItem = {
             id,
             createdAt: Date.now(),
@@ -258,7 +259,7 @@ export function usePendingCitas() {
 
     const saveDraft = useCallback(async (id, data, photos = []) => {
         const db = await openDB();
-        const draftId = id || crypto.randomUUID();
+        const draftId = id || generateUUID();
         const draftItem = {
             id: draftId,
             status: 'draft',

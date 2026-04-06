@@ -1,7 +1,7 @@
-import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
-import { getToken, onMessage } from 'firebase/messaging';
-import { arrayUnion, doc, updateDoc, onSnapshot, writeBatch } from 'firebase/firestore';
+import { getToken, onMessage, deleteToken } from 'firebase/messaging';
+import { doc, updateDoc, onSnapshot, writeBatch, serverTimestamp, deleteField } from 'firebase/firestore';
 import { auth, messaging, db } from '../services/firebase';
 import firebaseConfig from '../config/firebase';
 import {
@@ -9,6 +9,7 @@ import {
     signOut as authSignOut,
     registerWithEmail,
     callSetupRelationship,
+    callRepairAuth,
 } from '../services/auth';
 import { ROLES, COLLECTIONS } from '../config/constants';
 import User from '../models/User';
@@ -26,15 +27,17 @@ export function AuthProvider({ children }) {
     const [teaserLock, setTeaserLock] = useState(null);
     const [gameCoins, setGameCoins] = useState(0);
     const [accountStatus, setAccountStatus] = useState(null); // 'active' | 'revoked' | 'pending' | null (loading)
-    const [relationshipId, setRelationshipId] = useState(null);
+    const [relationshipId, setRelationshipId] = useState(localStorage.getItem('capsule_relationship_id') || null);
     const [isLoading, setIsLoading] = useState(true);
+    const initialAuthChecked = useRef(false);
 
     // Register FCM Token for partners
     const registerFCM = useCallback(async (userId) => {
         try {
-            // SKIP FCM in emulator mode to avoid logs and SW evaluation errors
-            if (import.meta.env.VITE_USE_EMULATORS === 'true') {
-                return;
+            // Only skip if messaging isn't supported or initialized
+            if (!messaging) {
+                const { isSupported } = await import('firebase/messaging');
+                if (!(await isSupported())) return;
             }
 
             // Wait for messaging to be initialized (it's lazy in firebase.js)
@@ -49,17 +52,38 @@ export function AuthProvider({ children }) {
 
             if (!messagingInstance) return;
 
+            try {
+                await deleteToken(messagingInstance);
+            } catch (_) {
+                // No hay token previo, está bien
+            }
+
             const token = await getToken(messagingInstance, {
                 vapidKey: firebaseConfig.vapidKey
             });
             if (token) {
                 const userRef = doc(db, COLLECTIONS.USERS, userId);
-                await updateDoc(userRef, {
-                    fcmTokens: arrayUnion(token)
-                });
+                const tokenData = {
+                    active: true,
+                    updatedAt: serverTimestamp()
+                };
+
+                try {
+                    await updateDoc(userRef, {
+                        [`fcmTokens.${token}`]: tokenData
+                    });
+                } catch (updateErr) {
+                    // SELF-HEALING: If the field is currently an array (legacy), updateDoc with dot-notation will fail.
+                    // We catch the error, delete the old array field, and set the new map field.
+                    console.warn('[AuthContext] FCM schema mismatch detected. Healing database...');
+                    await updateDoc(userRef, { fcmTokens: deleteField() });
+                    await updateDoc(userRef, {
+                        [`fcmTokens.${token}`]: tokenData
+                    });
+                }
             }
         } catch (err) {
-            // error logged silently or handled by caller
+            console.error('[FCM] registerFCM failed:', err.code, err.message);
         }
     }, []);
 
@@ -96,12 +120,6 @@ export function AuthProvider({ children }) {
                     }
 
                     const data = snapshot.data();
-                    console.log(`[AuthContext] User document loaded for UID: ${firebaseUser.uid}`, {
-                        role: data.role,
-                        teaserCompleted: data.teaserCompleted,
-                        welcomeSeen: data.welcomeSeen,
-                        relationshipId: data.relationshipId
-                    });
 
                     setOnboardingCompleted(data.onboardingCompleted ?? null);
                     setWelcomeSeen(data.welcomeSeen ?? false);
@@ -109,7 +127,7 @@ export function AuthProvider({ children }) {
                     setTeaserLock(data.teaserLock || null);
                     setGameCoins(data.gameCoins ?? 0);
                     const status = data.accountStatus || (data.isRevoked ? 'revoked' : 'active');
-                    console.log(`[AuthContext] User document snapshot received. Status: ${status}`, data);
+
                     setAccountStatus(status);
                     setRelationshipId(data.relationshipId || null);
                     if (data.relationshipId) {
@@ -130,36 +148,115 @@ export function AuthProvider({ children }) {
                     if (data.role) {
                         setRole(data.role);
                     }
-
-                    // Defensive: If role is ADMIN, they shouldn't be blocked by teaser/welcome flags
-                    if (data.role === 'admin') {
-                        setTeaserCompleted(true);
-                        setWelcomeSeen(true);
-                    }
-
-                    setIsLoading(false);
                 }, (err) => {
-                    console.error('[AuthContext] Snapshot error:', err);
-                    if (isMounted) setIsLoading(false);
+                    // SILENT RETRY: onSnapshot errors (e.g. temporary connectivity loss or token refresh delay)
+                    if (err.code === 'permission-denied') {
+                        console.warn('[AuthContext] Snapshot permission denied. Retrying soon...');
+                        // Don't sign out! The user might still be authenticating or claims might be propagating.
+                    } else {
+                        console.error('[AuthContext] Snapshot error:', err.code, err.message);
+                    }
                 });
 
                 // 2. Obtener claims (sin forzar refresh, mucho más rápido)
-                getCurrentUserClaims(false).then((claims) => {
+                getCurrentUserClaims(false).then(async (claims) => {
                     if (!isMounted) return;
+                    
                     setUser(firebaseUser);
-                    setRole(claims.role);
-                    setRelationshipId(claims.relationshipId);
+                    // No exponemos el rol ni el ID de relación hasta que estemos seguros de los claims
+                    // setRole(claims.role); // <- Movido abajo
+                    // setRelationshipId(claims.relationshipId); // <- Movido abajo
+
+                    console.log(`[AuthContext] User UID: ${firebaseUser.uid}`);
+                    console.log(`[AuthContext] Current Claims:`, JSON.stringify(claims));
+
+                    // --- REPAIR & SYNC LOGIC (HARDENED SELF-HEALING) ---
+                    // REFUERZO: Si es ADMIN, forzamos refresco una vez si falta el ID de relación.
+                    if (firebaseUser && claims.role === ROLES.ADMIN && !claims.relationshipId) {
+                        console.log('[AuthContext] Admin session possibly stale. Forcing total cleanse...');
+                        try {
+                            const refreshResult = await firebaseUser.getIdTokenResult(true);
+                            console.log('[AuthContext] Refresh complete. New claims:', JSON.stringify(refreshResult.claims));
+                            setRole(refreshResult.claims.role);
+                            setRelationshipId(refreshResult.claims.relationshipId);
+                        } catch (err) {
+                            console.error('[AuthContext] Forced refresh failed:', err);
+                        }
+                    }
+
+                    // Si incluso tras posible refresco faltan los permisos críticos 
+                    // (rol o ID de relación), forzamos la reparación ANTES de soltar el loader.
+                    if (firebaseUser && (!claims.role || !claims.relationshipId)) {
+                        console.log('[AuthContext] Claims incomplete (role or relId). Hard-healing session...');
+                        try {
+                            const repairResult = await callRepairAuth();
+                            if (repairResult.success) {
+                                console.log('[AuthContext] Claims repaired on backend. Forcing token refresh...');
+                                // Forzar refresh del token JWT para descartar el antiguo y traer los nuevos claims
+                                const refreshedTokenResult = await firebaseUser.getIdTokenResult(true);
+                                const newClaims = refreshedTokenResult.claims;
+                                
+                                setRole(newClaims.role);
+                                setRelationshipId(newClaims.relationshipId);
+                                if (newClaims.relationshipId) {
+                                    localStorage.setItem('capsule_relationship_id', newClaims.relationshipId);
+                                }
+                                toast.success('Accesos restaurados.');
+                            }
+                        } catch (repairErr) {
+                            console.error('[AuthContext] Hard-healing failed:', repairErr);
+                            // Fallback: si la reparación falla críticamente (perfil borrado), deslogueamos
+                            // para evitar bucles infinitos de carga o errores 403 persistentes.
+                            if (repairErr.code === 'not-found' || repairErr.code === 'failed-precondition') {
+                                console.error('[AuthContext] User profile broken. Forcing sign out.');
+                                authSignOut();
+                            }
+                        }
+                    }
+
                     if (claims.relationshipId) {
                         localStorage.setItem('capsule_relationship_id', claims.relationshipId);
                     }
                     setDeviceId(claims.deviceId);
 
+                    // --- SOLTAR DATOS ---
+                    // Solo una vez que los claims han sido verificados (o reparados), 
+                    // actualizamos los estados que disparan el resto de la app.
+                    setRole(claims.role);
+                    setRelationshipId(claims.relationshipId);
+
                     // Register FCM
                     if (claims.role === ROLES.PARTNER || claims.role === ROLES.ADMIN) {
                         registerFCM(firebaseUser.uid);
                     }
-                }).catch(() => {
-                    // if claims fail, we still wait for snapshot
+
+                    // --- FOREGROUND MESSAGING ---
+                    // This handles notifications when the app is OPEN
+                    if (import.meta.env.VITE_USE_EMULATORS !== 'true') {
+                        try {
+                            const { isSupported, onMessage } = await import('firebase/messaging');
+                            if (await isSupported()) {
+                                const { messaging } = await import('../services/firebase');
+                                if (messaging) {
+                                    unsubscribeMessaging = onMessage(messaging, (payload) => {
+                                        console.log('[AuthContext] Foreground message received:', payload);
+                                        toast.info(
+                                            payload.notification?.title || '📸 ¡Nueva Instantánea!', 
+                                            payload.notification?.body || 'Tu pareja ha capturado un momento.',
+                                            { duration: 6000 }
+                                        );
+                                    });
+                                }
+                            }
+                        } catch (msgErr) {
+                            console.warn('[AuthContext] Failed to setup foreground messaging:', msgErr);
+                        }
+                    }
+                }).catch((err) => {
+                    console.error('[AuthContext] Claims critical error:', err);
+                }).finally(() => {
+                    // Solo soltamos el loader una vez que los claims (y la posible reparación) terminen.
+                    if (isMounted) setIsLoading(false);
                 });
 
                 if (!isMounted) {
@@ -175,39 +272,24 @@ export function AuthProvider({ children }) {
                     setWelcomeSeen(null);
                     setTeaserCompleted(null);
                     setGameCoins(0);
-                    setIsLoading(false);
-                    localStorage.removeItem('capsule_relationship_id');
+                    
+                    // Only stop loading if this is a confirmed final null state
+                    // We add a tiny delay to avoid flashing /join during hot module replacement or quick link clicks
+                    if (!initialAuthChecked.current) {
+                        initialAuthChecked.current = true;
+                        setTimeout(() => {
+                            if (isMounted && !auth.currentUser) {
+                                setIsLoading(false);
+                            }
+                        }, 500);
+                    } else {
+                        setIsLoading(false);
+                        localStorage.removeItem('capsule_relationship_id');
+                    }
                 }
             }
         });
 
-        const setupMessagingListener = async () => {
-            let messagingInstance = messaging;
-            if (!messagingInstance) {
-                const { isSupported, getMessaging } = await import('firebase/messaging');
-                if (await isSupported()) {
-                    const { app } = await import('../services/firebase');
-                    messagingInstance = getMessaging(app);
-                }
-            }
-
-            if (messagingInstance && isMounted) {
-                unsubscribeMessaging = onMessage(messagingInstance, (payload) => {
-                    if (!isMounted) return;
-                    try {
-                        const { title, body } = payload.notification || {};
-                        if (title || body) {
-                            toast.info(title || 'Nueva notificación', body || '');
-                        }
-                    } catch (err) {
-                        // error logged silently
-                    }
-                });
-            }
-            if (!isMounted) unsubscribeMessaging?.();
-        };
-
-        setupMessagingListener();
 
         return () => {
             isMounted = false;
