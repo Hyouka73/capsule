@@ -41,6 +41,11 @@ export default defineConfig({
   define: {
     // Injected at build time — compared against /version.json at runtime
     __BUILD_TIMESTAMP__: JSON.stringify(BUILD_TIMESTAMP),
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '0.0.18'),
+  },
+  server: {
+    host: true,
+    port: 5173,
   },
   resolve: {
     alias: {
