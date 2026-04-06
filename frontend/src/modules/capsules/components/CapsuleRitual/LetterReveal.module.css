@@ -1,0 +1,132 @@
+/*
+ * LetterReveal.module.css
+ * CAMBIO CLAVE: .letterMover ya no es position:absolute.
+ * Antes vivía dentro del sobre (donde el padre es position:relative con inset:0),
+ * ahora vive dentro de .contentStage (fixed, flex, centrado).
+ * Con position:absolute dentro de un flex container el elemento se saca del flujo
+ * y no se centra correctamente.
+ */
+
+.letterMover {
+    position: relative;
+    /* era: absolute — causaba centrado roto */
+    width: min(85vw, 320px);
+    display: flex;
+    justify-content: center;
+    perspective: 2000px;
+    z-index: 15;
+}
+
+.letterWrapper {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    transform-style: preserve-3d;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* Parchment Texture */
+.parchmentBase {
+    background-color: var(--prestige-parchment);
+    background-image:
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
+    background-blend-mode: multiply;
+    opacity: 1;
+}
+
+.pnlMiddle {
+    position: relative;
+    min-height: 240px;
+    padding: 3rem 1.8rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transform-style: preserve-3d;
+    text-align: center;
+}
+
+.pnlTop,
+.pnlBottom {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 120px;
+    backface-visibility: hidden;
+    transform-style: preserve-3d;
+    display: flex;
+    flex-direction: column;
+    pointer-events: none;
+}
+
+.pnlTop {
+    bottom: calc(100% - 2px);
+    transform-origin: bottom;
+    border-radius: var(--prestige-radius) var(--prestige-radius) 0 0;
+    justify-content: flex-end;
+    padding-bottom: 2rem;
+}
+
+.pnlBottom {
+    top: calc(100% - 2px);
+    transform-origin: top;
+    border-radius: 0 0 var(--prestige-radius) var(--prestige-radius);
+    justify-content: flex-start;
+    padding-top: 1rem;
+}
+
+.foldShadow,
+.foldShadowBottom {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.foldShadow {
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.15) 0%, transparent 100%);
+}
+
+.foldShadowBottom {
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.15) 0%, transparent 100%);
+}
+
+.title {
+    font-family: var(--ritual-font-handwriting);
+    color: var(--prestige-wax-crimson);
+    font-size: 2.2rem;
+    margin: 0;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    width: 100%;
+    padding: 0 1rem;
+    box-sizing: border-box;
+}
+
+.contentMain {
+    font-family: var(--ritual-font-handwriting);
+    font-size: 1.5rem;
+    line-height: 1.4;
+    color: var(--ritual-text-primary);
+    max-width: 100%;
+}
+
+.signature {
+    font-family: var(--ritual-font-handwriting);
+    color: var(--prestige-wax-crimson);
+    font-size: 1.8rem;
+    text-align: right;
+    width: 100%;
+    padding-right: 2.5rem;
+    padding-top: 1rem;
+    font-weight: 700;
+    box-sizing: border-box;
+}
+
+@media (min-width: 1024px) {
+    .letterMover {
+        width: 440px;
+    }
+}

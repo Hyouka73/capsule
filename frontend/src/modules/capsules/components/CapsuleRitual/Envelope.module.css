@@ -1,0 +1,103 @@
+.envelopeContainer {
+    width: min(90vw, 360px);
+    aspect-ratio: 1.5 / 1;
+    perspective: 1500px;
+    position: relative;
+    margin: 0; /* Centrado por el padre flex */
+    z-index: 5;
+}
+
+.envelopeReal {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+}
+
+/* 1. LAYER: TRASERA (Cuerpo rígido oscuro) */
+.backPanel {
+    position: absolute;
+    inset: 0;
+    background: var(--prestige-parchment-dark);
+    border-radius: 0 0 var(--prestige-radius) var(--prestige-radius);
+    z-index: 1;
+    box-shadow: var(--prestige-shadow-diffuse);
+    border-top: none; /* Eliminar borde para que no haya línea arriba */
+}
+
+/* 2. LAYER: BOLSILLO INTERNO */
+.innerPocket {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    /* overflow visible para que la carta pueda "emerger" hacia arriba */
+    overflow: visible; 
+}
+
+/* 3. LAYER: FRONTAL (El frente - Pocket container) */
+.frontPanel {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    overflow: hidden;
+    border-radius: 0 0 var(--prestige-radius) var(--prestige-radius);
+    pointer-events: none;
+}
+
+/* Construcción de la V física sin clip-path */
+.vShapeLeft, .vShapeRight {
+    position: absolute;
+    top: 50%;
+    width: 150%;
+    height: 150%;
+    background: var(--prestige-parchment-dark);
+    box-shadow: inset 0 20px 40px rgba(0,0,0,0.1), 0 -5px 15px rgba(0,0,0,0.05); /* Sombra interna y borde suave */
+    border-top: 1px solid rgba(0,0,0,0.1); /* Definir la "boca" */
+}
+
+.vShapeLeft {
+    left: -75%;
+    transform: rotate(45deg);
+}
+
+.vShapeRight {
+    right: -75%;
+    transform: rotate(-45deg);
+}
+
+/* 4. LAYER: SOLAPA SUPERIOR (El cierre animado) */
+.topFlap {
+    position: absolute;
+    top: -1.5px; /* Solapamiento mayor para eliminar la línea negra en todas las pantallas */
+    left: 0;
+    right: 0;
+    height: 52%; 
+    z-index: 10;
+    transform-origin: top;
+    transform-style: preserve-3d;
+    pointer-events: none;
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    /* Eliminado filter: drop-shadow para evitar la línea negra técnica */
+}
+
+
+
+.flapInner {
+    position: absolute;
+    inset: 0;
+    background: var(--prestige-parchment-dark);
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    box-shadow: inset 0 0 30px rgba(0,0,0,0.2); /* Sombra interna del lacre */
+}
+
+/* Máscara física para que la carta no asome por debajo */
+.pocketClip {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    z-index: 2;
+    border-radius: 0 0 var(--prestige-radius) var(--prestige-radius);
+    pointer-events: none;
+}
