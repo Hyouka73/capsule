@@ -7,25 +7,30 @@ import path from 'path';
 
 // 1. Initialize Firebase Admin
 if (getApps().length === 0) {
+    const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
     const serviceAccountPath = path.resolve(process.cwd(), 'serviceAccountKey.json');
-    const config = {
-        projectId: 'capsule-valentins-day',
-        storageBucket: 'capsule-valentins-day.firebasestorage.app'
-    };
 
-    if (fs.existsSync(serviceAccountPath)) {
-        logger.info('[Firebase Admin] Initializing with serviceAccountKey.json');
+    if (isEmulator && fs.existsSync(serviceAccountPath)) {
+        logger.info('[Firebase Admin] Initializing for Emulator with serviceAccountKey.json');
         try {
             const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-            config.credential = cert(serviceAccount);
+            initializeApp({
+                credential: cert(serviceAccount),
+                storageBucket: 'capsule-valentins-day.firebasestorage.app'
+            });
         } catch (err) {
-            logger.error('[Firebase Admin] Failed to parse serviceAccountKey.json:', err);
+            logger.error('[Firebase Admin] Failed to initialize with serviceAccountKey.json:', err);
+            initializeApp(); // Fallback
         }
     } else {
-        logger.info('[Firebase Admin] Initializing with default credentials');
+        /**
+         * En producción (Cloud Functions), NO debemos pasar projectId manualmente si 
+         * queremos evitar el error "Service Usage Consumer" (403 Forbidden).
+         * initializeApp() detecta automáticamente el entorno del proyecto.
+         */
+        logger.info('[Firebase Admin] Initializing for Production (Auto-discovery/ADC)');
+        initializeApp();
     }
-
-    initializeApp(config);
 }
 
 // 2. Emulator configuration
