@@ -17,15 +17,16 @@ export const fcmService = {
         try {
             const usersSnap = await db.collection(COLLECTIONS.USERS)
                 .where('relationshipId', '==', relationshipId)
-                .where('fcmTokens', '!=', null)
                 .get();
 
             const allTokens = [];
             usersSnap.docs.forEach(doc => {
-                const tokens = doc.data().fcmTokens || [];
-                tokens.forEach(t => {
-                    if (t && !allTokens.includes(t)) {
-                        allTokens.push(t);
+                const tokensMap = doc.data().fcmTokens || {};
+                Object.keys(tokensMap).forEach(token => {
+                    const tokenData = tokensMap[token];
+                    // Only include active tokens
+                    if (tokenData && tokenData.active !== false && !allTokens.includes(token)) {
+                        allTokens.push(token);
                     }
                 });
             });
@@ -42,10 +43,13 @@ export const fcmService = {
      * @param {object} payload { title, body, data }
      */
     async sendBatchNotifications(tokens, payload) {
-        if (!tokens || tokens.length === 0) return { successCount: 0, failureCount: 0 };
+        if (!tokens || tokens.length === 0) {
+            logger.warn('[fcmService] No tokens provided for batch sending.');
+            return { successCount: 0, failureCount: 0 };
+        }
 
         const messaging = getMessaging();
-        const results = { successCount: 0, failureCount: 0 };
+        const results = { successCount: 0, failureCount: 0, deadTokens: [] };
 
         // Chunking: FCM allows max 500 per multicast
         const CHUNK_SIZE = 500;
@@ -56,24 +60,58 @@ export const fcmService = {
                     title: payload.title,
                     body: payload.body,
                 },
-                data: payload.data || {},
+                webpush: {
+                    notification: {
+                        title: payload.title,
+                        body: payload.body,
+                        icon: '/logo.svg',
+                        ...(payload.image && { image: payload.image }),
+                    },
+                    fcmOptions: {
+                        link: '/',
+                    },
+                },
+                data: payload.data
+                    ? Object.fromEntries(
+                        Object.entries(payload.data).map(([k, v]) => [k, String(v)])
+                      )
+                    : {},
                 tokens: chunk,
             };
 
+            // Optional enhancement: sound
+            if (payload.sound) {
+                // message.notification.sound = payload.sound; // Removed top-level for better compatibility
+                message.android = { notification: { sound: payload.sound } };
+                message.apns = { payload: { aps: { sound: payload.sound } } };
+            }
+
             try {
+                // Using multicast for efficiency
                 const response = await messaging.sendEachForMulticast(message);
                 results.successCount += response.successCount;
                 results.failureCount += response.failureCount;
 
                 if (response.failureCount > 0) {
                     logger.warn(`[fcmService] Batch partially failed. Success: ${response.successCount}, Fail: ${response.failureCount}`);
+                    
+                    const deadTokens = [];
+                    response.responses.forEach((resp, idx) => {
+                        if (!resp.success) {
+                            logger.error(`[fcmService] Token failed [${idx}]: code=${resp.error?.code} message=${resp.error?.message} token_prefix=${chunk[idx]?.substring(0, 20)}`);
+                            if (resp.error?.code === 'messaging/registration-token-not-registered') {
+                                deadTokens.push(chunk[idx]);
+                            }
+                        }
+                    });
+                    results.deadTokens = [...(results.deadTokens || []), ...deadTokens];
                 }
             } catch (error) {
                 logger.error('[fcmService] Critical error in sendEachForMulticast chunk:', error);
             }
         }
 
-        logger.info(`[fcmService] Final batch results: Success=${results.successCount}, Failures=${results.failureCount}`);
+        logger.info(`[fcmService] Final results: Success=${results.successCount}, Failures=${results.failureCount}`);
         return results;
     },
 
@@ -86,19 +124,41 @@ export const fcmService = {
         const db = getFirestore();
         try {
             const userSnap = await db.collection(COLLECTIONS.USERS).doc(uid).get();
-            if (!userSnap.exists) return;
+            if (!userSnap.exists) {
+                logger.warn(`[fcmService] User ${uid} not found.`);
+                return;
+            }
 
-            const tokens = userSnap.data().fcmTokens || [];
-            if (tokens.length === 0) return;
+            const tokensMap = userSnap.data().fcmTokens || {};
+            const activeTokens = Object.keys(tokensMap).filter(token => tokensMap[token].active !== false);
+            
+            if (activeTokens.length === 0) {
+                logger.warn(`[fcmService] No active tokens for user ${uid}.`);
+                return;
+            }
 
-            return await this.sendBatchNotifications(tokens, payload);
+            const result = await fcmService.sendBatchNotifications(activeTokens, payload);
+
+            // Cleanup dead tokens if any
+            if (result?.deadTokens?.length > 0) {
+                const { FieldValue } = await import('firebase-admin/firestore');
+                const userRef = db.collection(COLLECTIONS.USERS).doc(uid);
+                const cleanupData = {};
+                result.deadTokens.forEach(token => {
+                    cleanupData[`fcmTokens.${token}`] = FieldValue.delete();
+                });
+                await userRef.update(cleanupData);
+                logger.info(`[fcmService] Cleaned up ${result.deadTokens.length} dead tokens for user ${uid}`);
+            }
+
+            return result;
         } catch (error) {
             logger.error(`[fcmService] Error sending to user ${uid}:`, error);
         }
     }
 };
 
-// Aliases for easier use
-export const getTokensByRelationship = fcmService.getTokensByRelationship;
-export const sendBatchNotifications = fcmService.sendBatchNotifications;
-export const sendToUser = fcmService.sendToUser;
+// Aliases for easier use - Bind to preserve context
+export const getTokensByRelationship = fcmService.getTokensByRelationship.bind(fcmService);
+export const sendBatchNotifications = fcmService.sendBatchNotifications.bind(fcmService);
+export const sendToUser = fcmService.sendToUser.bind(fcmService);
