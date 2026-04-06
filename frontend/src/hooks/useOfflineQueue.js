@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { uploadFile, compressImage, processImagePair } from '../services/storage';
-import { createMemory, createSnapshot, findOrCreatePlace, updateBingoSquare } from '../apiClient';
+import { createMemory, createSnapshot, findOrCreatePlace, updateBingoSquare, createCapsule } from '../apiClient';
 import { STORAGE_PATHS } from '../config/constants';
 import Memory from '../models/Memory';
 import { toast } from '../components/ui/PastelToast/PastelToast';
@@ -12,6 +12,7 @@ import { useBingo } from './useBingo';
 
 import { openDB, getStoreKey } from '../config/dbConfig';
 import { useAuth } from './useAuth';
+import { generateUUID } from '../utils/uuid';
 const STORE_NAME = 'upload_queue';
 
 // Global lock to prevent multiple hook instances from running sync concurrently
@@ -234,7 +235,7 @@ export function useOfflineQueue() {
                         const photoUrls = [];
                         for (let i = 0; i < (item.photos?.length ?? 0); i++) {
                             const photo = item.photos[i];
-                            const photoId = crypto.randomUUID();
+        const photoId = generateUUID();
                             const tempMemoryId = item.id;
                             
                             // 1. Upload Original
@@ -332,25 +333,37 @@ export function useOfflineQueue() {
                         }
                         toast.success('¡Recuerdo sincronizado!', 'Ya está disponible en tu mapa 📍');
                     } else if (item.type === 'snapshot') {
-                        const snapshotId = item.id;
-                        const storagePath = STORAGE_PATHS.SNAPSHOT_ORIGINAL(relationshipId, snapshotId);
+                        const snapshotId = item.originalId || item.id.split('_').pop();
+                        const storagePath = `${relationshipId}/snapshots/${snapshotId}.webp`;
                         const blob = item.photos?.[0]?.blob ?? item.compressedBlob;
-                        const url = await uploadFile(blob, storagePath);
 
+                        // 1. Registrar en Firestore PRIMERO → el doc tendrá createdBy ✓
                         await createSnapshot({
+                            id: snapshotId,
                             storagePath,
-                            photoUrl: url,
+                            photoUrl: '', // onPhotoUploaded lo actualizará
                             message: item.data?.message ?? '',
                         });
+
+                        // 2. Subir la foto
+                        await uploadFile(blob, storagePath, { isSnapshot: 'true' });
+
                         toast.success('Instantánea sincronizada ✨');
                     } else if (item.type === 'capsule') {
                         const fileUrls = [];
                         for (let i = 0; i < (item.files?.length ?? 0); i++) {
                             const file = item.files[i];
-                             const fileId = crypto.randomUUID();
+                             const fileId = generateUUID();
                              const storagePath = STORAGE_PATHS.CAPSULE_ORIGINAL(relationshipId, item.originalId || item.id, fileId);
                             const url = await uploadFile(file.blob, storagePath);
-                            fileUrls.push({ url, storagePath, fileId, fileName: file.fileName });
+                            fileUrls.push({ 
+                                url, 
+                                storagePath, 
+                                fileId, 
+                                fileName: file.fileName,
+                                mimeType: file.mimeType || 'application/octet-stream',
+                                size: file.size || 0
+                            });
 
                             if (i < item.files.length - 1) {
                                 await new Promise(r => setTimeout(r, DELAY_BETWEEN_UPLOADS));
@@ -359,10 +372,16 @@ export function useOfflineQueue() {
 
                         await createCapsule({
                             ...item.data,
-                            id: item.originalId || item.id,
+                            id: cleanId, 
                             attachments: fileUrls
                         });
-                        toast.success('¡Cápsula enterrada!', 'Tu pareja la recibirá en el momento indicado ✨');
+                        const wasEdit = !!item.existingCapsuleId;
+                        toast.success(
+                            wasEdit ? '¡Cápsula actualizada!' : '¡Cápsula enterrada!',
+                            wasEdit ? 'Los cambios se guardaron ✅' : 'Tu pareja la recibirá en el momento indicado ✨'
+                        );
+                    } else if (item.type === 'delete-capsule') {
+                        await deleteCapsule({ capsuleId: item.capsuleId });
                     }
 
                     await removeFromQueue(item.id);
@@ -374,7 +393,7 @@ export function useOfflineQueue() {
                         channel.close();
                     }
                 } catch (err) {
-                    // Fail silently in prod
+                    // Fail silently in prod - errors are handled by retry limits
                     const currentRetries = item.retryCount ?? 0;
                     const newRetryCount = currentRetries + 1;
                     
@@ -471,8 +490,8 @@ export function useOfflineQueue() {
      * @returns {Promise<{queued: boolean, url?: string}>}
      */
     const queueUpload = useCallback(async (file, memoryId, meta = {}, onProgress = null) => {
-        const compressed = await compressImage(file, 1200, 0.8);
-        const photoId = crypto.randomUUID();
+        const compressed = await compressImage(file, { maxWidth: 1200, initialQuality: 0.8 });
+        const photoId = generateUUID();
         const storagePath = STORAGE_PATHS.PHOTO_ORIGINAL(memoryId, photoId);
 
         // ALWAYS save to IndexedDB queue first for persistence
@@ -542,7 +561,7 @@ export function useOfflineQueue() {
             })
         );
 
-        const memoryId = crypto.randomUUID();
+        const memoryId = generateUUID();
 
         await saveToQueue({
             id: getStoreKey(memoryId, relationshipId),
@@ -576,9 +595,9 @@ export function useOfflineQueue() {
      * @returns {Promise<{queued: boolean}>}
      */
     const queueSnapshot = useCallback(async (photoFile, message = '') => {
-        const blob = await compressImage(photoFile, 1200, 0.8);
+        const blob = await compressImage(photoFile, { maxWidth: 1200, initialQuality: 0.8 });
 
-        const snapshotId = crypto.randomUUID();
+        const snapshotId = generateUUID();
 
         await saveToQueue({
             id: getStoreKey(snapshotId, relationshipId),
@@ -586,7 +605,7 @@ export function useOfflineQueue() {
             relationshipId,
             type: 'snapshot',
             data: { message },
-            photos: [{ blob, fileName: photoFile.name, size: blob.size, mimeType: 'image/jpeg' }],
+            photos: [{ blob, fileName: `${snapshotId}.webp`, size: blob.size, mimeType: 'image/webp' }],
             status: 'pending',
             retryCount: 0,
             createdAt: Date.now(),
@@ -652,15 +671,18 @@ export function useOfflineQueue() {
      * Queue a time capsule for offline creation.
      */
     const queueCapsule = useCallback(async (capsuleData, files = []) => {
-        if (!relationshipId) return { queued: false };
+        if (!relationshipId) {
+            return { queued: false };
+        }
 
-        const capsuleId = crypto.randomUUID();
+        const capsuleId = capsuleData.id || generateUUID();
+        const isEdit = !!capsuleData.id;
         const compressedFiles = await Promise.all(
-            files.map(async (f) => {
+            files.map(async (f, idx) => {
                 const file = f.file || f;
                 // Only compress if it's an image
                 const blob = file.type.startsWith('image/') 
-                    ? await compressImage(file, 1200, 0.8) 
+                    ? await compressImage(file, { maxWidth: 1200, initialQuality: 0.8 }) 
                     : file;
                 
                 return {
@@ -672,20 +694,55 @@ export function useOfflineQueue() {
             })
         );
 
+        try {
+            await saveToQueue({
+                id: getStoreKey(capsuleId, relationshipId),
+                originalId: capsuleId,
+                existingCapsuleId: isEdit ? capsuleId : null,
+                relationshipId,
+                type: 'capsule',
+                data: capsuleData,
+                files: compressedFiles,
+                status: 'pending',
+                retryCount: 0,
+                createdAt: Date.now(),
+            });
+
+            await refreshCount();
+            
+            if (navigator.onLine) {
+                processQueue();
+            }
+
+            return { queued: true };
+        } catch (e) {
+            console.error('[useOfflineQueue] Error finishing queueCapsule:', e);
+            throw e;
+        }
+    }, [refreshCount, processQueue, relationshipId]);
+
+    /**
+     * Queue a capsule for background deletion.
+     */
+    const queueDeleteCapsule = useCallback(async (capsuleId) => {
+        if (!relationshipId || !capsuleId) return { queued: false };
+
+        const operationId = `delete_${capsuleId}`;
+        
         await saveToQueue({
-            id: getStoreKey(capsuleId, relationshipId),
-            originalId: capsuleId,
+            id: getStoreKey(operationId, relationshipId),
+            capsuleId,
             relationshipId,
-            type: 'capsule',
-            data: capsuleData,
-            files: compressedFiles,
+            type: 'delete-capsule',
             status: 'pending',
             retryCount: 0,
             createdAt: Date.now(),
         });
 
         await refreshCount();
-        if (navigator.onLine) processQueue();
+        if (navigator.onLine) {
+            processQueue();
+        }
 
         return { queued: true };
     }, [refreshCount, processQueue, relationshipId]);
@@ -703,5 +760,6 @@ export function useOfflineQueue() {
         clearFailedItems,
         getPendingSnapshots,
         queueCapsule,
+        queueDeleteCapsule,
     };
 }
