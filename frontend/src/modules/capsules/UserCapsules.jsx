@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from './UserCapsules.module.css';
+import CapsuleRitual from './components/CapsuleRitual/CapsuleRitual';
 import { CapsuleIcons } from '../../icons/CapsuleIcons';
 import { getCapsules, openCapsule } from '../../apiClient';
 import { db } from '../../services/firebase';
@@ -251,8 +252,11 @@ export default function UserCapsules({ onModalStateChange }) {
 
             <AnimatePresence>
                 {selectedCapsule && !showDestruct && (
-                    <CapsuleModal
+                    <CapsuleRitual
                         capsule={selectedCapsule}
+                        layoutId={selectedCapsule.id}
+                        onFinish={() => {
+                        }}
                         onClose={() => handleToggleModal(null)}
                     />
                 )}
@@ -329,6 +333,7 @@ function CapsuleCard({ capsule, onOpen }) {
 
     return (
         <motion.div
+            layoutId={capsule.id}
             whileHover={!isLocked ? { scale: 1.02 } : {}}
             whileTap={!isLocked ? { scale: 0.98 } : {}}
             className={`${styles.card} ${getCardClass()} ${isGlowing ? styles.cardAutodestroy : ''}`}
@@ -377,153 +382,7 @@ function CapsuleCard({ capsule, onOpen }) {
     );
 }
 
-function CapsuleModal({ capsule, onClose }) {
-    const { type, status, message, files, links } = capsule;
-    const Icon = CapsuleIcons[type] || CapsuleIcons['message'];
 
-    // Variants for sequenced reveal
-    const bodyVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: { staggerChildren: 0.15, delayChildren: 0.2 }
-        }
-    };
-
-    const itemVariants = {
-        hidden: { opacity: 0, y: 20, scale: 0.95 },
-        visible: { 
-            opacity: 1, y: 0, scale: 1,
-            transition: { type: 'spring', damping: 20, stiffness: 200 }
-        }
-    };
-
-    const iconVariants = {
-        hidden: { scale: 0, rotate: -20 },
-        visible: { 
-            scale: 1, rotate: 0,
-            transition: { type: 'spring', damping: 15, stiffness: 300, delay: 0.1 }
-        }
-    };
-
-    return (
-        <motion.div
-            className={styles.modalOverlay}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-        >
-            <motion.div
-                className={styles.modalContent}
-                initial={{ scale: 0.9, y: 50, rotate: -2 }}
-                animate={{ scale: 1, y: 0, rotate: 0 }}
-                exit={{ scale: 0.9, y: 50, rotate: 2 }}
-                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                onClick={(e) => e.stopPropagation()}
-            >
-                <button className={styles.closeBtn} onClick={onClose}>×</button>
-                
-                <motion.div 
-                    className={styles.modalBody}
-                    variants={bodyVariants}
-                    initial="hidden"
-                    animate="visible"
-                >
-                    <motion.div className={styles.modalIconLarge} variants={iconVariants}>
-                        <Icon />
-                    </motion.div>
-
-                    {message && (
-                        <motion.div className={styles.modalMessage} variants={itemVariants}>
-                            {message}
-                        </motion.div>
-                    )}
-
-                    {files && files.length > 0 && (
-                        <motion.div style={{ width: '100%' }} variants={itemVariants}>
-                            <p className={styles.sectionTitle}>Contenido Multimedia</p>
-                            
-                            {/* Render visual media directly */}
-                            <div className={styles.mediaGallery}>
-                                {files.map((file, idx) => {
-                                    const mime = file.mimeType || file.fileName || '';
-                                    const isImage = mime.includes('image') || /\.(jpg|jpeg|png|webp|gif)$/i.test(mime);
-                                    const isVideo = mime.includes('video') || /\.(mp4|mov|webm)$/i.test(mime);
-                                    
-                                    if (isImage) {
-                                        return (
-                                            <div key={idx} className={styles.mediaItem}>
-                                                <img src={file.url} alt={file.fileName} className={styles.mediaPreview} />
-                                                <a href={file.url} target="_blank" rel="noreferrer" className={styles.downloadOverlay}>💾</a>
-                                            </div>
-                                        );
-                                    }
-                                    if (isVideo) {
-                                        return (
-                                            <div key={idx} className={styles.mediaItem}>
-                                                <video src={file.url} controls className={styles.mediaPreview} />
-                                            </div>
-                                        );
-                                    }
-                                    return null;
-                                })}
-                            </div>
-
-                            <p className={styles.sectionTitle}>Archivos adjuntos</p>
-                            <div className={styles.contentList}>
-                                {files.map((file, idx) => (
-                                    <a 
-                                        key={idx} 
-                                        href={file.url} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className={styles.contentLink}
-                                    >
-                                        <span className={styles.linkIcon}>📎</span>
-                                        <div className={styles.linkInfo}>
-                                            <span className={styles.fileName}>{file.fileName || file.name || 'Descargar archivo'}</span>
-                                            {file.size && <span className={styles.fileSize}>{(file.size / 1024).toFixed(1)} KB</span>}
-                                        </div>
-                                    </a>
-                                ))}
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {links && links.length > 0 && (
-                        <motion.div style={{ width: '100%' }} variants={itemVariants}>
-                            <p className={styles.sectionTitle}>Links compartidos</p>
-                            <div className={styles.contentList}>
-                                {links.map((link, idx) => (
-                                    <a 
-                                        key={idx} 
-                                        href={link.url} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className={styles.contentLink}
-                                    >
-                                        <span className={styles.linkIcon}>🔗</span>
-                                        {link.title || link.url}
-                                    </a>
-                                ))}
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {status === 'pending_destruction' && (
-                        <motion.div 
-                            variants={itemVariants}
-                            style={{ marginTop: '1rem', color: 'var(--color-error)', fontWeight: '800', fontSize: '0.8rem', textTransform: 'uppercase' }}
-                        >
-                            ⚠️ Esta cápsula se autodestruirá pronto (Ventana de 24h)
-                        </motion.div>
-                    )}
-                </motion.div>
-            </motion.div>
-        </motion.div>
-    );
-}
 
 /**
  * DestructModal — Pantalla de advertencia crítica con countdown

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
 import { useOfflineQueue } from '../../hooks/useOfflineQueue';
 import Button from '../../components/ui/Button/Button';
@@ -8,6 +9,7 @@ import MediaUploader from '../../components/ui/MediaUploader/MediaUploader';
 import { useAppConfig } from '../../context/AppConfigContext';
 import styles from './CapsuleForm.module.css';
 import { toast } from '../../components/ui/PastelToast/PastelToast';
+import AudioCraft from './AudioCraft';
 
 export default function CapsuleForm({ onSuccess, onCancel, initialData = null }) {
     const { partnerUid, partnerEmail, relationshipId } = useAppConfig();
@@ -61,6 +63,7 @@ export default function CapsuleForm({ onSuccess, onCancel, initialData = null })
         };
     });
 
+    const [step, setStep] = useState(1); // 1: Essence (Type), 2: Heart (Content), 3: Seal (Rules)
     const [files, setFiles] = useState([]);
 
     const handleChange = (e) => {
@@ -71,8 +74,16 @@ export default function CapsuleForm({ onSuccess, onCancel, initialData = null })
         }));
     };
 
+    const nextStep = () => setStep(prev => Math.min(prev + 1, 3));
+    const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
+
+    const handleTypeSelect = (type) => {
+        setFormData(prev => ({ ...prev, type }));
+        nextStep();
+    };
+
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         setError(null);
 
         if (!relationshipId || !partnerUid) {
@@ -83,15 +94,13 @@ export default function CapsuleForm({ onSuccess, onCancel, initialData = null })
         setIsSubmitting(true);
 
         try {
-            console.log('[CapsuleForm] Calling queueCapsule...');
             // CRITICAL: Only send fields the backend expects.
-            // Do NOT spread formData — it contains raw Firestore fields 
-            // (Timestamps, server metadata) that will crash the backend.
             const cleanPayload = {
-                id: formData.id || undefined,  // undefined = new, string = edit
+                id: formData.id || undefined,
                 title: formData.title,
                 teaserMessage: formData.teaserMessage,
                 message: formData.message,
+                type: formData.type || 'message',
                 unlockTrigger: formData.unlockTrigger,
                 unlockDate: formData.unlockDate ? new Date(formData.unlockDate).toISOString() : null,
                 autoDestroy: formData.autoDestroy,
@@ -99,175 +108,272 @@ export default function CapsuleForm({ onSuccess, onCancel, initialData = null })
                 relationshipId,
                 recipientUid: partnerUid,
             };
-            console.log('[CapsuleForm] Clean payload:', cleanPayload);
-            const res = await queueCapsule(cleanPayload, files);
 
-            console.log('[CapsuleForm] queueCapsule result:', res);
+            const res = await queueCapsule(cleanPayload, files);
 
             if (res.queued) {
                 const isEdit = !!initialData?.id;
                 toast.success(
-                    isEdit ? '¡Cápsula actualizada!' : '¡Cápsula enterrada!',
-                    isEdit ? 'Los cambios se sincronizarán en breve ✅' : 'Se sincronizará en cuanto haya conexión ✨'
+                    isEdit ? '¡Cambios sellados! ✨' : '¡Cápsula enterrada! ⏳',
+                    isEdit ? 'Tu recuerdo se está actualizando...' : 'Se abrirá en el momento indicado.'
                 );
                 onSuccess(cleanPayload);
             } else {
-                console.warn('[CapsuleForm] res.queued is false');
-                setError('No se pudo encolar la cápsula. Intenta de nuevo.');
+                setError('No se pudo sellar la cápsula. Intenta de nuevo.');
             }
         } catch (err) {
-            console.error('[CapsuleForm] Error in handleSubmit:', err);
+            console.error('[CapsuleForm] Error:', err);
             if (isMounted.current) {
-                setError(err.message || 'Ocurrió un error inesperado al guardar la cápsula.');
+                setError(err.message || 'Error inesperado al sellar el recuerdo.');
             }
         } finally {
-            console.log('[CapsuleForm] Submitting finished');
             if (isMounted.current) setIsSubmitting(false);
         }
     };
 
     return (
-        <form className={styles.form} onSubmit={handleSubmit}>
-            {error && <div className={styles.error}>{error}</div>}
+        <div className={styles.wizardContainer}>
+            {/* Cabecera del Progreso */}
+            <div className={styles.progressHeader}>
+                <div className={`${styles.dot} ${step >= 1 ? styles.dotActive : ''}`} />
+                <div className={`${styles.line} ${step >= 2 ? styles.lineActive : ''}`} />
+                <div className={`${styles.dot} ${step >= 2 ? styles.dotActive : ''}`} />
+                <div className={`${styles.line} ${step >= 3 ? styles.lineActive : ''}`} />
+                <div className={`${styles.dot} ${step >= 3 ? styles.dotActive : ''}`} />
+            </div>
 
-            <div className={styles.splitLayout}>
-                {/* ── Columna Principal: El Tesoro ── */}
-                <div className={styles.mainColumn}>
-                    <div className={styles.sectionHeader}>
-                        <span className={styles.sectionIcon}>💌</span>
-                        <div className={styles.sectionText}>
-                            <h3 className={styles.sectionTitle}>Contenido de la Cápsula</h3>
-                            <p className={styles.sectionDesc}>Lo que tu pareja encontrará al abrirla.</p>
-                        </div>
-                    </div>
+            <form className={styles.form} onSubmit={handleSubmit}>
+                {error && <div className={styles.error}>{error}</div>}
 
-                    <div className={styles.formField}>
-                        <KawaiiInput
-                            type="text"
-                            label="Título Secreto"
-                            name="title"
-                            required
-                            value={formData.title}
-                            onChange={handleChange}
-                            placeholder="Ej: Para nuestra boda, Sorpresa de aniversario..."
-                            iconLeft="edit"
-                        />
-                    </div>
-
-                    <div className={styles.formField}>
-                        <KawaiiInput
-                            type="textarea"
-                            label="Tu Mensaje"
-                            name="message"
-                            required
-                            value={formData.message}
-                            onChange={handleChange}
-                            placeholder="Escribe aquí tu carta o mensaje secreto para el futuro..."
-                            rows={8}
-                        />
-                    </div>
-
-                    <div className={styles.formField}>
-                        <label className={styles.label}>📸 Adjuntos Multimedia</label>
-                        <div className={styles.mediaContainerCompact}>
-                            <MediaUploader files={files} onChange={setFiles} />
-                        </div>
-                        {isSubmitting && files.length > 0 && (
-                            <div className={styles.progressContainer}>
-                                <div className={styles.progressBar} style={{ width: `100%` }} />
-                                <span className={styles.progressText}>Preparando envío de {files.length} archivos...</span>
+                <AnimatePresence mode="wait">
+                    {step === 1 && (
+                        <motion.div 
+                            key="step1"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className={styles.stepContent}
+                        >
+                            <h2 className={styles.stepTitle}>¿Qué vas a regalar hoy?</h2>
+                            <p className={styles.stepDesc}>Elige la esencia de tu recuerdo ✨</p>
+                            
+                            <div className={styles.typeGrid}>
+                                <button type="button" className={styles.typeItem} onClick={() => handleTypeSelect('message')}>
+                                    <div className={styles.typeIcon}>💌</div>
+                                    <span>Carta de Amor</span>
+                                </button>
+                                <button type="button" className={styles.typeItem} onClick={() => handleTypeSelect('audio')}>
+                                    <div className={styles.typeIcon}>🎙️</div>
+                                    <span>Nota de Voz</span>
+                                </button>
+                                <button type="button" className={styles.typeItem} onClick={() => handleTypeSelect('photo')}>
+                                    <div className={styles.typeIcon}>📸</div>
+                                    <span>Galería</span>
+                                </button>
+                                <button type="button" className={styles.typeItem} onClick={() => handleTypeSelect('link')}>
+                                    <div className={styles.typeIcon}>🔗</div>
+                                    <span>Recuerdo Web</span>
+                                </button>
                             </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* ── Columna Lateral: Configuración y Reglas ── */}
-                <div className={styles.sideColumn}>
-                    <div className={styles.sectionHeader}>
-                        <span className={styles.sectionIcon}>🔑</span>
-                        <div className={styles.sectionText}>
-                            <h3 className={styles.sectionTitle}>Reglas de Apertura</h3>
-                            <p className={styles.sectionDesc}>¿Cuándo se revelará el secreto?</p>
-                        </div>
-                    </div>
-
-                    <div className={styles.formField}>
-                        <KawaiiInput
-                            type="text"
-                            label="Mensaje Teaser"
-                            name="teaserMessage"
-                            required
-                            value={formData.teaserMessage}
-                            onChange={handleChange}
-                            placeholder="Visible antes de abrir... 👋"
-                            iconLeft="visibility"
-                        />
-                    </div>
-
-                    <div className={styles.formField}>
-                        <KawaiiInput
-                            type="select"
-                            label="Activador"
-                            name="unlockTrigger"
-                            value={formData.unlockTrigger}
-                            onChange={handleChange}
-                            iconLeft="lock_open"
-                            options={[
-                                { value: 'date', label: 'Fecha y Hora' },
-                                { value: 'manual', label: 'Manual (Tú decides)' }
-                            ]}
-                        />
-                    </div>
-
-                    {formData.unlockTrigger === 'date' && (
-                        <div className={styles.formField}>
-                            <KawaiiInput
-                                type="datetime-local"
-                                label="Fecha de Desbloqueo"
-                                name="unlockDate"
-                                required
-                                value={formData.unlockDate}
-                                onChange={handleChange}
-                                iconLeft="schedule"
-                            />
-                        </div>
+                        </motion.div>
                     )}
 
-                    <div className={styles.configContainer}>
-                        <h4 className={styles.configTitle}>Configuración Extra</h4>
-                        <div className={styles.configList}>
-                            <KawaiiSwitch 
-                                checked={formData.autoDestroy} 
-                                onChange={(val) => setFormData(prev => ({ ...prev, autoDestroy: val }))} 
-                                label="Autodestrucción" 
-                                icon="💥"
-                                variant="rose"
-                            />
+                    {/* Próximos pasos se implementarán en el siguiente turno */}
+                    {step === 2 && (
+                        <motion.div 
+                            key="step2" 
+                            initial={{ opacity: 0, x: 20 }} 
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className={styles.stepContent}
+                        >
+                            <h2 className={styles.stepTitle}>
+                                {formData.type === 'message' && 'Escribe tu Carta 💌'}
+                                {formData.type === 'photo' && 'Tu Galería de Recuerdos 📸'}
+                                {formData.type === 'audio' && 'Tu Mensaje de Voz 🎙️'}
+                                {formData.type === 'link' && 'Compartir un Enlace 🔗'}
+                            </h2>
+                            <p className={styles.stepDesc}>Dale forma a lo que quieres decir... ✨</p>
+                            
+                            <div className={styles.contentWrapper}>
+                                {formData.type === 'message' && (
+                                    <div className={styles.letterContainer}>
+                                        <textarea
+                                            name="message"
+                                            className={styles.paperTextarea}
+                                            value={formData.message}
+                                            onChange={handleChange}
+                                            placeholder="Escribe aquí tu carta secreta..."
+                                            required
+                                            rows={12}
+                                        />
+                                    </div>
+                                )}
 
-                            <KawaiiSwitch 
-                                checked={formData.notifyOnUnlock} 
-                                onChange={(val) => setFormData(prev => ({ ...prev, notifyOnUnlock: val }))} 
-                                label="Notificar al abrir" 
-                                icon="🔔"
-                                variant="mint"
-                            />
-                        </div>
-                    </div>
-                </div>
-            </div>
+                                {formData.type === 'photo' && (
+                                    <div className={styles.galleryContainer}>
+                                        <MediaUploader files={files} onChange={setFiles} />
+                                        <textarea
+                                            name="message"
+                                            className={styles.captionArea}
+                                            value={formData.message}
+                                            onChange={handleChange}
+                                            placeholder="Escribe aquí una dedicatoria o historia sobre estas fotos... ✨"
+                                        />
+                                    </div>
+                                )}
 
-            <div className={styles.actionsSticky}>
-                <Button
-                    type="submit"
-                    disabled={isSubmitting}
-                    isLoading={isSubmitting}
-                    className={styles.submitBtn}
-                >
-                    {isSubmitting 
-                        ? (initialData ? 'Guardando cambios...' : 'Enterrando...') 
-                        : (initialData ? 'Guardar Cambios ✨' : 'Enterrar Cápsula ⏳')}
-                </Button>
-            </div>
-        </form>
+                                {formData.type === 'audio' && (
+                                    <AudioCraft 
+                                        onAudioChange={(file) => setFiles(file ? [file] : [])} 
+                                        existingAudio={initialData?.files?.find(f => f.mimeType.includes('audio'))?.url}
+                                    />
+                                )}
+
+                                {formData.type === 'link' && (
+                                    <div className={styles.linkContainer}>
+                                        <KawaiiInput
+                                            type="url"
+                                            label="Enlace (URL)"
+                                            name="message"
+                                            value={formData.message}
+                                            onChange={handleChange}
+                                            placeholder="https://spotify.com/cancion-especial"
+                                            iconLeft="link"
+                                            required
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <div className={styles.stepActions}>
+                                <Button 
+                                    type="button" 
+                                    onClick={prevStep} 
+                                    variant="ghost"
+                                    className={styles.navBtn}
+                                >
+                                    Atrás
+                                </Button>
+                                <Button 
+                                    type="button" 
+                                    onClick={nextStep}
+                                    className={styles.navBtn}
+                                >
+                                    Siguiente
+                                </Button>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {step === 3 && (
+                        <motion.div 
+                            key="step3" 
+                            initial={{ opacity: 0, x: 20 }} 
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className={styles.stepContent}
+                        >
+                            <h2 className={styles.stepTitle}>El Sello del Tiempo ⏳</h2>
+                            <p className={styles.stepDesc}>Define cómo y cuándo se revelará tu secreto.</p>
+
+                            <div className={styles.sealFields}>
+                                <div className={styles.fieldRow}>
+                                    <KawaiiInput
+                                        type="text"
+                                        label="Título de la Cápsula"
+                                        name="title"
+                                        required
+                                        value={formData.title}
+                                        onChange={handleChange}
+                                        placeholder="Ej: Lo que te dije aquel día..."
+                                        iconLeft="edit"
+                                    />
+                                </div>
+                                
+                                <div className={styles.fieldRow}>
+                                    <KawaiiInput
+                                        type="text"
+                                        label="Mensaje Teaser"
+                                        name="teaserMessage"
+                                        required
+                                        value={formData.teaserMessage}
+                                        onChange={handleChange}
+                                        placeholder="Visible antes de abrir... 👋"
+                                        iconLeft="visibility"
+                                    />
+                                </div>
+
+                                <div className={styles.fieldRow}>
+                                    <KawaiiInput
+                                        type="select"
+                                        label="Modo de Apertura"
+                                        name="unlockTrigger"
+                                        value={formData.unlockTrigger}
+                                        onChange={handleChange}
+                                        iconLeft="lock_open"
+                                        options={[
+                                            { value: 'date', label: 'Programar Fecha' },
+                                            { value: 'manual', label: 'Tú la abres' }
+                                        ]}
+                                    />
+                                </div>
+
+                                {formData.unlockTrigger === 'date' && (
+                                    <div className={styles.fieldRow}>
+                                        <KawaiiInput
+                                            type="datetime-local"
+                                            label="¿Cuándo se libera?"
+                                            name="unlockDate"
+                                            required
+                                            value={formData.unlockDate}
+                                            onChange={handleChange}
+                                            iconLeft="schedule"
+                                        />
+                                    </div>
+                                )}
+
+                                <div className={styles.configGrid}>
+                                    <KawaiiSwitch 
+                                        checked={formData.autoDestroy} 
+                                        onChange={(val) => setFormData(prev => ({ ...prev, autoDestroy: val }))} 
+                                        label="Autodestrucción" 
+                                        icon="💥"
+                                        variant="rose"
+                                    />
+
+                                    <KawaiiSwitch 
+                                        checked={formData.notifyOnUnlock} 
+                                        onChange={(val) => setFormData(prev => ({ ...prev, notifyOnUnlock: val }))} 
+                                        label="Avisarte al abrir" 
+                                        icon="🔔"
+                                        variant="mint"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className={styles.stepActions}>
+                                <Button 
+                                    type="button" 
+                                    onClick={prevStep} 
+                                    variant="ghost"
+                                    className={styles.navBtn}
+                                >
+                                    Regresar
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    isLoading={isSubmitting}
+                                    className={`${styles.navBtn} ${styles.finishBtn}`}
+                                >
+                                    {isSubmitting ? 'Sellando...' : 'Sellar Cápsula ✨'}
+                                </Button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </form>
+        </div>
     );
 }
