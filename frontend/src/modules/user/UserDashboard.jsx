@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useAppConfig } from '../../hooks/useAppConfig';
 import { db } from '../../services/firebase';
@@ -64,6 +65,26 @@ export default function UserDashboard() {
     const [isPendingListOpen, setIsPendingListOpen] = useState(false);
     const [isGalleryDetailOpen, setIsGalleryDetailOpen] = useState(false);
     const [isCapsuleModalOpen, setIsCapsuleModalOpen] = useState(false);
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    // ── APP SHORTCUTS HANDLER ──
+    useEffect(() => {
+        const action = searchParams.get('action');
+        const tab = searchParams.get('tab');
+
+        if (action === 'capture' || tab === 'galeria') {
+            if (action === 'capture') {
+                setIsCameraOpen(true);
+            }
+            if (tab === 'galeria') {
+                setActiveTab('galeria');
+            }
+            
+            // Mandatory Cleanup: Clear search params to avoid re-triggering on refresh/resume
+            // using replace: true to keep history clean
+            setSearchParams({}, { replace: true });
+        }
+    }, [searchParams, setSearchParams]);
 
     // ── INTER-CITATION NAVIGATION (MAP VIEW) ──
     const navigateCitation = async (direction) => {

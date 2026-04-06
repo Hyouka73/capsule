@@ -127,6 +127,18 @@ export default function App() {
                   : <BingoProvider><UserDashboard /><VersionBadge /></BingoProvider>
         } />
 
+        {/* Accesos directos (App Shortcuts) — Redirigir al dashboard con acción específica */}
+        <Route path="/snapshots/capture" element={
+          !isAuthenticated 
+            ? <Navigate to="/join" replace /> 
+            : <Navigate to="/app?action=capture" replace />
+        } />
+        <Route path="/snapshots" element={
+          !isAuthenticated 
+            ? <Navigate to="/join" replace /> 
+            : <Navigate to="/app?tab=galeria" replace />
+        } />
+
         {/* Fallback: redirigir a raíz para que el dispatcher decida */}
         <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
