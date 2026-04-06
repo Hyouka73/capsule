@@ -19,6 +19,7 @@ export default function PhotoDetailOverlay({
     const config = useAppConfig(); // Contains names and relationship info
     const [currentIndex, setCurrentIndex] = useState(initialIndex || 0);
     const [drawerState, setDrawerState] = useState('peek');
+    const [isDownloading, setIsDownloading] = useState(false);
 
     // Handle photos change (when jumping between memories)
     useEffect(() => {
@@ -40,6 +41,51 @@ export default function PhotoDetailOverlay({
         </div>
     );
 
+    const handleDownload = async () => {
+        if (isDownloading) return;
+        
+        setIsDownloading(true);
+        try {
+            const url = currentPhoto.url || currentPhoto.storagePath;
+            if (!url) throw new Error("No URL found for photo");
+
+            // Fetch with CORS mode explicitly to allow binary download
+            const response = await fetch(url, { mode: 'cors' });
+            
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            
+            // Generate clean filename
+            const dateStr = currentPhoto.createdAt ? new Date(currentPhoto.createdAt).toISOString().split('T')[0] : 'foto';
+            const titleStr = (currentPhoto.title || 'capsule').replace(/\s+/g, '-').toLowerCase();
+            const filename = `${dateStr}-${titleStr}.jpg`;
+            
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Clean up
+            setTimeout(() => window.URL.revokeObjectURL(blobUrl), 100);
+        } catch (err) {
+            console.error("Error downloading photo:", err);
+            
+            let msg = "No se pudo descargar la foto. Intenta de nuevo.";
+            if (err.message.includes('fetch') || err.name === 'TypeError') {
+                msg = "Error de red o permisos (CORS).";
+            }
+            
+            alert(msg);
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
     return (
         <motion.div
             className={styles.overlay}
@@ -53,7 +99,6 @@ export default function PhotoDetailOverlay({
                     const absX = Math.abs(info.offset.x);
                     const absY = Math.abs(info.offset.y);
                     
-                    // If it's more vertical than horizontal (strict ratio 2:1)
                     if (absY > 30 && absY > absX * 2) {
                         if (info.offset.y < 0) setDrawerState('open');
                         else setDrawerState('peek');
@@ -61,7 +106,7 @@ export default function PhotoDetailOverlay({
                 }}
             >
                 <Carousel 
-                    key={photos[0]?.url} // Force animation reset when photos array completely changes? Maybe not strictly needed if we have useEffect
+                    key={photos[0]?.url} 
                     items={photos}
                     initialIndex={initialIndex}
                     onIndexChange={(idx) => {
@@ -74,7 +119,7 @@ export default function PhotoDetailOverlay({
                 />
             </motion.div>
 
-            {/* Drawer UI */}
+            {/* Optimized Metadata Drawer (Chunky Clay) */}
             <motion.div
                 className={styles.metadata}
                 drag="y"
@@ -88,17 +133,17 @@ export default function PhotoDetailOverlay({
                     }
                 }}
                 variants={{
-                    peek: { y: 'calc(100% - 35px)' },
+                    peek: { y: 'calc(100% - 88px)' },
                     open: { y: 0 }
                 }}
                 initial="peek"
                 animate={hasMetadata ? drawerState : "peek"}
-                style={{ display: hasMetadata ? 'flex' : 'none' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 220 }}
             >
                 <div 
                     className={styles.drawerHandleWrap}
                     onClick={() => setDrawerState(prev => prev === 'peek' ? 'open' : 'peek')}
+                    aria-label={drawerState === 'peek' ? 'Abrir detalles' : 'Cerrar detalles'}
                 >
                     <div className={styles.drawerHandle} />
                 </div>
@@ -106,57 +151,92 @@ export default function PhotoDetailOverlay({
                 <div className={styles.scrollableContent}>
                     <AnimatePresence mode="wait">
                         <motion.div
-                            key={photos[0]?.url || photos[0]?.storagePath || 'static-group'} // Stable key for same citation
+                            key={currentPhoto.url || currentPhoto.storagePath || 'metadata'} 
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.2 }}
                             className={styles.contentInner}
                         >
-                            {/* Snapshot Specific: User Emoji and Name */}
-                            {currentPhoto._type === 'snapshot' && (
-                                <div className={styles.snapshotUser}>
-                                    <span className={styles.userEmoji}>{currentPhoto.userEmoji || '📸'}</span>
-                                    <span className={styles.userName}>
-                                        {!currentPhoto.createdBy
-                                            ? 'Instantánea'
-                                            : (currentPhoto.createdBy === user?.uid 
-                                                ? 'Tú' 
-                                                : (currentPhoto.createdBy === config.adminUid 
-                                                    ? config.names?.admin || 'Admin'
-                                                    : (currentPhoto.createdBy === config.partnerUid 
-                                                        ? config.names?.partner || 'Pareja'
-                                                        : 'Instantánea')))
-                                        }
-                                    </span>
+                            <div 
+                                className={styles.primaryRow}
+                                onClick={() => drawerState === 'peek' && setDrawerState('open')}
+                            >
+                                <div className={styles.titleInfo}>
+                                    {currentPhoto._type === 'snapshot' && (
+                                        <span className={styles.miniEmoji}>{currentPhoto.userEmoji || '📸'}</span>
+                                    )}
+                                    <h3 className={styles.photoTitle}>
+                                        {currentPhoto.title || (currentPhoto._type === 'snapshot' ? 'Instantánea' : 'Memoria')}
+                                    </h3>
                                 </div>
-                            )}
-
-                            {(currentPhoto.caption || currentPhoto.message || currentPhoto.comment) && (
-                                <p className={styles.caption}>
-                                    {currentPhoto.caption || currentPhoto.message || currentPhoto.comment}
-                                </p>
-                            )}
-
-                            {currentPhoto.title && <h3 className={styles.photoTitle}>{currentPhoto.title}</h3>}
-                            {currentPhoto.description && <p className={styles.description}>{currentPhoto.description}</p>}
-
-                            <div className={styles.infoRow}>
                                 {currentPhoto.createdAt && (
-                                    <div className={styles.infoItem}>
-                                        <span className="material-symbols-rounded">calendar_month</span>
-                                        <span>
-                                            {new Date(currentPhoto.createdAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                            {currentPhoto._type === 'snapshot' && ` • ${new Date(currentPhoto.createdAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`}
-                                        </span>
-                                    </div>
+                                    <span className={styles.miniDate}>
+                                        {new Date(currentPhoto.createdAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                                        {drawerState === 'open' && ` ${new Date(currentPhoto.createdAt).getFullYear()}`}
+                                    </span>
                                 )}
-                                {(currentPhoto.placeName || currentPhoto.location) && (
-                                    <div className={styles.infoItem}>
-                                        <span className="material-symbols-rounded">location_on</span>
-                                        <span>{currentPhoto.placeName || currentPhoto.location?.name || 'Ubicación'}</span>
-                                    </div>
+                            </div>
+
+                            <div className={`${styles.expandedArea} ${drawerState === 'open' ? styles.isVisible : ''}`}>
+                                {(currentPhoto.caption || currentPhoto.message || currentPhoto.comment) && (
+                                    <p className={styles.caption}>
+                                        {currentPhoto.caption || currentPhoto.message || currentPhoto.comment}
+                                    </p>
                                 )}
+
+                                {currentPhoto.description && currentPhoto.description !== currentPhoto.title && (
+                                    <p className={styles.description}>{currentPhoto.description}</p>
+                                )}
+
+                                <div className={styles.metaGrid}>
+                                    {currentPhoto._type === 'snapshot' && (
+                                        <div className={styles.metaItem}>
+                                            <span className="material-symbols-rounded">person</span>
+                                            <span>
+                                                {!currentPhoto.createdBy
+                                                    ? 'Instantánea'
+                                                    : (currentPhoto.createdBy === user?.uid 
+                                                        ? 'Tú' 
+                                                        : (currentPhoto.createdBy === config.adminUid 
+                                                            ? config.names?.admin || 'Admin'
+                                                            : (currentPhoto.createdBy === config.partnerUid 
+                                                                ? config.names?.partner || 'Pareja'
+                                                                : 'Instantánea')))
+                                                }
+                                            </span>
+                                        </div>
+                                    )}
+                                    
+                                    {(currentPhoto.placeName || currentPhoto.location) && (
+                                        <div className={styles.metaItem}>
+                                            <span className="material-symbols-rounded">location_on</span>
+                                            <span className={styles.truncate}>{currentPhoto.placeName || currentPhoto.location?.name || 'Ubicación'}</span>
+                                        </div>
+                                    )}
+
+                                    <div 
+                                        className={`${styles.metaItem} ${styles.actionButton} ${isDownloading ? styles.loading : ''}`} 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDownload();
+                                        }}
+                                        role="button"
+                                        tabIndex={0}
+                                    >
+                                        {isDownloading ? (
+                                            <>
+                                                <div className={styles.spinner} />
+                                                <span>Descargando...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className="material-symbols-rounded">download</span>
+                                                <span>Guardar</span>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </motion.div>
                     </AnimatePresence>

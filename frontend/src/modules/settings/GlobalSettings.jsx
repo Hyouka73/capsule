@@ -14,6 +14,7 @@ import { useAppConfig } from '../../context/AppConfigContext';
 import SystemConfigSection from './components/SystemConfig';
 import ToggleRow from './components/ToggleRow';
 import styles from './GlobalSettings.module.css';
+import { generateUUID } from '../../utils/uuid';
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -512,7 +513,7 @@ export default function GlobalSettings() {
                                         onClick={() => handleUpdate('memoryTags', [
                                             ...config.memoryTags, 
                                             { 
-                                                id: `tag_${crypto.randomUUID().replace(/-/g, '').slice(0, 8)}`, 
+                                                id: `tag_${generateUUID().replace(/-/g, '').slice(0, 8)}`, 
                                                 label: 'Nuevo', 
                                                 emoji: '✨' 
                                             }

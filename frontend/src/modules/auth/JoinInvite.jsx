@@ -9,6 +9,7 @@ import PastelButton from '../../components/ui/PastelButton/PastelButton';
 import PastelCard from '../../components/ui/PastelCard/PastelCard';
 import { toast } from '../../components/ui/PastelToast/PastelToast';
 import styles from './JoinInvite.module.css';
+import { generateUUID } from '../../utils/uuid';
 
 export default function JoinInvite() {
     const navigate = useNavigate();
@@ -47,7 +48,7 @@ export default function JoinInvite() {
         try {
             let fingerprint = localStorage.getItem('capsule_device_id');
             if (!fingerprint) {
-                fingerprint = window.crypto.randomUUID();
+                fingerprint = generateUUID();
                 localStorage.setItem('capsule_device_id', fingerprint);
             }
 

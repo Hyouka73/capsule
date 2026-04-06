@@ -109,15 +109,11 @@ export const PLACE_CATEGORIES = {
 };
 
 export const STORAGE_PATHS = {
-    // Standardized: [type]/[entityId]/[fileId].jpg
-    ORIGINAL: (type, entityId, fileId) => `${type}/${entityId}/${fileId}.jpg`,
-    THUMB: (type, entityId, fileId) => `${type}/${entityId}/thumb_${fileId}.jpg`,
-
-    // New optimized paths
-    PHOTO_ORIGINAL: (memoryId, photoId) => `memories/${memoryId}/${photoId}.jpg`,
-    PHOTO_THUMB: (memoryId, photoId) => `memories/${memoryId}/thumb_${photoId}.jpg`,
-    SNAPSHOT_ORIGINAL: (relationshipId, snapshotId) => `${relationshipId}/snapshots/${snapshotId}.jpg`,
-    SNAPSHOT_THUMB: (relationshipId, snapshotId) => `${relationshipId}/snapshots/thumb_${snapshotId}.jpg`,
+    // Standardized: [type]/[entityId]/[fileId].webp
+    PHOTO_ORIGINAL: (memoryId, photoId) => `memories/${memoryId}/${photoId}.webp`,
+    PHOTO_THUMB: (memoryId, photoId) => `memories/${memoryId}/thumb_${photoId}.webp`,
+    SNAPSHOT_ORIGINAL: (relationshipId, snapshotId) => `${relationshipId}/snapshots/${snapshotId}.webp`,
+    SNAPSHOT_THUMB: (relationshipId, snapshotId) => `${relationshipId}/snapshots/thumb_${snapshotId}.webp`,
     CAPSULE_ORIGINAL: (relationshipId, capsuleId, fileId) => `${relationshipId}/capsules/${capsuleId}/${fileId}.webp`
 };
 

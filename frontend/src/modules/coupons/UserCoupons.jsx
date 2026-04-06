@@ -120,10 +120,7 @@ export default function UserCoupons({ onModalStateChange }) {
 
     return (
         <div className={styles.root}>
-            <div className={styles.header}>
-                <h1 className={styles.title}>Cupones 🎁</h1>
-                <p className={styles.subtitle}>Detalles especiales para canjear y disfrutar.</p>
-            </div>
+
             
             <SegmentedControl
                 tabs={[

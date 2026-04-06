@@ -14,14 +14,14 @@
 }
 
 .filterWrapper {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(16px);
-    padding: 4px;
+    background: rgba(var(--primary-rgb, 255, 173, 199), 0.1);
+    backdrop-filter: blur(20px);
+    padding: 6px;
     border-radius: var(--radius-pill);
     display: flex;
-    gap: 4px;
-    box-shadow: 0 8px 32px rgba(255, 175, 204, 0.15);
-    border: 1.5px solid white;
+    gap: 6px;
+    box-shadow: 0 10px 30px rgba(255, 175, 204, 0.12);
+    border: 1.5px solid rgba(255, 183, 197, 0.3);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
 }
@@ -59,9 +59,9 @@
     margin-bottom: 12px;
     border-radius: var(--radius-lg);
     overflow: hidden;
-    background: var(--clay-bg-white);
-    border: 2px solid white;
-    box-shadow: var(--clay-shadow-sm);
+    background: #fffdfd; /* Extremely soft warm tint, nearly white but not basic */
+    border: 1px solid rgba(0, 0, 0, 0.03); /* Subtle depth instead of hard white border */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
     transition: all 0.2s ease;
     cursor: pointer;
     position: relative;
@@ -87,8 +87,8 @@
 .loadingOverlay {
     position: absolute;
     inset: 0;
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(2px);
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -108,27 +108,27 @@
 .specialBadge,
 .specialIndicator {
     position: absolute;
-    top: 6px;
-    right: 6px;
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(4px);
-    width: 24px;
-    height: 24px;
+    top: 8px;
+    right: 8px;
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(10px);
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
     color: var(--pastel-rose);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
     z-index: 2;
+    border: 1px solid rgba(255,255,255,0.2);
 }
 
 .specialIndicator {
     right: auto;
-    left: 6px;
-    top: 6px;
-    color: #FFD700; /* Gold/Star color */
-    background: rgba(255, 255, 255, 0.85);
+    left: 8px;
+    top: 8px;
+    color: #FFC107; /* Updated Gold color */
 }
 
 /* If both are present, offset one */
@@ -189,28 +189,74 @@
     font-size: 28px;
 }
 
-/* Loader */
-.loaderTarget {
-    padding: 30px 0;
+.emptyAction {
+    margin-top: 24px;
     display: flex;
+    align-items: center;
     justify-content: center;
+    gap: 8px;
+    color: var(--pastel-rose);
+    font-size: 0.85rem;
+    font-weight: 600;
+    opacity: 0.8;
 }
 
-.miniLoader {
-    display: flex;
-    justify-content: center;
+.emptyAction span:first-child {
+    font-size: 20px;
 }
 
-.spinner {
-    width: 24px;
-    height: 24px;
-    border: 2px solid var(--pastel-rose-light);
-    border-top: 2px solid var(--pastel-rose);
+/* Initial Loading State */
+.initialLoadingContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+    width: 100%;
+}
+
+.loadingCenter {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.spinnerLarge {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--pastel-rose-light);
+    border-top: 3px solid var(--pastel-rose);
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+/* Infinite Scroll Loader */
+.loaderTarget {
+    padding: 40px 0;
+    display: flex;
+    justify-content: center;
+}
+
+.spinnerSmall {
+    width: 24px;
+    height: 24px;
+    border: 2.5px solid var(--pastel-rose-light);
+    border-top: 2.5px solid var(--pastel-rose);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Spinner Animations */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
 
 /* Responsive Grid */
 @media (min-width: 600px) {

@@ -1,9 +1,8 @@
 .root {
     display: flex;
     flex-direction: column;
-    /* Eliminamos el fondo redundante para evitar el efecto de "cortado" */
-    /* El fondo ahora es manejado por UserDashboard */
-    padding-top: 2rem;
+    /* Reducimos el padding superior ahora que no hay título */
+    padding-top: 1rem;
     padding-bottom: 100px;
     /* Aseguramos espacio extra al final */
     animation: fadeIn 0.4s ease-out;
@@ -21,26 +20,7 @@
     }
 }
 
-.header {
-    text-align: center;
-    padding: 3rem 1.5rem 1.5rem;
-}
-
-.title {
-    font-family: var(--font-display);
-    font-size: 2.6rem;
-    color: var(--text-primary); /* #614646 -> text-primary */
-    margin: 0;
-    line-height: 1.2;
-}
-
-.subtitle {
-    font-family: var(--font-body);
-    color: var(--text-muted); /* #8c6a6a -> text-muted */
-    font-size: 1rem;
-    margin-top: 0.8rem;
-    opacity: 0.8;
-}
+/* Header styles removed */
 
 .couponList {
     display: flex;

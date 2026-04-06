@@ -7,31 +7,33 @@ import { auth } from '../../../services/firebase';
  * Uses collectionGroup('photos') to get all photos across all memories.
  * Now also includes archived snapshots merged chronologically.
  */
-export function useGallery(pageSize = 20) {
+export function useGallery(pageSize = 24) {
     const [photos, setPhotos] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [hasMore, setHasMore] = useState(true);
     const [error, setError] = useState(null);
     const lastDocRef = useRef(null);
     const isLoadingRef = useRef(false);
+    const initializedRef = useRef(false);
 
     const fetchPhotos = useCallback(async (isInitial = false) => {
         if (!auth.currentUser) {
             setLoading(false);
-            isLoadingRef.current = false;
             return;
         }
-        if (isLoadingRef.current || (!hasMore && !isInitial)) return;
+        
+        if (isLoadingRef.current) return;
+        
+        // Use a local hasMore check to avoid it being a callback dependency
+        if (!isInitial && !lastDocRef.current) return;
 
         setLoading(true);
         isLoadingRef.current = true;
         setError(null);
 
         try {
-            const currentPageSize = pageSize;
-            const params = { limit: currentPageSize };
+            const params = { limit: pageSize };
 
-            // Apply cursor if not initial fetch
             if (!isInitial && lastDocRef.current) {
                 params.lastCreatedAt = lastDocRef.current.createdAt;
                 params.lastId = lastDocRef.current.id;
@@ -48,29 +50,35 @@ export function useGallery(pageSize = 20) {
                     setPhotos(prev => [...prev, ...fetchedPhotos]);
                 }
 
-                // Update cursor with the last element
                 if (fetchedPhotos.length > 0) {
                     lastDocRef.current = fetchedPhotos[fetchedPhotos.length - 1];
                 }
 
-                // If we got less than limit, we've reached the end
-                setHasMore(fetchedPhotos.length === currentPageSize);
+                setHasMore(fetchedPhotos.length === pageSize && fetchedPhotos.length > 0);
             } else {
+                setHasMore(false);
                 throw new Error(result.error || 'Failed to fetch gallery');
             }
         } catch (err) {
-            // silent fail
             setError(err.message);
         } finally {
             setLoading(false);
             isLoadingRef.current = false;
         }
-    }, [pageSize, hasMore]);
+    }, [pageSize]); // Removed hasMore dependency to break the loop
 
-    // Initial fetch
+    // React to Auth state once per user session
     useEffect(() => {
-        fetchPhotos(true);
-    }, []);
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+            if (user && !initializedRef.current) {
+                initializedRef.current = true; // Guard against re-triggering initial load
+                fetchPhotos(true);
+            } else if (!user) {
+                setLoading(false);
+            }
+        });
+        return () => unsubscribe();
+    }, [fetchPhotos]);
 
     const loadMore = () => fetchPhotos(false);
 
