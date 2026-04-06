@@ -36,6 +36,102 @@ function viteVersionPlugin() {
   };
 }
 
+function generateManifestsPlugin() {
+  return {
+    name: 'generate-manifests',
+    closeBundle() {
+      const outDir = path.resolve(__dirname, 'dist');
+      const baseManifest = {
+        name: 'Nuestro Universo Privado',
+        short_name: 'Nosotros',
+        description: 'Una historia de amor infinita ✨',
+        theme_color: '#0a0a12',
+        background_color: '#0a0a12',
+        display: 'standalone',
+        orientation: 'portrait',
+        start_url: '/',
+        scope: '/',
+        icons: [
+          { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+        ]
+      };
+
+      const adminShortcuts = [
+        {
+          name: 'Tomar Snapshot',
+          short_name: 'Snapshot',
+          description: 'Captura un momento al instante',
+          url: '/snapshots/capture',
+          icons: [{ src: '/icons/camera_icon.svg', sizes: 'any', type: 'image/svg+xml' }]
+        }
+      ];
+
+      const userShortcuts = [
+        ...adminShortcuts,
+        {
+          name: 'Cita Instantánea',
+          short_name: 'Cita',
+          description: 'Inicia una nueva aventura ahora',
+          url: '/cita/instantanea',
+          icons: [{ src: '/icons/heart_icon.svg', sizes: 'any', type: 'image/svg+xml' }]
+        }
+      ];
+
+      if (fs.existsSync(outDir)) {
+        fs.writeFileSync(path.join(outDir, 'manifest-admin.json'), JSON.stringify({ ...baseManifest, shortcuts: adminShortcuts }), 'utf-8');
+        fs.writeFileSync(path.join(outDir, 'manifest-user.json'), JSON.stringify({ ...baseManifest, shortcuts: userShortcuts }), 'utf-8');
+      }
+    },
+    buildStart() {
+      const publicDir = path.resolve(__dirname, 'public');
+      const baseManifest = {
+        name: 'Nuestro Universo Privado',
+        short_name: 'Nosotros',
+        description: 'Una historia de amor infinita ✨',
+        theme_color: '#0a0a12',
+        background_color: '#0a0a12',
+        display: 'standalone',
+        orientation: 'portrait',
+        start_url: '/',
+        scope: '/',
+        icons: [
+          { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+        ]
+      };
+
+      const adminShortcuts = [
+        {
+          name: 'Tomar Snapshot',
+          short_name: 'Snapshot',
+          description: 'Captura un momento al instante',
+          url: '/snapshots/capture',
+          icons: [{ src: '/icons/camera_icon.svg', sizes: 'any', type: 'image/svg+xml' }]
+        }
+      ];
+
+      const userShortcuts = [
+        ...adminShortcuts,
+        {
+          name: 'Cita Instantánea',
+          short_name: 'Cita',
+          description: 'Inicia una nueva aventura ahora',
+          url: '/cita/instantanea',
+          icons: [{ src: '/icons/heart_icon.svg', sizes: 'any', type: 'image/svg+xml' }]
+        }
+      ];
+
+      if (fs.existsSync(publicDir)) {
+        fs.writeFileSync(path.join(publicDir, 'manifest-admin.json'), JSON.stringify({ ...baseManifest, shortcuts: adminShortcuts }), 'utf-8');
+        fs.writeFileSync(path.join(publicDir, 'manifest-user.json'), JSON.stringify({ ...baseManifest, shortcuts: userShortcuts }), 'utf-8');
+      }
+    }
+  };
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   define: {
@@ -69,6 +165,7 @@ export default defineConfig({
   plugins: [
     react(),
     viteVersionPlugin(),
+    generateManifestsPlugin(),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
@@ -159,18 +256,16 @@ export default defineConfig({
             description: 'Captura un momento al instante',
             url: '/snapshots/capture',
             icons: [
-              { src: '/icons/camera_icon.png', sizes: '96x96' },
-              { src: '/icons/camera_icon.png', sizes: '192x192' }
+              { src: '/icons/camera_icon.svg', sizes: 'any', type: 'image/svg+xml' }
             ]
           },
           {
-            name: 'Ver Recuerdos',
-            short_name: 'Recuerdos',
-            description: 'Mira vuestra historia de amor',
-            url: '/snapshots',
+            name: 'Cita Instantánea',
+            short_name: 'Cita',
+            description: 'Inicia una nueva aventura ahora',
+            url: '/cita/instantanea',
             icons: [
-              { src: '/icons/image_icon.png', sizes: '96x96' },
-              { src: '/icons/image_icon.png', sizes: '192x192' }
+              { src: '/icons/heart_icon.svg', sizes: 'any', type: 'image/svg+xml' }
             ]
           }
         ]
