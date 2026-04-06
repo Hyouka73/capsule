@@ -22,26 +22,5 @@
             "purpose": "any maskable"
         }
     ],
-    "shortcuts": [
-        {
-            "name": "Tomar Snapshot",
-            "short_name": "Snapshot",
-            "description": "Captura un momento al instante",
-            "url": "/snapshots/capture",
-            "icons": [
-                { "src": "/icons/camera_icon.png", "sizes": "96x96" },
-                { "src": "/icons/camera_icon.png", "sizes": "192x192" }
-            ]
-        },
-        {
-            "name": "Ver Recuerdos",
-            "short_name": "Recuerdos",
-            "description": "Mira vuestra historia de amor",
-            "url": "/snapshots",
-            "icons": [
-                { "src": "/icons/image_icon.png", "sizes": "96x96" },
-                { "src": "/icons/image_icon.png", "sizes": "192x192" }
-            ]
-        }
-    ]
+    "shortcuts": []
 }

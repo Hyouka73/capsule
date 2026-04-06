@@ -50,6 +50,12 @@ export default function App() {
         const v = Date.now();
         manifestLink.setAttribute('href', isAdmin ? `/manifest-admin.json?v=${v}` : `/manifest-user.json?v=${v}`);
       }
+    } else {
+      const manifestLink = document.getElementById('manifest-link');
+      if (manifestLink) {
+        // Default manifest has no shortcuts (for public view)
+        manifestLink.setAttribute('href', '/manifest.json');
+      }
     }
   }, [isAuthenticated, isAdmin]);
 

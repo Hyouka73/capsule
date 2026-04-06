@@ -249,26 +249,7 @@ export default defineConfig({
             purpose: 'any maskable'
           }
         ],
-        shortcuts: [
-          {
-            name: 'Tomar Snapshot',
-            short_name: 'Snapshot',
-            description: 'Captura un momento al instante',
-            url: '/snapshots/capture',
-            icons: [
-              { src: '/icons/camera_icon.svg', sizes: 'any', type: 'image/svg+xml' }
-            ]
-          },
-          {
-            name: 'Cita Instantánea',
-            short_name: 'Cita',
-            description: 'Inicia una nueva aventura ahora',
-            url: '/cita/instantanea',
-            icons: [
-              { src: '/icons/heart_icon.svg', sizes: 'any', type: 'image/svg+xml' }
-            ]
-          }
-        ]
+        shortcuts: []
       },
     }),
     tailwindcss(),
