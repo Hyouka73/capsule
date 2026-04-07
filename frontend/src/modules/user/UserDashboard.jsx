@@ -56,7 +56,11 @@ export default function UserDashboard() {
     const [isSnapshotOpen, setIsSnapshotOpen] = useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [activeSnapshots, setActiveSnapshots] = useState([]);
-    const [isCameraOpen, setIsCameraOpen] = useState(false);
+
+    const [searchParams, setSearchParams] = useSearchParams();
+    const urlAction = searchParams.get('action');
+
+    const [isCameraOpen, setIsCameraOpen] = useState(urlAction === 'capture');
     const { queueMemory } = useOfflineQueue();
     const { places } = usePlaces();
     const [citaContext, setCitaContext] = useState(null);
@@ -65,12 +69,8 @@ export default function UserDashboard() {
     const [isPendingListOpen, setIsPendingListOpen] = useState(false);
     const [isGalleryDetailOpen, setIsGalleryDetailOpen] = useState(false);
     const [isCapsuleModalOpen, setIsCapsuleModalOpen] = useState(false);
-    const [searchParams, setSearchParams] = useSearchParams();
 
     // ── APP SHORTCUTS & ACTION STATE ──
-    // Determine if an action is active from the URL on mount or param change
-    // This allows us to defer Map loading for "instant" action feel.
-    const urlAction = searchParams.get('action');
     const [isActionActive, setIsActionActive] = useState(!!urlAction);
 
     // Stable handlers defined BEFORE effects
@@ -89,17 +89,16 @@ export default function UserDashboard() {
             if (action === 'capture') {
                 setIsCameraOpen(true);
             }
-            if (action === 'cita') {
+            if (action === 'cita' && !citaContext) {
                 handlePlusClick();
             }
             if (tab === 'galeria') {
                 setActiveTab('galeria');
-                setIsActionActive(false); // Gallery doesn't need to block map, but it's a tab change
+                setIsActionActive(false); 
+                setSearchParams({}, { replace: true }); // Tab changes are safe to clear
             }
-            
-            setSearchParams({}, { replace: true });
         }
-    }, [searchParams, setSearchParams, handlePlusClick]);
+    }, [searchParams, setSearchParams, handlePlusClick, citaContext]);
 
     // Cleanup action state when overlays close
     const handleActionClose = useCallback(() => {
@@ -107,7 +106,12 @@ export default function UserDashboard() {
         setIsCameraOpen(false);
         setCitaContext(null);
         setIsPlaceSelected(false);
-    }, []);
+        
+        // Final cleanup: Remove action params from URL ONLY when closing
+        if (searchParams.has('action')) {
+            setSearchParams({}, { replace: true });
+        }
+    }, [setSearchParams, searchParams]);
 
     // ── INTER-CITATION NAVIGATION (MAP VIEW) ──
     const navigateCitation = async (direction) => {
