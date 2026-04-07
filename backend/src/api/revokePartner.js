@@ -1,5 +1,6 @@
 import { HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 import { logger } from 'firebase-functions';
 import { COLLECTIONS, SINGLETON_DOCS } from '../config/constants.js';
 import { sendNotificationToTokens } from '../utils/notifications.js';
@@ -54,9 +55,13 @@ export const handler = async (request) => {
         // 1. Mark partner as revoked
         batch.update(partnerRef, {
             accountStatus: 'revoked',
+            isRevoked: true,
             fcmTokens: [],
             updatedAt: FieldValue.serverTimestamp()
         });
+
+        // Hardening: Revoke all refresh tokens in Firebase Auth
+        await getAuth().revokeRefreshTokens(partnerUid);
 
         // 2. IMPORTANT: Revoke all active invite tokens for this relationship
         // This ensures the partner cannot "use an old link" to get back in.

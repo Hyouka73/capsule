@@ -129,11 +129,68 @@ export const getActivityLogs = lazyOnCall('./src/api/getActivityLogs.js', 'getAc
 export const repairAuth = lazyOnCall('./src/api/repairAuth.js', 'repairAuth');
 export const ping = lazyOnCall('./src/api/ping.js', 'ping');
 
-// --- Triggers ---
-export { archiveExpiredSnapshots } from './src/api/archiveExpiredSnapshots.js';
-export { onPhotoUploaded } from './src/triggers/onPhotoUploaded.js';
-export { onMemoryCreated } from './src/triggers/onMemoryCreated.js';
-export { taskUnlockCapsule } from './src/triggers/taskUnlockCapsule.js';
-export { taskArchiveSnapshot } from './src/triggers/taskArchiveSnapshot.js';
-export { cleanupExpiredTokens } from './src/triggers/cleanupExpiredTokens.js';
-export { onSnapshotCreated } from './src/triggers/onSnapshotCreated.js';
+// --- Triggers (EXTREME LAZY LOADING - 2026-04-06) ---
+// We keep the configs in index.js so Firebase can index them, 
+// but we only import the actual logic when the event fires.
+
+import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { onObjectFinalized } from 'firebase-functions/v2/storage';
+import { onDocumentCreated } from 'firebase-functions/v2/firestore';
+
+export const archiveExpiredSnapshots = onSchedule({
+    schedule: 'every 6 hours',
+    region: 'us-central1',
+    timeZone: 'America/Mexico_City',
+    retryCount: 3,
+}, async (event) => {
+    const mod = await import('./src/api/archiveExpiredSnapshots.js');
+    return mod.archiveExpiredSnapshots(event);
+});
+
+export const onPhotoUploaded = onObjectFinalized({ 
+    memory: '1GiB',
+    timeoutSeconds: 300 
+}, async (event) => {
+    const mod = await import('./src/triggers/onPhotoUploaded.js');
+    return mod.onPhotoUploaded(event);
+});
+
+export const onMemoryCreated = onDocumentCreated({
+    document: 'memories/{memoryId}',
+    region: 'us-central1'
+}, async (event) => {
+    const mod = await import('./src/triggers/onMemoryCreated.js');
+    return mod.onMemoryCreated(event);
+});
+
+export const taskUnlockCapsule = onDocumentCreated({
+    document: 'capsules/{capsuleId}',
+    region: 'us-central1'
+}, async (event) => {
+    const mod = await import('./src/triggers/taskUnlockCapsule.js');
+    return mod.taskUnlockCapsule(event);
+});
+
+export const taskArchiveSnapshot = onDocumentCreated({
+    document: 'relationships/{relId}/snapshots/{snapshotId}',
+    region: 'us-central1'
+}, async (event) => {
+    const mod = await import('./src/triggers/taskArchiveSnapshot.js');
+    return mod.taskArchiveSnapshot(event);
+});
+
+export const cleanupExpiredTokens = onSchedule({
+    schedule: 'every 24 hours',
+    region: 'us-central1'
+}, async (event) => {
+    const mod = await import('./src/triggers/cleanupExpiredTokens.js');
+    return mod.cleanupExpiredTokens(event);
+});
+
+export const onSnapshotCreated = onDocumentCreated({
+    document: 'relationships/{relId}/snapshots/{snapshotId}',
+    region: 'us-central1'
+}, async (event) => {
+    const mod = await import('./src/triggers/onSnapshotCreated.js');
+    return mod.onSnapshotCreated(event);
+});
