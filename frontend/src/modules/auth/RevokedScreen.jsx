@@ -70,14 +70,12 @@ export default function RevokedScreen() {
                                 Reintentar
                             </Button>
 
-                            {!isPartner && (
-                                <button
-                                    onClick={signOut}
-                                    className="text-sm text-zinc-400 hover:text-rose-500 transition-colors font-medium"
-                                >
-                                    Cerrar Sesión
-                                </button>
-                            )}
+                            <button
+                                onClick={signOut}
+                                className="text-sm text-zinc-400 hover:text-rose-500 transition-colors font-medium"
+                            >
+                                Cerrar Sesión
+                            </button>
                         </div>
                     </div>
 
