@@ -79,11 +79,13 @@ export default function App() {
             ? <Navigate to="/join" replace /> 
             : isAdmin 
               ? <Navigate to={`/admin${window.location.search}`} replace />
-              : (teaserEnabled && teaserCompleted === false)
-                ? <Navigate to={`/teaser${window.location.search}`} replace />
-                : welcomeSeen === false
-                  ? <Navigate to={`/welcome${window.location.search}`} replace />
-                  : <Navigate to={`/app${window.location.search}`} replace />
+              : new URLSearchParams(window.location.search).has('action') // ← PRIORIDAD: Atajos (acción pendiente)
+                ? <Navigate to={`/app${window.location.search}`} replace />
+                : (teaserEnabled && teaserCompleted === false)
+                  ? <Navigate to={`/teaser${window.location.search}`} replace />
+                  : welcomeSeen === false
+                    ? <Navigate to={`/welcome${window.location.search}`} replace />
+                    : <Navigate to={`/app${window.location.search}`} replace />
         } />
 
         {/* Flujo de invitación (público) */}
@@ -139,12 +141,14 @@ export default function App() {
           !isAuthenticated
             ? <Navigate to="/join" replace />
             : isAdmin
-              ? <Navigate to="/admin" replace />
-              : (teaserEnabled && teaserCompleted === false)
-                ? <Navigate to={`/teaser${window.location.search}`} replace />
-                : welcomeSeen === false
-                  ? <Navigate to={`/welcome${window.location.search}`} replace />
-                  : <BingoProvider><UserDashboard /><VersionBadge /></BingoProvider>
+              ? <Navigate to={`/admin${window.location.search}`} replace />
+              : new URLSearchParams(window.location.search).has('action') // ← PRIORIDAD: Atajos (acción pendiente)
+                ? <BingoProvider><UserDashboard /><VersionBadge /></BingoProvider>
+                : (teaserEnabled && teaserCompleted === false)
+                  ? <Navigate to={`/teaser${window.location.search}`} replace />
+                  : welcomeSeen === false
+                    ? <Navigate to={`/welcome${window.location.search}`} replace />
+                    : <BingoProvider><UserDashboard /><VersionBadge /></BingoProvider>
         } />
 
         {/* Accesos directos (App Shortcuts) — Redirigir al dashboard adecuado con acción específica */}
