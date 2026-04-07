@@ -142,7 +142,7 @@ export default function App() {
             ? <Navigate to="/join" replace />
             : isAdmin
               ? <Navigate to={`/admin${window.location.search}`} replace />
-              : new URLSearchParams(window.location.search).has('action') // ← PRIORIDAD: Atajos (acción pendiente)
+              : new URLSearchParams(window.location.search).has('action') 
                 ? <BingoProvider><UserDashboard /><VersionBadge /></BingoProvider>
                 : (teaserEnabled && teaserCompleted === false)
                   ? <Navigate to={`/teaser${window.location.search}`} replace />
@@ -156,15 +156,15 @@ export default function App() {
           !isAuthenticated 
             ? <Navigate to="/join" replace /> 
             : isAdmin
-              ? <Navigate to="/admin?action=capture" replace />
-              : <Navigate to="/app?action=capture" replace />
+              ? <Navigate to={`/admin${window.location.search}${window.location.search ? '&' : '?'}action=capture`} replace />
+              : <Navigate to={`/app${window.location.search}${window.location.search ? '&' : '?'}action=capture`} replace />
         } />
         <Route path="/cita/instantanea" element={
           !isAuthenticated 
             ? <Navigate to="/join" replace /> 
             : isAdmin
               ? <Navigate to="/admin" replace /> 
-              : <Navigate to="/app?action=cita" replace />
+              : <Navigate to={`/app${window.location.search}${window.location.search ? '&' : '?'}action=cita`} replace />
         } />
         <Route path="/snapshots" element={
           !isAuthenticated 

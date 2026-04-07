@@ -10,7 +10,8 @@ import fs from 'fs'
 // main.jsx to detect when the app is stale — bypassing SW caching entirely.
 const BUILD_TIMESTAMP = Date.now().toString();
 
-const APP_VERSION = process.env.npm_package_version || '0.1.2';
+const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'));
+const APP_VERSION = process.env.npm_package_version || pkg.version;
 
 function viteVersionPlugin() {
   return {
@@ -140,7 +141,7 @@ export default defineConfig({
     // Injected at build time — compared against /version.json at runtime
     __BUILD_TIMESTAMP__: JSON.stringify(BUILD_TIMESTAMP),
     __BUILD_HASH__: JSON.stringify(BUILD_TIMESTAMP.substring(BUILD_TIMESTAMP.length - 4)), // Last 4 digits for variety
-    __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '0.1.3'),
+    __APP_VERSION__: JSON.stringify(APP_VERSION),
   },
   server: {
     host: true,
@@ -252,7 +253,22 @@ export default defineConfig({
             purpose: 'any maskable'
           }
         ],
-        shortcuts: []
+        shortcuts: [
+          {
+            name: 'Tomar Snapshot',
+            short_name: 'Snapshot',
+            description: 'Captura un momento al instante',
+            url: '/snapshots/capture',
+            icons: [{ src: '/icons/camera_icon.svg', sizes: 'any', type: 'image/svg+xml' }]
+          },
+          {
+            name: 'Cita Instantánea',
+            short_name: 'Cita',
+            description: 'Inicia una nueva aventura ahora',
+            url: '/cita/instantanea',
+            icons: [{ src: '/icons/heart_icon.svg', sizes: 'any', type: 'image/svg+xml' }]
+          }
+        ]
       },
     }),
     tailwindcss(),
