@@ -4,7 +4,7 @@ import { logToVercel } from '../../utils/vercelLogger';
 import { autoDetectMetadata } from '../../utils/extractGpsFromFile';
 import CameraPermissionGate from '../ui/CameraPermissionGate/CameraPermissionGate';
 
-export default function CitaOverlay({ citaContext, onClose, onSave }) {
+export default function CitaOverlay({ citaContext, onClose, onSave, isComplete: propIsComplete }) {
     useEffect(() => {
         logToVercel('CitaOverlay', 'MOUNTED', `Cita type: ${citaContext?.type}`);
     }, []);
@@ -49,7 +49,8 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
     };
 
     const minPhotos = citaContext?.minPhotos ?? 5;
-    const isComplete = sessionPhotos.length >= minPhotos;
+    // Prioridad a la prop, si no se calcula internamente
+    const isComplete = propIsComplete ?? (sessionPhotos.length >= minPhotos);
 
     return (
         <div className={styles.citaOverlay}>
@@ -130,12 +131,7 @@ export default function CitaOverlay({ citaContext, onClose, onSave }) {
                     <div className={styles.citaActions}>
                         <label
                             className={`${styles.citaAction} ${sessionPhotos.length === 0 ? styles.citaActionDisabled : ''}`}
-                            style={{ 
-                                cursor: sessionPhotos.length === 0 ? 'not-allowed' : 'pointer', 
-                                position: 'relative', 
-                                overflow: 'hidden',
-                                opacity: sessionPhotos.length === 0 ? 0.6 : 1
-                            }}
+                            style={{ position: 'relative', overflow: 'hidden' }}
                             onClick={() => {
                                 if (sessionPhotos.length === 0) {
                                     logToVercel('Cita_Label_Gallery', 'BLOCKED', 'Gallery blocked - first photo must be from camera');

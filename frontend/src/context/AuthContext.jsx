@@ -22,8 +22,8 @@ export function AuthProvider({ children }) {
     const [role, setRole] = useState(null);
     const [deviceId, setDeviceId] = useState(null);
     const [onboardingCompleted, setOnboardingCompleted] = useState(false);
-    const [welcomeSeen, setWelcomeSeen] = useState(false);
-    const [teaserCompleted, setTeaserCompleted] = useState(false);
+    const [welcomeSeen, setWelcomeSeen] = useState(null);
+    const [teaserCompleted, setTeaserCompleted] = useState(null);
     const [teaserLock, setTeaserLock] = useState(null);
     const [gameCoins, setGameCoins] = useState(0);
     const [accountStatus, setAccountStatus] = useState(null); // 'active' | 'revoked' | 'pending' | null (loading)
