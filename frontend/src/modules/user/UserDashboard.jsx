@@ -67,12 +67,25 @@ export default function UserDashboard() {
     const [isCapsuleModalOpen, setIsCapsuleModalOpen] = useState(false);
     const [searchParams, setSearchParams] = useSearchParams();
 
-    // ── APP SHORTCUTS HANDLER ──
+    // ── APP SHORTCUTS & ACTION STATE ──
+    // Determine if an action is active from the URL on mount or param change
+    // This allows us to defer Map loading for "instant" action feel.
+    const urlAction = searchParams.get('action');
+    const [isActionActive, setIsActionActive] = useState(!!urlAction);
+
+    // Stable handlers defined BEFORE effects
+    const handlePlusClick = useCallback(() => {
+        const minPhotos = config?.citaConfig?.minPhotosSpontaneous || 5;
+        setCitaContext({ type: 'spontaneous', minPhotos });
+    }, [config]);
+
     useEffect(() => {
         const action = searchParams.get('action');
         const tab = searchParams.get('tab');
 
         if (action === 'capture' || tab === 'galeria' || action === 'cita') {
+            setIsActionActive(true);
+            
             if (action === 'capture') {
                 setIsCameraOpen(true);
             }
@@ -81,13 +94,20 @@ export default function UserDashboard() {
             }
             if (tab === 'galeria') {
                 setActiveTab('galeria');
+                setIsActionActive(false); // Gallery doesn't need to block map, but it's a tab change
             }
             
-            // Mandatory Cleanup: Clear search params to avoid re-triggering on refresh/resume
-            // using replace: true to keep history clean
             setSearchParams({}, { replace: true });
         }
-    }, [searchParams, setSearchParams]);
+    }, [searchParams, setSearchParams, handlePlusClick]);
+
+    // Cleanup action state when overlays close
+    const handleActionClose = useCallback(() => {
+        setIsActionActive(false);
+        setIsCameraOpen(false);
+        setCitaContext(null);
+        setIsPlaceSelected(false);
+    }, []);
 
     // ── INTER-CITATION NAVIGATION (MAP VIEW) ──
     const navigateCitation = async (direction) => {
@@ -137,7 +157,7 @@ export default function UserDashboard() {
 
     const hasAnyOverlayOpen = !!citaContext || isBingoModalOpen || isCouponsModalOpen || isSnapshotOpen || isCameraOpen || isHistoryOpen || isPendingListOpen || !!selectedPendingDate || !!viewerSelection || bingoQueue.length > 0 || !!celebrationEvent || isGalleryDetailOpen || isPlaceSelected || isCapsuleModalOpen;
     const shouldHideNav = hasAnyOverlayOpen;
-    const shouldShowMap = activeTab === 'lugares'; 
+    const shouldShowMap = activeTab === 'lugares' && !isActionActive; 
 
     useEffect(() => {
         if (activeTab === 'lugares') return;
@@ -163,22 +183,15 @@ export default function UserDashboard() {
         return () => clearInterval(interval);
     }, [activeTab]);
 
-    const handlePlusClick = () => {
-        const minPhotos = config?.citaConfig?.minPhotosSpontaneous || 5;
-        setCitaContext({ type: 'spontaneous', minPhotos });
-    };
-
-    const handleTabChange = (newTab) => {
+    const handleTabChange = useCallback((newTab) => {
         if (newTab === activeTab) {
-            if (newTab === 'lugares' && pendingCount > 0) {
-                setIsPendingListOpen(true);
-            }
             return;
         }
         setPrevTab(activeTab);
         setActiveTab(newTab);
+        setIsActionActive(false); 
         setIsCouponsModalOpen(false);
-    };
+    }, [activeTab]);
 
     useEffect(() => {
         if (celebrationEvent?.isFullBoard && activeTab !== 'bingo') {
@@ -335,7 +348,7 @@ export default function UserDashboard() {
                 )}
             </AnimatePresence>
 
-            {isCameraOpen && <SnapshotCreator onClose={() => setIsCameraOpen(false)} onOpenHistory={() => setIsHistoryOpen(true)} />}
+            {isCameraOpen && <SnapshotCreator onClose={handleActionClose} onOpenHistory={() => setIsHistoryOpen(true)} />}
 
             <AnimatePresence>
                 {isHistoryOpen && <SnapshotHistory onClose={() => { setIsHistoryOpen(false); setIsCameraOpen(true); }} />}
@@ -344,8 +357,11 @@ export default function UserDashboard() {
             {citaContext && (
                 <CitaOverlay
                     citaContext={citaContext}
-                    onClose={() => { setCitaContext(null); setIsPlaceSelected(false); }}
-                    onSave={async (files) => { await addPendingCita(files, citaContext); setCitaContext(null); setIsPlaceSelected(false); }}
+                    onClose={handleActionClose}
+                    onSave={async (files) => { 
+                        await addPendingCita(files, citaContext); 
+                        handleActionClose();
+                    }}
                 />
             )}
 

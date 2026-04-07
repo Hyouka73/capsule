@@ -141,9 +141,9 @@ export default function App() {
             : isAdmin
               ? <Navigate to="/admin" replace />
               : (teaserEnabled && teaserCompleted === false)
-                ? <Navigate to="/teaser" replace />
+                ? <Navigate to={`/teaser${window.location.search}`} replace />
                 : welcomeSeen === false
-                  ? <Navigate to="/welcome" replace />
+                  ? <Navigate to={`/welcome${window.location.search}`} replace />
                   : <BingoProvider><UserDashboard /><VersionBadge /></BingoProvider>
         } />
 
