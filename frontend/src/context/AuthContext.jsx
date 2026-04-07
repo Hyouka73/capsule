@@ -30,6 +30,7 @@ export function AuthProvider({ children }) {
     const [relationshipId, setRelationshipId] = useState(localStorage.getItem('capsule_relationship_id') || null);
     const [isLoading, setIsLoading] = useState(true);
     const initialAuthChecked = useRef(false);
+    const authTimeRef = useRef(null);
 
     // Register FCM Token for partners
     const registerFCM = useCallback(async (userId) => {
@@ -102,6 +103,11 @@ export function AuthProvider({ children }) {
             if (firebaseUser) {
                 if (isMounted) setIsLoading(true);
                 
+                // Pre-fetch authTime to detect stale cache later
+                firebaseUser.getIdTokenResult().then(token => {
+                    if (isMounted) authTimeRef.current = new Date(token.authTime).getTime();
+                }).catch(e => console.warn('[AuthContext] Failed to pre-fetch authTime:', e));
+                
                 // 1. Iniciar listener de Firestore INMEDIATAMENTE (paralelo)
                 const userRef = doc(db, COLLECTIONS.USERS, firebaseUser.uid);
                 unsubscribeDoc = onSnapshot(userRef, (snapshot) => {
@@ -135,12 +141,25 @@ export function AuthProvider({ children }) {
                     }
 
                     // AUTO-SIGN-OUT: If access is revoked, kill session immediately
+                    // STALE CACHE PROTECTION: Ignore 'revoked' status if it comes from the cache 
+                    // and was updated BEFORE the current session started (authTime).
                     if (data.accountStatus === 'revoked') {
-                        console.warn('[AuthContext] Access revoked. Signing out.');
-                        authSignOut();
-                        toast.error('Tu acceso ha sido desactivado.');
-                        setIsLoading(false);
-                        return;
+                        const docUpdatedAt = data.updatedAt?.toMillis?.() || 0;
+                        const sessionAuthTime = authTimeRef.current || 0;
+
+                        if (snapshot.metadata.fromCache && sessionAuthTime > docUpdatedAt) {
+                            console.log('[AuthContext] Ignoring stale revoked status from cache.');
+                            return;
+                        }
+
+                        // If NOT from cache, or if it's a recent revocation, enforce it.
+                        if (!snapshot.metadata.fromCache) {
+                            console.warn('[AuthContext] Access revoked by server. Signing out.');
+                            authSignOut();
+                            toast.error('Tu acceso ha sido desactivado.');
+                            setIsLoading(false);
+                            return;
+                        }
                     }
                     
                     // Defensive: If role is ADMIN, they shouldn't be blocked by teaser/welcome flags
@@ -353,6 +372,9 @@ export function AuthProvider({ children }) {
             const result = await exchangeInviteToken(inviteToken, deviceFingerprint);
 
             if (result.customToken) {
+                // FORCE RESET: Sign out any existing session before starting the new one
+                // to ensure a clean state and fresh onAuthStateChanged trigger.
+                await auth.signOut();
                 await signInWithCustomToken(auth, result.customToken);
             }
         } catch (err) {

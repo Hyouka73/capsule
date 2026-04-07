@@ -165,6 +165,7 @@ export async function getCurrentUserClaims(forceRefresh = false) {
         role: tokenResult.claims.role ?? null,
         deviceId: tokenResult.claims.deviceId ?? null,
         relationshipId: tokenResult.claims.relationshipId ?? null,
+        authTime: tokenResult.authTime ?? null,
     };
 }
 
