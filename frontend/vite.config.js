@@ -139,7 +139,8 @@ export default defineConfig({
   define: {
     // Injected at build time — compared against /version.json at runtime
     __BUILD_TIMESTAMP__: JSON.stringify(BUILD_TIMESTAMP),
-    __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '0.0.18'),
+    __BUILD_HASH__: JSON.stringify(BUILD_TIMESTAMP.substring(BUILD_TIMESTAMP.length - 4)), // Last 4 digits for variety
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '0.1.3'),
   },
   server: {
     host: true,
