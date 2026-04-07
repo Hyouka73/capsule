@@ -10,6 +10,8 @@ import fs from 'fs'
 // main.jsx to detect when the app is stale — bypassing SW caching entirely.
 const BUILD_TIMESTAMP = Date.now().toString();
 
+const APP_VERSION = process.env.npm_package_version || '0.1.2';
+
 function viteVersionPlugin() {
   return {
     name: 'version-json',
@@ -19,7 +21,7 @@ function viteVersionPlugin() {
       fs.mkdirSync(outDir, { recursive: true });
       fs.writeFileSync(
         path.join(outDir, 'version.json'),
-        JSON.stringify({ buildTime: BUILD_TIMESTAMP }),
+        JSON.stringify({ buildTime: BUILD_TIMESTAMP, version: APP_VERSION }),
         'utf-8'
       );
     },
@@ -29,7 +31,7 @@ function viteVersionPlugin() {
       fs.mkdirSync(publicDir, { recursive: true });
       fs.writeFileSync(
         path.join(publicDir, 'version.json'),
-        JSON.stringify({ buildTime: BUILD_TIMESTAMP }),
+        JSON.stringify({ buildTime: BUILD_TIMESTAMP, version: APP_VERSION }),
         'utf-8'
       );
     },

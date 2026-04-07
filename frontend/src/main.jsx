@@ -29,30 +29,39 @@ async function forceUpdate() {
 
 async function checkForUpdate() {
   if (CURRENT_BUILD === 'dev') return;
+  // If we just reloaded to avoid a loop, wait for next session
   if (new URLSearchParams(window.location.search).has('v')) return;
+
   try {
     const res = await fetch(`/version.json?_=${Date.now()}`, {
       cache: 'no-store',
       headers: { 'pragma': 'no-cache', 'cache-control': 'no-store' },
     });
     if (!res.ok) return;
-    const { buildTime } = await res.json();
-    if (buildTime && buildTime !== CURRENT_BUILD) {
+    const data = await res.json();
+    const remoteBuild = data.buildTime;
+    
+    if (remoteBuild && remoteBuild !== CURRENT_BUILD) {
+      console.warn('🚀 [Update] New version detected:', data.version || 'unknown');
       await forceUpdate();
     }
-  } catch {}
+  } catch (err) {
+    console.error('❌ [Update] Check failed:', err);
+  }
 }
 
-// Solo esto. Sin setInterval, sin visibilitychange.
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!new URLSearchParams(window.location.search).has('v')) {
-      window.location.reload();
+// Check every time the user returns to the app
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        checkForUpdate();
     }
-  });
-}
+});
 
+// Initial check on load
 checkForUpdate();
+
+// Optional: check every 20 minutes if app stays open
+setInterval(checkForUpdate, 1000 * 60 * 20);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // React bootstrap
