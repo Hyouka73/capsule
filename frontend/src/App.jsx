@@ -163,7 +163,7 @@ export default function App() {
           !isAuthenticated 
             ? <Navigate to="/join" replace /> 
             : isAdmin
-              ? <Navigate to="/admin" replace /> // Admin no tiene citas, solo dashboard
+              ? <Navigate to="/admin" replace /> 
               : <Navigate to="/app?action=cita" replace />
         } />
         <Route path="/snapshots" element={

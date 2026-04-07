@@ -61,6 +61,7 @@ export default function UserDashboard() {
     const urlAction = searchParams.get('action');
 
     const [isCameraOpen, setIsCameraOpen] = useState(urlAction === 'capture');
+    const [isActionActive, setIsActionActive] = useState(!!urlAction);
     const { queueMemory } = useOfflineQueue();
     const { places } = usePlaces();
     const [citaContext, setCitaContext] = useState(null);
@@ -69,9 +70,6 @@ export default function UserDashboard() {
     const [isPendingListOpen, setIsPendingListOpen] = useState(false);
     const [isGalleryDetailOpen, setIsGalleryDetailOpen] = useState(false);
     const [isCapsuleModalOpen, setIsCapsuleModalOpen] = useState(false);
-
-    // ── APP SHORTCUTS & ACTION STATE ──
-    const [isActionActive, setIsActionActive] = useState(!!urlAction);
 
     // Stable handlers defined BEFORE effects
     const handlePlusClick = useCallback(() => {
@@ -83,19 +81,19 @@ export default function UserDashboard() {
         const action = searchParams.get('action');
         const tab = searchParams.get('tab');
 
-        if (action === 'capture' || tab === 'galeria' || action === 'cita') {
-            setIsActionActive(true);
-            
+        if (action || tab) {
+            if (action && action !== 'galeria') {
+                setIsActionActive(true);
+            }
+
             if (action === 'capture') {
                 setIsCameraOpen(true);
-            }
-            if (action === 'cita' && !citaContext) {
+            } else if (action === 'cita' && !citaContext) {
                 handlePlusClick();
-            }
-            if (tab === 'galeria') {
+            } else if (tab === 'galeria') {
                 setActiveTab('galeria');
                 setIsActionActive(false); 
-                setSearchParams({}, { replace: true }); // Tab changes are safe to clear
+                setSearchParams({}, { replace: true });
             }
         }
     }, [searchParams, setSearchParams, handlePlusClick, citaContext]);
@@ -161,7 +159,7 @@ export default function UserDashboard() {
 
     const hasAnyOverlayOpen = !!citaContext || isBingoModalOpen || isCouponsModalOpen || isSnapshotOpen || isCameraOpen || isHistoryOpen || isPendingListOpen || !!selectedPendingDate || !!viewerSelection || bingoQueue.length > 0 || !!celebrationEvent || isGalleryDetailOpen || isPlaceSelected || isCapsuleModalOpen;
     const shouldHideNav = hasAnyOverlayOpen;
-    const shouldShowMap = activeTab === 'lugares' && !isActionActive; 
+    const shouldShowMap = activeTab === 'lugares' && !isActionActive;
 
     useEffect(() => {
         if (activeTab === 'lugares') return;
