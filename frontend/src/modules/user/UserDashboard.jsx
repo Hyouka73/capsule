@@ -60,8 +60,7 @@ export default function UserDashboard() {
     const [searchParams, setSearchParams] = useSearchParams();
     const urlAction = searchParams.get('action');
 
-    const [isCameraOpen, setIsCameraOpen] = useState(urlAction === 'capture');
-    const [isActionActive, setIsActionActive] = useState(!!urlAction);
+    const [isCameraOpen, setIsCameraOpen] = useState(false);
     const { queueMemory } = useOfflineQueue();
     const { places } = usePlaces();
     const [citaContext, setCitaContext] = useState(null);
@@ -70,6 +69,7 @@ export default function UserDashboard() {
     const [isPendingListOpen, setIsPendingListOpen] = useState(false);
     const [isGalleryDetailOpen, setIsGalleryDetailOpen] = useState(false);
     const [isCapsuleModalOpen, setIsCapsuleModalOpen] = useState(false);
+    const [isActionActive, setIsActionActive] = useState(false);
 
     // Stable handlers defined BEFORE effects
     const handlePlusClick = useCallback(() => {
@@ -80,36 +80,27 @@ export default function UserDashboard() {
     useEffect(() => {
         const action = searchParams.get('action');
         const tab = searchParams.get('tab');
-
-        if (action || tab) {
-            if (action && action !== 'galeria') {
-                setIsActionActive(true);
-            }
-
-            if (action === 'capture') {
-                setIsCameraOpen(true);
-            } else if (action === 'cita' && !citaContext) {
-                handlePlusClick();
-            } else if (tab === 'galeria') {
-                setActiveTab('galeria');
-                setIsActionActive(false); 
-                setSearchParams({}, { replace: true });
-            }
-        }
-    }, [searchParams, setSearchParams, handlePlusClick, citaContext]);
-
-    // Cleanup action state when overlays close
-    const handleActionClose = useCallback(() => {
-        setIsActionActive(false);
-        setIsCameraOpen(false);
-        setCitaContext(null);
-        setIsPlaceSelected(false);
-        
-        // Final cleanup: Remove action params from URL ONLY when closing
-        if (searchParams.has('action')) {
+    
+        if (action === 'capture' && !isCameraOpen) {
+            setIsActionActive(true);
+            setIsCameraOpen(true);
+            setSearchParams({}, { replace: true });
+        } else if (action === 'cita' && !citaContext) {
+            setIsActionActive(true);
+            handlePlusClick();
+            setSearchParams({}, { replace: true });
+        } else if (tab === 'galeria') {
+            setActiveTab('galeria');
             setSearchParams({}, { replace: true });
         }
-    }, [setSearchParams, searchParams]);
+    }, [searchParams, isCameraOpen, citaContext, handlePlusClick, setSearchParams]);
+
+    // Ocultar modal manualmente y resetear estado local
+    const handleActionClose = useCallback(() => {
+        setIsCameraOpen(false);
+        setCitaContext(null);
+        setIsActionActive(false);
+    }, []);
 
     // ── INTER-CITATION NAVIGATION (MAP VIEW) ──
     const navigateCitation = async (direction) => {
@@ -356,16 +347,18 @@ export default function UserDashboard() {
                 {isHistoryOpen && <SnapshotHistory onClose={() => { setIsHistoryOpen(false); setIsCameraOpen(true); }} />}
             </AnimatePresence>
 
-            {citaContext && (
-                <CitaOverlay
-                    citaContext={citaContext}
-                    onClose={handleActionClose}
-                    onSave={async (files) => { 
-                        await addPendingCita(files, citaContext); 
-                        handleActionClose();
-                    }}
-                />
-            )}
+            <AnimatePresence>
+                {citaContext && (
+                    <CitaOverlay
+                        citaContext={citaContext}
+                        onClose={handleActionClose}
+                        onSave={async (files) => { 
+                            await addPendingCita(files, citaContext); 
+                            handleActionClose();
+                        }}
+                    />
+                )}
+            </AnimatePresence>
 
             <AnimatePresence>
                 {isPendingListOpen && (
