@@ -37,7 +37,7 @@ export default function App() {
     teaserCompleted
   } = useAuth();
 
-  const { teaser, isConfigLoaded } = useAppConfig();
+  const { teaser } = useAppConfig();
   const teaserEnabled = teaser?.isEnabled !== false;
 
   // ── MANIFEST SWAPPER (PRO PWA) ──
@@ -58,14 +58,8 @@ export default function App() {
       }
     }
   }, [isAuthenticated, isAdmin]);
-
   // While resolving Firebase auth, show nothing (prevents flash)
   if (isLoading) return <LoadingScreen />;
-
-  // If authenticated, we MUST wait for teaser/welcome progress to be loaded from Firestore 
-  // AND for the app config to be loaded from the backend, 
-  // before making routing decisions, to avoid flashes of the wrong screen.
-  if (isAuthenticated && (!isConfigLoaded || teaserCompleted === null || welcomeSeen === null)) return <LoadingScreen />;
 
   // Blocking screen if account is revoked
   if (isRevoked) return <RevokedScreen />;

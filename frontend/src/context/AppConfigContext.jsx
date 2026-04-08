@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { getAppConfig } from '../apiClient';
+import { getAppConfig, updateAppConfig } from '../apiClient';
 import { useAuth } from '../hooks/useAuth';
 import SystemConfig from '../models/SystemConfig';
 import { openDB } from '../config/dbConfig';
@@ -31,45 +31,89 @@ export function AppConfigProvider({ children }) {
             setIsConfigLoaded(true);
             return;
         }
-        
+
         try {
-            // Explicitly convert Date/Timestamp to numeric MS for reliable backend comparison
+            // 1. Determine client timestamp for conditional fetch (If-Modified-Since pattern)
             const clientTime = force ? null : (
-                configRef.current?.updatedAt?.toMillis ? configRef.current.updatedAt.toMillis() : 
-                (configRef.current?.updatedAt instanceof Date ? configRef.current.updatedAt.getTime() : configRef.current?.updatedAt)
+                configRef.current?.updatedAt?.toMillis ? configRef.current.updatedAt.toMillis() :
+                    (configRef.current?.updatedAt instanceof Date ? configRef.current.updatedAt.getTime() : configRef.current?.updatedAt)
             );
 
-            const res = await getAppConfig({ 
+            const res = await getAppConfig({
                 clientUpdatedAt: clientTime
             });
 
             if (res.unchanged) {
+                // Backend confirms our local cache is the latest
                 setIsConfigLoaded(true);
-                return; // No update needed
+                return;
             }
 
             if (res.success) {
                 const newConfig = SystemConfig.fromFirestore(res);
                 setConfig(newConfig);
                 setIsFromCache(false);
-                
-                // Persist new version to IndexedDB
+
+                // Persist new version to IndexedDB for next startup
                 try {
                     const idb = await openDB();
                     const tx = idb.transaction('app_cache', 'readwrite');
-                    tx.objectStore('app_cache').put({ 
-                        key: APP_CONFIG_CACHE_KEY, 
-                        data: res, 
-                        savedAt: Date.now() 
+                    tx.objectStore('app_cache').put({
+                        key: APP_CONFIG_CACHE_KEY,
+                        data: res,
+                        savedAt: Date.now()
                     });
-                } catch (err) {
-                    // silent fail
+                } catch (idbErr) {
+                    console.warn('[AppConfig] IndexedDB persistence failed:', idbErr);
                 }
             }
         } catch (error) {
-            // API unavailable
+            // NETWORK ERROR / OFFLINE: Silent fail if we already have data from cache.
+            // We don't want to show error screens just because the config check failed.
+            console.log('[AppConfig] Config refresh skipped (offline or server unreachable).');
         } finally {
+            // Always set to loaded so the app can proceed with whatever we have (cached or default)
             setIsConfigLoaded(true);
+        }
+    }, [relationshipId]);
+
+    /**
+     * updateConfig — Bidirectional Sync (Offline-First)
+     * 1. Updates local state immediately (Optimistic).
+     * 2. Persists to IndexedDB immediately (Persistent even if browser closes).
+     * 3. Attempts to sync with the server.
+     */
+    const updateConfig = useCallback(async (updates) => {
+        // 1. Create the new merged config locally
+        const updatedData = { ...configRef.current, ...updates, updatedAt: new Date() };
+        const newInstance = SystemConfig.fromFirestore(updatedData);
+
+        // 2. Optimistic Update (React State)
+        setConfig(newInstance);
+
+        // 3. Persistent Local Update (IndexedDB)
+        try {
+            const idb = await openDB();
+            const tx = idb.transaction('app_cache', 'readwrite');
+            tx.objectStore('app_cache').put({
+                key: APP_CONFIG_CACHE_KEY,
+                data: updatedData,
+                savedAt: Date.now()
+            });
+        } catch (err) {
+            console.warn('[AppConfig] Failed to save optimistic update to IndexedDB:', err);
+        }
+
+        // 4. Remote Sync (API) — failure is ignored (Standard offline-first fallback)
+        try {
+            if (relationshipId) {
+                await updateAppConfig({
+                    relationshipId,
+                    updates
+                });
+            }
+        } catch (apiErr) {
+            console.warn('[AppConfig] Remote sync failed, keeping local-only version for now.', apiErr);
         }
     }, [relationshipId]);
 
@@ -99,13 +143,11 @@ export function AppConfigProvider({ children }) {
             fetchConfig();
         }
 
-        // 3. Cache-bust migration: If we loaded from cache but it lacks membership data (new system),
-        // force a refresh to get the new structure.
-        setTimeout(() => {
-            if (isConfigLoaded && (!configRef.current?.members || configRef.current.members.length === 0)) {
-                fetchConfig(true);
-            }
-        }, 1000);
+        // 3. SILENT CACHE-BUST MIGRATION: If we loaded from cache but it lacks membership data,
+        // refresh in the background without blocking the UI.
+        if (isConfigLoaded && (!configRef.current?.members || configRef.current.members.length === 0)) {
+            fetchConfig(true);
+        }
 
         // 3. Sync on online
         const handleOnline = () => {
@@ -123,8 +165,9 @@ export function AppConfigProvider({ children }) {
         isConfigLoaded,
         isFromCache,
         refreshConfig: fetchConfig,
+        updateConfig,
         isFeatureOn: (featureName) => config.isFeatureOn(featureName),
-    }), [config, relationshipId, isConfigLoaded, isFromCache, fetchConfig]);
+    }), [config, relationshipId, isConfigLoaded, isFromCache, fetchConfig, updateConfig]);
 
     return (
         <AppConfigContext.Provider value={value}>

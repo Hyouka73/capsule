@@ -15,19 +15,51 @@ import { ROLES, COLLECTIONS } from '../config/constants';
 import User from '../models/User';
 import { toast } from '../components/ui/PastelToast/PastelToast';
 
+// --- OFFLINE PERSISTENCE UTILITIES ---
+const PROFILE_CACHE_KEY = 'capsule_user_profile_cache';
+
+/**
+ * Persist a light version of the profile to localStorage for zero-latency startup.
+ * Uses Base64 encoding to avoid plain-text visibility in devtools (obfuscation only).
+ */
+const saveProfileToCache = (data) => {
+    try {
+        const str = JSON.stringify(data);
+        localStorage.setItem(PROFILE_CACHE_KEY, btoa(str));
+    } catch (e) {
+        console.warn('[AuthContext] Failed to cache profile:', e);
+    }
+};
+
+/**
+ * Retrieve the cached profile from localStorage.
+ */
+const getCachedProfile = () => {
+    try {
+        const encoded = localStorage.getItem(PROFILE_CACHE_KEY);
+        if (!encoded) return null;
+        return JSON.parse(atob(encoded));
+    } catch (e) {
+        return null;
+    }
+};
+
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+    // PRE-LOAD FROM CACHE: Immediate UI population even before Firebase wakes up
+    const cached = getCachedProfile() || {};
+
     const [user, setUser] = useState(null);
-    const [role, setRole] = useState(null);
+    const [role, setRole] = useState(cached.role || null);
     const [deviceId, setDeviceId] = useState(null);
-    const [onboardingCompleted, setOnboardingCompleted] = useState(false);
-    const [welcomeSeen, setWelcomeSeen] = useState(null);
-    const [teaserCompleted, setTeaserCompleted] = useState(null);
-    const [teaserLock, setTeaserLock] = useState(null);
-    const [gameCoins, setGameCoins] = useState(0);
-    const [accountStatus, setAccountStatus] = useState(null); // 'active' | 'revoked' | 'pending' | null (loading)
-    const [relationshipId, setRelationshipId] = useState(localStorage.getItem('capsule_relationship_id') || null);
+    const [onboardingCompleted, setOnboardingCompleted] = useState(cached.onboardingCompleted ?? false);
+    const [welcomeSeen, setWelcomeSeen] = useState(cached.welcomeSeen ?? null);
+    const [teaserCompleted, setTeaserCompleted] = useState(cached.teaserCompleted ?? null);
+    const [teaserLock, setTeaserLock] = useState(cached.teaserLock || null);
+    const [gameCoins, setGameCoins] = useState(cached.gameCoins ?? 0);
+    const [accountStatus, setAccountStatus] = useState(cached.accountStatus || null); 
+    const [relationshipId, setRelationshipId] = useState(localStorage.getItem('capsule_relationship_id') || cached.relationshipId || null);
     const [isLoading, setIsLoading] = useState(true);
     const initialAuthChecked = useRef(false);
     const authTimeRef = useRef(null);
@@ -114,14 +146,9 @@ export function AuthProvider({ children }) {
                     if (!isMounted) return;
                     
                     if (!snapshot.exists()) {
-                        // GHOST SESSION FIX: Only force sign out if the SERVER confirms the document is missing.
-                        // We ignore "missing" states from the local cache (metadata.fromCache: true) 
-                        // as they are often false positives during the initial sync after login.
-                        if (!snapshot.metadata.fromCache) {
-                            console.warn('[AuthContext] User document missing on server. Forcing sign out.');
-                            authSignOut();
-                            setIsLoading(false);
-                        }
+                        // OFFLINE RESILIENCE: Never kill a session just because the document is missing.
+                        // It could be a transient Firestore error or a connectivity issue during handshake.
+                        console.warn('[AuthContext] User document not found on server. Keeping session alive for offline fallback.');
                         return;
                     }
 
@@ -139,6 +166,18 @@ export function AuthProvider({ children }) {
                     if (data.relationshipId) {
                         localStorage.setItem('capsule_relationship_id', data.relationshipId);
                     }
+
+                    // CACHE SYNC: Update the rapid-start cache with fresh server data
+                    saveProfileToCache({
+                        role: data.role,
+                        onboardingCompleted: data.onboardingCompleted,
+                        welcomeSeen: data.welcomeSeen,
+                        teaserCompleted: data.teaserCompleted,
+                        teaserLock: data.teaserLock,
+                        gameCoins: data.gameCoins,
+                        accountStatus: data.accountStatus || (data.isRevoked ? 'revoked' : 'active'),
+                        relationshipId: data.relationshipId
+                    });
 
                     // AUTO-SIGN-OUT: If access is revoked, kill session immediately
                     // STALE CACHE PROTECTION: Ignore 'revoked' status if it comes from the cache 
@@ -224,11 +263,10 @@ export function AuthProvider({ children }) {
                             }
                         } catch (repairErr) {
                             console.error('[AuthContext] Hard-healing failed:', repairErr);
-                            // Fallback: si la reparación falla críticamente (perfil borrado), deslogueamos
-                            // para evitar bucles infinitos de carga o errores 403 persistentes.
-                            if (repairErr.code === 'not-found' || repairErr.code === 'failed-precondition') {
-                                console.error('[AuthContext] User profile broken. Forcing sign out.');
-                                authSignOut();
+                            // OFFLINE-FIRST: If repair fails (e.g. no internet), we DON'T sign out.
+                            // We allow the user to remain with their current (possibly cached) state.
+                            if (repairErr.code === 'not-found') {
+                                console.warn('[AuthContext] User profile likely missing, but preserving local session.');
                             }
                         }
                     }
@@ -292,18 +330,15 @@ export function AuthProvider({ children }) {
                     setTeaserCompleted(null);
                     setGameCoins(0);
                     
-                    // Only stop loading if this is a confirmed final null state
-                    // We add a tiny delay to avoid flashing /join during hot module replacement or quick link clicks
+                    // NO TIMEOUT: We wait for Firebase to resolve at its own pace.
+                    // This prevents flash-redirects to /join on slow network/slow CPUs.
                     if (!initialAuthChecked.current) {
                         initialAuthChecked.current = true;
-                        setTimeout(() => {
-                            if (isMounted && !auth.currentUser) {
-                                setIsLoading(false);
-                            }
-                        }, 500);
+                        setIsLoading(false);
                     } else {
                         setIsLoading(false);
                         localStorage.removeItem('capsule_relationship_id');
+                        localStorage.removeItem(PROFILE_CACHE_KEY);
                     }
                 }
             }
@@ -318,7 +353,11 @@ export function AuthProvider({ children }) {
         };
     }, [registerFCM]);
 
-    const signOut = useCallback(() => authSignOut(), []);
+    const signOut = useCallback(() => {
+        localStorage.removeItem(PROFILE_CACHE_KEY);
+        localStorage.removeItem('capsule_relationship_id');
+        return authSignOut();
+    }, []);
 
     // ─────────────────────────────────────────────────────────────────────────────
     // Registration Methods (OVERRIDE SKILL.md — controlled refactor)

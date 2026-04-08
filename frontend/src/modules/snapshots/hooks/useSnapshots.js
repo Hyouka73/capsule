@@ -15,6 +15,7 @@ import { markSnapshotAsSeen as markAsSeenApi } from '../../../apiClient';
 import { openDB } from '../../../config/dbConfig';
 
 const SEEN_STORE = 'seen_snapshots';
+const SNAPSHOT_CACHE_NAME = 'snapshot-images-cache';
 
 const TWENTY_FOUR_H_MS = 24 * 60 * 60 * 1000;
 
@@ -30,6 +31,7 @@ export function useSnapshots() {
     const [snapshots, setSnapshots] = useState([]);
     const [loading, setLoading] = useState(true);
     const [optimisticSeenIds, setOptimisticSeenIds] = useState(new Set());
+    const [availableIds, setAvailableIds] = useState(new Set());
 
     // 1. Cargar IDs vistos localmente (IndexedDB) al montar
     useEffect(() => {
@@ -53,6 +55,30 @@ export function useSnapshots() {
         loadLocalSeen();
     }, []);
 
+    /**
+     * prefetchImage — Carga una imagen en la Cache API y marca su ID como "disponible".
+     */
+    const prefetchImage = useCallback(async (url, id) => {
+        if (!url || !id) return;
+        try {
+            const cache = await caches.open(SNAPSHOT_CACHE_NAME);
+            const cachedResponse = await cache.match(url);
+            
+            if (!cachedResponse) {
+                // Descargar y guardar en caché
+                const response = await fetch(url);
+                if (response.ok) {
+                    await cache.put(url, response);
+                }
+            }
+            
+            // Actualización Inmediata: Marcar como disponible en cuanto se guarda en caché
+            setAvailableIds(prev => new Set(prev).add(id));
+        } catch (err) {
+            console.warn(`[useSnapshots] Prefetch failed for ${id}:`, err);
+        }
+    }, []);
+
     useEffect(() => {
         if (!user || !relationshipId) {
             setLoading(false);
@@ -74,6 +100,7 @@ export function useSnapshots() {
             const docs = snapshot.docs.map(doc => {
                 const data = doc.data();
                 const createdAtMs = data.createdAt?.toMillis?.() || data.createdAt?.seconds * 1000 || 0;
+                
                 return {
                     id: doc.id,
                     ...data,
@@ -91,6 +118,22 @@ export function useSnapshots() {
 
         return () => unsubscribe();
     }, [user, relationshipId]);
+
+    // 2. Parallel Pre-fetch: Download images in background and mark as available
+    useEffect(() => {
+        const potentialSnapshots = snapshots.filter(s => 
+            s.createdBy !== user?.uid && 
+            s.photoUrl && 
+            !s.isSeen && 
+            !optimisticSeenIds.has(s.id) &&
+            !availableIds.has(s.id)
+        );
+
+        if (potentialSnapshots.length === 0) return;
+
+        // Parallel processing of all new images
+        Promise.allSettled(potentialSnapshots.map(s => prefetchImage(s.photoUrl, s.id)));
+    }, [snapshots, user?.uid, optimisticSeenIds, availableIds.size, prefetchImage]);
 
     // 2. Background Sync: Limpiar IndexedDB cuando Firestore ya refleja "Visto"
     useEffect(() => {
@@ -127,6 +170,8 @@ export function useSnapshots() {
                 if (s.isSeen || optimisticSeenIds.has(s.id)) return false;
                 // No debe estar expirada (> 24h)
                 if (now - s.createdAtMs > TWENTY_FOUR_H_MS) return false;
+                // EXCLUSIVO: Solo mostrar si ya está en caché local (disponible)
+                if (!availableIds.has(s.id)) return false;
                 return true;
             })
             .sort((a, b) => a.createdAtMs - b.createdAtMs);
