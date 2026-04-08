@@ -6,12 +6,14 @@ import {
     onSnapshot, 
     orderBy, 
     limit,
-    Timestamp 
+    Timestamp,
+    doc,
+    updateDoc,
+    serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../../../services/firebase';
 import { useAuth } from '../../../hooks/useAuth';
 import { COLLECTIONS } from '../../../config/constants';
-import { markSnapshotAsSeen as markAsSeenApi } from '../../../apiClient';
 import { openDB } from '../../../config/dbConfig';
 
 const SEEN_STORE = 'seen_snapshots';
@@ -135,28 +137,29 @@ export function useSnapshots() {
         Promise.allSettled(potentialSnapshots.map(s => prefetchImage(s.photoUrl, s.id)));
     }, [snapshots, user?.uid, optimisticSeenIds, availableIds.size, prefetchImage]);
 
-    // 2. Background Sync: Limpiar IndexedDB cuando Firestore ya refleja "Visto"
+    // 3. Background Sync: Limpiar IndexedDB cuando Firestore ya refleja "Visto"
     useEffect(() => {
-        if (snapshots.length === 0 || optimisticSeenIds.size === 0) return;
-
-        async function cleanupSeenStore() {
+        if (snapshots.length === 0) return;
+        
+        const cleanup = async () => {
             const dbInstance = await openDB();
             const tx = dbInstance.transaction(SEEN_STORE, 'readwrite');
             const store = tx.objectStore(SEEN_STORE);
-
-            // Si un ID está en optimisticSeenIds pero Firestore ya dice que s.isSeen === true, fuera del store local.
+            
             snapshots.forEach(s => {
-                if (s.isSeen && optimisticSeenIds.has(s.id)) {
+                // Si el servidor ya dice que es visto, lo borramos de nuestra lista local de "por confirmar"
+                if (s.isSeen) {
                     store.delete(s.id);
                     setOptimisticSeenIds(prev => {
+                        if (!prev.has(s.id)) return prev;
                         const next = new Set(prev);
                         next.delete(s.id);
                         return next;
                     });
                 }
             });
-        }
-        cleanupSeenStore();
+        };
+        cleanup();
     }, [snapshots]);
 
     // Filtrar: Unseen (vienen de la pareja, no vistas, < 24h)
@@ -193,21 +196,24 @@ export function useSnapshots() {
     }, [snapshots, user?.uid]);
 
     const markAsSeen = useCallback(async (snapshotId) => {
-        // 1. Actualizar estado local y persistir (Optimistic UI)
+        // 1. Ocultar de la UI inmediatamente (Optimistic)
         setOptimisticSeenIds(prev => new Set([...prev, snapshotId]));
         
         try {
+            // 2. Guardar en IndexedDB por si el usuario recarga antes de que suba a Firestore
             const dbInstance = await openDB();
             const tx = dbInstance.transaction(SEEN_STORE, 'readwrite');
             tx.objectStore(SEEN_STORE).put({ id: snapshotId, timestamp: Date.now() });
+            
+            // 3. Escritura Directa a Firestore (Offline-First por defecto)
+            const snapRef = doc(db, 'relationships', relationshipId, COLLECTIONS.INSTANTANEAS, snapshotId);
+            await updateDoc(snapRef, { 
+                isSeen: true, 
+                seenAt: serverTimestamp() 
+            });
         } catch (err) {
-            console.warn('[useSnapshots] Error persisting seen status:', err);
+            console.error('[useSnapshots] Error al marcar como visto:', err);
         }
-
-        // 2. Disparar API en background (sin await para no bloquear la UI)
-        markAsSeenApi({ snapshotId }).catch(err => {
-            console.error('[useSnapshots] Background sync failed:', err);
-        });
     }, [relationshipId]);
 
     return {
