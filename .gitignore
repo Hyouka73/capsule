@@ -50,3 +50,4 @@ emulator_log*.txt
 seed_output.txt
 backend/tools/
 backend/seeds/
+backend/tmp/

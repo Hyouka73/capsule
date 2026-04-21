@@ -57,9 +57,21 @@ service cloud.firestore {
     }
 
     // ── SUBCOLLECTIONS BY RELATIONSHIP ────────────────────────────────────
-
-    match /relationships/{relationshipId}/{document=**} {
+    
+    match /relationships/{relationshipId} {
+      // Regla general para el documento de la relación
       allow read, write: if matchesRelationship(relationshipId);
+
+      // Eventos Especiales: Ambos leen, solo Admin escribe
+      match /specialEvents/{eventId} {
+        allow read: if matchesRelationship(relationshipId);
+        allow write: if isAdmin() && matchesRelationship(relationshipId);
+      }
+
+      // Resto de subcolecciones (memories, capsules, etc.)
+      match /{allSubcollections=**} {
+        allow read, write: if matchesRelationship(relationshipId);
+      }
     }
   }
 }
