@@ -1,0 +1,168 @@
+/* SpecialEventsManager.module.css */
+
+.root {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+}
+
+/* ── Access denied ── */
+.accessDenied {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 4rem;
+    text-align: center;
+    border-radius: var(--radius-card, 1.5rem);
+    background: #fff9fb;
+    border: 2px dashed #ffdae3;
+    color: #8a6060;
+    font-size: 1rem;
+}
+
+.accessDenied span { font-size: 3rem; }
+
+/* ── Page header ── */
+.pageHeader {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.headerLeft {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.pageTitle {
+    font-family: 'Fredoka', var(--font-display, sans-serif);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #4a3232;
+    margin: 0;
+}
+
+.pageDesc {
+    font-size: 0.875rem;
+    color: #8a6060;
+    margin: 0;
+}
+
+/* ── Warning banner ── */
+.warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    background: #fffbea;
+    border: 1.5px solid #f5d76e;
+    border-radius: 1rem;
+    padding: 0.875rem 1.25rem;
+    font-size: 0.85rem;
+    color: #7a5a20;
+    line-height: 1.5;
+}
+
+.warning span { font-size: 1.2rem; flex-shrink: 0; margin-top: 0.05rem; }
+.warning p { margin: 0; }
+.warning code {
+    background: rgba(0,0,0,0.06);
+    padding: 0.1em 0.35em;
+    border-radius: 0.25rem;
+    font-size: 0.85em;
+}
+
+/* ── Section ── */
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.sectionTitle {
+    font-family: 'Fredoka', var(--font-display, sans-serif);
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #4a3232;
+    margin: 0;
+}
+
+.countBadge {
+    background: #ffadc7;
+    color: #6b3049;
+    padding: 0.1rem 0.55rem;
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    font-family: 'Fredoka', sans-serif;
+    box-shadow: 0 2px 0 #d4a4b8;
+}
+
+.loadingBadge {
+    background: #f5f5f5;
+    color: #aaa;
+    padding: 0.1rem 0.55rem;
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-family: 'Fredoka', sans-serif;
+}
+
+/* ── Skeleton ── */
+.skeletonList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.skeletonRow {
+    height: 60px;
+    border-radius: 1rem;
+    background: linear-gradient(90deg, #ffeef3 0%, #fff5f8 50%, #ffeef3 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+/* ── Dev info ── */
+.devInfo {
+    background: #f0f0f0;
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem;
+    color: #555;
+    border: 1px solid #ddd;
+}
+
+.devInfo summary {
+    cursor: pointer;
+    font-family: monospace;
+    font-weight: 600;
+}
+
+.devInfo ul {
+    margin: 0.5rem 0 0;
+    padding-left: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.devInfo code {
+    background: #e0e0e0;
+    padding: 0.1em 0.35em;
+    border-radius: 0.25rem;
+}

@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { useAppConfig } from './context/AppConfigContext';
+import { useMemoriesSync } from './hooks/useMemoriesSync';
+import { useSnapshotsSync } from './hooks/useSnapshotsSync';
 import Teaser from './components/Teaser/Teaser';
 import AdminLogin from './modules/admin/AdminLogin';
 import AdminRegister from './modules/auth/AdminRegister';
@@ -11,6 +13,7 @@ import JoinInvite from './modules/auth/JoinInvite';
 import WelcomeScreen from './modules/auth/WelcomeScreen';
 import RevokedScreen from './modules/auth/RevokedScreen';
 import LoadingScreen from './components/ui/LoadingScreen/LoadingScreen';
+import SpecialEventWrapper from './components/SpecialEventWrapper/SpecialEventWrapper';
 import { PastelToastProvider } from './components/ui/PastelToast/PastelToast';
 import { BingoProvider } from './context/BingoContext';
 import './App.css';
@@ -37,12 +40,19 @@ export default function App() {
     teaserCompleted
   } = useAuth();
 
+  useMemoriesSync();
+  useSnapshotsSync();
+
   const { teaser } = useAppConfig();
   const teaserEnabled = teaser?.isEnabled !== false;
+  
+  // ROUTER RESILIENTE: Si tenemos un perfil en caché, asumimos acceso hasta que Firebase demuestre lo contrario (si hay red)
+  const isSessionActive = localStorage.getItem('capsule_session_active') === 'true';
+  const hasValidSession = isAuthenticated || isSessionActive;
 
   // ── MANIFEST SWAPPER (PRO PWA) ──
   useEffect(() => {
-    if (isAuthenticated) {
+    if (hasValidSession) {
       const manifestLink = document.getElementById('manifest-link');
       if (manifestLink) {
         // Change manifest based on role to dynamic shortcuts if supported
@@ -57,7 +67,7 @@ export default function App() {
         manifestLink.setAttribute('href', '/manifest.json');
       }
     }
-  }, [isAuthenticated, isAdmin]);
+  }, [hasValidSession, isAdmin]);
   // While resolving Firebase auth, show nothing (prevents flash)
   if (isLoading) return <LoadingScreen />;
 
@@ -66,10 +76,11 @@ export default function App() {
 
   return (
     <PastelToastProvider>
+        <SpecialEventWrapper>
         <Routes>
         {/* Raíz Dispatcher: Redirige según el estado de la sesión y el progreso */}
         <Route path="/" element={
-          !isAuthenticated 
+          !hasValidSession 
             ? <Navigate to="/join" replace /> 
             : isAdmin 
               ? <Navigate to={`/admin${window.location.search}`} replace />
@@ -84,14 +95,14 @@ export default function App() {
 
         {/* Flujo de invitación (público) */}
         <Route path="/join" element={
-          isAuthenticated 
+          hasValidSession 
             ? <Navigate to="/" replace />
             : <><JoinInvite /><VersionBadge /></>
         } />
 
         {/* Teaser (protegido por estado) — solo si está habilitado y no ha sido completado */}
         <Route path="/teaser" element={
-          !isAuthenticated 
+          !hasValidSession 
             ? <Navigate to="/join" replace />
             : isAdmin
               ? <Navigate to="/admin" replace />
@@ -102,7 +113,7 @@ export default function App() {
 
         {/* Pantalla de Bienvenida (protegida) — accesible después del Teaser (o si está deshabilitado) */}
         <Route path="/welcome" element={
-          !isAuthenticated 
+          !hasValidSession 
             ? <Navigate to="/join" replace />
             : isAdmin
               ? <Navigate to="/admin" replace />
@@ -132,36 +143,39 @@ export default function App() {
 
         {/* Dashboard de usuario (protegido) */}
         <Route path="/app/*" element={
-          !isAuthenticated
+          !hasValidSession
             ? <Navigate to="/join" replace />
             : isAdmin
               ? <Navigate to={`/admin${window.location.search}`} replace />
-              : new URLSearchParams(window.location.search).has('action') 
-                ? <BingoProvider><UserDashboard /><VersionBadge /></BingoProvider>
-                : (teaserEnabled && teaserCompleted === false)
-                  ? <Navigate to={`/teaser${window.location.search}`} replace />
-                  : welcomeSeen === false
-                    ? <Navigate to={`/welcome${window.location.search}`} replace />
-                    : <BingoProvider><UserDashboard /><VersionBadge /></BingoProvider>
+              : (teaserEnabled && teaserCompleted === false)
+                ? <Navigate to={`/teaser${window.location.search}`} replace />
+                : welcomeSeen === false
+                  ? <Navigate to={`/welcome${window.location.search}`} replace />
+                  : (
+                    <BingoProvider>
+                      <UserDashboard />
+                      <VersionBadge />
+                    </BingoProvider>
+                  )
         } />
 
         {/* Accesos directos (App Shortcuts) — Redirigir al dashboard adecuado con acción específica */}
         <Route path="/snapshots/capture" element={
-          !isAuthenticated 
+          !hasValidSession 
             ? <Navigate to="/join" replace /> 
             : isAdmin
               ? <Navigate to={`/admin${window.location.search}${window.location.search ? '&' : '?'}action=capture`} replace />
               : <Navigate to={`/app${window.location.search}${window.location.search ? '&' : '?'}action=capture`} replace />
         } />
         <Route path="/cita/instantanea" element={
-          !isAuthenticated 
+          !hasValidSession 
             ? <Navigate to="/join" replace /> 
             : isAdmin
               ? <Navigate to="/admin" replace /> 
               : <Navigate to={`/app${window.location.search}${window.location.search ? '&' : '?'}action=cita`} replace />
         } />
         <Route path="/snapshots" element={
-          !isAuthenticated 
+          !hasValidSession 
             ? <Navigate to="/join" replace /> 
             : <Navigate to="/app?tab=galeria" replace />
         } />
@@ -169,6 +183,7 @@ export default function App() {
         {/* Fallback: redirigir a raíz para que el dispatcher decida */}
         <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </SpecialEventWrapper>
     </PastelToastProvider>
   );
 }

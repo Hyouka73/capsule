@@ -1,7 +1,14 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { onCall, onRequest, HttpsError } from 'firebase-functions/v2/https';
 import { setGlobalOptions } from 'firebase-functions/v2';
 import { logger } from 'firebase-functions';
+
+// ── GLOBAL OPTIONS ───────────────────────────────────────────────────────────
+// Habilita CORS para todas las funciones (necesario para Vercel)
+setGlobalOptions({ 
+    region: 'us-central1',
+    cors: true 
+});
 import fs from 'fs';
 import path from 'path';
 
@@ -171,12 +178,12 @@ export const taskUnlockCapsule = onDocumentCreated({
     return mod.taskUnlockCapsule(event);
 });
 
-export const taskArchiveSnapshot = onDocumentCreated({
-    document: 'relationships/{relId}/snapshots/{snapshotId}',
-    region: 'us-central1'
-}, async (event) => {
+export const taskArchiveSnapshot = onRequest({
+    region: 'us-central1',
+    invoker: 'private',
+}, async (req, res) => {
     const mod = await import('./src/triggers/taskArchiveSnapshot.js');
-    return mod.taskArchiveSnapshot(event);
+    return mod.handler(req, res);
 });
 
 export const cleanupExpiredTokens = onSchedule({
@@ -187,10 +194,35 @@ export const cleanupExpiredTokens = onSchedule({
     return mod.cleanupExpiredTokens(event);
 });
 
-export const onSnapshotCreated = onDocumentCreated({
-    document: 'relationships/{relId}/snapshots/{snapshotId}',
-    region: 'us-central1'
+import { onDocumentWritten } from 'firebase-functions/v2/firestore';
+
+export const onSnapshotCreated = onDocumentWritten({
+    document: 'relationships/{relationshipId}/snapshots/{snapshotId}',
+    region: 'us-central1',
+    retry: true
 }, async (event) => {
     const mod = await import('./src/triggers/onSnapshotCreated.js');
-    return mod.onSnapshotCreated(event);
+    return mod.onSnapshotCreatedHandler(event);
+});
+
+
+// ── Special Event Orchestrator ───────────────────────────────────────────────
+// Architecture: zero polling, exact timing via Cloud Tasks.
+//
+//  scheduleSpecialEvent  (onCall)
+//    └─ Admin calls this after saving an event in Firestore.
+//    └─ Creates a one-shot Cloud Task scheduled for the exact unlockDateTime.
+//
+//  dispatchEventNow  (onRequest, private — Cloud Tasks only)
+//    └─ Fires at the exact minute, sends FCM push, marks dispatchedAt.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const scheduleSpecialEvent = lazyOnCall('./src/api/scheduleSpecialEvent.js', 'handler');
+
+export const dispatchEventNow = onRequest({
+    region: 'us-central1',
+    invoker: 'private', // Only Cloud Tasks (OIDC) can call this
+}, async (req, res) => {
+    const mod = await import('./src/api/dispatchEventNow.js');
+    return mod.handler(req, res);
 });

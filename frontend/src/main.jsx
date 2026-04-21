@@ -5,6 +5,7 @@ import App from './App'
 import { AuthProvider } from './context/AuthContext'
 import { AppConfigProvider } from './context/AppConfigContext'
 import { BingoProvider } from './context/BingoContext'
+import { SpecialEventProvider } from './context/SpecialEventContext'
 import { BrowserRouter } from 'react-router-dom'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -114,9 +115,11 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <AuthProvider>
         <AppConfigProvider>
-          <BingoProvider>
-            <App />
-          </BingoProvider>
+          <SpecialEventProvider>
+            <BingoProvider>
+              <App />
+            </BingoProvider>
+          </SpecialEventProvider>
         </AppConfigProvider>
       </AuthProvider>
     </BrowserRouter>

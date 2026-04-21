@@ -1,0 +1,158 @@
+/* EventForm.module.css */
+
+.form {
+    background: #ffffff;
+    border-radius: var(--radius-card, 1.5rem);
+    border: 1.5px solid #ffdae3;
+    padding: 1.75rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    box-shadow: 0 4px 0 #f0d0d8;
+}
+
+/* ── Header ── */
+.formHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.formHeaderIcon { font-size: 1.5rem; line-height: 1; }
+
+.formTitle {
+    font-family: 'Fredoka', var(--font-display, sans-serif);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #4a3232;
+    margin: 0;
+}
+
+/* ── Fieldsets ── */
+.fieldset {
+    border: 1.5px solid #ffeef3;
+    border-radius: 1rem;
+    padding: 1.25rem 1.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin: 0;
+}
+
+.legend {
+    font-family: 'Fredoka', var(--font-display, sans-serif);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #c0809a;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0 0.5rem;
+}
+
+/* ── Fields ── */
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    flex: 1;
+}
+
+.fieldRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.label {
+    font-family: 'Fredoka', var(--font-display, sans-serif);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #6a4a4a;
+}
+
+.req { color: #ff6b8a; }
+
+.optional {
+    font-weight: 400;
+    font-size: 0.75rem;
+    color: #b09090;
+}
+
+.input {
+    background: #fff9fb;
+    border: 1.5px solid #ffdae3;
+    border-radius: 0.75rem;
+    padding: 0.65rem 0.9rem;
+    font-family: 'Fredoka', var(--font-display, sans-serif);
+    font-size: 0.9rem;
+    color: #4a3232;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.input:focus {
+    border-color: #ffadc7;
+    box-shadow: 0 0 0 3px rgba(255, 173, 199, 0.15);
+}
+
+.input::placeholder { color: #c4a0a8; }
+
+.textarea {
+    resize: vertical;
+    min-height: 72px;
+    line-height: 1.5;
+}
+
+.select {
+    appearance: none;
+    background: #fff9fb url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23c4a0a8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 0.75rem center;
+    background-size: 1rem;
+    border: 1.5px solid #ffdae3;
+    border-radius: 0.75rem;
+    padding: 0.65rem 2.5rem 0.65rem 0.9rem;
+    font-family: 'Fredoka', var(--font-display, sans-serif);
+    font-size: 0.9rem;
+    color: #4a3232;
+    outline: none;
+    cursor: pointer;
+    width: 100%;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.select:focus {
+    border-color: #ffadc7;
+    box-shadow: 0 0 0 3px rgba(255, 173, 199, 0.15);
+}
+
+.hint {
+    font-size: 0.72rem;
+    color: #b09090;
+    line-height: 1.4;
+}
+
+.hint code {
+    background: #ffeef3;
+    padding: 0.1em 0.35em;
+    border-radius: 0.25rem;
+    font-size: 0.85em;
+    color: #b05070;
+}
+
+/* ── Actions ── */
+.actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    padding-top: 0.25rem;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+    .form { padding: 1.25rem 1rem; }
+    .fieldRow { grid-template-columns: 1fr; }
+    .actions { flex-direction: column-reverse; }
+}
