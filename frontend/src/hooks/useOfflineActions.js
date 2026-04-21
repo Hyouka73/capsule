@@ -17,7 +17,8 @@ import {
     registerExercise, 
     createMemory,
     redeemCoupon,
-    createCoupon
+    createCoupon,
+    resetBingoBoard
 } from '../apiClient';
 import { generateUUID } from '../utils/uuid';
 
@@ -163,6 +164,14 @@ async function processCouponCreate(action) {
     });
 }
 
+/**
+ * Procesa el reinicio del tablero de Bingo.
+ */
+async function processBingoReset(action) {
+    const { relationshipId } = action;
+    await resetBingoBoard({ relationshipId });
+}
+
 async function dispatchAction(action) {
     switch (action.type) {
         case 'bingo_completion':
@@ -175,6 +184,8 @@ async function dispatchAction(action) {
             return processCouponRedeem(action);
         case 'create_coupon':
             return processCouponCreate(action);
+        case 'bingo_reset':
+            return processBingoReset(action);
         default:
             throw new Error(`[offlineActions] Tipo de acción desconocido: ${action.type}`);
     }

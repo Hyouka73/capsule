@@ -153,6 +153,16 @@ async function syncCitaStatus(citaId, status, relationshipId) {
             if (item) {
                 item.status = status;
                 store.put(item);
+            } else if (citaId !== key) {
+                // Try raw citaId fallback (legacy items)
+                const fallbackReq = store.get(citaId);
+                fallbackReq.onsuccess = () => {
+                    if (fallbackReq.result) {
+                        const legacyItem = fallbackReq.result;
+                        legacyItem.status = status;
+                        store.put(legacyItem);
+                    }
+                };
             }
         };
         await new Promise((resolve, reject) => {
@@ -169,7 +179,7 @@ async function syncCitaStatus(citaId, status, relationshipId) {
  */
 export function useOfflineQueue() {
     const { relationshipId } = useAuth();
-    const { completeBingoSquare, enqueueBingoSuggestion } = useBingo();
+    const { completeBingoSquare } = useBingo();
     const [pendingCount, setPendingCount] = useState(0);
     const [failedCount, setFailedCount] = useState(0);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -293,6 +303,7 @@ export function useOfflineQueue() {
                             placeLat: memoryModel.placeLat,
                             placeLng: memoryModel.placeLng,
                             placeName: memoryModel.placeName,
+                            claimedBingoCategories: item.claimedBingoCategories || [],
                         });
 
                         // ── BINGO INTEGRATION ──────────
@@ -302,28 +313,8 @@ export function useOfflineQueue() {
                             await updateBingoSquare({ 
                                 categoryId: item.bingoOrigin.categoryId, 
                                 memoryId: item.id,
-                                completedAt: item.bingoOrigin.completedAt
+                                completedAt: item.bingoOrigin.completedAt || new Date().toISOString()
                             });
-                        } else if (res?.bingoSuggestions?.length > 0) {
-                            // Only save suggestions if it WASN'T an explicit bingo date
-                            try {
-                                const db = await openDB();
-                                const tx = db.transaction('pending_bingo', 'readwrite');
-                                tx.objectStore('pending_bingo').put({
-                                    memoryId: item.id,
-                                    suggestions: res.bingoSuggestions,
-                                    createdAt: Date.now(),
-                                    resolved: false
-                                });
-                                // Trigger update to UI (for lightbulbs)
-                                window.dispatchEvent(new Event('pending_bingo_updated'));
-                                
-                                // NEW: Enqueue for sequential UI Queue
-                                enqueueBingoSuggestion(item.id, res.bingoSuggestions);
-                                newBingoSuggestionsCount++;
-                            } catch (e) {
-                                // Fail silently in prod per requirements
-                            }
                         }
 
                         if (item.originalCitaId) {
@@ -436,12 +427,18 @@ export function useOfflineQueue() {
             const current = await getAllPending(relationshipId);
             const stuck = current.filter(i => i.status === 'uploading');
 
-            if (stuck.length > 0) {
-                for (const item of stuck) {
-                    await updateQueueItem(item.id, { status: 'pending' });
-                }
-                refreshCount();
+            for (const item of stuck) {
+                await updateQueueItem(item.id, { status: 'pending' });
             }
+
+            // RECONCILE FAILED: Ensure failed items in queue are marked as failed in citations
+            const failed = await getAllFailed(relationshipId);
+            for (const item of failed) {
+                if (item.originalCitaId) {
+                    await syncCitaStatus(item.originalCitaId, 'failed', relationshipId);
+                }
+            }
+            refreshCount();
         };
 
         const init = async () => {
@@ -529,7 +526,7 @@ export function useOfflineQueue() {
      * @param {object} bingoOrigin - Optional { categoryId } metadata
      * @returns {Promise<{queued: boolean}>}
      */
-    const queueMemory = useCallback(async (formData, photoMetadata, originalCitaId = null, bingoOrigin = null) => {
+    const queueMemory = useCallback(async (formData, photoMetadata, originalCitaId = null, bingoOrigin = null, claimedBingoCategories = []) => {
         const compressedPhotos = await Promise.all(
             photoMetadata.map(async (p, index) => {
                 const file = p.file || p;
@@ -572,6 +569,7 @@ export function useOfflineQueue() {
             photos: compressedPhotos,
             originalCitaId,
             bingoOrigin,
+            claimedBingoCategories,
             status: 'pending',
             retryCount: 0,
             createdAt: Date.now(),
@@ -747,9 +745,20 @@ export function useOfflineQueue() {
         return { queued: true };
     }, [refreshCount, processQueue, relationshipId]);
 
+    /**
+     * Updates an existing memory item in the queue with additional data.
+     */
+    const updatePendingMemory = useCallback(async (memoryId, updates) => {
+        if (!relationshipId || !memoryId) return;
+        const key = getStoreKey(memoryId, relationshipId);
+        await updateQueueItem(key, updates);
+        await refreshCount();
+    }, [relationshipId, refreshCount]);
+
     return {
         queueUpload,
         queueMemory,
+        updatePendingMemory,
         queueSnapshot,
         pendingCount,
         failedCount,

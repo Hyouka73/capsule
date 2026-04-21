@@ -7,13 +7,14 @@
  */
 
 export const DB_NAME = 'capsule_offline_queue';
-export const DB_VERSION = 8;
+export const DB_VERSION = 11;
 
 /**
  * Genera una llave prefijada por relationshipId para asegurar el aislamiento de datos.
  */
 export const getStoreKey = (id, relationshipId) => {
     if (!relationshipId) return id;
+    if (String(id).startsWith(relationshipId + '_')) return id;
     return `${relationshipId}_${id}`;
 };
 
@@ -24,6 +25,12 @@ export const getStoreKey = (id, relationshipId) => {
 export function openDB() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+        // Si la base de datos está abierta en otra pestaña, este evento se dispara.
+        request.onblocked = () => {
+            console.warn('[DB] Upgrade blocked! Please close all other tabs of this app.');
+            alert('Actualización necesaria. Por favor, cierra otras pestañas de esta App para continuar.');
+        };
 
         request.onupgradeneeded = (e) => {
             const db = e.target.result;
@@ -65,6 +72,23 @@ export function openDB() {
             // 7. Instantáneas vistas (Offline-first)
             if (!db.objectStoreNames.contains('seen_snapshots')) {
                 db.createObjectStore('seen_snapshots', { keyPath: 'id' });
+            }
+
+            // 8. Caché persistente de Memorias/Citas
+            if (!db.objectStoreNames.contains('memories')) {
+                const m = db.createObjectStore('memories', { keyPath: 'id' });
+                m.createIndex('relationshipId', 'relationshipId', { unique: false });
+                m.createIndex('updatedAt', 'updatedAt', { unique: false });
+            }
+
+            // 9. Caché de Fotos (Blobs)
+            if (!db.objectStoreNames.contains('photo_cache')) {
+                db.createObjectStore('photo_cache', { keyPath: 'id' });
+            }
+
+            // 10. Caché de Eventos Especiales
+            if (!db.objectStoreNames.contains('special_events_cache')) {
+                db.createObjectStore('special_events_cache', { keyPath: 'id' });
             }
             
         };
