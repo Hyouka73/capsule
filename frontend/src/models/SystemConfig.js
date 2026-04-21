@@ -146,6 +146,7 @@ export default class SystemConfig {
         
         // Metadata
         this.updatedAt = data.updatedAt || 0;
+        this.lastMemoriesUpdate = data.lastMemoriesUpdate || 0;
     }
 
     /**
@@ -202,7 +203,8 @@ export default class SystemConfig {
             adminUid,
             partnerUid,
             members,
-            updatedAt:     res.serverUpdatedAt || maxUpdatedAt
+            updatedAt:     res.serverUpdatedAt || maxUpdatedAt,
+            lastMemoriesUpdate: relDoc.lastMemoriesUpdate || 0
         });
     }
 

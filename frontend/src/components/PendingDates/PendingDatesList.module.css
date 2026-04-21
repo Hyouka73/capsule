@@ -147,7 +147,7 @@
 }
 
 .listItemUploading { opacity: 0.6; pointer-events: none; }
-.listItemFailed { border-color: var(--pastel-rose, #ffb7b2); }
+.listItemFailed { border-color: #ffd54f; box-shadow: 0 0 10px rgba(255, 160, 0, 0.1); }
 
 .itemContent {
     flex: 1;
@@ -320,9 +320,16 @@
 }
 
 .statusFailed {
-    background: #ffebee;
-    color: #d32f2f;
+    background: #fff0f0;
+    color: #e53935;
     border: 1px solid #ffcdd2;
+    animation: pulseError 2s infinite ease-in-out;
+}
+
+@keyframes pulseError {
+    0% { transform: scale(1); box-shadow: 0 0 0 rgba(229, 57, 53, 0); }
+    50% { transform: scale(1.02); box-shadow: 0 0 8px rgba(229, 57, 53, 0.2); }
+    100% { transform: scale(1); box-shadow: 0 0 0 rgba(229, 57, 53, 0); }
 }
 
 .statusBingo {

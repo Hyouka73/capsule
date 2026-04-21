@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { callBackendApi } from '../../../apiClient';
 import { auth } from '../../../services/firebase';
+import { saveMemoriesToCache, getAllCachedMemories } from '../../../utils/memoryPersistence';
+import { useAuth } from '../../../hooks/useAuth';
 
 /**
  * useGallery — Custom hook for paginated photo fetching.
@@ -31,6 +33,26 @@ export function useGallery(pageSize = 24) {
         isLoadingRef.current = true;
         setError(null);
 
+        // --- OFFLINE FALLBACK ---
+        if (!navigator.onLine) {
+            try {
+                const rid = localStorage.getItem('capsule_relationship_id'); 
+                const cached = await getAllCachedMemories(rid);
+                if (cached.length > 0) {
+                    setPhotos(cached.map(m => ({ ...m, _type: 'memory', url: m.mainPhotoUrl })));
+                } else {
+                    setError('Modo offline: No hay recuerdos guardados.');
+                }
+            } catch (err) {
+                setError('Error al cargar caché offline');
+            } finally {
+                setLoading(false);
+                isLoadingRef.current = false;
+                setHasMore(false);
+            }
+            return;
+        }
+
         try {
             const params = { limit: pageSize };
 
@@ -43,6 +65,16 @@ export function useGallery(pageSize = 24) {
 
             if (result.success) {
                 const fetchedPhotos = result.photos || [];
+
+                // Persistence: Cache memories for offline access
+                const ridgeId = auth.currentUser?.uid; 
+                // Note: Better to get relationshipId from context, but useAuth is available
+                // We'll use result.relationshipId if the backend provides it or just trust the hook context
+                const memoriesToCache = fetchedPhotos.filter(p => p._type === 'memory');
+                if (memoriesToCache.length > 0) {
+                    // Try to get rid from the provided relationshipId if possible, but useAuth is safer
+                    saveMemoriesToCache(memoriesToCache, result.relationshipId || 'current');
+                }
 
                 if (isInitial) {
                     setPhotos(fetchedPhotos);

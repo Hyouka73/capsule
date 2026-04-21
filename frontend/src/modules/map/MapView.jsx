@@ -10,6 +10,7 @@ import { getMemories } from '../../apiClient';
 import SystemConfig from '../../models/SystemConfig';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { getMapConfigCache, setMapConfigCache } from '../../utils/offlineCache';
+import { getAllCachedMemories, saveMemoriesToCache } from '../../utils/memoryPersistence';
 import { useTagResolver } from '../../hooks/useTagResolver';
 
 // Sub-components
@@ -29,10 +30,11 @@ export default function MapView({
     citaContext,
     onCitaContextChange,
     onOpenPending,
-    onOpenPhotoViewer
+    onOpenPhotoViewer,
+    onOpenMemory
 }) {
     const { isPartner, isAdmin } = useAuth();
-    const { config: globalConfig } = useAppConfig();
+    const { config: globalConfig, relationshipId } = useAppConfig();
     const [selectedPlace, setSelectedPlace] = useState(null);
     const [activeFilter, setActiveFilter] = useState('todos');
     const [placeMemories, setPlaceMemories] = useState([]);
@@ -181,26 +183,30 @@ export default function MapView({
     }, [activeFilter, placesLoading, handleFitAll]);
 
     useEffect(() => {
-        if (selectedPlace && selectedPlace.id) {
-            const fetchMemories = async () => {
-                setLoadingMemories(true);
-                setPlaceMemories([]);
-                try {
-                    const result = await getMemories({ placeId: selectedPlace.id, limit: 10 });
-                    if (result.success) {
-                        setPlaceMemories(result.docs || []);
-                    }
-                } catch (err) {
-                    // toast.error('[MapView] Error fetching memories');
-                } finally {
-                    setLoadingMemories(false);
+        const fetchMemoriesSync = async () => {
+            if (!relationshipId) return;
+            setLoadingMemories(true);
+            
+            // Unified local-first approach
+
+            // 1. Load EVERYTHING from Local Cache
+            const cached = await getAllCachedMemories(relationshipId);
+            
+            if (cached && cached.length > 0) {
+                // If we have a selected place, filter for the drawer
+                if (selectedPlace?.id) {
+                    const placeMemoriesCached = cached.filter(m => m.placeId === selectedPlace.id);
+                    setPlaceMemories(placeMemoriesCached);
                 }
-            };
-            fetchMemories();
-        } else {
-            setPlaceMemories([]);
-        }
-    }, [selectedPlace]);
+                setLoadingMemories(false);
+            }
+
+            // 2. Background Refresh if online (optional, Smart Sync hook already handles global sync)
+            // But we can trigger a place-specific fetch if needed, though usually Smart Sync is enough.
+        };
+        
+        fetchMemoriesSync();
+    }, [selectedPlace, globalConfig?.id]);
 
     useEffect(() => {
         if (selectedPlace && selectedPlace.coordinates) {
@@ -320,6 +326,7 @@ export default function MapView({
                         isSearchActive={isSearchActive}
                         citaContext={citaContext}
                         selectedPlace={selectedPlace}
+                        onOpenPending={onOpenPending}
                     />
                 )}
 
@@ -333,6 +340,7 @@ export default function MapView({
                         loadingMemories={loadingMemories}
                         placeMemories={placeMemories}
                         onPhotoClick={onOpenPhotoViewer}
+                        onOpenMemory={onOpenMemory}
                         citaContext={citaContext}
                         onVerifyPlace={(place) => {
                             if (onCitaContextChange) {

@@ -18,63 +18,17 @@ export default function PlaceDetailDrawer({
     loadingMemories,
     placeMemories,
     onPhotoClick,
+    onOpenMemory,
     citaContext,
     onVerifyPlace
 }) {
     const { relationshipId } = useAuth();
     const [loadingMemoryId, setLoadingMemoryId] = useState(null);
 
-    const handleMemoryClick = async (memory, topLevelIndex, targetInitialIndex = 0) => {
-        if (!onPhotoClick) return;
-        setLoadingMemoryId(memory.id);
-
-        try {
-            let photosArray = [];
-            const photosRef = collection(db, 'relationships', relationshipId, 'memories', memory.id, 'photos');
-            const snap = await getDocs(photosRef);
-
-            if (!snap.empty) {
-                photosArray = snap.docs.map(d => d.data());
-            }
-
-            if (photosArray.length === 0) {
-                photosArray = [{ url: memory.mainPhotoUrl }];
-            }
-
-            const items = photosArray.map(p => ({
-                url: p.url || p.storagePath || memory.mainPhotoUrl,
-                title: memory.title,
-                description: memory.description,
-                createdAt: memory.eventDate,
-                placeName: selectedPlace.name,
-                _type: 'memory'
-            }));
-
-            // Sync with parent (UserDashboard) providing context for jumps
-            onPhotoClick({ 
-                items, 
-                index: targetInitialIndex, 
-                topLevelIndex,
-                contextList: placeMemories // Pass the siblings for navigation
-            });
-        } catch (e) {
-            console.error('Error fetching memory photos:', e);
-            onPhotoClick({ 
-                items: [{ 
-                    url: memory.mainPhotoUrl, 
-                    title: memory.title, 
-                    description: memory.description, 
-                    createdAt: memory.eventDate, 
-                    placeName: selectedPlace.name, 
-                    _type: 'memory' 
-                }], 
-                index: 0,
-                topLevelIndex,
-                contextList: placeMemories
-            });
-        } finally {
-            setLoadingMemoryId(null);
-        }
+    const handleMemoryClick = (memory) => {
+        if (!onOpenMemory) return;
+        // The global MemoryViewer handles the rest (Polaroid -> Full Gallery)
+        onOpenMemory(memory);
     };
 
     if (!selectedPlace) return null;

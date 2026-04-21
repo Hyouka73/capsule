@@ -289,8 +289,17 @@
 .memoryHeader {
     display: flex;
     justify-content: space-between;
-    align-items: baseline;
+    align-items: center;
     margin-bottom: 0.2rem;
+    gap: 0.5rem;
+}
+
+.titleWithBadge {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 0;
+    flex: 1;
 }
 
 .memoryTitle {
@@ -304,13 +313,34 @@
     text-overflow: ellipsis;
 }
 
+.pendingBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--pastel-rose-light);
+    color: var(--pastel-rose-dark);
+    font-size: 0.65rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    border: 1.5px solid var(--pastel-rose);
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+}
+
+.pendingBadge span {
+    font-size: 0.85rem;
+    font-variation-settings: 'wght' 700;
+}
+
 .memoryDate {
     font-family: var(--font-body);
     font-size: 0.8rem;
     color: var(--text-muted);
     font-weight: 600;
     flex-shrink: 0;
-    margin-left: 0.5rem;
+    margin-left: auto;
 }
 
 .memoryDesc {

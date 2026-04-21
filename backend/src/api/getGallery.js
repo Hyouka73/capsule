@@ -24,23 +24,35 @@ export const handler = async (request) => {
 
         const memoriesSnap = await memoriesQuery.get();
 
-        // 2. Fetch Snapshots
+        // 2. Fetch Snapshots (STRICT FILTER)
+        // We only want to show snapshots in the main gallery IF:
+        // a) They have been seen (isSeen === true)
+        // b) They are older than 24h (unlockDateTime is in the past)
+        const now = new Date();
         const snapshotsRef = db.collection('relationships')
             .doc(relationshipId)
             .collection(COLLECTIONS.INSTANTANEAS);
 
-        // Relaxed filter: show all seen or archived, or just all if requested.
-        // The user says "missing even if seen", so let's just get the latest snapshots and filter locally if needed,
-        // but to be safe and inclusive as requested, we'll fetch all and filter for presence of URL.
+        // We fetch a bit more because we'll filter some out locally 
+        // to handle the complex OR condition (isSeen OR unlockDateTime < now)
         let snapshotsQuery = snapshotsRef
             .orderBy('createdAt', 'desc')
-            .limit(limit);
+            .limit(limit * 2); 
 
         if (lastCreatedAt) {
             snapshotsQuery = snapshotsQuery.startAfter(new Date(lastCreatedAt));
         }
 
         const snapshotsSnap = await snapshotsQuery.get();
+        
+        // Manual filter for the "Privacy/Mystery" logic
+        const filteredSnapshotDocs = snapshotsSnap.docs.filter(doc => {
+            const d = doc.data();
+            const isSeen = d.isSeen === true;
+            const isExpired = d.unlockDateTime && d.unlockDateTime.toDate() <= now;
+            
+            return isSeen || isExpired;
+        }).slice(0, limit);
 
         // 3. Map Memories with Fallback for Photos
         const memoryEntries = await Promise.all(memoriesSnap.docs.map(async doc => {
@@ -80,7 +92,7 @@ export const handler = async (request) => {
         }));
 
         // 4. Map Snapshots
-        const archivedSnapshots = await Promise.all(snapshotsSnap.docs.map(async doc => {
+        const archivedSnapshots = await Promise.all(filteredSnapshotDocs.map(async doc => {
             const data = doc.data();
             // In snapshots, the field is often photoUrl or url
             let url = data.photoUrl || data.url || data.thumbnailUrl;

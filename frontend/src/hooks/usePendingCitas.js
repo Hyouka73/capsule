@@ -1,13 +1,16 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
-import { openDB } from '../config/dbConfig';
+import { openDB, getStoreKey } from '../config/dbConfig';
+import { useAuth } from './useAuth';
 import { autoDetectMetadata } from '../utils/extractGpsFromFile';
 import { generateUUID } from '../utils/uuid';
 const STORE_NAME = 'pending_citas';
 
 export function usePendingCitas() {
+    const { relationshipId } = useAuth();
     const [pendingCitas, setPendingCitas] = useState([]);
     const [pendingCount, setPendingCount] = useState(0);
+    const [optimisticCitas, setOptimisticCitas] = useState([]); // Citations currently being saved
     const hiddenIdsRef = useRef(new Set());
     const removalTimersRef = useRef({});
     const [hiddenTick, setHiddenTick] = useState(0);
@@ -32,7 +35,6 @@ export function usePendingCitas() {
                     return results.map(item => {
                         const photosWithUrls = (item.photos || []).map(p => {
                             if (!p.file) return { ...p, objectUrl: null };
-                            // REUSE if we already have it, otherwise create
                             const existingUrl = urlMap.get(p.file);
                             return {
                                 ...p,
@@ -49,89 +51,119 @@ export function usePendingCitas() {
                 });
                 setPendingCount(results.length);
             };
+
+            request.onerror = (e) => {
+                console.error('[usePendingCitas] refreshPending IndexedDB Error:', e);
+            };
         } catch (err) {
-            // silent fail
+            console.error('[usePendingCitas] refreshPending Try/Catch Error:', err);
         }
     }, []);
 
     useEffect(() => {
         refreshPending();
-        
+
         // Listen for background sync completions to refresh UI
         if (window.BroadcastChannel) {
             const channel = new BroadcastChannel('capsule_sync');
             channel.onmessage = (event) => {
                 if (event.data?.type === 'SYNC_COMPLETE') {
+                    console.log('[usePendingCitas] Sync Complete Event Received');
                     refreshPending();
                 }
             };
             return () => channel.close();
         }
-    }, [refreshPending]);
+    }, [refreshPending, relationshipId]);
 
-    const addPendingCita = useCallback(async (files, context = null) => {
-        const db = await openDB();
-        const id = generateUUID();
+    const addPendingCita = useCallback((files, context = null) => {
+        const rawId = generateUUID();
+        const id = getStoreKey(rawId, relationshipId);
+        
+        // 1. Create PREVIEW URLS immediately for the optimistic item
+        const photosWithUrls = files.map(file => ({
+            file,
+            name: file.name,
+            type: file.type,
+            objectUrl: URL.createObjectURL(file)
+        }));
+
         const newItem = {
             id,
             createdAt: Date.now(),
-            photos: files.map(file => ({
-                file, // Original Blob/File
-                name: file.name,
-                type: file.type
-            })),
+            photos: photosWithUrls,
+            coverPhoto: photosWithUrls[0]?.objectUrl,
             status: 'pending',
+            isPersisting: true, // Marker for "Saving to local storage..."
             context,
             isFromBingo: context?.type === 'bingo',
-            bingoOrigin: context?.type === 'bingo' ? { categoryId: context.categoryId } : null,
+            bingoOrigin: context?.type === 'bingo' ? { 
+                categoryId: context.categoryId,
+                completedAt: new Date().toISOString() // Offline-first: Capturar fecha real de fin de cita
+            } : null,
             tags: context?.tags || [],
-            description: context?.description || ''
+            description: context?.description || '',
+            originalDate: new Date().toLocaleDateString('es-MX', {
+                weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
+            })
         };
 
-        if (files.length > 0) {
+        // 2. Add to optimistic state immediately
+        setOptimisticCitas(prev => [newItem, ...prev]);
+
+        // 3. BACKGROUND WORK: Metadata + IDB Persistence
+        (async () => {
             try {
-                const metadata = await autoDetectMetadata(files[0]);
-                if (metadata) {
-                    if (metadata.lat && metadata.lng) {
-                        newItem.coordinates = { lat: metadata.lat, lng: metadata.lng };
-                    }
-                    if (metadata.dateTime) {
-                        newItem.originalDate = metadata.dateTime.toLocaleDateString('es-MX', {
-                            weekday: 'long',
-                            day: 'numeric',
-                            month: 'long',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        });
-                        newItem.rawDate = metadata.dateTime.toISOString();
+                const db = await openDB();
+                const persistentItem = { 
+                    ...newItem,
+                    // Remove transient objectUrls before saving to IDB
+                    photos: newItem.photos.map(({ objectUrl, ...rest }) => rest)
+                };
+                delete persistentItem.coverPhoto;
+
+                // 3a. Metadata Detection
+                if (files.length > 0) {
+                    try {
+                        const metadata = await autoDetectMetadata(files[0]);
+                        if (metadata) {
+                            if (metadata.lat && metadata.lng) {
+                                persistentItem.coordinates = { lat: metadata.lat, lng: metadata.lng };
+                            }
+                            if (metadata.dateTime) {
+                                persistentItem.originalDate = metadata.dateTime.toLocaleDateString('es-MX', {
+                                    weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
+                                });
+                                persistentItem.rawDate = metadata.dateTime.toISOString();
+                            }
+                        }
+                    } catch (err) {
+                        console.warn('[usePendingCitas] Metadata extraction failed:', err);
                     }
                 }
-            } catch (err) {
-                console.warn('[usePendingCitas] Metadata extraction failed:', err);
-            }
-        }
 
-        if (!newItem.originalDate) {
-            newItem.originalDate = new Date().toLocaleDateString('es-MX', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
+                // 3b. IndexedDB Persistence
+                await new Promise((resolve, reject) => {
+                    const tx = db.transaction(STORE_NAME, 'readwrite');
+                    const store = tx.objectStore(STORE_NAME);
+                    delete persistentItem.isPersisting; // Remove flag before saving
+                    store.add(persistentItem);
+                    tx.oncomplete = resolve;
+                    tx.onerror = () => reject(tx.error);
+                });
 
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction(STORE_NAME, 'readwrite');
-            const store = tx.objectStore(STORE_NAME);
-            store.add(newItem);
-            tx.oncomplete = () => {
+                // 3c. Success: Sync state
                 refreshPending();
-                resolve(id);
-            };
-            tx.onerror = () => reject(tx.error);
-        });
-    }, [refreshPending]);
+            } catch (err) {
+                console.error('[usePendingCitas] Background save failed:', err);
+            } finally {
+                // Remove from optimistic anyway, refreshPending will bring it back from true store if successful
+                setOptimisticCitas(prev => prev.filter(c => c.id !== id));
+            }
+        })();
+
+        return id;
+    }, [refreshPending, relationshipId]);
 
     const removePendingCita = useCallback(async (id, immediate = false) => {
         if (immediate) {
@@ -285,19 +317,23 @@ export function usePendingCitas() {
         });
     }, [refreshPending]);
 
-    return useMemo(() => ({
-        pendingCitas: pendingCitas.map(cita => ({
+    return useMemo(() => {
+        const mergedCitas = [...optimisticCitas, ...pendingCitas].map(cita => ({
             ...cita,
             isHidden: hiddenIdsRef.current.has(cita.id)
-        })),
-        pendingCount: pendingCount - hiddenIdsRef.current.size,
-        addPendingCita,
-        removePendingCita,
-        updatePendingCitaStatus,
-        updatePendingCita,
-        refreshPending,
-        getActiveDraft,
-        saveDraft,
-        restorePendingCita
-    }), [pendingCitas, hiddenTick, pendingCount, addPendingCita, removePendingCita, updatePendingCitaStatus, updatePendingCita, refreshPending, getActiveDraft, saveDraft, restorePendingCita]);
+        }));
+
+        return {
+            pendingCitas: mergedCitas,
+            pendingCount: (pendingCount + optimisticCitas.length) - hiddenIdsRef.current.size,
+            addPendingCita,
+            removePendingCita,
+            updatePendingCitaStatus,
+            updatePendingCita,
+            refreshPending,
+            getActiveDraft,
+            saveDraft,
+            restorePendingCita
+        };
+    }, [pendingCitas, optimisticCitas, hiddenTick, pendingCount, addPendingCita, removePendingCita, updatePendingCitaStatus, updatePendingCita, refreshPending, getActiveDraft, saveDraft, restorePendingCita]);
 }

@@ -10,6 +10,7 @@ import {
     registerWithEmail,
     callSetupRelationship,
     callRepairAuth,
+    exchangeInviteToken,
 } from '../services/auth';
 import { ROLES, COLLECTIONS } from '../config/constants';
 import User from '../models/User';
@@ -26,6 +27,7 @@ const saveProfileToCache = (data) => {
     try {
         const str = JSON.stringify(data);
         localStorage.setItem(PROFILE_CACHE_KEY, btoa(str));
+        localStorage.setItem('capsule_session_active', 'true');
     } catch (e) {
         console.warn('[AuthContext] Failed to cache profile:', e);
     }
@@ -49,8 +51,9 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
     // PRE-LOAD FROM CACHE: Immediate UI population even before Firebase wakes up
     const cached = getCachedProfile() || {};
+    const isSessionActive = localStorage.getItem('capsule_session_active') === 'true';
 
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState(isSessionActive ? { uid: cached.uid || 'offline_user' } : null);
     const [role, setRole] = useState(cached.role || null);
     const [deviceId, setDeviceId] = useState(null);
     const [onboardingCompleted, setOnboardingCompleted] = useState(cached.onboardingCompleted ?? false);
@@ -67,31 +70,16 @@ export function AuthProvider({ children }) {
     // Register FCM Token for partners
     const registerFCM = useCallback(async (userId) => {
         try {
-            // Only skip if messaging isn't supported or initialized
-            if (!messaging) {
-                const { isSupported } = await import('firebase/messaging');
-                if (!(await isSupported())) return;
-            }
-
-            // Wait for messaging to be initialized (it's lazy in firebase.js)
-            let messagingInstance = messaging;
-            if (!messagingInstance) {
-                const { isSupported, getMessaging } = await import('firebase/messaging');
-                if (await isSupported()) {
-                    const { app } = await import('../services/firebase');
-                    messagingInstance = getMessaging(app);
-                }
-            }
-
-            if (!messagingInstance) return;
+            // Use already imported static references
+            if (!messaging) return; 
 
             try {
-                await deleteToken(messagingInstance);
+                await deleteToken(messaging);
             } catch (_) {
                 // No hay token previo, está bien
             }
 
-            const token = await getToken(messagingInstance, {
+            const token = await getToken(messaging, {
                 vapidKey: firebaseConfig.vapidKey
             });
             if (token) {
@@ -169,6 +157,7 @@ export function AuthProvider({ children }) {
 
                     // CACHE SYNC: Update the rapid-start cache with fresh server data
                     saveProfileToCache({
+                        uid: firebaseUser.uid,
                         role: data.role,
                         onboardingCompleted: data.onboardingCompleted,
                         welcomeSeen: data.welcomeSeen,
@@ -291,20 +280,15 @@ export function AuthProvider({ children }) {
                     // This handles notifications when the app is OPEN
                     if (import.meta.env.VITE_USE_EMULATORS !== 'true') {
                         try {
-                            const { isSupported, onMessage } = await import('firebase/messaging');
-                            if (await isSupported()) {
-                                const { messaging } = await import('../services/firebase');
-                                if (messaging) {
-                                    unsubscribeMessaging = onMessage(messaging, (payload) => {
+                            if (messaging) {
+                                unsubscribeMessaging = onMessage(messaging, (payload) => {
                                         console.log('[AuthContext] Foreground message received:', payload);
-                                        toast.info(
-                                            payload.notification?.title || '📸 ¡Nueva Instantánea!', 
-                                            payload.notification?.body || 'Tu pareja ha capturado un momento.',
-                                            { duration: 6000 }
-                                        );
+                                        const title = payload.data?.title || payload.notification?.title || '🔔 ¡Nuevo aviso!';
+                                        const body = payload.data?.body || payload.notification?.body || 'Abre la app para ver qué hay de nuevo.';
+                                        
+                                        toast.info(title, body, { duration: 6000 });
                                     });
                                 }
-                            }
                         } catch (msgErr) {
                             console.warn('[AuthContext] Failed to setup foreground messaging:', msgErr);
                         }
@@ -321,6 +305,16 @@ export function AuthProvider({ children }) {
                     unsubscribeDoc = null;
                 }
             } else {
+                // Paciencia en Auth: no desconectes si no hay red
+                if (!navigator.onLine && localStorage.getItem('capsule_session_active') === 'true') {
+                    console.log('[AuthContext] App is offline, preserving cached user session.');
+                    if (!initialAuthChecked.current) {
+                        initialAuthChecked.current = true;
+                        setIsLoading(false);
+                    }
+                    return;
+                }
+
                 if (isMounted) {
                     setUser(null);
                     setRole(null);
@@ -339,6 +333,7 @@ export function AuthProvider({ children }) {
                         setIsLoading(false);
                         localStorage.removeItem('capsule_relationship_id');
                         localStorage.removeItem(PROFILE_CACHE_KEY);
+                        localStorage.removeItem('capsule_session_active');
                     }
                 }
             }
@@ -356,6 +351,7 @@ export function AuthProvider({ children }) {
     const signOut = useCallback(() => {
         localStorage.removeItem(PROFILE_CACHE_KEY);
         localStorage.removeItem('capsule_relationship_id');
+        localStorage.removeItem('capsule_session_active');
         return authSignOut();
     }, []);
 
@@ -407,7 +403,6 @@ export function AuthProvider({ children }) {
      */
     const exchangeToken = useCallback(async (inviteToken, deviceFingerprint) => {
         try {
-            const { exchangeInviteToken } = await import('../services/auth');
             const result = await exchangeInviteToken(inviteToken, deviceFingerprint);
 
             if (result.customToken) {

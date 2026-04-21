@@ -279,12 +279,14 @@ export default function PendingDateForm({ pendingDate, onClose, onSave, onAutoSa
 
             <div className={styles.footer}>
                 <button
-                    className={styles.saveBtn}
+                    className={`${styles.saveBtn} ${pendingDate.isPersisting ? styles.persisting : ''}`}
                     onClick={handleSave}
-                    disabled={!selectedPlaceId && !customLocation}
+                    disabled={(!selectedPlaceId && !customLocation) || pendingDate.isPersisting}
                 >
-                    <span>Guardar este recuerdo</span>
-                    <span className="material-symbols-rounded">favorite</span>
+                    <span>{pendingDate.isPersisting ? 'Guardando fotos en el teléfono...' : 'Guardar este recuerdo'}</span>
+                    <span className={`material-symbols-rounded ${pendingDate.isPersisting ? styles.rotating : ''}`}>
+                        {pendingDate.isPersisting ? 'sync' : 'favorite'}
+                    </span>
                 </button>
             </div>
 

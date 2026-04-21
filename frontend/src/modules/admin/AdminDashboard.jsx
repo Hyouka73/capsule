@@ -17,6 +17,7 @@ import SnapshotButton from '../snapshots/components/SnapshotButton';
 import SnapshotOverlay from '../snapshots/components/SnapshotOverlay';
 import SnapshotCreator from '../snapshots/components/SnapshotCreator';
 import SnapshotHistory from '../snapshots/components/SnapshotHistory';
+import SpecialEventsManager from './SpecialEventsManager';
 import PastelButton from '../../components/ui/PastelButton/PastelButton';
 import PastelCard from '../../components/ui/PastelCard/PastelCard';
 import { useBingo } from '../../hooks/useBingo';
@@ -31,6 +32,7 @@ const SECTIONS = [
     { id: 'coupons', label: 'Cupones', icon: '🎁' },
     { id: 'bingo', label: 'Bingo', icon: '🎯' },
     { id: 'wrapped', label: 'Wrapped', icon: '🎬' },
+    { id: 'events', label: 'Eventos', icon: '🎉' },
     { id: 'settings', label: 'Config', icon: '⚙️' },
 ];
 
@@ -176,6 +178,7 @@ export default function AdminDashboard() {
             case 'coupons': return <CouponManager />;
             case 'bingo': return <BingoManager />;
             case 'wrapped': return <WrappedManager />;
+            case 'events': return <SpecialEventsManager />;
             case 'settings': return <GlobalSettings />;
             default: return (
                 <ActivityPanel 

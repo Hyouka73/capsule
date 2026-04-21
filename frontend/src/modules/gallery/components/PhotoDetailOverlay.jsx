@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../hooks/useAuth';
 import { useAppConfig } from '../../../hooks/useAppConfig';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../../../services/firebase';
 import Carousel from '../../../components/ui/Carousel/Carousel';
 import styles from './PhotoDetailOverlay.module.css';
 
@@ -15,21 +17,56 @@ export default function PhotoDetailOverlay({
     onNavigateNext, 
     onNavigatePrev  
 }) {
-    const { user } = useAuth();
+    const { user, relationshipId } = useAuth();
     const config = useAppConfig(); // Contains names and relationship info
     const [currentIndex, setCurrentIndex] = useState(initialIndex || 0);
     const [drawerState, setDrawerState] = useState('peek');
     const [isDownloading, setIsDownloading] = useState(false);
+    const [displayPhotos, setDisplayPhotos] = useState(photos);
+    const [isHydrating, setIsHydrating] = useState(false);
 
     // Handle photos change (when jumping between memories)
     useEffect(() => {
         setCurrentIndex(initialIndex);
-    }, [photos, initialIndex]);
+        setDisplayPhotos(photos);
+        
+        const hydratePhotos = async () => {
+            const currentPhotos = Array.isArray(photos) ? photos : [photos];
+            const memory = currentPhotos[0];
 
-    if (!photos || photos.length === 0) return null;
+            if (navigator.onLine && currentPhotos.length === 1 && memory?._type === 'memory' && memory.id) {
+                setIsHydrating(true);
+                try {
+                    const photosRef = collection(db, 'relationships', relationshipId, 'memories', memory.id, 'photos');
+                    const snap = await getDocs(photosRef);
+                    if (!snap.empty) {
+                        const urls = snap.docs.map(d => ({
+                            ...d.data(),
+                            title: memory.title,
+                            description: memory.description,
+                            eventDate: memory.eventDate,
+                            placeName: memory.placeName
+                        }));
+                        setDisplayPhotos(urls);
+                    }
+                } catch (err) {
+                    console.error("[PhotoDetailOverlay] Hydration failed:", err);
+                } finally {
+                    setIsHydrating(false);
+                }
+            }
+        };
 
-    const currentPhoto = photos[currentIndex] || photos[0];
-    const hasMetadata = currentPhoto.title || currentPhoto.description || currentPhoto.caption || currentPhoto.placeName || currentPhoto.createdAt || currentPhoto.placeName || currentPhoto.location;
+        hydratePhotos();
+    }, [photos, initialIndex, relationshipId]);
+
+    if (!displayPhotos || (Array.isArray(displayPhotos) && displayPhotos.length === 0)) return null;
+    
+    // Normalize photos array (sometimes it might be just one object from cache)
+    const normalizedPhotos = Array.isArray(displayPhotos) ? displayPhotos : [displayPhotos];
+
+    const currentPhoto = normalizedPhotos[currentIndex] || normalizedPhotos[0];
+    const hasMetadata = currentPhoto.title || currentPhoto.description || currentPhoto.caption || currentPhoto.placeName || currentPhoto.createdAt || currentPhoto.eventDate;
 
     const renderPhotoItem = (photo) => (
         <div className={styles.slideContent}>
@@ -37,6 +74,7 @@ export default function PhotoDetailOverlay({
                 src={photo.url || photo.storagePath}
                 alt={photo.caption || ''}
                 className={styles.mainPhoto}
+                loading="eager"
             />
         </div>
     );
@@ -106,8 +144,8 @@ export default function PhotoDetailOverlay({
                 }}
             >
                 <Carousel 
-                    key={photos[0]?.url} 
-                    items={photos}
+                    key={`carousel-${currentPhoto.id || currentPhoto.memoryId || 'unified'}`} 
+                    items={normalizedPhotos}
                     initialIndex={initialIndex}
                     onIndexChange={(idx) => {
                         setCurrentIndex(idx);
@@ -118,6 +156,13 @@ export default function PhotoDetailOverlay({
                     renderItem={renderPhotoItem}
                 />
             </motion.div>
+
+            {!navigator.onLine && (
+                <div className={styles.offlineIndicator}>
+                    <span className="material-symbols-rounded">cloud_off</span>
+                    <span>Estas viendo una versión guardada</span>
+                </div>
+            )}
 
             {/* Optimized Metadata Drawer (Chunky Clay) */}
             <motion.div
@@ -170,12 +215,12 @@ export default function PhotoDetailOverlay({
                                         {currentPhoto.title || (currentPhoto._type === 'snapshot' ? 'Instantánea' : 'Memoria')}
                                     </h3>
                                 </div>
-                                {currentPhoto.createdAt && (
+                                {currentPhoto.createdAt || currentPhoto.eventDate ? (
                                     <span className={styles.miniDate}>
-                                        {new Date(currentPhoto.createdAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
-                                        {drawerState === 'open' && ` ${new Date(currentPhoto.createdAt).getFullYear()}`}
+                                        {new Date(currentPhoto.createdAt || currentPhoto.eventDate).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                                        {drawerState === 'open' && ` ${new Date(currentPhoto.createdAt || currentPhoto.eventDate).getFullYear()}`}
                                     </span>
-                                )}
+                                ) : null}
                             </div>
 
                             <div className={`${styles.expandedArea} ${drawerState === 'open' ? styles.isVisible : ''}`}>

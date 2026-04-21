@@ -7,7 +7,7 @@ import styles from './BottomNav.module.css';
 /**
  * Reusable Bottom Navigation Component with "More" menu support.
  */
-export default function BottomNav({ activeTab, setActiveTab, tabs = [], moreTabs = [], pendingCount = 0, pendingBingoCount = 0, onPlusClick, isPartner }) {
+export default function BottomNav({ activeTab, setActiveTab, tabs = [], moreTabs = [], pendingCount = 0, pendingBingoCount = 0, onPlusClick, onOpenPending, isPartner }) {
     const [isMoreOpen, setIsMoreOpen] = useState(false);
     const { config } = useAppConfig();
     const moreMenuRef = useRef(null);
@@ -39,6 +39,11 @@ export default function BottomNav({ activeTab, setActiveTab, tabs = [], moreTabs
         if (!isActive && moreTabs.some(t => t.id === tabId)) {
             toast.info('¡Próximamente! ✨', 'Estamos preparando algo especial para ustedes.');
             return;
+        }
+
+        // If clicking 'lugares' and there are pending citations, open the list
+        if (tabId === 'lugares' && pendingCount > 0) {
+            onOpenPending?.();
         }
 
         setActiveTab(tabId);

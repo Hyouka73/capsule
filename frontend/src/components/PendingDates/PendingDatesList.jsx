@@ -14,7 +14,7 @@ function renderStatusBadge(pd) {
         label = '⏳ Sincronizando con la nube...';
         badgeClass = styles.statusUploading;
     } else if (pd.status === 'failed') {
-        label = '❌ Error de sincronización';
+        label = '⚠️ Falló la subida (Toca para reintentar)';
         badgeClass = styles.statusFailed;
     } else {
         // Status is pending/draft

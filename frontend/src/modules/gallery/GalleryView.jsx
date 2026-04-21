@@ -24,56 +24,21 @@ export default function GalleryView({ onOverlayStateChange }) {
         return photos.filter(p => p._type === filter);
     }, [photos, filter]);
 
-    const handlePhotoClick = async (photo, topLevelIndex) => {
+    const handlePhotoClick = (photo, topLevelIndex) => {
         if (photo._type === 'memory') {
-            await loadCitationPhotos(photo, topLevelIndex, 0);
+            // New Unified Flow: Go straight to full detail overlay
+            setViewerSelection({ 
+                items: [photo], 
+                index: 0, 
+                topLevelIndex,
+                loadFullMemory: true 
+            });
         } else {
             setViewerSelection({ items: filteredPhotos, index: topLevelIndex, topLevelIndex });
         }
     };
 
-    const loadCitationPhotos = async (photo, topLevelIndex, direction = 1) => {
-        setLoadingMemoryId(photo.id);
-        try {
-            let photosArray = [];
-            const photosRef = collection(db, 'relationships', relationshipId, 'memories', photo.id, 'photos');
-            const snap = await getDocs(photosRef);
-            
-            if (!snap.empty) {
-                photosArray = snap.docs.map(d => d.data());
-            }
-
-            if (photosArray.length === 0) {
-                photosArray = [{ url: photo.url, storagePath: photo.storagePath }];
-            }
-
-            const items = photosArray.map(p => ({
-                url: p.url || p.storagePath || photo.url,
-                title: photo.title,
-                description: photo.description,
-                createdAt: photo.createdAt,
-                placeName: photo.placeName,
-                _type: 'memory'
-            }));
-
-            // If navigating BACK (-1), we jump to the LAST photo of the new citation
-            // If navigating FORWARD (1) or clicking (0), we jump to the FIRST photo (0)
-            const targetIndex = direction < 0 ? items.length - 1 : 0;
-
-            setViewerSelection({ items, index: targetIndex, topLevelIndex });
-        } catch (err) {
-            console.error("Error fetching memory photos:", err);
-            setViewerSelection({ 
-                items: [{ url: photo.url, title: photo.title, description: photo.description, _type: 'memory' }], 
-                index: 0,
-                topLevelIndex
-            });
-        } finally {
-            setLoadingMemoryId(null);
-        }
-    };
-
-    const navigateCitation = async (direction) => {
+    const navigateCitation = (direction) => {
         if (!viewerSelection) return;
         const newTopLevelIndex = viewerSelection.topLevelIndex + direction;
         
@@ -82,17 +47,7 @@ export default function GalleryView({ onOverlayStateChange }) {
         }
 
         const nextPhoto = filteredPhotos[newTopLevelIndex];
-        
-        if (filter === 'memory') {
-            await loadCitationPhotos(nextPhoto, newTopLevelIndex, direction); 
-        } else {
-            // Snapshots are just a flat list, no fetch needed
-            setViewerSelection(prev => ({
-                ...prev,
-                index: newTopLevelIndex,
-                topLevelIndex: newTopLevelIndex
-            }));
-        }
+        handlePhotoClick(nextPhoto, newTopLevelIndex);
     };
 
     // Handle overlay state for Navbar hiding
