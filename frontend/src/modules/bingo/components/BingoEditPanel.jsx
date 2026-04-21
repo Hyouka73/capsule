@@ -25,20 +25,20 @@ export default function BingoEditPanel({
     // Only show global config tags (no bingo squares)
     const allOptions = memoryTags || [];
 
-    // formData.suggestedTags is an ARRAY of ID objects: [{ id: 'tag_cita' }]
+    // formData.suggestedTags is an ARRAY of strings (IDs): ['tag_cita']
     const currentTags = formData.suggestedTags || [];
 
     const toggleTag = (tag) => {
-        const exists = currentTags.some(t => t.id === tag.id);
+        const exists = currentTags.includes(tag.id);
         if (exists) {
             setFormData({ 
                 ...formData, 
-                suggestedTags: currentTags.filter(t => t.id !== tag.id) 
+                suggestedTags: currentTags.filter(id => id !== tag.id) 
             });
         } else {
             setFormData({ 
                 ...formData, 
-                suggestedTags: [...currentTags, { id: tag.id }] 
+                suggestedTags: [...currentTags, tag.id] 
             });
         }
     };
@@ -92,9 +92,10 @@ export default function BingoEditPanel({
                         <p style={{ fontSize: '0.75rem', color: '#847377', marginBottom: '12px' }}>
                             Las fotos con estos "tags" marcarán esta casilla automáticamente.
                         </p>
+
                         <div className={styles.tagsGrid}>
                             {(allOptions || []).map(tag => {
-                                const isActive = currentTags.some(t => t.id === tag.id);
+                                const isActive = currentTags.includes(tag.id);
                                 return (
                                     <button
                                         key={tag.id}

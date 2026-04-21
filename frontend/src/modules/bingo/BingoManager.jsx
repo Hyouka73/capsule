@@ -35,14 +35,17 @@ export default function BingoManager() {
         
         // Sanitize tags: use the resolver to ensure we have valid labels for the IDs saved in DB
         const rawTags = square.suggestedTags || [];
-        const sanitizedTags = resolveTags(rawTags.map(t => typeof t === 'string' ? t : t.value));
+        const sanitizedTags = resolveTags(rawTags.map(t => {
+            if (typeof t === 'string') return t;
+            return t.id || t.value; // Compatible con formatos experimentales anteriores
+        }));
 
         setFormData({
             title: square.title || square.label || '',
             emoji: square.emoji || '🎯',
             description: square.description || '',
             minPhotos: square.minPhotos || 1,
-            suggestedTags: sanitizedTags,
+            suggestedTags: rawTags.map(t => typeof t === 'string' ? t : (t.id || t.value)),
             suggestedPlace: square.suggestedPlace || '',
             isSpecial: !!square.isSpecial,
             isEnabled: square.isEnabled !== false

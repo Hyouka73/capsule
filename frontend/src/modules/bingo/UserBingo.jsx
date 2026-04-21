@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import { toast } from '../../components/ui/PastelToast/PastelToast';
 import BingoStartModal from '../../components/Bingo/BingoStartModal';
 import PhotoDetailOverlay from '../gallery/components/PhotoDetailOverlay';
 import { useBingo } from '../../hooks/useBingo';
@@ -9,10 +10,10 @@ import styles from './UserBingo.module.css';
 // Sub-components
 import BingoProgress from './components/BingoProgress';
 import BingoBoardGrid from './components/BingoBoardGrid';
-import BingoMemoryPolaroid from './components/BingoMemoryPolaroid';
+import MemoryViewer from '../../components/ui/MemoryViewer/MemoryViewer';
 import BingoSuggestionSheet from '../memories/components/BingoSuggestionSheet';
 
-export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsModalOpen }) {
+export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsModalOpen, onOpenMemory }) {
     const [selectedSquare, setSelectedSquare] = useState(null);
     const [selectedStartSquare, setSelectedStartSquare] = useState(null);
     const [viewerSelection, setViewerSelection] = useState(null);
@@ -32,9 +33,20 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
     const lastCountRef = useRef(completedCount);
 
     const handleSquareClick = (square) => {
+        if (square.isPendingSync) {
+            toast.info("Sincronizando... ⏳", "El contenido aparecerá pronto");
+            return;
+        }
+
         if (square.completedMemoryId) {
-            setSelectedSquare(square);
-            if (setIsModalOpen) setIsModalOpen(true);
+            if (onOpenMemory) {
+                onOpenMemory({
+                    id: square.completedMemoryId,
+                    title: square.title,
+                    description: square.description,
+                    mainPhotoUrl: square.memoryPhoto
+                });
+            }
         } else {
             setSelectedStartSquare(square);
             if (setIsModalOpen) setIsModalOpen(true);
@@ -84,11 +96,7 @@ export default function UserBingo({ setActiveTab, setBingoContextToMap, setIsMod
                 Toca una casilla para comenzar una aventura 💫
             </p>
 
-            <BingoMemoryPolaroid 
-                selectedSquare={selectedSquare}
-                onClose={handleClosePolaroid}
-                onShowGallery={setViewerSelection}
-            />
+            {/* Local MemoryViewer removed to use global one in UserDashboard */}
 
             <AnimatePresence>
                 {selectedStartSquare && (

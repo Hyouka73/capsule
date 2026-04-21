@@ -157,16 +157,20 @@ export default function CelebrationOverlay({
                                             transition={{ delay: 0.3 + (idx * 0.1) }}
                                         >
                                             <span className={styles.acLabel}>{ac.label}</span>
-                                            <span className={styles.acCoins}>+{ac.coins}</span>
+                                            {ac.coins > 0 && (
+                                                <span className={styles.acCoins}>+{ac.coins}</span>
+                                            )}
                                         </motion.li>
                                     ))}
                                 </ul>
                             )}
 
-                            <div className={`${styles.coinsAmount} ${isCombo || isFullBoard ? styles.coinsAmountCombo : ''}`}>
-                                <span className={`material-symbols-rounded ${styles.coinIcon}`}>monetization_on</span>
-                                <span className={styles.coinsValue}>+{displayCoins}</span>
-                            </div>
+                            {displayCoins > 0 && (
+                                <div className={`${styles.coinsAmount} ${isCombo || isFullBoard ? styles.coinsAmountCombo : ''}`}>
+                                    <span className={`material-symbols-rounded ${styles.coinIcon}`}>monetization_on</span>
+                                    <span className={styles.coinsValue}>+{displayCoins}</span>
+                                </div>
+                            )}
 
                             {isFullBoard && phase !== 'epic' && <div className={styles.totalBadge}>BONUS DE TABLERO</div>}
 

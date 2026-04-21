@@ -17,7 +17,7 @@ export const handler = async (request) => {
     const { uid } = request.auth;
     const rawPlaceId = request.data.placeId;
     const placeId = (rawPlaceId && rawPlaceId !== 'custom_map') ? rawPlaceId : null;
-    const { id, title, description, eventDate, tags, adminNotes, placeName, placeLat, placeLng } = request.data;
+    const { id, title, description, eventDate, tags, adminNotes, placeName, placeLat, placeLng, claimedBingoCategories } = request.data;
 
     // 2. Validación básica de Payload
     if (!eventDate) {
@@ -143,72 +143,127 @@ export const handler = async (request) => {
             }
         }
 
-        // 6. Bingo Autodetection - Standardized for multiple boards & status: 'active'
-        let bingoSuggestions = [];
+        // 6. Bingo Processing - Official Validation & Rewards
+        let bingoResults = { claimed: [], rejected: [], coinsEarned: 0 };
         try {
             const boardsColl = db.collection('relationships').doc(relationshipId).collection(COLLECTIONS.BINGO_BOARD);
             const activeSnap = await boardsColl.where('status', '==', 'active').limit(1).get();
 
-            if (!activeSnap.empty) {
+            if (!activeSnap.empty && claimedBingoCategories?.length > 0) {
                 const bingoDoc = activeSnap.docs[0];
-                const categories = bingoDoc.data().categories || [];
-                const memoryTagsLower = (memoryData.tags || []).map(t => t.toLowerCase().trim());
+                const boardData = bingoDoc.data();
+                const categories = boardData.categories || [];
                 
-                bingoSuggestions = categories
-                    .filter(cat => {
-                        if (cat.completedMemoryId || cat.isEnabled === false) return false;
-                        
-                        // Detection Logic:
-                        // 1. Direct ID match: memory.tags includes this category's own ID
-                        const isIdMatch = memoryTagsLower.includes(cat.id.toLowerCase());
+                const memoryTagsLower = (tags || []).map(t => {
+                    if (typeof t === 'string') return t.toLowerCase().trim();
+                    return t?.id?.toLowerCase() || t?.value?.toLowerCase() || '';
+                }).filter(Boolean);
 
-                        // 2. Suggested Tag IDs match: memory has ANY suggested tag ID of this category
-                        // suggestedTags format: [{ id: 'tag_cita' }, { id: 'tag_cine' }]
-                        const suggestedTags = cat.suggestedTags || [];
-                        const hasTagIdMatch = suggestedTags.length > 0 && suggestedTags.some(st => {
-                            // New format: { id: 'tag_cine' }
-                            if (st.id) return memoryTagsLower.includes(st.id.toLowerCase());
-                            // Legacy format fallback: { value: 'cine', label: '...' }
-                            if (st.value) return memoryTagsLower.includes(st.value.toLowerCase().trim());
-                            // Raw string fallback
-                            if (typeof st === 'string') return memoryTagsLower.includes(st.toLowerCase().trim());
-                            return false;
-                        });
+                let updated = false;
+                let totalCoins = 0;
+
+                // Simple achievement evaluator for rewards calculation
+                const evaluateBoard = (cats) => {
+                    const ROWS = 4; const COLS = 4;
+                    const lines = [];
+                    for (let r = 0; r < ROWS; r++) {
+                        if ([0, 1, 2, 3].every(c => cats[r * COLS + c]?.completedMemoryId)) lines.push(`row_${r}`);
+                    }
+                    for (let c = 0; c < COLS; c++) {
+                        if ([0, 1, 2, 3].every(r => cats[r * COLS + c]?.completedMemoryId)) lines.push(`col_${c}`);
+                    }
+                    if ([0, 5, 10, 15].every(i => cats[i]?.completedMemoryId)) lines.push('diag_1');
+                    if ([3, 6, 9, 12].every(i => cats[i]?.completedMemoryId)) lines.push('diag_2');
+                    return { lines, isFullBoard: cats.every(c => c.completedMemoryId) };
+                };
+
+                const oldEvals = evaluateBoard(categories);
+
+                for (const claimId of claimedBingoCategories) {
+                    const catIndex = categories.findIndex(c => c.id === claimId);
+                    if (catIndex === -1) {
+                        bingoResults.rejected.push({ id: claimId, reason: 'not_found' });
+                        continue;
+                    }
+
+                    const cat = categories[catIndex];
+                    if (cat.completedMemoryId) {
+                        bingoResults.rejected.push({ id: claimId, reason: 'already_completed' });
+                        continue;
+                    }
+
+                    // Strict Tag Validation
+                    const suggestedTags = cat.suggestedTags || [];
+                    const isIdMatch = memoryTagsLower.includes(cat.id.toLowerCase());
+                    let hasEverySuggestedMatch = suggestedTags.length > 0 && suggestedTags.every(st => {
+                        const stVal = (typeof st === 'string' ? st : (st.id || st.value || '')).toLowerCase().trim();
+                        return stVal && memoryTagsLower.includes(stVal);
+                    });
+
+                    if (isIdMatch || hasEverySuggestedMatch || (cat.id === 'movies' && request.data.movieData)) {
+                        // Mark as completed locally in the loop
+                        categories[catIndex] = {
+                            ...cat,
+                            completedMemoryId: id || memoryId,
+                            completedAt: new Date().toISOString()
+                        };
                         
-                        const isMovieMatch = cat.id === 'movies' && request.data.movieData;
-                        return isIdMatch || hasTagIdMatch || isMovieMatch;
-                    })
-                    .map(cat => ({
-                        categoryId: cat.id,
-                        label: cat.title || cat.label,
-                        emoji: cat.emoji
-                    }));
-            } else {
-                // Fallback to legacy 'board' document if no active found (prevent breakage)
-                const legacyRef = boardsColl.doc(SINGLETON_DOCS.BINGO_BOARD);
-                const legacyDoc = await legacyRef.get();
-                if (legacyDoc.exists) {
-                    const categories = legacyDoc.data().categories || [];
-                    const memoryTagsLower = (memoryData.tags || []).map(t => t.toLowerCase().trim());
-                    bingoSuggestions = categories
-                        .filter(cat => {
-                            if (cat.completedMemoryId || cat.isEnabled === false) return false;
-                            const suggestedTags = cat.suggestedTags || [];
-                            if (suggestedTags.length === 0) return false;
-                            return suggestedTags.every(st => {
-                                const catTag = (typeof st === 'string' ? st : st.value).toLowerCase().trim();
-                                return memoryTagsLower.includes(catTag);
-                            });
-                        })
-                        .map(cat => ({
-                            categoryId: cat.id,
-                            label: cat.title || cat.label,
-                            emoji: cat.emoji
-                        }));
+                        // Solo las casillas especiales dan monedas (5). Las normales dan 0.
+                        let squareReward = cat.isSpecial ? 5 : 0;
+                        totalCoins += squareReward;
+                        
+                        bingoResults.claimed.push({ 
+                            id: claimId, 
+                            coins: squareReward, 
+                            isSpecial: !!cat.isSpecial 
+                        });
+                        updated = true;
+                    } else {
+                        bingoResults.rejected.push({ id: claimId, reason: 'invalid_tags' });
+                    }
+                }
+
+                if (updated) {
+                    const newEvals = evaluateBoard(categories);
+                    // Add coins for new lines (15 per line)
+                    const newLinesCount = newEvals.lines.filter(l => !oldEvals.lines.includes(l)).length;
+                    totalCoins += (newLinesCount * 15);
+                    
+                    if (newEvals.isFullBoard && !oldEvals.isFullBoard) {
+                        totalCoins += 50; // Full board bonus
+                    }
+
+                    bingoResults.coinsEarned = totalCoins;
+
+                    // Execute updates in Firestore
+                    const batch = db.batch();
+                    batch.update(bingoDoc.ref, {
+                        categories,
+                        completedCount: categories.filter(c => c.completedMemoryId).length,
+                        updatedAt: FieldValue.serverTimestamp()
+                    });
+
+                    if (totalCoins > 0) {
+                        const userRef = db.collection(COLLECTIONS.USERS).doc(uid);
+                        batch.update(userRef, { gameCoins: FieldValue.increment(totalCoins) });
+                    }
+
+                    await batch.commit();
+
+                    // Log Bingo Activity if something was claimed
+                    await logActivity({
+                        relationshipId,
+                        userId: uid,
+                        action: 'bingo_completed',
+                        targetType: 'bingoBoards',
+                        targetId: bingoDoc.id,
+                        displayText: `completó ${bingoResults.claimed.length} casilla(s) de Bingo y ganó ${totalCoins} monedas 💰`,
+                        metadata: { categories: bingoResults.claimed, coins: totalCoins }
+                    });
                 }
             }
         } catch (bingoErr) {
-            logger.warn('Bingo suggestion check failed:', bingoErr);
+            logger.error('Bingo processing failed:', bingoErr);
         }
 
         // 7. Log Activity
@@ -229,7 +284,7 @@ export const handler = async (request) => {
         return {
             success: true,
             memoryId: memoryId,
-            bingoSuggestions: bingoSuggestions,
+            bingoResults: bingoResults, // Devuelve info de qué se reclamó y si fue aceptado
             message: 'Recuerdo creado correctamente.'
         };
 

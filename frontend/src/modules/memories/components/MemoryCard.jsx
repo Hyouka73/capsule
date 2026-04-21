@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import PastelCard from '../../../components/ui/PastelCard/PastelCard';
 import styles from './MemoryCard.module.css';
 import { useTagResolver } from '../../../hooks/useTagResolver';
+import { usePhotoCache } from '../../../hooks/usePhotoCache';
 
 /**
  * MemoryCard — Premium Memory Gallery Item
@@ -19,6 +20,7 @@ export default function MemoryCard({ memory, onEdit, onToggleVisibility, onDelet
         photos = [memory.mainPhotoUrl, ...photos];
     }
 
+    const displayPhoto = usePhotoCache(memory.id, photos[0]);
     const hasPhotos = photos.length > 0;
 
     return (
@@ -40,7 +42,7 @@ export default function MemoryCard({ memory, onEdit, onToggleVisibility, onDelet
                 {hasPhotos ? (
                     <div className={styles.photoWrapper}>
                         <img
-                            src={photos[0]}
+                            src={displayPhoto}
                             alt={memory.title ?? 'Recuerdo'}
                             className={styles.mainPhoto}
                             loading="lazy"

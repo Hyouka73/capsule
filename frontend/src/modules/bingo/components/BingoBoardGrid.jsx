@@ -58,24 +58,26 @@ export default function BingoBoardGrid({
                     return (
                         <motion.div
                             key={square.id}
-                            className={`${styles.square} ${isCompleted ? styles.completed : ''} ${isSpecial ? styles.special : ''}`}
+                            className={`${styles.square} ${isCompleted ? styles.completed : ''} ${isSpecial ? styles.special : ''} ${square.isPendingSync ? styles.pendingSync : ''}`}
                             onClick={() => onSquareClick(square)}
                             whileTap={{ scale: 0.95 }}
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: index * 0.02 }}
                         >
-                            {/* Completion Marker */}
+                            {/* Completion Marker (Check or Sync) */}
                             <AnimatePresence>
-                                {isCompleted && (
+                                {(isCompleted || square.isPendingSync) && (
                                     <motion.div 
-                                        className={styles.checkMark}
+                                        className={`${styles.checkMark} ${square.isPendingSync ? styles.pendingCheck : ''}`}
                                         initial={{ scale: 0, rotate: -45 }}
                                         animate={{ scale: 1, rotate: 0 }}
                                         exit={{ scale: 0, opacity: 0, rotate: 45 }}
                                         transition={{ type: 'spring', damping: 10, stiffness: 200 }}
                                     >
-                                        <span className="material-symbols-rounded" style={{ fontSize: '1rem' }}>check</span>
+                                        <span className="material-symbols-rounded" style={{ fontSize: '1rem' }}>
+                                            {square.isPendingSync ? 'sync' : 'check'}
+                                        </span>
                                     </motion.div>
                                 )}
                             </AnimatePresence>

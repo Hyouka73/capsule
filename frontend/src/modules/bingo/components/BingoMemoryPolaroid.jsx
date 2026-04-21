@@ -4,6 +4,7 @@ import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '../../../services/firebase';
 import { useAuth } from '../../../hooks/useAuth';
 import styles from '../UserBingo.module.css';
+import { getMemoryFromCache } from '../../../utils/memoryPersistence';
 
 export default function BingoMemoryPolaroid({ selectedSquare, onClose, onShowGallery }) {
     const [memory, setMemory] = useState(null);
@@ -22,16 +23,26 @@ export default function BingoMemoryPolaroid({ selectedSquare, onClose, onShowGal
             setLoading(true);
             try {
                 const memoryId = selectedSquare.completedMemoryId;
-                const memoryDoc = await getDoc(doc(db, 'relationships', relationshipId, 'memories', memoryId));
                 
-                if (memoryDoc.exists()) {
-                    const data = memoryDoc.data();
-                    setMemory(data);
+                // 1. Try Cache First
+                const cached = await getMemoryFromCache(memoryId);
+                if (cached) {
+                    setMemory(cached);
+                    // photos for full gallery might still need fetching if not in cached main photo
+                }
 
-                    // Fetch subcollection photos
-                    const photosSnap = await getDocs(collection(db, 'relationships', relationshipId, 'memories', memoryId, 'photos'));
-                    const photosList = photosSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-                    setPhotos(photosList);
+                // 2. Online Refresh
+                if (navigator.onLine) {
+                    const memoryDoc = await getDoc(doc(db, 'relationships', relationshipId, 'memories', memoryId));
+                    if (memoryDoc.exists()) {
+                        const data = { id: memoryDoc.id, ...memoryDoc.data() };
+                        setMemory(data);
+
+                        // Fetch subcollection photos
+                        const photosSnap = await getDocs(collection(db, 'relationships', relationshipId, 'memories', memoryId, 'photos'));
+                        const photosList = photosSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        setPhotos(photosList);
+                    }
                 }
             } catch (err) {
                 // silent fail
@@ -90,11 +101,18 @@ export default function BingoMemoryPolaroid({ selectedSquare, onClose, onShowGal
                             <h2 className={styles.polaroidTitle}>{displayTitle}</h2>
                             <p className={styles.description}>{displayDescription}</p>
                             
-                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+                            <div className={styles.metadata}>
+                                {memory?.placeName || selectedSquare?.placeName ? (
+                                    <span className={styles.place}>
+                                        <span className="material-symbols-rounded">location_on</span>
+                                        {memory?.placeName || selectedSquare?.placeName}
+                                    </span>
+                                ) : null}
                                 <span className={styles.dateBadge}>
+                                    <span className="material-symbols-rounded">calendar_month</span>
                                     {selectedSquare.completedAt ? new Date(selectedSquare.completedAt).toLocaleDateString('es-ES', { 
                                         day: 'numeric', 
-                                        month: 'long', 
+                                        month: 'short', 
                                         year: 'numeric' 
                                     }) : 'Sin fecha'}
                                 </span>
