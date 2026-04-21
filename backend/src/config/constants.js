@@ -23,6 +23,9 @@ export const COLLECTIONS = {
     ACTIVITY_LOG: 'activityLogs',
     APP_CONFIG: 'appConfig',
     REDEMPTIONS: 'redemptions', // Added for approval flow
+
+    // Special Event Orchestrator — subcolección de relationships/{id}/specialEvents
+    SPECIAL_EVENTS: 'specialEvents',
 };
 
 export const SINGLETON_DOCS = {

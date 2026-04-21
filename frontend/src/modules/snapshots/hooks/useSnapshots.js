@@ -173,12 +173,17 @@ export function useSnapshots() {
                 if (s.isSeen || optimisticSeenIds.has(s.id)) return false;
                 // No debe estar expirada (> 24h)
                 if (now - s.createdAtMs > TWENTY_FOUR_H_MS) return false;
-                // EXCLUSIVO: Solo mostrar si ya está en caché local (disponible)
-                if (!availableIds.has(s.id)) return false;
+                
+                // NOTA: Ya NO filtramos por availableIds.has(s.id) 
+                // para que el usuario sepa que la foto está "en camino".
                 return true;
             })
+            .map(s => ({
+                ...s,
+                isReady: availableIds.has(s.id) // Nueva flag para la UI
+            }))
             .sort((a, b) => a.createdAtMs - b.createdAtMs);
-    }, [snapshots, user?.uid, optimisticSeenIds]);
+    }, [snapshots, user?.uid, optimisticSeenIds, availableIds]);
 
     // Filtrar: Sent History (enviadas por mí, < 24h O no vistas por pareja)
     const sentSnapshots = useMemo(() => {

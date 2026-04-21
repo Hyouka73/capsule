@@ -64,7 +64,10 @@ export default function SnapshotOverlay({ snapshots = [], onClose }) {
 
     /* Progress Timer & Auto-advance */
     useEffect(() => {
-        if (isFinished || isAdvancing) return;
+        // PAUSA: Si no hay snapshot, o ya terminó, o si la foto NO ESTÁ LISTA (descargando)
+        if (isFinished || isAdvancing || (currentSnapshot && !currentSnapshot.isReady)) {
+            return;
+        }
         
         let start = null;
         let raf;
@@ -87,7 +90,7 @@ export default function SnapshotOverlay({ snapshots = [], onClose }) {
 
         raf = requestAnimationFrame(step);
         return () => cancelAnimationFrame(raf);
-    }, [timerSeconds, currentIndex, isFinished, isAdvancing, markAsSeenAndAdvance]);
+    }, [timerSeconds, currentIndex, isFinished, isAdvancing, currentSnapshot?.isReady, markAsSeenAndAdvance]);
 
     if (!currentSnapshot && !isFinished) return null;
 
@@ -185,10 +188,19 @@ export default function SnapshotOverlay({ snapshots = [], onClose }) {
                             >
                                 <div className={styles.photoWrapper}>
                                     <div className={styles.photoInner}>
-                                        <img src={snap.photoUrl} alt="" className={styles.photo} />
-                                        {isActive && (snap.message || snap.caption) && (
-                                            <div className={styles.messageOverlay}>
-                                                <p className={styles.messageText}>{snap.message || snap.caption}</p>
+                                        {snap.isReady ? (
+                                            <>
+                                                <img src={snap.photoUrl} alt="" className={styles.photo} />
+                                                {isActive && (snap.message || snap.caption) && (
+                                                    <div className={styles.messageOverlay}>
+                                                        <p className={styles.messageText}>{snap.message || snap.caption}</p>
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <div className={styles.loadingState}>
+                                                <div className={styles.spinner}>✨</div>
+                                                <p>Revelando instantánea...</p>
                                             </div>
                                         )}
                                     </div>

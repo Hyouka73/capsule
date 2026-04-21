@@ -18,6 +18,8 @@ export const COLLECTIONS = {
     APP_CONFIG: 'appConfig',
     INSTANTANEAS: 'snapshots',
     BINGO_HISTORY: 'bingoHistory',
+    // Special Event Orchestrator — subcolección de relationships/{id}/specialEvents
+    SPECIAL_EVENTS: 'specialEvents',
 };
 
 export const CAPSULE_TYPES = {

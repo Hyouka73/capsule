@@ -1,19 +1,31 @@
-import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { logger } from 'firebase-functions';
 import { COLLECTIONS } from '../config/constants.js';
+import { getFirestore } from 'firebase-admin/firestore';
 
-export const onSnapshotCreated = onDocumentCreated({
-    document: `relationships/{relationshipId}/snapshots/{snapshotId}`,
-}, async (event) => {
+const RELATIONSHIP_SNAPSHOT_PATH = `${COLLECTIONS.RELATIONSHIPS}/{relationshipId}/${COLLECTIONS.INSTANTANEAS}/{snapshotId}`;
+
+/**
+ * onSnapshotCreatedHandler
+ * Procesamiento de la snapshot una vez que el backend ha terminado (isProcessed: true).
+ */
+export const onSnapshotCreatedHandler = async (event) => {
     const { relationshipId, snapshotId } = event.params;
-    logger.info(`[onSnapshotCreated] Triggered for relationship ${relationshipId} and snapshot ${snapshotId}`);
+    const data = event.data?.after?.data();
+    const prevData = event.data?.before?.data() || {};
+    
+    if (!data) return; // Borrado
 
-    const snapshot = event.data;
-    if (!snapshot) {
-        logger.error('[onSnapshotCreated] No snapshot found for event');
+    // SOLO actuar si isProcessed acaba de cambiar a true
+    const wasProcessed = prevData.isProcessed === true;
+    const isNowProcessed = data.isProcessed === true;
+    
+    if (wasProcessed || !isNowProcessed) {
+        logger.info(`[onSnapshotCreated] Skipping: not the processing completion event for ${snapshotId}`);
         return;
     }
-    const data = snapshot.data();
+
+    logger.info(`[onSnapshotCreated] Triggered for relationship ${relationshipId} and snapshot ${snapshotId}`);
+
     const createdBy = data.createdBy;
     const message = data.message || '';
 
@@ -22,10 +34,11 @@ export const onSnapshotCreated = onDocumentCreated({
         return;
     }
 
-    const db = (await import('firebase-admin/firestore')).getFirestore();
+    const db = getFirestore();
 
     try {
-        // 1. Throttling: solo notificar si no hay snapshots sin ver previos
+        // 1. Throttling: solo notificar si no hay snapshots sin ver previos del mismo usuario
+        // Esto evita spamear a la pareja si subes 10 fotos seguidas de chingadazo
         const unseenSnap = await db
             .collection(COLLECTIONS.RELATIONSHIPS)
             .doc(relationshipId)
@@ -35,11 +48,14 @@ export const onSnapshotCreated = onDocumentCreated({
             .get();
 
         if (unseenSnap.size > 1) {
-            logger.info(`[onSnapshotCreated] Already ${unseenSnap.size} unseen snapshots. Skipping notification.`);
+            logger.info(`[onSnapshotCreated] Partner already has ${unseenSnap.size} unseen snapshots from this uploader. Skipping notification to prevent spam.`);
+            // Aún así creamos la tarea de archivado, por si acaso
+            const { cloudTasksService } = await import('../services/cloudTasksService.js');
+            await cloudTasksService.createSnapshotArchiveTask(relationshipId, snapshotId, 24);
             return;
         }
 
-        // 1. Fetch uploader info and global names config
+        // 2. Fetch uploader info and global names config
         const [uploaderSnap, namesSnap] = await Promise.all([
             db.collection(COLLECTIONS.USERS).doc(createdBy).get(),
             db.collection(COLLECTIONS.RELATIONSHIPS).doc(relationshipId).collection('config').doc('names').get()
@@ -48,7 +64,6 @@ export const onSnapshotCreated = onDocumentCreated({
         const uploaderData = uploaderSnap.exists ? uploaderSnap.data() : {};
         const namesData = namesSnap.exists ? namesSnap.data() : {};
 
-        // Determinar el rol del uploader para saber qué campo usar en names
         const uploaderRole = uploaderData.role || null;
         const nameFromConfig = uploaderRole === 'admin' ? namesData.admin : namesData.partner;
         const uploaderName = nameFromConfig || uploaderData.displayName || 'Tu pareja';
@@ -66,34 +81,39 @@ export const onSnapshotCreated = onDocumentCreated({
         }
 
         const partnerUid = partnerDoc.id;
-        const partnerName = partnerDoc.data().displayName || 'Partner';
 
-        // 4. Send notification
+        // 4. Send notification (DATA ONLY)
         const payload = {
-            title: '📸 ¡Nueva Instantánea!',
-            body: `${uploaderName} ha capturado un momento para ti ✨${message ? `\n"${message}"` : ''}`,
-            image: data.photoUrl || undefined,
-            sound: 'default',
             data: {
+                title: '📸 ¡Nueva Instantánea!',
+                body: `${uploaderName} ha capturado un momento para ti ✨${message ? `\n"${message}"` : ''}`,
+                image: data.photoUrl || '',
                 type: 'snapshot',
                 snapshotId: snapshotId,
                 relationshipId: relationshipId,
-                click_action: 'FLUTTER_NOTIFICATION_CLICK'
-            },
+                click_action: 'FLUTTER_NOTIFICATION_CLICK',
+                link: '/snapshots'
+            }
         };
 
-        logger.info(`[onSnapshotCreated] Sending notification to ${partnerName} (${partnerUid})`);
-        
         const { sendToUser } = await import('../services/fcmService.js');
-        const result = await sendToUser(partnerUid, payload);
+        const { cloudTasksService } = await import('../services/cloudTasksService.js');
         
-        if (result) {
-            logger.info(`[onSnapshotCreated] Notification sent: Success=${result.successCount}, Failures=${result.failureCount}`);
-        } else {
-            logger.warn(`[onSnapshotCreated] No tokens found for user ${partnerUid}`);
+        // Ejecución en paralelo: Notificación + Tarea de Archivado (24h después)
+        const [notifResult, taskResult] = await Promise.allSettled([
+            sendToUser(partnerUid, payload),
+            cloudTasksService.createSnapshotArchiveTask(relationshipId, snapshotId, 24)
+        ]);
+        
+        if (notifResult.status === 'fulfilled' && notifResult.value) {
+            logger.info(`[onSnapshotCreated] Notification sent for snapshot ${snapshotId}`);
+        }
+        
+        if (taskResult.status === 'fulfilled') {
+            logger.info(`[onSnapshotCreated] Archive task scheduled successfully for ${snapshotId}`);
         }
 
     } catch (error) {
         logger.error(`[onSnapshotCreated] Critical error for snapshot ${snapshotId}:`, error);
     }
-});
+};

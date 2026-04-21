@@ -19,17 +19,22 @@ export const fcmService = {
                 .where('relationshipId', '==', relationshipId)
                 .get();
 
-            const allTokens = [];
+            // Usamos un Set para asegurar que cada token sea único en toda la relación
+            const uniqueTokens = new Set();
+            
             usersSnap.docs.forEach(doc => {
                 const tokensMap = doc.data().fcmTokens || {};
                 Object.keys(tokensMap).forEach(token => {
                     const tokenData = tokensMap[token];
-                    // Only include active tokens
-                    if (tokenData && tokenData.active !== false && !allTokens.includes(token)) {
-                        allTokens.push(token);
+                    // Solo incluir tokens activos y que no sean strings vacíos
+                    if (tokenData && tokenData.active !== false && token) {
+                        uniqueTokens.add(token.trim());
                     }
                 });
             });
+            
+            const allTokens = Array.from(uniqueTokens);
+            logger.info(`[fcmService] Found ${allTokens.length} unique tokens for relationship ${relationshipId}`);
             return allTokens;
         } catch (error) {
             logger.error(`[fcmService] Error fetching tokens for relationship ${relationshipId}:`, error);
@@ -56,20 +61,29 @@ export const fcmService = {
         for (let i = 0; i < tokens.length; i += CHUNK_SIZE) {
             const chunk = tokens.slice(i, i + CHUNK_SIZE);
             const message = {
-                notification: {
-                    title: payload.title,
-                    body: payload.body,
-                },
-                webpush: {
+                // Solo incluimos el bloque de notificación si hay contenido explícito
+                // Esto evita la duplicación automática del navegador
+                ...(payload.title || payload.body ? {
                     notification: {
                         title: payload.title,
                         body: payload.body,
-                        icon: '/logo.svg',
-                        ...(payload.image && { image: payload.image }),
-                    },
-                    fcmOptions: {
-                        link: '/',
-                    },
+                    }
+                } : {}),
+                
+                webpush: {
+                    // Solo incluimos el bloque de notificación en webpush si NO hay data manual,
+                    // para que el SW pueda manejar el 'data-only' sin conflictos.
+                    ...( (!payload.data && (payload.title || payload.body)) ? {
+                        notification: {
+                            title: payload.title,
+                            body: payload.body,
+                            icon: '/logo.svg',
+                            ...(payload.image && { image: payload.image }),
+                        },
+                        fcmOptions: {
+                            link: payload.webpushLink || '/',
+                        }
+                    } : {} ),
                 },
                 data: payload.data
                     ? Object.fromEntries(
@@ -98,13 +112,20 @@ export const fcmService = {
                     const deadTokens = [];
                     response.responses.forEach((resp, idx) => {
                         if (!resp.success) {
-                            logger.error(`[fcmService] Token failed [${idx}]: code=${resp.error?.code} message=${resp.error?.message} token_prefix=${chunk[idx]?.substring(0, 20)}`);
-                            if (resp.error?.code === 'messaging/registration-token-not-registered') {
+                            const errorCode = resp.error?.code;
+                            logger.error(`[fcmService] Token failed [${idx}]: code=${errorCode} message=${resp.error?.message}`);
+                            
+                            // Si el token ya no es válido, lo marcamos para borrar
+                            if (errorCode === 'messaging/registration-token-not-registered' || errorCode === 'messaging/invalid-registration-token') {
                                 deadTokens.push(chunk[idx]);
                             }
                         }
                     });
-                    results.deadTokens = [...(results.deadTokens || []), ...deadTokens];
+
+                    // Limpieza automática de tokens muertos en la relación
+                    if (deadTokens.length > 0) {
+                        await this._cleanupDeadTokensGlobally(deadTokens);
+                    }
                 }
             } catch (error) {
                 logger.error('[fcmService] Critical error in sendEachForMulticast chunk:', error);
@@ -113,6 +134,47 @@ export const fcmService = {
 
         logger.info(`[fcmService] Final results: Success=${results.successCount}, Failures=${results.failureCount}`);
         return results;
+    },
+
+    /**
+     * Helper interno para borrar tokens muertos de cualquier usuario que los tenga.
+     */
+    async _cleanupDeadTokensGlobally(deadTokens) {
+        const db = getFirestore();
+        const { FieldValue } = await import('firebase-admin/firestore');
+        
+        try {
+            // Buscamos usuarios que tengan estos tokens (esto es un poco costoso pero necesario una sola vez)
+            const usersSnap = await db.collection(COLLECTIONS.USERS).get();
+            const batch = db.batch();
+            let count = 0;
+
+            usersSnap.docs.forEach(userDoc => {
+                const userData = userDoc.data();
+                const userTokens = userData.fcmTokens || {};
+                let hasDeadToken = false;
+                const updateData = {};
+
+                deadTokens.forEach(dt => {
+                    if (userTokens[dt]) {
+                        updateData[`fcmTokens.${dt}`] = FieldValue.delete();
+                        hasDeadToken = true;
+                    }
+                });
+
+                if (hasDeadToken) {
+                    batch.update(userDoc.ref, updateData);
+                    count++;
+                }
+            });
+
+            if (count > 0) {
+                await batch.commit();
+                logger.info(`[fcmService] Auto-cleaned ${deadTokens.length} dead tokens across ${count} users.`);
+            }
+        } catch (err) {
+            logger.error('[fcmService] Error in global token cleanup:', err);
+        }
     },
 
     /**

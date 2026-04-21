@@ -38,9 +38,9 @@ messaging.onBackgroundMessage(async (payload) => {
         return;
     }
 
-    const notificationTitle = payload.notification?.title || '📸 ¡Nueva Instantánea!';
+    const notificationTitle = payload.data?.title || payload.notification?.title || '🔔 ¡Nuevo aviso!';
     const notificationOptions = {
-        body: payload.notification?.body || 'Tu pareja ha capturado un momento para ti.',
+        body: payload.data?.body || payload.notification?.body || 'Abre la app para descubrir qué hay de nuevo.',
         icon: '/logo.svg',
         data: payload.data
     };
