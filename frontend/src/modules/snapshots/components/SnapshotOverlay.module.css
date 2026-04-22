@@ -81,7 +81,10 @@
     max-width: 300px;
     aspect-ratio: 1;
     cursor: pointer;
-    filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.4));
+    /* Reduced shadow complexity for mobile performance */
+    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.3));
+    will-change: transform, opacity;
+    transform: translateZ(0);
 }
 
 .photoWrapper {
@@ -103,6 +106,7 @@
     height: 100%;
     object-fit: cover;
     transition: transform 0.5s ease;
+    backface-visibility: hidden;
 }
 
 .messageOverlay {
@@ -130,32 +134,6 @@
     font-weight: 600;
     line-height: 1.35;
     text-shadow: 0 4px 8px rgba(0,0,0,0.6);
-}
-
-.progressRingSvg {
-    position: absolute;
-    top: -4px;
-    left: -4px;
-    right: -4px;
-    bottom: -4px;
-    width: calc(100% + 8px);
-    height: calc(100% + 8px);
-    pointer-events: none;
-    z-index: 5;
-    overflow: visible;
-}
-
-.timerTrack {
-    fill: none;
-    stroke: rgba(255, 255, 255, 0.15);
-    stroke-width: 0.015;
-}
-
-.timerFill {
-    fill: none;
-    stroke: var(--pastel-rose);
-    stroke-width: 0.018;
-    stroke-linecap: round;
 }
 
 .replyPrompt {

@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAppConfig } from '../../../hooks/useAppConfig';
 import { useSnapshots } from '../hooks/useSnapshots';
 import styles from './SnapshotOverlay.module.css';
 
@@ -16,12 +15,9 @@ const SLOT_SCALE   = 0.07;
 const squirclePath = "M0.5,0 C0.42,0 0,0.42 0,0.5 C0,0.58 0.42,1 0.5,1 C0.58,1 1,0.58 1,0.5 C1,0.42 0.58,0 0.5,0 Z";
 
 export default function SnapshotOverlay({ snapshots = [], onClose }) {
-    const { snapshotConfig } = useAppConfig();
     const { markAsSeen } = useSnapshots();
-    const timerSeconds = snapshotConfig?.timerSeconds ?? 8;
 
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [progress, setProgress] = useState(0);
     const [isFinished, setIsFinished] = useState(false);
     const [isAdvancing, setIsAdvancing] = useState(false);
 
@@ -49,7 +45,6 @@ export default function SnapshotOverlay({ snapshots = [], onClose }) {
             // Delay mínimo para dejar que la animación de la tarjeta actual empiece
             setTimeout(() => {
                 setCurrentIndex(prev => prev + 1);
-                setProgress(0);
                 setIsAdvancing(false);
             }, 50);
         }
@@ -62,36 +57,7 @@ export default function SnapshotOverlay({ snapshots = [], onClose }) {
         onClose(false);
     };
 
-    /* Progress Timer & Auto-advance */
-    useEffect(() => {
-        // PAUSA: Si no hay snapshot, o ya terminó, o si la foto NO ESTÁ LISTA (descargando)
-        if (isFinished || isAdvancing || (currentSnapshot && !currentSnapshot.isReady)) {
-            return;
-        }
-        
-        let start = null;
-        let raf;
-        const duration = timerSeconds * 1000;
-
-        const step = (ts) => {
-            if (!start) start = ts;
-            const elapsed = ts - start;
-            const pct = Math.min(elapsed / duration, 1);
-            
-            setProgress(pct);
-
-            if (pct < 1) {
-                raf = requestAnimationFrame(step);
-            } else {
-                setProgress(1);
-                markAsSeenAndAdvance();
-            }
-        };
-
-        raf = requestAnimationFrame(step);
-        return () => cancelAnimationFrame(raf);
-    }, [timerSeconds, currentIndex, isFinished, isAdvancing, currentSnapshot?.isReady, markAsSeenAndAdvance]);
-
+    /* Manual advance only (on click) */
     if (!currentSnapshot && !isFinished) return null;
 
     const deckSlots = [];
@@ -132,7 +98,7 @@ export default function SnapshotOverlay({ snapshots = [], onClose }) {
             </svg>
 
             <div className={styles.stage}>
-                <AnimatePresence mode="popLayout">
+                <AnimatePresence>
                     {deckSlotsReversed.map(({ slot, snap }) => {
                         const isActive = slot === 0;
                         
@@ -190,7 +156,12 @@ export default function SnapshotOverlay({ snapshots = [], onClose }) {
                                     <div className={styles.photoInner}>
                                         {snap.isReady ? (
                                             <>
-                                                <img src={snap.photoUrl} alt="" className={styles.photo} />
+                                                <img 
+                                                    src={snap.photoUrl} 
+                                                    alt="" 
+                                                    className={styles.photo} 
+                                                    decoding="async"
+                                                />
                                                 {isActive && (snap.message || snap.caption) && (
                                                     <div className={styles.messageOverlay}>
                                                         <p className={styles.messageText}>{snap.message || snap.caption}</p>
@@ -205,26 +176,6 @@ export default function SnapshotOverlay({ snapshots = [], onClose }) {
                                         )}
                                     </div>
                                 </div>
-
-                                {isActive && (
-                                    <svg className={styles.progressRingSvg} viewBox="0 0 1 1">
-                                        <path 
-                                            d={squirclePath} 
-                                            className={styles.timerTrack} 
-                                            transform="rotate(45 0.5 0.5)" 
-                                        />
-                                        <motion.path 
-                                            d={squirclePath} 
-                                            className={styles.timerFill} 
-                                            transform="rotate(45 0.5 0.5)" 
-                                            initial={{ pathLength: 0 }}
-                                            animate={{ pathLength: progress >= 0.99 ? 1.05 : progress }}
-                                            transition={{ 
-                                                pathLength: { type: "tween", ease: "linear", duration: 0 }
-                                            }}
-                                        />
-                                    </svg>
-                                )}
                             </motion.div>
                         );
                     })}
