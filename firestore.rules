@@ -62,10 +62,12 @@ service cloud.firestore {
       // Regla general para el documento de la relación
       allow read, write: if matchesRelationship(relationshipId);
 
-      // Eventos Especiales: Ambos leen, solo Admin escribe
+      // Eventos Especiales: Ambos leen, solo Admin escribe (excepto seenAt para el partner)
       match /specialEvents/{eventId} {
         allow read: if matchesRelationship(relationshipId);
         allow write: if isAdmin() && matchesRelationship(relationshipId);
+        allow update: if isPartner() && matchesRelationship(relationshipId) 
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["seenAt"]);
       }
 
       // Resto de subcolecciones (memories, capsules, etc.)

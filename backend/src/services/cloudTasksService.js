@@ -1,3 +1,4 @@
+import * as grpc from '@grpc/grpc-js';
 import { CloudTasksClient } from '@google-cloud/tasks';
 import { logger } from 'firebase-functions';
 
@@ -24,7 +25,7 @@ function getClient() {
         return new CloudTasksClient({
             port: 9090,
             servicePath: 'localhost',
-            sslCreds: require('@grpc/grpc-js').credentials.createInsecure(),
+            sslCreds: grpc.credentials.createInsecure(),
         });
     }
 

@@ -3,12 +3,8 @@ import { onCall, onRequest, HttpsError } from 'firebase-functions/v2/https';
 import { setGlobalOptions } from 'firebase-functions/v2';
 import { logger } from 'firebase-functions';
 
-// ── GLOBAL OPTIONS ───────────────────────────────────────────────────────────
-// Habilita CORS para todas las funciones (necesario para Vercel)
-setGlobalOptions({ 
-    region: 'us-central1',
-    cors: true 
-});
+// Global options will be set later after environment detection
+
 import fs from 'fs';
 import path from 'path';
 
@@ -47,26 +43,31 @@ if (process.env.FUNCTIONS_EMULATOR === 'true') {
 }
 
 const ALLOWED_ORIGINS = [
-    /localhost:\d+$/, 
-    /127\.0\.0\.1:\d+$/,
-    /0\.0\.0\.0:\d+$/,
-    /\.web\.app$/,
-    /\.firebaseapp\.com$/,
-    'https://capsule-sooty.vercel.app'
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5174',
+    'http://0.0.0.0:5173',
+    'https://capsule-sooty.vercel.app',
+    'https://capsule-valentins-day.web.app',
+    'https://capsule-valentins-day.firebaseapp.com'
 ];
+
+const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
 
 setGlobalOptions({
     region: 'us-central1',
-    cors: ALLOWED_ORIGINS,
+    cors: isEmulator ? true : ALLOWED_ORIGINS,
     maxInstances: 10
 });
+
+logger.info(`[Backend] Loaded with region: us-central1, cors: ${isEmulator ? 'true' : 'ALLOWED_ORIGINS'}`);
 
 /**
  * lazyOnCall — Wrapper para carga dinámica de funciones onCall.
  */
-const lazyOnCall = (path, name) => onCall({ 
-    cors: ALLOWED_ORIGINS
-}, async (request) => {
+const lazyOnCall = (path, name) => onCall(async (request) => {
     try {
         const mod = await import(path);
         const handler = mod.handler || (name ? mod[name] : null);
