@@ -88,22 +88,14 @@ export default function SnapshotCreator({ onClose, onOpenHistory }) {
 
         const id = `snap_${Date.now()}`;
         
+        setIsSending(true);
         try {
-            // Convertimos canvas a blob antes de comprimir (compressImage requiere un Blob/File)
+            // 1. Capture canvas to raw blob (fastest possible extraction)
             const rawBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.95));
             if (!rawBlob) throw new Error('No se pudo generar el Blob del canvas');
             
-            // Quality-First Optimization: WebP, 1080px, Floor 0.5
-            const optimizedBlob = await compressImage(rawBlob, {
-                maxWidth: 1080,
-                initialQuality: 0.8,
-                mimeType: 'image/webp',
-                maxWeightKb: 500,
-                minQuality: 0.5
-            });
-
-            const thumbUrl = URL.createObjectURL(optimizedBlob);
-            const file = new File([optimizedBlob], `${id}.webp`, { type: 'image/webp' });
+            const thumbUrl = URL.createObjectURL(rawBlob);
+            const file = new File([rawBlob], `${id}.webp`, { type: 'image/webp' });
 
             setFlyThumb(thumbUrl);
             setIsFlying(true);
@@ -123,18 +115,23 @@ export default function SnapshotCreator({ onClose, onOpenHistory }) {
                 setTimeout(() => URL.revokeObjectURL(thumbUrl), 1000);
             }, 550);
 
-            setIsSending(true);
-            try {
-                await queueSnapshot(file, message.trim());
-            } catch (err) {
+            // Lock the message for this specific capture and clear it for the next one
+            const finalMessage = message.trim();
+            setMessage('');
+            setIsMessageOpen(false);
+
+            // Trigger the background queueing. 
+            // We DON'T await this, and we let useOfflineQueue handle the compression 
+            // in the background to unlock the UI immediately.
+            queueSnapshot(file, finalMessage, false).catch(err => {
                 logToVercel('SnapshotCreator', 'QUEUE_ERROR', err.message);
-            } finally {
-                setIsSending(false);
-                setMessage('');
-                setIsMessageOpen(false);
-            }
+            });
+
+            // Unlock the camera immediately for the next shot as soon as the raw blob is captured
+            setIsSending(false);
         } catch (err) {
             logToVercel('SnapshotCreator', 'CAPTURE_ERROR', err.message);
+            setIsSending(false);
         }
     };
 

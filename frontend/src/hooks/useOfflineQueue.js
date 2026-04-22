@@ -214,25 +214,28 @@ export function useOfflineQueue() {
             return;
         }
 
+        setIsProcessing(true);
         processingRef.current = true;
         isProcessingGlobal = true;
-        setIsProcessing(true);
 
-        const DELAY_BETWEEN_UPLOADS = 3000;
+        const DELAY_BETWEEN_UPLOADS = 1000; // Reduced from 3s to 1s for better flow
         let newBingoSuggestionsCount = 0;
 
         try {
-            // Sort FIFO (oldest first)
-            pending.sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+            // EXHAUSTIVE LOOP: Re-check for new items until queue is empty
+            while (true) {
+                const pending = await getAllPending(relationshipId);
+                if (pending.length === 0) break;
 
-            for (const item of pending) {
-                // If we lost connection mid-process, stop
-                if (!navigator.onLine) break;
+                // Sort FIFO (oldest first)
+                pending.sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
 
-                // SECURITY VALIDATION: Skip items from other relationships
-                if (item.relationshipId !== relationshipId) {
-                    continue;
-                }
+                for (const item of pending) {
+                    // If we lost connection mid-process, stop the entire run
+                    if (!navigator.onLine) return; 
+
+                    // Skip items from other relationships (extra safety)
+                    if (item.relationshipId !== relationshipId) continue;
 
                 try {
                     // Reset retry count if it was marked as failed before
@@ -363,7 +366,7 @@ export function useOfflineQueue() {
 
                         await createCapsule({
                             ...item.data,
-                            id: cleanId, 
+                            id: item.originalId || item.id, 
                             attachments: fileUrls
                         });
                         const wasEdit = !!item.existingCapsuleId;
@@ -400,9 +403,11 @@ export function useOfflineQueue() {
                     }
                 }
 
-                await new Promise(r => setTimeout(r, DELAY_BETWEEN_UPLOADS));
+                const finalDelay = item.type === 'snapshot' ? 500 : DELAY_BETWEEN_UPLOADS;
+                await new Promise(r => setTimeout(r, finalDelay));
             }
-        } finally {
+        }
+    } finally {
             processingRef.current = false;
             isProcessingGlobal = false;
             setIsProcessing(false);
@@ -415,7 +420,7 @@ export function useOfflineQueue() {
                 );
             }
         }
-    }, [refreshCount, completeBingoSquare]);
+    }, [relationshipId, refreshCount, completeBingoSquare]);
 
     // Intelligent Sync Triggers
     useEffect(() => {
@@ -588,12 +593,22 @@ export function useOfflineQueue() {
     /**
      * Queue a snapshot photo for offline upload.
      *
-     * @param {File} photoFile - The snapshot photo file
+     * @param {File|Blob} photoFile - The snapshot photo file
      * @param {string} message - Optional short message
+     * @param {boolean} isAlreadyOptimized - Skip compression if already optimized
      * @returns {Promise<{queued: boolean}>}
      */
-    const queueSnapshot = useCallback(async (photoFile, message = '') => {
-        const blob = await compressImage(photoFile, { maxWidth: 1200, initialQuality: 0.8 });
+    const queueSnapshot = useCallback(async (photoFile, message = '', isAlreadyOptimized = false) => {
+        // Only compress if it's not already optimized (prevents double compression)
+        const blob = isAlreadyOptimized 
+            ? photoFile 
+            : await compressImage(photoFile, { 
+                maxWidth: 1080, 
+                initialQuality: 0.8,
+                mimeType: 'image/webp',
+                maxWeightKb: 500,
+                minQuality: 0.5
+            });
 
         const snapshotId = generateUUID();
 
@@ -609,14 +624,14 @@ export function useOfflineQueue() {
             createdAt: Date.now(),
         });
 
-        await refreshCount();
+        refreshCount(); // Don't await, let it be background
 
         if (navigator.onLine) {
-            processQueue();
+            processQueue(); // Don't await
         }
 
         return { queued: true };
-    }, [refreshCount, processQueue]);
+    }, [relationshipId, refreshCount, processQueue]);
 
     /**
      * Resets a failed item to pending status so it can be retried.
