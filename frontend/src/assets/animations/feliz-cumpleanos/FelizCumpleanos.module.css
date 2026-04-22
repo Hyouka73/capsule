@@ -1,0 +1,432 @@
+/* FelizCumpleanos.module.css */
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=swap');
+
+.container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background: #050505; /* Deep black for cinema */
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 2s ease;
+}
+
+/* When transitioning to the final screen, we switch to a warm romantic vibe */
+.containerFinal {
+    background: radial-gradient(circle at center, rgba(255, 248, 240, 0.9) 0%, rgba(245, 230, 215, 0.95) 100%);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   CINEMA EFFECTS
+────────────────────────────────────────────────────────────── */
+.vignetteOverlay {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.85) 100%);
+    pointer-events: none;
+    z-index: 50;
+}
+
+.grainOverlay {
+    position: absolute;
+    inset: 0;
+    background-image: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)" opacity="0.1"/%3E%3C/svg%3E');
+    pointer-events: none;
+    z-index: 51;
+    mix-blend-mode: overlay;
+}
+
+.flickerOverlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 220, 180, 0.05); /* Slight sepia warmth */
+    pointer-events: none;
+    z-index: 52;
+    animation: flicker 0.15s infinite alternate;
+}
+
+@keyframes flicker {
+    0% { opacity: 0.05; }
+    50% { opacity: 0.12; }
+    100% { opacity: 0.02; }
+}
+
+/* Scratches */
+.scratch1, .scratch2 {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.2);
+    pointer-events: none;
+    z-index: 53;
+}
+
+.scratch1 {
+    left: 30%;
+    animation: scratchAnim 4s infinite linear;
+}
+
+.scratch2 {
+    right: 20%;
+    animation: scratchAnim 2.5s infinite linear reverse;
+}
+
+@keyframes scratchAnim {
+    0% { transform: translateY(-100%); opacity: 0; }
+    10% { opacity: 1; }
+    15% { transform: translateY(100%); opacity: 0; }
+    100% { transform: translateY(100%); opacity: 0; }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   COUNTDOWN SCREEN
+────────────────────────────────────────────────────────────── */
+.countdownScreen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.countdownCircle {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: 3px solid rgba(224, 213, 193, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: countdownPulse 1s infinite;
+}
+
+.countdownText {
+    font-family: 'Courier New', monospace;
+    color: #e0d5c1;
+    font-size: 5rem;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(255,255,255,0.3);
+}
+
+@keyframes countdownPulse {
+    0% { transform: scale(0.95); opacity: 0.7; }
+    50% { transform: scale(1.05); opacity: 1; }
+    100% { transform: scale(0.95); opacity: 0.7; }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   INTRO SCREEN
+────────────────────────────────────────────────────────────── */
+.introScreen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.introText {
+    font-family: 'Playfair Display', serif;
+    color: #e0d5c1;
+    font-size: 2.5rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-shadow: 0 0 10px rgba(255,255,255,0.2);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SLIDESHOW SCREEN (POLAROIDS)
+────────────────────────────────────────────────────────────── */
+.slideshowScreen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.polaroid {
+    position: absolute;
+    background: #fff;
+    padding: 10px 10px 40px 10px;
+    border-radius: 4px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+    filter: contrast(1.05);
+}
+
+.photo {
+    width: 260px;
+    height: 320px;
+    object-fit: cover;
+    border-radius: 2px;
+}
+
+.caption {
+    position: absolute;
+    bottom: 15%;
+    font-family: 'Playfair Display', serif;
+    color: #e0d5c1;
+    font-size: 1.5rem;
+    font-style: italic;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    z-index: 20;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   CLIMAX SCREEN
+────────────────────────────────────────────────────────────── */
+.climaxScreen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.climaxOverlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.6); /* Dim the photo slightly for text */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 30;
+}
+
+.climaxText {
+    font-family: 'Playfair Display', serif;
+    color: #fff;
+    font-size: 2rem;
+    text-align: center;
+    padding: 0 2rem;
+    line-height: 1.4;
+    text-shadow: 0 2px 15px rgba(0,0,0,0.8);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   LETTER SCREEN (TYPEWRITER)
+────────────────────────────────────────────────────────────── */
+.letterScreen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    padding: 0 2rem;
+}
+
+.letterText {
+    font-family: 'Caveat', cursive;
+    color: #e0d5c1;
+    font-size: 2.0rem;
+    line-height: 1.5;
+    text-align: center;
+    white-space: pre-wrap;
+    text-shadow: 0 2px 5px rgba(0,0,0,0.8);
+    max-width: 90%;
+}
+
+.collageContainer {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+.collagePhoto {
+    position: absolute;
+    background: #fff;
+    padding: 8px 8px 25px 8px;
+    border-radius: 4px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+    filter: contrast(1.05);
+}
+
+.collageImg {
+    width: 140px;
+    height: 160px;
+    object-fit: cover;
+    border-radius: 2px;
+}
+
+.typingCursor {
+    display: inline-block;
+    animation: blink 1s step-end infinite;
+    opacity: 1;
+}
+
+@keyframes blink {
+    50% { opacity: 0; }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FINAL SCREEN & PETALS
+────────────────────────────────────────────────────────────── */
+.finalScreen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 60; /* Above cinema filters */
+}
+
+.finalTitleContainer {
+    position: relative;
+    z-index: 10;
+    margin-bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.daysCounter {
+    font-family: 'Caveat', cursive;
+    font-size: 2.2rem;
+    color: #a45a52;
+    margin-bottom: -5px;
+    text-shadow: 0 2px 10px rgba(255,255,255,0.8);
+}
+
+.finalTitle {
+    font-family: 'Playfair Display', serif;
+    font-size: 3.5rem;
+    color: #8a6c4c;
+    text-align: center;
+    font-weight: 700;
+    text-shadow: 0 4px 15px rgba(255,255,255,0.8);
+    position: relative;
+}
+
+.beatingHeart {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 7rem;
+    color: rgba(255, 180, 180, 0.25);
+    z-index: -1;
+    animation: heartbeat 1.2s infinite;
+    pointer-events: none;
+}
+
+@keyframes heartbeat {
+    0% { transform: translate(-50%, -50%) scale(1); }
+    15% { transform: translate(-50%, -50%) scale(1.15); }
+    30% { transform: translate(-50%, -50%) scale(1); }
+    45% { transform: translate(-50%, -50%) scale(1.15); }
+    100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+.finalCollageContainer {
+    position: relative;
+    width: 100%;
+    height: 45vh;
+    margin-bottom: 2vh;
+    margin-top: -5vh;
+}
+
+.finalCollagePhoto {
+    position: absolute;
+    background: #fff;
+    padding: 6px 6px 20px 6px;
+    border-radius: 3px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.finalCollageImg {
+    width: 120px;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 2px;
+}
+
+/* Ambient Lights */
+.ambientLight1 {
+    position: absolute;
+    width: 80vw;
+    height: 80vw;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 215, 100, 0.2) 0%, transparent 70%);
+    top: -20%;
+    left: -20%;
+    filter: blur(40px);
+    z-index: 1;
+}
+
+.ambientLight2 {
+    position: absolute;
+    width: 60vw;
+    height: 60vw;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 150, 180, 0.15) 0%, transparent 70%);
+    bottom: -10%;
+    right: -10%;
+    filter: blur(40px);
+    z-index: 1;
+}
+
+/* Sakura Petals */
+.petalsContainer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5;
+    overflow: hidden;
+}
+
+.petal {
+    position: absolute;
+    top: -30px;
+    width: 20px;
+    height: 20px;
+    animation: fall linear infinite;
+    opacity: 0;
+}
+
+.petal svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 2px 4px rgba(255, 182, 193, 0.4));
+}
+
+@keyframes fall {
+    0% {
+        transform: translateY(0) rotate(0deg) translateX(0);
+        opacity: 0;
+    }
+    10% { opacity: 0.8; }
+    80% { opacity: 0.8; }
+    100% {
+        transform: translateY(110vh) rotate(360deg) translateX(80px);
+        opacity: 0;
+    }
+}
+
+/* Action Button */
+.actionBtn {
+    padding: 1rem 3rem;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #d4af37, #c5a017);
+    color: #fff;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    z-index: 20;
+    box-shadow: 
+        0 10px 30px rgba(212, 175, 55, 0.4),
+        inset 0 2px 0 rgba(255, 255, 255, 0.4);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    outline: none;
+}
