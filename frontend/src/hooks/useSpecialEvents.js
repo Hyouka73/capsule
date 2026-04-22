@@ -155,11 +155,21 @@ export function useSpecialEvents({ relationshipId, role }) {
         addToSeenSet(eventId);
         setSeenSet(getSeenSet());
 
+        // Update Firestore so admin can see that the partner saw it
+        if (relationshipId) {
+            import('firebase/firestore').then(({ doc, updateDoc, serverTimestamp }) => {
+                const ref = doc(db, COLLECTIONS.RELATIONSHIPS, relationshipId, COLLECTIONS.SPECIAL_EVENTS, eventId);
+                updateDoc(ref, { seenAt: serverTimestamp() }).catch(err => {
+                    console.warn('[useSpecialEvents] Failed to update seenAt:', err);
+                });
+            });
+        }
+
         // Clear the forced deep-link so it doesn't resurface on next check
         if (forcedEventId.current === eventId) {
             forcedEventId.current = null;
         }
-    }, []);
+    }, [relationshipId]);
 
     return { pendingEvent, markAsSeen, isResolved };
 }

@@ -61,15 +61,11 @@ export default function EventForm({ initialData, onSubmit, onCancel, isSaving })
         if (!iso) {
             return; // datetime-local required validation handles this
         }
-        // Build the auto deep-link if blank
-        const eventId = initialData?.id || 'new';
-        const deepLink = form.notifLink.trim()
-            || `/?action=special_event&eventId=${eventId}`;
-
         onSubmit({
             ...form,
+            title: form.animationSlug, // auto-generate title
             unlockDateTime: iso,
-            notifLink: deepLink,
+            notifLink: '',
         });
     };
 
@@ -90,24 +86,9 @@ export default function EventForm({ initialData, onSubmit, onCancel, isSaving })
                 </h3>
             </div>
 
-            {/* ── Section: General ─────────────────────────────────── */}
+            {/* ── Section: Configuración ─────────────────────────────────── */}
             <fieldset className={styles.fieldset}>
-                <legend className={styles.legend}>General</legend>
-
-                <div className={styles.field}>
-                    <label className={styles.label} htmlFor="ev-title">
-                        Título interno <span className={styles.req}>*</span>
-                    </label>
-                    <input
-                        id="ev-title"
-                        className={styles.input}
-                        type="text"
-                        placeholder="Ej: Cumpleaños de mi amor"
-                        value={form.title}
-                        onChange={e => set('title', e.target.value)}
-                        required
-                    />
-                </div>
+                <legend className={styles.legend}>Configuración</legend>
 
                 <div className={styles.fieldRow}>
                     <div className={styles.field}>
@@ -148,94 +129,6 @@ export default function EventForm({ initialData, onSubmit, onCancel, isSaving })
                         <span className={styles.hint}>Se guarda como ISO en Firestore</span>
                     </div>
                 </div>
-
-                <div className={styles.field}>
-                    <label className={styles.label} htmlFor="ev-role">
-                        Destinatario
-                    </label>
-                    <select
-                        id="ev-role"
-                        className={styles.select}
-                        value={form.targetRole}
-                        onChange={e => set('targetRole', e.target.value)}
-                    >
-                        <option value="partner">👤 Solo la Pareja</option>
-                        <option value="admin">🔑 Solo el Admin</option>
-                        <option value="both">👥 Ambos</option>
-                    </select>
-                </div>
-            </fieldset>
-
-            {/* ── Section: Notificación Push ────────────────────────── */}
-            <fieldset className={styles.fieldset}>
-                <legend className={styles.legend}>Notificación Push</legend>
-
-                <div className={styles.field}>
-                    <label className={styles.label} htmlFor="ev-notif-title">
-                        Título del push <span className={styles.req}>*</span>
-                    </label>
-                    <input
-                        id="ev-notif-title"
-                        className={styles.input}
-                        type="text"
-                        placeholder="🎉 ¡Hay una sorpresa para ti!"
-                        value={form.notifTitle}
-                        onChange={e => set('notifTitle', e.target.value)}
-                        required
-                    />
-                </div>
-
-                <div className={styles.field}>
-                    <label className={styles.label} htmlFor="ev-notif-body">
-                        Cuerpo del mensaje <span className={styles.req}>*</span>
-                    </label>
-                    <textarea
-                        id="ev-notif-body"
-                        className={`${styles.input} ${styles.textarea}`}
-                        placeholder="Abre la app para descubrirla..."
-                        value={form.notifBody}
-                        onChange={e => set('notifBody', e.target.value)}
-                        rows={2}
-                        required
-                    />
-                </div>
-
-                <div className={styles.field}>
-                    <label className={styles.label} htmlFor="ev-notif-link">
-                        Deep-link <span className={styles.optional}>(auto-generado si vacío)</span>
-                    </label>
-                    <input
-                        id="ev-notif-link"
-                        className={styles.input}
-                        type="text"
-                        placeholder="/?action=special_event&eventId=..."
-                        value={form.notifLink}
-                        onChange={e => set('notifLink', e.target.value)}
-                    />
-                </div>
-            </fieldset>
-
-            {/* ── Section: Comportamiento ────────────────────────────── */}
-            <fieldset className={styles.fieldset}>
-                <legend className={styles.legend}>Comportamiento</legend>
-
-                <KawaiiSwitch
-                    checked={form.isPersistent}
-                    onChange={val => set('isPersistent', val)}
-                    label="Overlay persistente"
-                    description="Si activo, el usuario debe cerrar la animación manualmente."
-                    icon="📌"
-                    variant="rose"
-                />
-
-                <KawaiiSwitch
-                    checked={form.isActive}
-                    onChange={val => set('isActive', val)}
-                    label="Evento activo"
-                    description="Desactiva para pausar sin borrar el evento."
-                    icon="✅"
-                    variant="mint"
-                />
             </fieldset>
 
             {/* ── Actions ───────────────────────────────────────────── */}

@@ -1,7 +1,7 @@
 import { Suspense, lazy, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSpecialEvent } from '../../context/SpecialEventContext';
-import styles from './SpecialEventWrapper.module.css';
+import styles from './SpecialEventOverlay.module.css';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Dynamic animation loader
@@ -47,21 +47,16 @@ function AnimationPlaceholder({ event, onClose }) {
                 <p className={styles.placeholderMeta}>
                     slug: <code>{event.animationSlug}</code>
                 </p>
-                {!event.isPersistent && (
-                    <p className={styles.placeholderHint}>Cerrando automáticamente…</p>
-                )}
-                {event.isPersistent && (
-                    <button className={styles.placeholderClose} onClick={onClose}>
-                        ¡Entendido! 🌸
-                    </button>
-                )}
+                <button className={styles.placeholderClose} onClick={onClose}>
+                    Cerrar (Placeholder)
+                </button>
             </div>
         </div>
     );
 }
 
 /**
- * SpecialEventWrapper
+ * SpecialEventOverlay
  *
  * Shell interceptor — wraps the entire app (children = <Routes />).
  * When a pending event is detected:
@@ -73,9 +68,7 @@ function AnimationPlaceholder({ event, onClose }) {
  * When no event is pending:
  *   → children rendered with zero overhead (no extra DOM nodes)
  */
-const AUTO_CLOSE_MS = 8000; // Non-persistent events auto-close after 8 s
-
-export default function SpecialEventWrapper({ children }) {
+export default function SpecialEventOverlay({ children }) {
     const { pendingEvent, markAsSeen } = useSpecialEvent();
 
     const handleClose = useCallback(() => {
@@ -91,13 +84,6 @@ export default function SpecialEventWrapper({ children }) {
         }
         return () => { document.body.style.overflow = ''; };
     }, [!!pendingEvent]);
-
-    // Auto-close for non-persistent events
-    useEffect(() => {
-        if (!pendingEvent || pendingEvent.isPersistent) return;
-        const timer = setTimeout(handleClose, AUTO_CLOSE_MS);
-        return () => clearTimeout(timer);
-    }, [pendingEvent, handleClose]);
 
     // Look up the cached lazy component for this slug.
     const AnimationComponent = pendingEvent

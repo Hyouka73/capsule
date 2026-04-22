@@ -32,9 +32,7 @@ export default function EventList({ events, onEdit, onDelete, onToggleActive, on
         <div className={styles.tableWrapper}>
             <div className={styles.tableHeader}>
                 <span>Evento</span>
-                <span>Animación</span>
                 <span>Activación</span>
-                <span>Para</span>
                 <span>Estado</span>
                 <span>Acciones</span>
             </div>
@@ -50,17 +48,9 @@ export default function EventList({ events, onEdit, onDelete, onToggleActive, on
                             exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                             transition={{ duration: 0.2 }}
                         >
-                            {/* Title */}
+                            {/* Title / Slug */}
                             <div className={styles.cellTitle}>
-                                <span className={styles.eventTitle}>{event.title || '—'}</span>
-                                {event.isPersistent && (
-                                    <span className={styles.badge} title="Overlay persistente">📌</span>
-                                )}
-                            </div>
-
-                            {/* Slug */}
-                            <div className={styles.cell}>
-                                <code className={styles.slug}>{event.animationSlug}</code>
+                                <span className={styles.eventTitle}>{event.title || event.animationSlug}</span>
                             </div>
 
                             {/* Unlock date */}
@@ -68,25 +58,11 @@ export default function EventList({ events, onEdit, onDelete, onToggleActive, on
                                 <span className={styles.date}>
                                     {formatDate(event.unlockDateTime)}
                                 </span>
-                                {isUnlocked(event.unlockDateTime) && (
-                                    <span className={styles.unlockedChip}>🔓 Activo</span>
-                                )}
                             </div>
 
-                            {/* Target role */}
+                            {/* Lifecycle Status */}
                             <div className={styles.cell}>
-                                {ROLE_LABELS[event.targetRole] || event.targetRole}
-                            </div>
-
-                            {/* isActive toggle */}
-                            <div className={styles.cell}>
-                                <button
-                                    className={`${styles.toggleBtn} ${event.isActive ? styles.toggleActive : styles.toggleInactive}`}
-                                    onClick={() => onToggleActive(event, !event.isActive)}
-                                    title={event.isActive ? 'Pausar evento' : 'Activar evento'}
-                                >
-                                    {event.isActive ? '✅ Activo' : '⏸ Pausado'}
-                                </button>
+                                {getEventStatusBadge(event)}
                             </div>
 
                             {/* Actions */}
@@ -100,14 +76,16 @@ export default function EventList({ events, onEdit, onDelete, onToggleActive, on
                                     🔔
                                 </PastelButton>
 
-                                <PastelButton
-                                    variant="ghost"
-                                    onClick={() => onEdit(event)}
-                                    title="Editar evento"
-                                    className={styles.actionBtn}
-                                >
-                                    ✏️
-                                </PastelButton>
+                                {(!event.dispatchedAt && !event.seenAt) && (
+                                    <PastelButton
+                                        variant="ghost"
+                                        onClick={() => onEdit(event)}
+                                        title="Editar evento"
+                                        className={styles.actionBtn}
+                                    >
+                                        ✏️
+                                    </PastelButton>
+                                )}
 
                                 {confirmDeleteId === event.id ? (
                                     <div className={styles.confirmRow}>
@@ -164,4 +142,20 @@ function formatDate(iso) {
 function isUnlocked(iso) {
     if (!iso) return false;
     return new Date(iso).getTime() <= Date.now();
+}
+
+function getEventStatusBadge(event) {
+    if (!event.isActive) {
+        return <span className={styles.badgeInactive}>⏸ Pausado</span>;
+    }
+    if (event.seenAt) {
+        return <span className={styles.badgeSeen}>👀 Ya lo vio</span>;
+    }
+    if (event.dispatchedAt) {
+        return <span className={styles.badgeNotified}>🔔 Notificado</span>;
+    }
+    if (isUnlocked(event.unlockDateTime)) {
+        return <span className={styles.badgeActive}>🔓 Activo</span>;
+    }
+    return <span className={styles.badgePending}>⏳ Pendiente</span>;
 }

@@ -13,7 +13,7 @@ import JoinInvite from './modules/auth/JoinInvite';
 import WelcomeScreen from './modules/auth/WelcomeScreen';
 import RevokedScreen from './modules/auth/RevokedScreen';
 import LoadingScreen from './components/ui/LoadingScreen/LoadingScreen';
-import SpecialEventWrapper from './components/SpecialEventWrapper/SpecialEventWrapper';
+import { SpecialEventOverlay } from './modules/events';
 import { PastelToastProvider } from './components/ui/PastelToast/PastelToast';
 import { BingoProvider } from './context/BingoContext';
 import './App.css';
@@ -76,7 +76,7 @@ export default function App() {
 
   return (
     <PastelToastProvider>
-        <SpecialEventWrapper>
+        <SpecialEventOverlay>
         <Routes>
         {/* Raíz Dispatcher: Redirige según el estado de la sesión y el progreso */}
         <Route path="/" element={
@@ -183,7 +183,7 @@ export default function App() {
         {/* Fallback: redirigir a raíz para que el dispatcher decida */}
         <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-        </SpecialEventWrapper>
+        </SpecialEventOverlay>
     </PastelToastProvider>
   );
 }

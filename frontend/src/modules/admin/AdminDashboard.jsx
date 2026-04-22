@@ -17,7 +17,7 @@ import SnapshotButton from '../snapshots/components/SnapshotButton';
 import SnapshotOverlay from '../snapshots/components/SnapshotOverlay';
 import SnapshotCreator from '../snapshots/components/SnapshotCreator';
 import SnapshotHistory from '../snapshots/components/SnapshotHistory';
-import SpecialEventsManager from './SpecialEventsManager';
+import { SpecialEventsManager } from '../events';
 import PastelButton from '../../components/ui/PastelButton/PastelButton';
 import PastelCard from '../../components/ui/PastelCard/PastelCard';
 import { useBingo } from '../../hooks/useBingo';
