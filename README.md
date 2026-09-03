@@ -14,19 +14,6 @@ Combina una experiencia visual cuidada (diseño UX/UI propio con microinteraccio
 
 ---
 
-## 📸 Capturas de Pantalla y Demostración Visual
-
-> 💡 **Nota para evaluación del portafolio:** A continuación se indican las vistas clave recomendadas para captura de pantalla / demo:
->
-> 1. **Vista Mobile / PWA Feed:** Interfaz principal con navegación fluida, indicador de conectividad offline y feed de recuerdos.
-> 2. **Snapshots Efímeros ("Historias"):** Reproductor de snapshots efímeros a pantalla completa con temporizador de progreso y animación de transición estilo redes sociales.
-> 3. **Interactive Photo Reveal / Teaser:** Experiencia interactiva de revelación de tarjetas con gestos táctiles.
-> 4. **Tablero Interactivo & Map Picker:** Selector de ubicaciones sobre MapLibre GL con caché offline de coordenadas y lugares favoritos.
-
-*(Para añadir capturas directamente al README, ubica los archivos en `docs/screenshots/` y referencia aquí con `![Feed](docs/screenshots/feed.png)`).*
-
----
-
 ## ⚡ Características Principales
 
 - **Arquitectura Offline-First con IndexedDB:**
