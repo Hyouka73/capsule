@@ -4,12 +4,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.9.0/firebase-messaging-comp
 
 // Generated dynamically - DO NOT EDIT MANUALLY
 firebase.initializeApp({
-    apiKey: "AIzaSyC2WR9DNcqiGOfJDJviXHYzfMI3XrCXwto",
-    authDomain: "capsule-valentins-day.firebaseapp.com",
-    projectId: "capsule-valentins-day",
-    storageBucket: "capsule-valentins-day.firebasestorage.app",
-    messagingSenderId: "624085766610",
-    appId: "1:624085766610:web:d6bcabcace8fc14fd0380b"
+    apiKey: "YOUR_FIREBASE_API_KEY",
+    authDomain: "your-app.firebaseapp.com",
+    projectId: "your-project-id",
+    storageBucket: "your-app.firebasestorage.app",
+    messagingSenderId: "000000000000",
+    appId: "1:000000000000:web:000000000000"
 });
 
 const messaging = firebase.messaging();
